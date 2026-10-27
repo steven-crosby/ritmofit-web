@@ -16,6 +16,7 @@ import type { AdapterEvents, PlaybackAdapter } from '../lib/playback/types.js';
 import { classReadiness } from '../lib/readiness.js';
 import {
   choreographyQueueAt,
+  followingTrackEvents,
   eventCount,
   LiveMode,
   lastAtOrBefore,
@@ -1306,6 +1307,59 @@ describe('LiveMode runtime composition', () => {
     expect(nextClock.classList.contains('text-interactive')).toBe(false);
   });
 
+  it("shows the next track's first cue after this track's last cue", async () => {
+    await renderLive({
+      ...threeTrack,
+      tracks: [
+        threeTrack.tracks[0]!,
+        {
+          ...threeTrack.tracks[1]!,
+          cues: [
+            teachingCue('c3', 'Seated climb', 15000, { position: 0 }),
+            teachingCue('c4', 'Stand and push', 45000, { position: 1 }),
+          ],
+        },
+        threeTrack.tracks[2]!,
+      ],
+    });
+    const slider = screen.getByRole('slider', { name: 'Seek class timeline' });
+    // 60s: track 1's last cue. Track 2 starts at 180s; its first cue is at 195s.
+    fireEvent.keyDown(slider, { key: 'PageUp' });
+    fireEvent.keyDown(slider, { key: 'PageUp' });
+    const focal = screen
+      .getByText('Climb now', { selector: '[data-teaching="hero-name"]' })
+      .closest('[data-live-region="focal"]') as HTMLElement;
+    expect(within(focal).queryByText('End of track')).toBeNull();
+    expect(within(focal).getByText('Seated climb')).toBeTruthy();
+    expect(within(focal).getByLabelText('Time to next cue').textContent).toBe('2:15');
+
+    const queue = screen.getByRole('list', { name: 'Choreography queue' });
+    const rows = within(queue).getAllByRole('listitem');
+    expect(rows.map((row) => row.textContent)).toEqual([
+      expect.stringMatching(/^NowClimb now/),
+      expect.stringMatching(/^NextSeated climbcue · Track 2/),
+      expect.stringMatching(/^\+2Stand and pushcue · Track 2/),
+    ]);
+  });
+
+  it('still ends at the last cue of the class', async () => {
+    await renderLive({
+      ...payload,
+      tracks: [
+        {
+          ...activeTrack,
+          cues: [teachingCue('c1', 'Final push', 0)],
+        },
+      ],
+    });
+    const focal = screen
+      .getByText('Final push', { selector: '[data-teaching="hero-name"]' })
+      .closest('[data-live-region="focal"]') as HTMLElement;
+    expect(within(focal).getByText('End of track')).toBeTruthy();
+    const queue = screen.getByRole('list', { name: 'Choreography queue' });
+    expect(within(queue).getAllByRole('listitem')).toHaveLength(1);
+  });
+
   it('leads the rail with timers and keeps notes ahead of the supporting class shape', async () => {
     await renderLive({
       ...threeTrack,
@@ -1426,7 +1480,8 @@ describe('LiveMode runtime composition', () => {
     expect(details.open).toBe(true);
     expect(within(details).getByText('Climb now')).toBeTruthy();
     expect(within(details).queryByText('Settle in')).toBeNull();
-    expect(within(details).getByText('End of track')).toBeTruthy();
+    expect(within(details).getByText('Next move')).toBeTruthy();
+    expect(within(details).getByText('Reach long')).toBeTruthy();
     for (let i = 0; i < 4; i++) fireEvent.keyDown(slider, { key: 'PageUp' });
     expect(screen.getByText('Full guidance').closest('details')).toBe(details);
     expect(details.open).toBe(true);
@@ -1889,22 +1944,141 @@ describe('choreographyQueueAt', () => {
 
   it('shows upcoming choreography before the first anchor', () => {
     expect(choreographyQueueAt(events, 0, 90000, 2)).toEqual([
-      { event: events[0], state: 'upcoming', durationMs: 20000, remainingMs: null },
-      { event: events[1], state: 'upcoming', durationMs: 30000, remainingMs: null },
+      {
+        event: events[0],
+        state: 'upcoming',
+        durationMs: 20000,
+        remainingMs: null,
+        laterTrackIndex: null,
+      },
+      {
+        event: events[1],
+        state: 'upcoming',
+        durationMs: 30000,
+        remainingMs: null,
+        laterTrackIndex: null,
+      },
     ]);
   });
 
   it('counts down the current interval and limits the forward window', () => {
     expect(choreographyQueueAt(events, 45000, 90000, 2)).toEqual([
-      { event: events[1], state: 'current', durationMs: 30000, remainingMs: 15000 },
-      { event: events[2], state: 'upcoming', durationMs: 30000, remainingMs: null },
+      {
+        event: events[1],
+        state: 'current',
+        durationMs: 30000,
+        remainingMs: 15000,
+        laterTrackIndex: null,
+      },
+      {
+        event: events[2],
+        state: 'upcoming',
+        durationMs: 30000,
+        remainingMs: null,
+        laterTrackIndex: null,
+      },
     ]);
   });
 
   it('does not invent a final interval when the track duration is unset', () => {
     expect(choreographyQueueAt(events, 70000, null)).toEqual([
-      { event: events[2], state: 'current', durationMs: null, remainingMs: null },
+      {
+        event: events[2],
+        state: 'current',
+        durationMs: null,
+        remainingMs: null,
+        laterTrackIndex: null,
+      },
     ]);
+  });
+
+  it('continues into the next track after the last cue of this one', () => {
+    const nextTrack: TimelineEvent[] = [
+      { ...events[0]!, atMs: 120000, text: 'Seated climb' },
+      { ...events[0]!, atMs: 150000, text: 'Stand' },
+    ];
+    expect(
+      choreographyQueueAt(events, 70000, 90000, 3, {
+        index: 1,
+        events: nextTrack,
+        trackEndMs: 200000,
+      }),
+    ).toEqual([
+      {
+        event: events[2],
+        state: 'current',
+        durationMs: 30000,
+        remainingMs: 20000,
+        laterTrackIndex: null,
+      },
+      {
+        event: nextTrack[0],
+        state: 'upcoming',
+        durationMs: 30000,
+        remainingMs: null,
+        laterTrackIndex: 1,
+      },
+      {
+        event: nextTrack[1],
+        state: 'upcoming',
+        durationMs: 50000,
+        remainingMs: null,
+        laterTrackIndex: 1,
+      },
+    ]);
+  });
+
+  it('shows the next track when this track has no choreography', () => {
+    const nextTrack: TimelineEvent[] = [{ ...events[0]!, atMs: 120000, text: 'Seated climb' }];
+    expect(
+      choreographyQueueAt([], 10000, 90000, 4, { index: 2, events: nextTrack, trackEndMs: null }),
+    ).toEqual([
+      {
+        event: nextTrack[0],
+        state: 'upcoming',
+        durationMs: null,
+        remainingMs: null,
+        laterTrackIndex: 2,
+      },
+    ]);
+  });
+});
+
+describe('followingTrackEvents', () => {
+  const cue = (atMs: number, text: string): TimelineEvent => ({
+    atMs,
+    kind: 'cue',
+    text,
+    color: null,
+    intensity: null,
+    beat: null,
+    bar: null,
+  });
+  const tracks = {
+    ...payload,
+    tracks: [
+      activeTrack,
+      { ...activeTrack, startOffsetMs: 180000 },
+      { ...activeTrack, startOffsetMs: 360000, track: { ...activeTrack.track, durationMs: null } },
+    ],
+  } satisfies RunPayload;
+
+  it('skips later tracks without choreography and reports the track end', () => {
+    expect(followingTrackEvents(tracks, [[], [cue(200000, 'Climb')], []], 0)).toEqual({
+      index: 1,
+      events: [cue(200000, 'Climb')],
+      trackEndMs: 360000,
+    });
+    expect(followingTrackEvents(tracks, [[], [], [cue(400000, 'Sprint')]], 0)).toEqual({
+      index: 2,
+      events: [cue(400000, 'Sprint')],
+      trackEndMs: null,
+    });
+  });
+
+  it('returns null on the last track or an empty class', () => {
+    expect(followingTrackEvents(tracks, [[], [], [cue(400000, 'Sprint')]], 2)).toBeNull();
+    expect(followingTrackEvents({ ...payload, tracks: [] }, [], -1)).toBeNull();
   });
 });
 
@@ -2705,7 +2879,10 @@ describe('Cue-by-Cue teaching reading', () => {
     await renderLive(second);
     seekTo(10_000, total);
     expect(heroName()?.textContent ?? '').not.toBe('Left Leg Lead');
-    expect(screen.queryByText('Left Leg Lead')).toBeNull();
+    // Track 1 has no cues, so track 2's cue is only previewed as Next.
+    for (const node of screen.getAllByText('Left Leg Lead')) {
+      expect(node.getAttribute('data-teaching')).not.toBe('hero-name');
+    }
 
     seekTo(70_000, total);
     expect(heroName()?.textContent).toBe('Left Leg Lead');
