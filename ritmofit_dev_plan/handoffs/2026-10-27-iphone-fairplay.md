@@ -5,7 +5,7 @@ lane: solo
 branch: cursor/iphone-fairplay-handoff-615a
 head: 0b7ac032263cafe020dfe5f4b1e70082f0fff5cc
 base: 0b7ac032263cafe020dfe5f4b1e70082f0fff5cc
-prs: []
+prs: ['#639 (open)']
 status: open
 ---
 
@@ -20,7 +20,7 @@ status: open
 
 ## In flight
 
-- This docs handoff. No product-code PR is open for the probe word.
+- [#639](https://github.com/steven-crosby/ritmofit-web/pull/639) is this handoff. After it merges, nothing in the repo is in flight for this failure. No product-code PR is open for the probe word.
 - Preflight that plays before Start is not started and not approved. Plan: project store `bc-22530555-6204-4e0e-bf89-4a3cbeeddcf2`, `docs/preflight-playback-plan.md`. Root cause: `docs/iphone-apple-music-root-cause.md` in that same store. Neither file is in this repo.
 
 ## Next action
