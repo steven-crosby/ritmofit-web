@@ -11,6 +11,8 @@ status: open
 
 # iPhone Safari still shows the bare Apple Music failure on #636
 
+Repo task snapshot: [tasks.md](../tasks.md).
+
 ## Done
 
 - [#637](https://github.com/steven-crosby/ritmofit-web/pull/637) (`2bd73e08`, better-auth 1.7.14) is on main.
