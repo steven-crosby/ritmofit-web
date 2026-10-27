@@ -13,6 +13,54 @@ detail). Current focus and `main` vs production live in the "Now" block of
 
 ## Deploy and session log (newest first)
 
+> **Staged deploy 2026-10-27 — main `4e0b150` minus #629.** Owner approved
+> Option B. Three production publishes through `scripts/deploy.sh` from local
+> branch `cursor/staged-deploy-4e0b150-2f76`. That branch was not pushed and
+> has no pull request. No migration file is in `c07bba3..4e0b150`. Each
+> script reported no remote D1 migrations to apply. None was applied. No
+> production data was edited. Node 22.23.4.
+>
+> **Stage 1** at 2026-10-27T13:24:57Z (7:24 AM MT). Tree `361c935`
+> (`4e0b150` with #629, #621, and #617 reverted). #629 and #621 reverted
+> cleanly. #617 (`17a91a9`) conflicted in `Dashboard.tsx` and
+> `Dashboard.test.tsx`. The hand resolution removes only #617: the two
+> `setLiveActive` effects go, and #619's `const online = useOnline()` stays.
+> The session-lost test is deleted. The #619 class-details and Offline tests
+> and the #622 crash test stay. The `readyRidePayload` helper stays; #622
+> inserted its test after that helper and does not own it. Before deploy,
+> the local gate passed: format, typecheck, lint, unit web 1460 / api 557 /
+> music 30, Worker/D1 integration 235, web build with the bundle budget, and
+> `pnpm e2e` (2 passed). Worker `751ea170-9482-440d-b002-47ac9affadda`
+> (message `361c935`); rollback `60dcbb9d-0310-4c86-939b-3201c36498ae`
+> (`c07bba3`). SPA `assets/index-qpATHuVY.js`, CSS
+> `assets/index-BwpPxh8O.css`. Propagation 3/3 after one previous-entry
+> fetch. `/` 200, `/api/v1/health` 200 with `database: true` and the six
+> security headers; `/classes`, `/explore`, `/teams` 401. Tail: health 200
+> and classes 401, both on this Worker, no exceptions and no 5xx.
+>
+> **Stage 2** at 2026-10-27T13:37:49Z (7:37 AM MT). Reapplied #617. `git diff`
+> against `b9e4b8e` was empty, so the tree is `4e0b150` with only #621 and
+> #629 reverted. Commit `810d26c`. Worker
+> `f2526ab0-d65e-462d-9d74-d4154df039d0` (message `810d26c`); rollback
+> `751ea170-9482-440d-b002-47ac9affadda`. SPA `assets/index-Cy9zvPdd.js`,
+> CSS `assets/index-DGcMUSRx.css`. Propagation 3/3 on the first three
+> fetches. Same smoke: `/` and health 200 (`database: true`, six headers);
+> classes, explore, and teams 401. Tail: health 200 and classes 401 on this
+> Worker, no exceptions and no 5xx.
+>
+> **Stage 3** at 2026-10-27T13:46:28Z (7:46 AM MT). Reapplied #621. `git diff`
+> against `121f5ba` was empty, so the tree is `4e0b150` minus #629. Commit
+> `04ec72f`. Worker `05a49728-aa41-4113-ab52-948a62a091cc` (message
+> `04ec72f`); rollback `f2526ab0-d65e-462d-9d74-d4154df039d0`. SPA
+> `assets/index-1IADUpWL.js`, CSS `assets/index-DGcMUSRx.css` unchanged.
+> Propagation 3/3 after two fetches of the stage-2 entry. Same smoke. Tail:
+> health 200 and classes 401 on this Worker, no exceptions and no 5xx.
+>
+> [#629](https://github.com/steven-crosby/ritmofit-web/pull/629) (name Apple
+> Music failures mid-class and mark Offline in Live, `7ab9bbb`) is on `main`
+> and is not in production. It stays held for Steven's iPhone Apple Music
+> check. This docs record is not in the deployed tree.
+
 > **Deploy 2026-10-26 — #604–#613 on main `c07bba3`.** Owner approved.
 > Production deploy at 2026-10-27T04:59:26Z (10:59 PM MT 2026-10-26) through
 > `scripts/deploy.sh c07bba3cc41f720b5e7cf485b640cb443f54f5c0` from a clean
