@@ -1,0 +1,27 @@
+# vite build (worktree /tmp/wt-b, SHA 4e0b150) exit=0
+PWA v1.3.0
+mode      generateSW
+precache  17 entries (821.55 KiB)
+## dist/sw.js greps
+denylist:[/^\/api\//]
+NavigationRoute(s.createHandlerBoundToURL("index.html")
+SKIP_WAITING listener count: 1
+clientsClaim occurrences: 0
+## precached url list
+"index.html"
+"assets/workbox-window.prod.es5-BqEJf4Xk.js"
+"assets/registry-esHe7XDQ.js"
+"assets/move-pick-ANceoxVS.js"
+"assets/index-DGcMUSRx.css"
+"assets/index-B1FRgRjm.js"
+"assets/cue-list-CFLXSRg-.js"
+"assets/TrackPreview-BausT7h_.js"
+"assets/SongsByMoveDialog-CHcZQOya.js"
+"assets/LiveMode-DsOU948i.js"
+"assets/DialogState-CAXVdjI1.js"
+"assets/ConnectionsDialog-2nqiF3v9.js"
+"assets/ClassSummaryView-xBTNoFI6.js"
+"assets/ChoreographyEditor-DnBRhFy7.js"
+"icons/logo-192.png"
+"icons/logo-512.png"
+"manifest.webmanifest"

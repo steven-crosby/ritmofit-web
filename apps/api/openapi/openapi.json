@@ -234,6 +234,37 @@
         }
       }
     },
+    "/classes/{id}/opened": {
+      "parameters": [
+        {
+          "name": "id",
+          "in": "path",
+          "required": true,
+          "schema": {
+            "type": "string"
+          }
+        }
+      ],
+      "post": {
+        "summary": "Record that the class was opened or that Live started",
+        "description": "Sets lastOpenedAt to the server clock. Does not change updatedAt, so Recents stays independent of edits. View access is enough.",
+        "responses": {
+          "200": {
+            "description": "Class with lastOpenedAt set",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Class"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Not found / hidden"
+          }
+        }
+      }
+    },
     "/classes/{id}/run-payload": {
       "parameters": [
         {
@@ -598,6 +629,9 @@
           },
           "422": {
             "description": "Playlist has more than 100 songs"
+          },
+          "429": {
+            "description": "PROVIDER_QUOTA_EXCEEDED — Spotify's usage limit for Ritmo is used up. Try again later. Not retried. No writes."
           },
           "504": {
             "description": "PROVIDER_TIMEOUT — the playlist took too long to load. Try again. No writes."
@@ -1677,6 +1711,9 @@
               }
             }
           },
+          "429": {
+            "description": "PROVIDER_QUOTA_EXCEEDED — Spotify's usage limit for Ritmo is used up. Try again later. Not retried. No writes."
+          },
           "501": {
             "description": "Provider not yet integrated"
           },
@@ -1718,8 +1755,14 @@
               }
             }
           },
+          "403": {
+            "description": "SPOTIFY_DEVELOPMENT_MODE — this Spotify account is not on the app allowlist. Reconnect does not add it."
+          },
           "409": {
             "description": "Not connected / reconnect required"
+          },
+          "429": {
+            "description": "PROVIDER_QUOTA_EXCEEDED — Spotify's usage limit for Ritmo is used up. Try again later. Not retried. No writes."
           },
           "501": {
             "description": "Provider not yet integrated"
@@ -1762,8 +1805,14 @@
               }
             }
           },
+          "403": {
+            "description": "SPOTIFY_DEVELOPMENT_MODE — this Spotify account is not on the app allowlist. Reconnect does not add it."
+          },
           "409": {
             "description": "Not connected / reconnect required"
+          },
+          "429": {
+            "description": "PROVIDER_QUOTA_EXCEEDED — Spotify's usage limit for Ritmo is used up. Try again later. Not retried. No writes."
           },
           "501": {
             "description": "Provider saved playlists not integrated"
@@ -1816,6 +1865,9 @@
           },
           "409": {
             "description": "Not connected / reconnect required"
+          },
+          "429": {
+            "description": "PROVIDER_QUOTA_EXCEEDED — Spotify's usage limit for Ritmo is used up. Try again later. Not retried. No writes."
           },
           "501": {
             "description": "Provider saved playlists not integrated"
@@ -1878,6 +1930,9 @@
           },
           "422": {
             "description": "Playlist has too many distinct tracks to import at once"
+          },
+          "429": {
+            "description": "PROVIDER_QUOTA_EXCEEDED — Spotify's usage limit for Ritmo is used up. Try again later. Not retried. No writes."
           },
           "501": {
             "description": "Provider saved playlists not integrated"

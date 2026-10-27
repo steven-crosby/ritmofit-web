@@ -2,7 +2,9 @@
  * Authed production smoke for the dedicated QA beta account.
  *
  * The session token is read from a gitignored file (`apps/api/.qa-beta-token`).
- * This module never logs that token. The Spotify check is
+ * This module never logs that token. On an https base URL the cookie name is
+ * `__Secure-better-auth.session_token`; http and localhost keep
+ * `better-auth.session_token`. The Spotify check is
  * `GET /api/v1/providers/spotify/playlists`: HTTP 200 means the stored grant can
  * read the account's playlists. The response body is discarded so playlist
  * titles and any upstream payload stay out of the smoke log.
@@ -62,8 +64,29 @@ export function parseQaBetaToken(text: string): string {
   return value;
 }
 
-export function sessionCookieHeader(token: string): string {
-  return `better-auth.session_token=${token}`;
+const PLAIN_SESSION_COOKIE = 'better-auth.session_token';
+const SECURE_SESSION_COOKIE = `__Secure-${PLAIN_SESSION_COOKIE}`;
+
+/** Loopback hosts keep the plain cookie name, including an https dev origin. */
+function isLocalSmokeHost(hostname: string): boolean {
+  const host = hostname.replace(/^\[|\]$/g, '').toLowerCase();
+  return (
+    host === 'localhost' || host.endsWith('.localhost') || host === '::1' || host.startsWith('127.')
+  );
+}
+
+/**
+ * Better Auth prefixes the session cookie with `__Secure-` when the origin is
+ * https. Local http and localhost stay on the plain name.
+ */
+export function sessionCookieName(baseUrl: string): string {
+  const url = new URL(baseUrl);
+  if (url.protocol === 'https:' && !isLocalSmokeHost(url.hostname)) return SECURE_SESSION_COOKIE;
+  return PLAIN_SESSION_COOKIE;
+}
+
+export function sessionCookieHeader(token: string, baseUrl: string): string {
+  return `${sessionCookieName(baseUrl)}=${token}`;
 }
 
 export function smokePassed(results: readonly SmokeResult[]): boolean {
@@ -78,7 +101,7 @@ export async function runAuthedSmoke(options: {
   token: string;
   fetchImpl: typeof fetch;
 }): Promise<SmokeResult[]> {
-  const cookie = sessionCookieHeader(options.token);
+  const cookie = sessionCookieHeader(options.token, options.baseUrl);
   const results: SmokeResult[] = [];
   for (const check of AUTHED_SMOKE_CHECKS) {
     const url = new URL(check.path, options.baseUrl);

@@ -1,0 +1,37 @@
+{
+  "schemaVersion": 1,
+  "id": "RF-11",
+  "title": "Keep the update toast available after an app crash",
+  "kind": "task",
+  "status": "done",
+  "priority": "untriaged",
+  "parent": null,
+  "dependsOn": [],
+  "acceptance": [
+    "The update prompt is mounted outside the page error boundary and its implementation is merged in #610."
+  ],
+  "nextAction": null,
+  "blocker": null,
+  "evidence": [
+    {
+      "kind": "source",
+      "ref": "https://github.com/steven-crosby/ritmofit-web/blob/f35d5d5992035c3895b948b3dc90e96ea6eaffa1/ritmofit_dev_plan/tasks.md#L70",
+      "summary": "Original board entry; historical assertion, not independently verified product behavior.",
+      "checkedOn": null
+    },
+    {
+      "kind": "pr",
+      "ref": "https://github.com/steven-crosby/ritmofit-web/pull/610",
+      "summary": "GitHub state MERGED; mergedAt 2026-10-27T04:10:19Z. This checks PR state only.",
+      "checkedOn": "2026-10-27"
+    }
+  ],
+  "resolution": "Implementation merged. Open-tab deployment verification was explicitly still owed; tracked separately in RF-87.",
+  "followUps": [
+    "RF-87"
+  ],
+  "imported": {
+    "status": "Done",
+    "title": "Update toast survives an app crash. Open-tab proof waits for the next deploy [#610](https://github.com/steven-crosby/ritmofit-web/pull/610)"
+  }
+}

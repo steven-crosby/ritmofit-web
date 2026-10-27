@@ -1,0 +1,48 @@
+chunk /tmp/d-dist-sm/assets/index-B1FRgRjm.js: 604845 raw bytes, 602459 attributed
+npm deps: 260124 (43.2%)
+  129943   21.6%  npm:react-dom
+  102910   17.1%  apps/web/src/components/Dashboard.tsx
+   91786   15.2%  npm:zod
+   29717    4.9%  apps/web/src/components/ClassPlanBlocks.tsx
+   22773    3.8%  apps/web/src/components/TrackSearch.tsx
+   15310    2.5%  apps/web/src/components/ClassesHome.tsx
+   14122    2.3%  apps/web/src/components/TutorialVideo.tsx
+   13816    2.3%  npm:better-auth
+   10184    1.7%  npm:@better-fetch/fetch
+   10009    1.7%  apps/web/src/components/SegmentBand.tsx
+    9295    1.5%  apps/web/src/components/Login.tsx
+    8841    1.5%  apps/web/src/components/TimelineStrip.tsx
+    8829    1.5%  packages/shared/src/scaffold-recipes.ts
+    7268    1.2%  npm:react
+    6570    1.1%  apps/web/src/components/MarketingPage.tsx
+    6013    1.0%  apps/web/src/components/CreateClassDialog.tsx
+    5779    1.0%  apps/web/src/components/ClassPulse.tsx
+    5274    0.9%  apps/web/src/components/ResetPassword.tsx
+    5253    0.9%  apps/web/src/lib/api.ts
+    5063    0.8%  apps/web/src/components/SharedState.tsx
+    4567    0.8%  apps/web/src/components/PrivacyPage.tsx
+    4377    0.7%  apps/web/src/components/SourceList.tsx
+    4081    0.7%  apps/web/src/components/ClassReadinessSummary.tsx
+    3873    0.6%  npm:scheduler
+    3505    0.6%  apps/web/src/lib/ordered-import.ts
+    3336    0.6%  packages/shared/src/entities/classes.ts
+    3269    0.5%  apps/web/src/components/ConnectionStateMark.tsx
+    2930    0.5%  apps/web/src/lib/class-scaffold.ts
+    2753    0.5%  apps/web/src/components/PlaylistSongPicker.tsx
+    2510    0.4%  apps/web/src/lib/providers.ts
+    2415    0.4%  apps/web/src/lib/class-pulse.ts
+    2237    0.4%  apps/web/src/components/OnboardingVideoDialog.tsx
+    2201    0.4%  apps/web/src/lib/music-library.ts
+    2168    0.4%  apps/web/src/lib/class-ordering.ts
+    2095    0.3%  apps/web/src/lib/readiness.ts
+    1890    0.3%  apps/web/src/components/ErrorBoundary.tsx
+    1876    0.3%  apps/web/src/components/Dialog.tsx
+    1825    0.3%  apps/web/src/components/CreatorLoopProof.tsx
+    1805    0.3%  apps/web/src/lib/use-provider-connect.ts
+    1741    0.3%  apps/web/src/components/IntensitySegmentedControl.tsx
+whole chunk gzip -9: 172430
+/zod/: raw 91786, isolated gzip -9 26153
+/react-dom/: raw 129943, isolated gzip -9 41626
+components/Dashboard.tsx: raw 102910, isolated gzip -9 25968
+better-auth: raw 14750, isolated gzip -9 5450
+better-fetch: raw 11118, isolated gzip -9 4239

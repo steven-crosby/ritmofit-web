@@ -1,0 +1,25 @@
+{
+  "schemaVersion": 1,
+  "id": "RF-88",
+  "title": "Review deploy guard regression coverage PR #596",
+  "kind": "task",
+  "status": "review",
+  "priority": "P2",
+  "parent": null,
+  "dependsOn": [],
+  "acceptance": [
+    "Review #596 against current main, confirm its self-checks remain meaningful, and run required checks before any separately authorized merge."
+  ],
+  "nextAction": "Review the draft and determine whether it is ready or requires follow-up.",
+  "blocker": null,
+  "evidence": [
+    {
+      "kind": "document",
+      "ref": "https://github.com/steven-crosby/ritmofit-web/pull/596",
+      "summary": "Open draft; successful CI observed on 2026-10-27. CI does not authorize merge.",
+      "checkedOn": null
+    }
+  ],
+  "resolution": null,
+  "followUps": []
+}

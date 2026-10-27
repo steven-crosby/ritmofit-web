@@ -48,6 +48,7 @@ import { LivenessObserver, publishLivenessInspector } from '../lib/playback/live
 import { LIVE_PLAYBACK_ADAPTERS, PLAYBACK_ADAPTER_PROVIDERS } from '../lib/playback/registry.js';
 import { PROVIDER_ORDER, providerHandoffHref, providerLabel } from '../lib/providers.js';
 import { useWakeLock, type WakeLockStatus } from '../lib/use-wake-lock.js';
+import { useOnline } from '../lib/use-online.js';
 import { useVirtualClock, type ClockStore } from '../lib/use-virtual-clock.js';
 import { createTrailingThrottle } from '../lib/trailing-throttle.js';
 import { ConnectionsDialog } from './ConnectionsDialog.js';
@@ -86,10 +87,20 @@ export interface TimelineEvent {
 export interface ChoreographyQueueItem {
   event: TimelineEvent;
   state: 'current' | 'upcoming';
-  /** Authored interval length, derived from the next anchor or track boundary. */
-  durationMs: number | null;
-  /** Only current choreography counts down; upcoming rows show their full interval. */
-  remainingMs: number | null;
+  /**
+   * Upcoming rows: time until the row starts. Current row: time until the next row
+   * starts (the hero Next countdown), or until the track ends when nothing follows.
+   */
+  untilMs: number | null;
+  /** Zero-based track position when the row belongs to a later track, else null. */
+  laterTrackIndex: number | null;
+}
+
+/** The first later track that carries choreography, so a track's last cue still has a next. */
+export interface FollowingTrackEvents {
+  index: number;
+  events: TimelineEvent[];
+  trackEndMs: number | null;
 }
 
 /** Stable empty reference so a track-less / pre-roll frame doesn't churn memos. */
@@ -110,11 +121,33 @@ export function teachingUpcomingColumnPx(viewportPx: number): number | null {
 }
 
 /**
- * Glanceable hold. Fixed rems so the used size stays larger than Track left
- * (1.5rem), the Next-cue gap (2.25rem), and the beat count (1.75rem) at 390,
- * 1024, 1280, and 1440.
+ * Glanceable hold. The cap stays larger than Track left (1.5rem), the Next-cue
+ * gap (2.25rem), and the beat count (1.75rem). On a narrow teaching column the
+ * size follows the card (`cqi`) so the seconds unit stays inside 320–390px.
+ * Timing text is unchanged.
  */
 export const TEACHING_COUNTDOWN_FONT_REM = 6.5;
+/** Floor so the hold remains a larger clock than the next-cue gap (2.25rem). */
+export const TEACHING_COUNTDOWN_MIN_REM = 2.75;
+/** Share of the countdown's own content box. 18cqi fits `14.8s` inside 256px. */
+export const TEACHING_COUNTDOWN_CQI = 18;
+
+/**
+ * Content width of the focal countdown at `viewportPx`: page padding, the
+ * side-by-side split from 1024px, then the focal card padding.
+ */
+export function teachingCountdownContentPx(viewportPx: number): number {
+  const sideBySide = viewportPx >= TEACHING_SIDE_BY_SIDE_MIN_PX;
+  const pagePad = viewportPx >= 1024 ? 32 : viewportPx >= 640 ? 24 : 16;
+  const cardPad = viewportPx >= 640 ? 32 : 16;
+  const gap = sideBySide ? 24 : 0;
+  const columns = sideBySide ? 2 : 1;
+  return (viewportPx - pagePad * 2 - gap) / columns - cardPad * 2;
+}
+
+export function teachingCountdownFont(): string {
+  return `clamp(${TEACHING_COUNTDOWN_MIN_REM}rem, ${TEACHING_COUNTDOWN_CQI}cqi, ${TEACHING_COUNTDOWN_FONT_REM}rem)`;
+}
 /** Next-cue gap. It stays a different clock from the hold. */
 export const TEACHING_NEXT_GAP_FONT_REM = 2.25;
 /** Beat count stays on the cue, under the hold countdown. */
@@ -246,30 +279,59 @@ export function lastAtOrBefore(events: TimelineEvent[], t: number): number {
 }
 
 /**
- * The glanceable run-of-show window for the active track. Durations stay derived
- * from authored anchors: no second duration truth is persisted in the payload.
+ * The glanceable run-of-show window for the active track. Every time is a countdown
+ * derived from authored anchors: no second duration truth is persisted in the payload.
  */
 export function choreographyQueueAt(
   events: TimelineEvent[],
   elapsedMs: number,
   trackEndMs: number | null,
   limit = 4,
+  following: FollowingTrackEvents | null = null,
 ): ChoreographyQueueItem[] {
-  if (events.length === 0 || limit <= 0) return [];
+  if (limit <= 0) return [];
+  const rows = [
+    ...events.map((event) => ({ event, laterTrackIndex: null })),
+    ...(following?.events ?? []).map((event) => ({ event, laterTrackIndex: following!.index })),
+  ];
+  if (rows.length === 0) return [];
   const currentIndex = lastAtOrBefore(events, elapsedMs);
   const firstIndex = Math.max(0, currentIndex);
-  return events.slice(firstIndex, firstIndex + limit).map((event, offset) => {
-    const index = firstIndex + offset;
-    const nextAtMs = events[index + 1]?.atMs ?? trackEndMs;
-    const endAtMs = nextAtMs == null ? null : Math.max(event.atMs, nextAtMs);
-    const isCurrent = index === currentIndex;
+  return rows.slice(firstIndex, firstIndex + limit).map(({ event, laterTrackIndex }, offset) => {
+    const isCurrent = firstIndex + offset === currentIndex;
+    // The current row ends where the next row starts, even across the lead-in into
+    // the next track, so it always matches the hero Next countdown.
+    const untilAtMs = isCurrent
+      ? (rows[firstIndex + offset + 1]?.event.atMs ?? trackEndMs)
+      : event.atMs;
     return {
       event,
       state: isCurrent ? 'current' : 'upcoming',
-      durationMs: endAtMs == null ? null : endAtMs - event.atMs,
-      remainingMs: isCurrent && endAtMs != null ? Math.max(0, endAtMs - elapsedMs) : null,
+      untilMs: untilAtMs == null ? null : Math.max(0, untilAtMs - elapsedMs),
+      laterTrackIndex,
     };
   });
+}
+
+/** The first track after `liveIndex` with any cue or move, or null at the end of the class. */
+export function followingTrackEvents(
+  payload: RunPayload,
+  eventsByTrack: TimelineEvent[][],
+  liveIndex: number,
+): FollowingTrackEvents | null {
+  if (liveIndex < 0) return null;
+  for (let index = liveIndex + 1; index < payload.tracks.length; index++) {
+    const events = eventsByTrack[index]!;
+    if (events.length === 0) continue;
+    const entry = payload.tracks[index]!;
+    const durationMs = entry.track.durationMs;
+    return {
+      index,
+      events,
+      trackEndMs: durationMs == null ? null : (entry.startOffsetMs ?? 0) + durationMs,
+    };
+  }
+  return null;
 }
 
 /** All cues + moves of a track as class-absolute events, time-ordered. */
@@ -709,14 +771,19 @@ export function LiveMode({
     [payload, liveIndex],
   );
   const events = liveIndex >= 0 ? eventsByTrack[liveIndex]! : NO_EVENTS;
+  const following = useMemo(
+    () => followingTrackEvents(payload, eventsByTrack, liveIndex),
+    [payload, eventsByTrack, liveIndex],
+  );
   // One binary search over the stable, pre-sorted array yields both current and next.
+  // After the live track's last action, next is the first action of a later track.
   const { currentEvent, nextEvent } = useMemo(() => {
     const i = lastAtOrBefore(events, elapsedMs);
     return {
       currentEvent: i >= 0 ? events[i]! : null,
-      nextEvent: i + 1 < events.length ? events[i + 1]! : null,
+      nextEvent: i + 1 < events.length ? events[i + 1]! : (following?.events[0] ?? null),
     };
-  }, [events, elapsedMs]);
+  }, [events, elapsedMs, following]);
 
   // A track with no entered duration occupies zero timeline width, so a per-track
   // countdown would read a misleading 0:00. Track whether we have a real window.
@@ -968,6 +1035,15 @@ export function LiveMode({
               }}
               onStart={startClass}
               browserAuthorizationReady={browserAuthorizationReady}
+              authorizationLead={
+                requiresApple && requiresSpotify
+                  ? 'Check Apple Music and Spotify to start'
+                  : requiresApple
+                    ? 'Check Apple Music to start'
+                    : requiresSpotify
+                      ? 'Check Spotify to start'
+                      : undefined
+              }
               browserAuthorization={
                 <>
                   {requiresSpotify && <SpotifyActivationAction flow={spotifyActivation} />}
@@ -1046,11 +1122,11 @@ export function LiveMode({
         <div ref={liveHeaderRef} className="sticky top-0 z-20 shrink-0 bg-bg-live">
           <header className="flex shrink-0 flex-wrap items-center justify-between gap-3 border-b border-interactive/20 px-4 py-3 sm:px-6 [@media(max-height:800px)_and_(max-width:639px)]:py-2 [@media(max-height:480px)]:px-2 [@media(max-height:480px)]:py-0.5">
             <div className="min-w-0 [@media(max-height:800px)_and_(max-width:639px)]:sr-only [@media(max-height:480px)]:sr-only">
-              <p className="font-data text-[10px] font-semibold uppercase tracking-[0.18em] text-text-tertiary">
+              <p className="rf-eyebrow font-semibold text-text-tertiary">
                 {runState}
                 {live ? ` · Track ${live.index + 1} of ${payload.tracks.length}` : ''}
               </p>
-              <h1 className="font-display text-lg font-semibold text-text-primary">
+              <h1 className="break-words font-display text-lg font-semibold text-text-primary">
                 {payload.class.title}
               </h1>
               <p className="font-data text-xs text-text-tertiary">
@@ -1063,7 +1139,7 @@ export function LiveMode({
                   its timecode and completion state visually in the control bar. */}
               <p
                 aria-hidden="true"
-                className="hidden shrink-0 text-center font-data text-[10px] leading-tight text-text-tertiary [@media(max-height:800px)_and_(max-width:639px)]:block [@media(max-height:480px)]:block"
+                className="hidden shrink-0 text-center font-data text-caption leading-tight text-text-tertiary [@media(max-height:800px)_and_(max-width:639px)]:block [@media(max-height:480px)]:block"
               >
                 <span className="block [@media(min-width:480px)]:inline">{fmt(elapsedMs)}</span>
                 <span className="block [@media(min-width:480px)]:inline">
@@ -1161,6 +1237,7 @@ export function LiveMode({
               currentEvent={currentEvent}
               nextEvent={nextEvent}
               events={events}
+              following={following}
               elapsedMs={elapsedMs}
               trackEndMs={trackEndMs}
               trackHasDuration={trackDurationMs != null}
@@ -1310,6 +1387,26 @@ function WakeRail({ status }: { status: WakeLockStatus }) {
   );
 }
 
+/**
+ * A quiet glyph + label beside the music and screen chips while the browser has
+ * no network. The class clock is local, so teaching continues; this only tells
+ * the instructor why provider music or a later save may fail.
+ */
+function OfflineRail() {
+  const online = useOnline();
+  if (online) return null;
+  return (
+    <p
+      role="status"
+      className="flex min-w-0 items-center gap-1.5 font-data text-xs text-state-caution"
+    >
+      <span aria-hidden>⊘</span>
+      <span className="sr-only">Network: </span>
+      <span className="min-w-0 truncate">Offline</span>
+    </p>
+  );
+}
+
 const VIEW_TABS = ['cue', 'list'] as const;
 
 function ViewToggle({ view, setView }: { view: View; setView: (v: View) => void }) {
@@ -1371,18 +1468,16 @@ function ViewToggle({ view, setView }: { view: View; setView: (v: View) => void 
  * object rather than a card buried in a side rail. The BPM readout still
  * carries the one on-beat pulse the rhythm system allows (10 §1–2) — a single
  * heartbeat while playing, needing a BPM to time the beat and removed under
- * reduced motion by CSS, so the cue stays steady. A missing tempo is a
- * readiness state stated on the caution channel, never quiet metadata
- * (audit P0 #3; rhythm-system §1a).
+ * reduced motion by CSS, so the cue stays steady. A missing tempo is stated on
+ * the caution channel with its glyph (audit P0 #3; rhythm-system §1a), at caption
+ * size so an absence never becomes the focal point (principle 3).
  */
 function FocalVitals({ entry, playing }: { entry: RunPayloadTrackEntry; playing: boolean }) {
   const pulse = playing && entry.displayBpm != null;
   return (
     <div className="relative mt-4 flex shrink-0 flex-wrap items-end justify-between gap-x-6 gap-y-3 border-t border-interactive/10 pt-3 sm:mt-6 sm:pt-4 [@media(max-height:800px)_and_(max-width:639px)]:gap-x-2 [@media(max-height:800px)_and_(max-width:639px)]:gap-y-2">
       <div className="flex flex-col gap-1.5">
-        <span className="font-data text-[11px] uppercase tracking-[0.18em] text-text-tertiary">
-          Effort
-        </span>
+        <span className="rf-eyebrow text-text-tertiary">Effort</span>
         <IntensityReadout intensity={entry.intensity} />
       </div>
       {entry.displayBpm != null ? (
@@ -1419,9 +1514,9 @@ function FocalVitals({ entry, playing }: { entry: RunPayloadTrackEntry; playing:
           )}
         </div>
       ) : (
-        <p className="flex flex-col gap-0.5 text-right">
-          <span className="font-data text-2xl font-semibold text-state-caution">Tempo missing</span>
-          <span className="font-ui text-xs text-text-tertiary">Pulse off</span>
+        <p className="flex items-center gap-1.5 font-ui text-xs text-state-caution">
+          <span aria-hidden>⊘</span>
+          No BPM set
         </p>
       )}
     </div>
@@ -1434,6 +1529,7 @@ function CueByCue({
   currentEvent,
   nextEvent,
   events,
+  following,
   elapsedMs,
   trackEndMs,
   trackHasDuration,
@@ -1449,6 +1545,7 @@ function CueByCue({
   currentEvent: TimelineEvent | null;
   nextEvent: TimelineEvent | null;
   events: TimelineEvent[];
+  following: FollowingTrackEvents | null;
   elapsedMs: number;
   trackEndMs: number;
   trackHasDuration: boolean;
@@ -1471,18 +1568,14 @@ function CueByCue({
     return (
       <div className="flex min-h-full flex-col items-center justify-center gap-8 p-6 text-center sm:p-10">
         <div className="flex flex-col items-center gap-2">
-          <p className="font-data text-[11px] uppercase tracking-[0.22em] text-text-tertiary">
-            Silence
-          </p>
+          <p className="rf-eyebrow text-text-tertiary">Silence</p>
           <p className="font-display text-[clamp(2.25rem,6vw,4.5rem)] font-semibold leading-[0.95] text-text-secondary">
             No track playing
           </p>
         </div>
         <div className="flex w-full max-w-md flex-col gap-3">
           <div className="rounded-card bg-bg-raised p-5 shadow-card">
-            <p className="font-data text-[11px] uppercase tracking-[0.18em] text-text-tertiary">
-              Next track
-            </p>
+            <p className="rf-eyebrow text-text-tertiary">Next track</p>
             <div className="mt-2 flex items-baseline justify-between gap-3">
               <p className="min-w-0 break-words font-display text-lg font-semibold text-text-primary">
                 {gap.nextTitle ?? '—'}
@@ -1527,15 +1620,13 @@ function CueByCue({
         bar: hold.cue.bar,
       })
     : null;
+  // A cue without a stored hold, effort, or BPM drops that readout instead of
+  // printing a placeholder at hero size.
   const countdownLabel =
-    hold == null ? null : hold.remainingMs == null ? '—' : formatCueHoldCountdown(hold.remainingMs);
-  const effortLabel = hold
-    ? hold.cue.intensity
-      ? CUE_INTENSITY_LABEL[hold.cue.intensity]
-      : '—'
-    : null;
+    hold?.remainingMs == null ? null : formatCueHoldCountdown(hold.remainingMs);
+  const effortLabel = hold?.cue.intensity ? CUE_INTENSITY_LABEL[hold.cue.intensity] : null;
   const pulse = Boolean(playing && hold?.cue.bpm != null);
-  const countdownFont = `${TEACHING_COUNTDOWN_FONT_REM}rem`;
+  const countdownFont = teachingCountdownFont();
   const nextGapFont = `${TEACHING_NEXT_GAP_FONT_REM}rem`;
   const beatFont = `${TEACHING_BEAT_FONT_REM}rem`;
   return (
@@ -1560,7 +1651,7 @@ function CueByCue({
         {/* The cue itself holds the center; the vitals footer pins to the bottom so
             the tempo numeral and the cue read as one state-object. */}
         <div className="relative flex flex-1 flex-col justify-[safe_center]">
-          <p className="font-data text-[11px] uppercase tracking-[0.22em] text-text-tertiary [@media(max-height:480px)]:leading-none">
+          <p className="rf-eyebrow text-text-tertiary [@media(max-height:480px)]:leading-none">
             {showReadyHero ? 'First action' : 'Current cue'}
           </p>
           {hold ? (
@@ -1575,29 +1666,34 @@ function CueByCue({
               >
                 {hold.cue.text}
               </p>
-              <p
-                data-teaching="countdown"
-                className="relative mt-2 font-data font-bold leading-none tracking-[-0.04em] text-text-primary"
-                style={{ fontSize: countdownFont }}
-              >
-                {countdownLabel}
-              </p>
-              <div
-                data-teaching="hold-scale"
-                data-scale-ms={hold.cue.durationMs == null ? '' : String(hold.cue.durationMs)}
-                className={`relative mt-4 h-2 w-full overflow-hidden rounded-pill ${
-                  hold.cue.durationMs == null ? '' : 'bg-interactive/15'
-                }`}
-              >
-                {hold.fill != null && hold.cue.durationMs != null && (
+              {countdownLabel != null && hold.cue.durationMs != null && (
+                <>
+                  <p
+                    data-teaching="countdown"
+                    className="relative mt-2 w-full min-w-0 max-w-full whitespace-nowrap font-data font-bold leading-none tracking-[-0.04em] text-text-primary [container-type:inline-size]"
+                    data-countdown-size={countdownFont}
+                    style={{ fontSize: countdownFont }}
+                  >
+                    {countdownLabel}
+                  </p>
                   <div
-                    data-teaching="hold-playhead"
-                    data-filled-ms={String(Math.min(hold.cue.durationMs, Math.max(0, hold.intoMs)))}
-                    className="absolute inset-y-0 left-0 bg-interactive"
-                    style={{ width: `${hold.fill * 100}%` }}
-                  />
-                )}
-              </div>
+                    data-teaching="hold-scale"
+                    data-scale-ms={String(hold.cue.durationMs)}
+                    className="relative mt-4 h-2 w-full overflow-hidden rounded-pill bg-interactive/15"
+                  >
+                    {hold.fill != null && (
+                      <div
+                        data-teaching="hold-playhead"
+                        data-filled-ms={String(
+                          Math.min(hold.cue.durationMs, Math.max(0, hold.intoMs)),
+                        )}
+                        className="absolute inset-y-0 left-0 bg-interactive"
+                        style={{ width: `${hold.fill * 100}%` }}
+                      />
+                    )}
+                  </div>
+                </>
+              )}
               {count && (
                 <p
                   data-teaching="beat-count"
@@ -1608,38 +1704,28 @@ function CueByCue({
                   {count}
                 </p>
               )}
-              <p data-teaching="hero-effort" className="relative mt-4 flex items-baseline gap-3">
-                <span className="font-data text-[11px] uppercase tracking-[0.18em] text-text-tertiary">
-                  Effort
-                </span>
-                <span className="font-data text-2xl font-semibold text-text-primary">
-                  {effortLabel}
-                </span>
-              </p>
-              <p
-                data-teaching="hero-bpm"
-                className={`relative mt-3 flex items-baseline ${pulse ? 'rf-beat-pulse' : ''}`}
-                style={
-                  hold.cue.bpm != null
-                    ? ({ '--rf-bpm': String(hold.cue.bpm) } as CSSProperties)
-                    : undefined
-                }
-              >
-                {hold.cue.bpm == null ? (
-                  <span className="font-data text-2xl font-semibold text-text-secondary">
-                    BPM —
+              {effortLabel && (
+                <p data-teaching="hero-effort" className="relative mt-4 flex items-baseline gap-3">
+                  <span className="rf-eyebrow text-text-tertiary">Effort</span>
+                  <span className="font-data text-2xl font-semibold text-text-primary">
+                    {effortLabel}
                   </span>
-                ) : (
-                  <>
-                    <span className="font-data text-3xl font-semibold text-text-secondary">
-                      {hold.cue.bpm}
-                    </span>
-                    <span className="ml-2 font-data text-sm uppercase tracking-wide text-text-tertiary">
-                      BPM
-                    </span>
-                  </>
-                )}
-              </p>
+                </p>
+              )}
+              {hold.cue.bpm != null && (
+                <p
+                  data-teaching="hero-bpm"
+                  className={`relative mt-3 flex items-baseline ${pulse ? 'rf-beat-pulse' : ''}`}
+                  style={{ '--rf-bpm': String(hold.cue.bpm) } as CSSProperties}
+                >
+                  <span className="font-data text-3xl font-semibold text-text-secondary">
+                    {hold.cue.bpm}
+                  </span>
+                  <span className="ml-2 font-data text-sm uppercase tracking-wide text-text-tertiary">
+                    BPM
+                  </span>
+                </p>
+              )}
             </>
           ) : showReadyHero ? (
             // Live at rest leads with the affirmative ready state, never absence
@@ -1680,14 +1766,12 @@ function CueByCue({
         </div>
         {/* What is coming, in the hero card rather than across the room in the
             rail. The current cue clamps to two lines so a long cue cannot push
-            Next below the teaching card at a short viewport; the assertive
-            announcement and Full List keep the full string. The flex-1 cue block
-            still centres short cues. */}
-        <div className="relative mt-4 flex min-w-0 shrink-0 items-baseline gap-3 border-t border-interactive/15 pt-3 sm:mt-6 sm:pt-4 [@media(max-height:480px)]:mt-1 [@media(max-height:480px)]:pt-1">
-          <p className="shrink-0 font-data text-[11px] uppercase tracking-[0.22em] text-text-tertiary">
-            Next
-          </p>
-          <p className="min-w-0 flex-1 truncate font-display text-[clamp(1.25rem,2.5vw,1.875rem)] font-semibold text-text-secondary">
+            Next below the teaching card at a short viewport; the next-cue name
+            wraps instead of truncating. The assertive announcement and Full List
+            keep the full string. The flex-1 cue block still centres short cues. */}
+        <div className="relative mt-4 flex min-w-0 shrink-0 items-start gap-3 border-t border-interactive/15 pt-3 sm:mt-6 sm:pt-4 [@media(max-height:480px)]:mt-1 [@media(max-height:480px)]:pt-1">
+          <p className="shrink-0 rf-eyebrow text-text-tertiary">Next</p>
+          <p className="min-w-0 flex-1 break-words font-display text-[clamp(1.25rem,2.5vw,1.875rem)] font-semibold text-text-secondary">
             {nextEvent ? nextEvent.text : 'End of track'}
           </p>
           {nextEvent && (
@@ -1706,28 +1790,39 @@ function CueByCue({
       </div>
 
       {upcoming.length > 0 && (
-        <div data-teaching="upcoming" className="min-w-0 min-[1024px]:min-w-[431px]">
+        <div
+          data-teaching="upcoming"
+          className="flex min-w-0 flex-col gap-3 rounded-card bg-bg-raised p-4 shadow-card sm:p-5 min-[1024px]:min-w-[431px]"
+        >
+          <p id="live-coming-up-heading" className="rf-eyebrow text-text-tertiary">
+            Coming up
+          </p>
           <ol
-            aria-label="Upcoming"
+            aria-labelledby="live-coming-up-heading"
             tabIndex={0}
-            className="flex h-full min-h-11 flex-col gap-3 rounded-card bg-bg-raised p-4 shadow-card rf-focus-ring sm:p-5"
+            className="flex min-h-11 flex-1 flex-col gap-3 rounded-control rf-focus-ring"
           >
-            {upcoming.map((cue) => (
-              <li key={cue.id} data-teaching="upcoming-row" className="min-w-0">
-                <p className="truncate font-display text-lg font-semibold text-text-primary">
-                  {cue.text}
-                </p>
-                <p className="mt-1 font-data text-sm text-text-secondary">
-                  <span data-teaching="upcoming-bpm">{cue.bpm == null ? 'BPM —' : cue.bpm}</span>
-                  <span className="mx-2 text-text-tertiary" aria-hidden>
-                    ·
-                  </span>
-                  <span data-teaching="upcoming-duration">
-                    {formatCueDurationLabel(cue.durationMs) ?? '—'}
-                  </span>
-                </p>
-              </li>
-            ))}
+            {upcoming.map((cue) => {
+              const duration = formatCueDurationLabel(cue.durationMs);
+              return (
+                <li key={cue.id} data-teaching="upcoming-row" className="min-w-0">
+                  <p className="truncate font-display text-lg font-semibold text-text-primary">
+                    {cue.text}
+                  </p>
+                  {(cue.bpm != null || duration) && (
+                    <p className="mt-1 font-data text-sm text-text-secondary">
+                      {cue.bpm != null && <span data-teaching="upcoming-bpm">{cue.bpm}</span>}
+                      {cue.bpm != null && duration && (
+                        <span className="mx-2 text-text-tertiary" aria-hidden>
+                          ·
+                        </span>
+                      )}
+                      {duration && <span data-teaching="upcoming-duration">{duration}</span>}
+                    </p>
+                  )}
+                </li>
+              );
+            })}
           </ol>
         </div>
       )}
@@ -1738,9 +1833,7 @@ function CueByCue({
         {/* Timers — track + class countdowns, the performance's running clock. */}
         <div className="grid grid-cols-2 gap-3">
           <div className="rounded-card bg-bg-raised p-4 shadow-card">
-            <p className="font-data text-[11px] uppercase tracking-[0.18em] text-text-tertiary">
-              Track left
-            </p>
+            <p className="rf-eyebrow text-text-tertiary">Track left</p>
             <p
               data-teaching="track-left"
               className="mt-1 font-data text-2xl text-text-primary"
@@ -1753,9 +1846,7 @@ function CueByCue({
             )}
           </div>
           <div className="rounded-card bg-bg-raised p-4 shadow-card">
-            <p className="font-data text-[11px] uppercase tracking-[0.18em] text-text-tertiary">
-              Class left
-            </p>
+            <p className="rf-eyebrow text-text-tertiary">Class left</p>
             <p className="mt-1 font-data text-2xl text-text-primary">
               {fmt(classTotalMs - elapsedMs)}
             </p>
@@ -1773,19 +1864,15 @@ function CueByCue({
         {/* Track identity (+ any instructor notes). Provider handoff links left
             this card for the playback-failure recovery surface (D19). */}
         <div className="rounded-card bg-bg-raised p-4 shadow-card sm:p-5">
-          <p className="font-data text-[11px] uppercase tracking-[0.18em] text-text-tertiary">
-            Track {live.index + 1}
-          </p>
+          <p className="rf-eyebrow text-text-tertiary">Track {live.index + 1}</p>
           <p className="mt-1 break-words font-display text-lg font-semibold text-text-primary">
             {entry.track.title}
           </p>
           <p className="truncate font-ui text-sm text-text-secondary">{entry.track.artist}</p>
           {entry.notes && (
             <div className="mt-3 border-t border-interactive/15 pt-3">
-              <p className="font-data text-[11px] uppercase tracking-[0.18em] text-text-tertiary">
-                Notes
-              </p>
-              <p className="mt-1 whitespace-pre-wrap font-ui text-sm text-text-secondary">
+              <p className="rf-eyebrow text-text-tertiary">Notes</p>
+              <p className="mt-1 whitespace-pre-wrap break-words font-ui text-sm text-text-secondary">
                 {entry.notes}
               </p>
             </div>
@@ -1796,6 +1883,7 @@ function CueByCue({
 
         <ChoreographyQueue
           events={events}
+          following={following}
           elapsedMs={elapsedMs}
           trackEndMs={trackHasDuration ? trackEndMs : null}
         />
@@ -1842,7 +1930,7 @@ function FullGuidance({
       <div className="flex min-w-0 flex-col gap-4 border-t border-interactive/15 p-4 sm:p-5">
         {currentEvent && (
           <div>
-            <p className="font-data text-[11px] uppercase tracking-[0.18em] text-text-tertiary">
+            <p className="rf-eyebrow text-text-tertiary">
               {currentEvent.kind === 'move' ? 'Current move' : 'Current cue'}
             </p>
             <p className="mt-1 whitespace-pre-wrap break-words font-ui text-sm text-text-secondary">
@@ -1851,7 +1939,7 @@ function FullGuidance({
           </div>
         )}
         <div>
-          <p className="font-data text-[11px] uppercase tracking-[0.18em] text-text-tertiary">
+          <p className="rf-eyebrow text-text-tertiary">
             {nextEvent?.kind === 'move' ? 'Next move' : 'Next cue'}
           </p>
           <p className="mt-1 whitespace-pre-wrap break-words font-ui text-sm text-text-secondary">
@@ -1871,30 +1959,41 @@ function FullGuidance({
  */
 function ChoreographyQueue({
   events,
+  following,
   elapsedMs,
   trackEndMs,
 }: {
   events: TimelineEvent[];
+  following: FollowingTrackEvents | null;
   elapsedMs: number;
   trackEndMs: number | null;
 }) {
-  const queue = choreographyQueueAt(events, elapsedMs, trackEndMs);
+  const queue = choreographyQueueAt(events, elapsedMs, trackEndMs, 4, following);
   if (queue.length === 0) return null;
   const hasCurrent = queue[0]?.state === 'current';
 
   return (
     <div className="rounded-card bg-bg-raised p-4 shadow-card sm:p-5">
       <div className="flex items-baseline justify-between gap-3">
-        <p className="font-data text-[11px] uppercase tracking-[0.18em] text-text-tertiary">
-          Choreography queue
-        </p>
-        <p className="font-data text-[11px] text-text-tertiary">Current + next</p>
+        <p className="rf-eyebrow text-text-tertiary">Choreography queue</p>
+        <p className="font-data text-caption text-text-tertiary">Current + next</p>
       </div>
       <ol className="mt-3 flex flex-col gap-1" aria-label="Choreography queue">
-        {queue.map(({ event, state, durationMs, remainingMs }, index) => {
+        {queue.map(({ event, state, untilMs, laterTrackIndex }, index) => {
           const current = state === 'current';
           const upcomingIndex = index - (hasCurrent ? 1 : 0);
-          const intervalMs = current ? remainingMs : durationMs;
+          const hasNext = index + 1 < queue.length;
+          const timeLabel = !current
+            ? 'Time until this starts'
+            : hasNext
+              ? 'Time until the next cue'
+              : 'Time left in this track';
+          const timeText =
+            untilMs == null
+              ? '—'
+              : !current
+                ? `in ${fmt(untilMs)}`
+                : `${fmt(untilMs)} ${hasNext ? 'until next' : 'left'}`;
           return (
             <li
               key={`${event.kind}:${event.atMs}:${index}`}
@@ -1904,7 +2003,7 @@ function ChoreographyQueue({
               }`}
             >
               <span
-                className={`font-data text-[10px] font-semibold uppercase tracking-wide ${
+                className={`font-data text-caption font-semibold uppercase ${
                   current ? 'text-interactive' : 'text-text-tertiary'
                 }`}
               >
@@ -1914,15 +2013,17 @@ function ChoreographyQueue({
                 <span className="block truncate font-ui text-sm font-semibold text-text-secondary">
                   {event.text}
                 </span>
-                <span className="block font-data text-[10px] uppercase tracking-wide text-text-tertiary">
-                  {event.kind}
+                <span className="block font-data text-caption uppercase text-text-tertiary">
+                  {laterTrackIndex == null
+                    ? event.kind
+                    : `${event.kind} · Track ${laterTrackIndex + 1}`}
                 </span>
               </span>
               <span
                 className="shrink-0 font-data text-xs text-text-tertiary"
-                aria-label={current ? 'Time until the next cue' : 'Duration'}
+                aria-label={timeLabel}
               >
-                {intervalMs == null ? '—' : `${fmt(intervalMs)}${current ? ' until next' : ''}`}
+                {timeText}
               </span>
             </li>
           );
@@ -1946,11 +2047,9 @@ function UpNextTracks({ payload, liveIndex }: { payload: RunPayload; liveIndex: 
   return (
     <div className="rounded-card bg-bg-raised p-4 shadow-card sm:p-5">
       <div className="flex items-baseline justify-between gap-3">
-        <p className="font-data text-[11px] uppercase tracking-[0.18em] text-text-tertiary">
-          Up next
-        </p>
+        <p className="rf-eyebrow text-text-tertiary">Up next</p>
         {remaining > upcoming.length && (
-          <p className="font-data text-[11px] text-text-tertiary">{remaining} tracks left</p>
+          <p className="font-data text-caption text-text-tertiary">{remaining} tracks left</p>
         )}
       </div>
       <ol className="mt-2 flex flex-col gap-2">
@@ -1989,9 +2088,7 @@ function FullList({
     <section className="mx-auto w-full max-w-5xl p-4 sm:p-6">
       <div className="mb-4 flex flex-wrap items-end justify-between gap-3">
         <div>
-          <p className="font-data text-[11px] uppercase tracking-[0.18em] text-text-tertiary">
-            Run of show
-          </p>
+          <p className="rf-eyebrow text-text-tertiary">Run of show</p>
           <h2 className="mt-1 font-display text-2xl font-semibold text-text-primary">
             {liveIndex >= 0
               ? `Track ${liveIndex + 1} of ${payload.tracks.length}`
@@ -2029,7 +2126,7 @@ function FullList({
                         {t.track.title}
                       </span>
                       {isLive && (
-                        <span className="font-data text-[10px] font-semibold uppercase tracking-wide text-interactive">
+                        <span className="font-data text-caption font-semibold uppercase text-interactive">
                           ▶ Current
                         </span>
                       )}
@@ -2057,7 +2154,7 @@ function FullList({
                   <div className="min-w-0">
                     {t.notes && (
                       <p className="whitespace-pre-wrap break-words font-ui text-sm text-text-secondary">
-                        <span className="mr-1 font-data text-[10px] uppercase tracking-wide text-text-tertiary">
+                        <span className="mr-1 font-data text-caption uppercase text-text-tertiary">
                           Notes
                         </span>
                         {t.notes}
@@ -2077,7 +2174,7 @@ function FullList({
                                 past ? 'text-text-tertiary line-through' : 'text-text-secondary'
                               }`}
                             >
-                              <span className="shrink-0 font-data text-[10px] text-text-tertiary">
+                              <span className="shrink-0 font-data text-caption text-text-tertiary">
                                 {fmt(e.atMs - start)} · {e.kind}
                               </span>
                               <span className="break-words">{e.text}</span>
@@ -2211,6 +2308,7 @@ function Transport({
       <div className="mt-1 flex min-w-0 flex-wrap items-center gap-x-3 gap-y-1">
         <PlaybackRail status={playback} />
         <WakeRail status={wakeStatus} />
+        <OfflineRail />
       </div>
       <div
         id="live-transport-more"

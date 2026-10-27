@@ -1,0 +1,17 @@
+[B-3a] edit field seeded with: 0:10
+[B-3a] stored anchorMs 10313 → PATCH anchorMs 9844
+[B-3b] stored anchorMs 12750 → PATCH anchorMs 13000
+[B-3c] stored startOffsetMs 241500 → PATCH startOffsetMs 242000
+   × Reviewer B repro: untouched anchors drift on edit > B-3a: a text-only cue edit keeps a beat-snapped anchor (128 BPM, snap on by default) 166ms
+   × Reviewer B repro: untouched anchors drift on edit > B-3b: an intensity-only placed-move edit keeps a sub-second anchor (no tempo) 27ms
+   × Reviewer B repro: untouched anchors drift on edit > B-3c: a type-only segment edit keeps a sub-second section start 26ms
+⎯⎯⎯⎯⎯⎯⎯ Failed Tests 3 ⎯⎯⎯⎯⎯⎯⎯
+AssertionError: expected 9844 to be 10313 // Object.is equality
+     67|     console.info('[B-3a] stored anchorMs 10313 → PATCH anchorMs', sent…
+AssertionError: expected 13000 to be 12750 // Object.is equality
+     93|     console.info('[B-3b] stored anchorMs 12750 → PATCH anchorMs', sent…
+AssertionError: expected 242000 to be 241500 // Object.is equality
+    118|     console.info('[B-3c] stored startOffsetMs 241500 → PATCH startOffs…
+ Test Files  1 failed (1)
+      Tests  3 failed (3)
+exit=1

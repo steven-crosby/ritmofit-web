@@ -2,6 +2,7 @@
 import { afterEach, describe, expect, it, vi } from 'vitest';
 import { cleanup, fireEvent, render, screen } from '@testing-library/react';
 import {
+  LoadingSkeleton,
   RecoveryState,
   StatusLabel,
   WorkspaceLoadingState,
@@ -90,5 +91,24 @@ describe('WorkspaceLoadingState', () => {
     expect(screen.getByText('Restoring your workspace…')).toBeTruthy();
     expect(screen.getByText(/Classes, music connections/)).toBeTruthy();
     expect(container.querySelectorAll('[aria-hidden="true"]').length).toBeGreaterThan(0);
+  });
+});
+
+describe('LoadingSkeleton', () => {
+  it('is one labelled, busy status with decorative shapes and no sentence', () => {
+    const { container } = render(<LoadingSkeleton label="Loading your classes" rows={2} />);
+    const status = screen.getByRole('status', { name: 'Loading your classes' });
+    expect(status.getAttribute('aria-busy')).toBe('true');
+    expect(status.textContent).toBe('Loading your classes');
+    expect(status.querySelector('.sr-only')?.textContent).toBe('Loading your classes');
+    const shapes = container.querySelector('[aria-hidden="true"]')!;
+    expect(shapes.children).toHaveLength(2);
+  });
+
+  it('pulses only when motion is allowed', () => {
+    const { container } = render(<LoadingSkeleton label="Loading class" shape="card" />);
+    const pulsing = container.querySelectorAll('.motion-safe\\:animate-pulse');
+    expect(pulsing.length).toBeGreaterThan(0);
+    expect(container.querySelector('.animate-pulse')).toBeNull();
   });
 });

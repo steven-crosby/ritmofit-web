@@ -12,6 +12,7 @@ import {
   SoundCloudUnauthorizedError,
   SpotifyUnauthorizedError,
   SpotifyForbiddenError,
+  SpotifyDevelopmentModeError,
   SpotifyPlaylistAccessDeniedError,
 } from '@ritmofit/music';
 import {
@@ -22,6 +23,7 @@ import {
   SPOTIFY_PLAYLIST_PREVIEW_RECONNECT_MESSAGE,
 } from './user-playlists.js';
 import { HttpError } from '../errors.js';
+import { SPOTIFY_DEVELOPMENT_MODE_MESSAGE } from './spotify-development-mode.js';
 import type { Db } from '../db.js';
 import type { Env } from '../types.js';
 
@@ -203,6 +205,18 @@ describe('user playlist token helper', () => {
     expect(fetchSpotifySavedPlaylists).toHaveBeenCalledTimes(1);
   });
 
+  it('maps a Development Mode 403 to the allowlist code without refreshing', async () => {
+    const { db } = makeDb(makeConnection());
+    vi.mocked(fetchSpotifySavedPlaylists).mockRejectedValueOnce(new SpotifyDevelopmentModeError());
+
+    await expect(fetchUserPlaylists(db, env, 'user-1', 'spotify')).rejects.toMatchObject({
+      status: 403,
+      code: 'SPOTIFY_DEVELOPMENT_MODE',
+      message: SPOTIFY_DEVELOPMENT_MODE_MESSAGE,
+    } satisfies Partial<HttpError>);
+    expect(refreshSpotifyToken).not.toHaveBeenCalled();
+  });
+
   it('maps a stale-scope 403 straight to REAUTH_REQUIRED without attempting a refresh', async () => {
     // A pre-expansion token is valid (not expired, not 401) but lacks
     // playlist-read-private — Spotify returns 403, and no refresh can grant a
@@ -230,7 +244,7 @@ describe('user playlist token helper', () => {
     ).rejects.toMatchObject({
       status: 403,
       code: 'PROVIDER_FORBIDDEN',
-      message: 'Spotify only allows opening playlists you own or collaborate on.',
+      message: 'Spotify only lets Ritmo read playlists you own or collaborate on.',
     } satisfies Partial<HttpError>);
     expect(refreshSpotifyToken).not.toHaveBeenCalled();
     expect(fetchSpotifyPlaylistTracks).toHaveBeenCalledTimes(1);
@@ -302,7 +316,7 @@ describe('user playlist token helper', () => {
     ).rejects.toMatchObject({
       status: 403,
       code: 'PROVIDER_FORBIDDEN',
-      message: 'Spotify only allows opening playlists you own or collaborate on.',
+      message: 'Spotify only lets Ritmo read playlists you own or collaborate on.',
     } satisfies Partial<HttpError>);
     expect(refreshSpotifyToken).toHaveBeenCalledTimes(1);
     expect(fetchSpotifyPlaylistTracks).toHaveBeenCalledTimes(2);

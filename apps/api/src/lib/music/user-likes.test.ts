@@ -7,10 +7,12 @@ import {
   refreshSoundCloudToken,
   refreshSpotifyToken,
   SoundCloudUnauthorizedError,
+  SpotifyDevelopmentModeError,
   SpotifyUnauthorizedError,
 } from '@ritmofit/music';
 import { fetchUserLikes } from './user-likes.js';
 import { HttpError } from '../errors.js';
+import { SPOTIFY_DEVELOPMENT_MODE_MESSAGE } from './spotify-development-mode.js';
 import type { Db } from '../db.js';
 import type { Env } from '../types.js';
 
@@ -136,6 +138,18 @@ describe('fetchUserLikes — Spotify (shared connected-token path)', () => {
       scope: 'user-library-read',
     });
     vi.mocked(fetchSpotifySavedTracks).mockResolvedValue([]);
+  });
+
+  it('maps a Development Mode 403 on likes to the allowlist code without refreshing', async () => {
+    const { db } = makeDb(makeConnection());
+    vi.mocked(fetchSpotifySavedTracks).mockRejectedValueOnce(new SpotifyDevelopmentModeError());
+
+    await expect(fetchUserLikes(db, env, 'user-1', 'spotify')).rejects.toMatchObject({
+      status: 403,
+      code: 'SPOTIFY_DEVELOPMENT_MODE',
+      message: SPOTIFY_DEVELOPMENT_MODE_MESSAGE,
+    } satisfies Partial<HttpError>);
+    expect(refreshSpotifyToken).not.toHaveBeenCalled();
   });
 
   it('throws NOT_CONNECTED when the user has no Spotify connection', async () => {

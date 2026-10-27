@@ -14,10 +14,15 @@
     "build": "pnpm -r build",
     "typecheck": "pnpm -r typecheck",
     "test": "pnpm -r --if-present test",
+    "e2e": "pnpm --filter @ritmofit/web build && pnpm --filter @ritmofit/e2e e2e",
     "lint": "eslint .",
     "format": "prettier --write \"**/*.{ts,tsx,json,md,css}\"",
     "format:check": "prettier --check \"**/*.{ts,tsx,json,md,css}\"",
-    "audit:ci": "pnpm audit --prod"
+    "audit:ci": "pnpm audit --prod",
+    "tasks": "node scripts/tasks.mjs",
+    "tasks:render": "node scripts/tasks.mjs render",
+    "tasks:check": "node scripts/tasks.mjs check",
+    "tasks:test": "node --test scripts/tasks.test.mjs"
   },
   "devDependencies": {
     "@eslint/js": "^9.13.0",

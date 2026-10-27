@@ -151,8 +151,11 @@ describe('truthful browser preflight', () => {
     fireEvent.click(screen.getByRole('button', { name: 'Run without music' }));
     expect(onRunWithoutMusic).toHaveBeenCalledOnce();
     expect(
-      screen.getByText(/Playback availability and audible output are unverified/),
+      screen.getByRole('heading', { name: 'Check music authorization to start' }),
     ).toBeTruthy();
+    expect(screen.getByText('1 track checked · 1 passed · 0 need attention')).toBeTruthy();
+    const caveat = screen.getByText(/Playback availability and audible output are unverified/);
+    expect(caveat.closest('details')?.open).toBe(false);
     expect(screen.getByRole('button', { name: 'Manage connections' })).toBeTruthy();
     expect(screen.queryByText(/hands-free/)).toBeNull();
   });
@@ -174,10 +177,9 @@ describe('actionable preflight results', () => {
     });
 
     expect(
-      screen.getByRole('heading', {
-        name: '15 tracks checked · 14 passed · 1 needs attention',
-      }),
+      screen.getByRole('heading', { name: '1 track needs a fix before starting with music.' }),
     ).toBeTruthy();
+    expect(screen.getByText('15 tracks checked · 14 passed · 1 needs attention')).toBeTruthy();
     const list = screen.getByRole('list', { name: 'Track playback check' });
     const rows = within(list).getAllByRole('listitem');
     // Query the track rows themselves rather than their containing groups.
@@ -192,12 +194,30 @@ describe('actionable preflight results', () => {
     expect(screen.queryByText(/prompter-only/i)).toBeNull();
   });
 
+  it('states an all-pass class once: one status line, one Start class, no repeated passed', () => {
+    const two: PreflightResult = {
+      ok: true,
+      tracks: [ready.tracks[0]!, { ...ready.tracks[0]!, classTrackId: 'second', position: 1 }],
+      unplayable: [],
+    };
+    renderPreflight(two);
+    expect(screen.getByRole('heading', { name: '2 of 2 tracks ready' })).toBeTruthy();
+    expect(document.body.textContent?.match(/passed/gi) ?? []).toHaveLength(0);
+    expect(screen.getAllByText('Start class')).toHaveLength(1);
+    expect(screen.getByRole('button', { name: 'Start class' }).className).toContain(
+      'rf-btn-primary',
+    );
+    expect(screen.getByRole('button', { name: 'Run without music' })).toBeTruthy();
+    const details = screen.getByText('Track details').closest('details');
+    expect(details?.open).toBe(false);
+    expect(details?.querySelectorAll('li')).toHaveLength(2);
+  });
+
   it('keeps all-pass results inspectable without an empty needs-attention card', () => {
     renderPreflight(ready);
-    expect(
-      screen.getByRole('heading', { name: '1 track checked · 1 passed · 0 need attention' }),
-    ).toBeTruthy();
-    expect(screen.getByText('1 track passed checks').closest('details')).not.toBeNull();
+    expect(screen.getByRole('heading', { name: '1 of 1 track ready' })).toBeTruthy();
+    expect(screen.queryByText(/tracks? checked/)).toBeNull();
+    expect(screen.getByText('Track details').closest('details')).not.toBeNull();
     expect(screen.queryByText('Needs attention before music can start')).toBeNull();
     expect(screen.queryByText('No tracks in this group.')).toBeNull();
   });
@@ -205,8 +225,9 @@ describe('actionable preflight results', () => {
   it('counts an all-blocked class as checked and omits an empty passed group', () => {
     renderPreflight(blocked);
     expect(
-      screen.getByRole('heading', { name: '1 track checked · 0 passed · 1 needs attention' }),
+      screen.getByRole('heading', { name: '1 track needs a fix before starting with music.' }),
     ).toBeTruthy();
+    expect(screen.getByText('1 track checked · 0 passed · 1 needs attention')).toBeTruthy();
     expect(screen.getByText('Needs attention before music can start')).toBeTruthy();
     expect(screen.queryByText(/tracks? passed checks/)).toBeNull();
     expect(screen.queryByText('No tracks in this group.')).toBeNull();
@@ -228,7 +249,8 @@ describe('actionable preflight results', () => {
     unmount();
 
     renderPreflight(null, 'network down');
-    expect(screen.getByRole('heading', { name: 'Runnable with warnings' })).toBeTruthy();
+    expect(screen.getByRole('heading', { name: 'Retry the connection check' })).toBeTruthy();
+    expect(screen.getByText('Runnable with warnings')).toBeTruthy();
     expect(screen.getByRole('button', { name: 'Retry check' })).toBeTruthy();
     expect(screen.queryByRole('list', { name: 'Track playback check' })).toBeNull();
   });

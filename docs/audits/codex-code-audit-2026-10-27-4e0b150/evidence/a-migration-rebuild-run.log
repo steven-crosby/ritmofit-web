@@ -1,0 +1,8 @@
+[A-7] PRAGMA foreign_keys at test time = {"foreign_keys":1} 
+[A-7] before = {"class_tracks":1,"cues":1,"class_track_moves":1} 
+[A-7] after  = {"class_tracks":1,"cues":0,"class_track_moves":0} 
+[A-7] applyError = null
+[A-7 defer] before = {"cues":1,"class_tracks":1} after = {"cues":0,"class_tracks":1} applyError = null
+ ✓ test/a-migration-rebuild.integration.test.ts (2 tests) 432ms
+ Test Files  1 passed (1)
+      Tests  2 passed (2)

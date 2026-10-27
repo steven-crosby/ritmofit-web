@@ -11,8 +11,10 @@ import type {
   RunPayload,
 } from '@ritmofit/shared';
 import { Dashboard } from './Dashboard.js';
+import { UpdatePrompt } from './UpdatePrompt.js';
 import * as api from '../lib/api.js';
 import { rememberConnectionReturn } from '../lib/connection-return.js';
+import { isLiveActive } from '../lib/session-guard.js';
 import type { ClassListPage } from '../lib/api.js';
 import {
   hasDismissedOnboardingVideo,
@@ -20,6 +22,27 @@ import {
 } from '../lib/onboarding-video.js';
 
 vi.mock('../lib/api.js');
+
+// Lets one test crash the builder below Dashboard's destination boundary.
+const crash = vi.hoisted(() => ({ planBlocks: false }));
+vi.mock('./ClassPlanBlocks.js', async (importOriginal) => {
+  const actual = await importOriginal<typeof import('./ClassPlanBlocks.js')>();
+  return {
+    ...actual,
+    ClassPlanBlocks: (props: Parameters<typeof actual.ClassPlanBlocks>[0]) => {
+      if (crash.planBlocks) throw new Error('builder render crash');
+      return <actual.ClassPlanBlocks {...props} />;
+    },
+  };
+});
+
+vi.mock('virtual:pwa-register/react', () => ({
+  useRegisterSW: () => ({
+    needRefresh: [true, vi.fn()],
+    offlineReady: [false, vi.fn()],
+    updateServiceWorker: vi.fn(),
+  }),
+}));
 // Dashboard imports the auth client for "Sign out"; stub it so the module's
 // real network/session setup never runs under the test.
 vi.mock('../lib/auth-client.js', () => ({
@@ -71,6 +94,13 @@ function makeClass(
 
 function page(items: ClassListItem[]): ClassListPage {
   return { items, nextCursor: null };
+}
+
+/** Leave the full-focus builder when it is open, then open a class from Classes. */
+async function openClassFromClasses(title: string) {
+  const back = screen.queryByRole('button', { name: 'Back to Classes' });
+  if (back) fireEvent.click(back);
+  fireEvent.click(await screen.findByRole('button', { name: new RegExp(`^${title}$`) }));
 }
 
 /**
@@ -175,6 +205,25 @@ function renderDashboard() {
   return render(<Dashboard userId="me" userName="Tester" />);
 }
 
+function manageMusicConnections() {
+  fireEvent.click(screen.getByRole('button', { name: 'Manage connections' }));
+}
+
+async function selectMusicService(name: string) {
+  fireEvent.click(await screen.findByRole('button', { name: new RegExp(`^${name},`) }));
+}
+
+async function openSavedPlaylist(service: string, playlistName: string) {
+  await selectMusicService(service);
+  fireEvent.click(await screen.findByRole('button', { name: `Open ${playlistName}` }));
+}
+
+async function openLikedSongs(service = 'Spotify') {
+  await selectMusicService(service);
+  fireEvent.click(screen.getByRole('button', { name: 'Songs' }));
+  fireEvent.click(await screen.findByRole('button', { name: 'Create class from liked songs' }));
+}
+
 function installLocalStorage() {
   const values = new Map<string, string>();
   const localStorage = {
@@ -223,6 +272,7 @@ beforeEach(() => {
 
 afterEach(() => {
   cleanup();
+  crash.planBlocks = false;
   vi.clearAllMocks();
   window.localStorage?.clear();
   // The class ordering is session state shared by Classes and Live, so it really
@@ -239,7 +289,8 @@ describe('Dashboard class library states', () => {
     renderDashboard();
     // The resting home is in its loading state until the first request resolves —
     // it must not flash the empty-library start first.
-    expect(screen.getByText('Loading your class library')).toBeTruthy();
+    expect(screen.getByRole('status', { name: 'Loading your classes' })).toBeTruthy();
+    expect(screen.queryByText(/Ritmo is checking classes/)).toBeNull();
 
     await act(async () => {
       classes.resolve(page([makeClass('Morning ride')]));
@@ -247,30 +298,37 @@ describe('Dashboard class library states', () => {
     });
 
     expect((await screen.findAllByText('Morning ride')).length).toBeGreaterThanOrEqual(1);
-    expect(screen.queryByText('Loading your class library')).toBeNull();
+    expect(screen.queryByRole('status', { name: 'Loading your classes' })).toBeNull();
+    expect(screen.getByRole('heading', { name: 'Your Classes' })).toBeTruthy();
     expect(
-      screen.getByRole('heading', { name: 'Pick up where the energy left off.' }),
-    ).toBeTruthy();
+      screen.queryByRole('heading', { name: 'Pick up where the energy left off.' }),
+    ).toBeNull();
+    expect(screen.queryByRole('button', { name: 'Ready to teach' })).toBeNull();
+    expect(screen.queryByRole('button', { name: 'Needs work' })).toBeNull();
   });
 
-  it('meets a class before the creation preamble, and starts a class from the quiet header', async () => {
+  it('puts templates before the class list and keeps Create on the first screen', async () => {
     vi.mocked(api.listClasses).mockResolvedValue(page([makeClass('Morning ride')]));
     renderDashboard();
 
-    const list = await screen.findByRole('heading', {
-      name: 'Pick up where the energy left off.',
-    });
-    const creator = screen.getByRole('button', { name: 'Start a class' });
-    // The library must not be "a large preamble before the work" (canon 09): on a
-    // phone this is one column, so document order is what the instructor scrolls.
-    expect(list.compareDocumentPosition(creator) & Node.DOCUMENT_POSITION_FOLLOWING).toBeTruthy();
+    const templates = (
+      await screen.findByRole('heading', { name: 'Start from a template' })
+    ).closest('section');
+    const recents = screen.getByRole('heading', { name: 'Recents' }).closest('section');
+    const create = screen.getByRole('button', { name: 'Create' });
+    expect(create.closest('header')?.className).toContain('order-1');
+    expect(templates?.className).toContain('order-2');
+    expect(recents?.className).toContain('order-3');
+    expect(create.closest('header')?.className).toContain('sticky');
+    expect(screen.getByRole('button', { name: 'Morning ride' })).toBeTruthy();
   });
 
   it('opens the create dialog from the empty Classes home', async () => {
     vi.mocked(api.listClasses).mockResolvedValue(page([]));
     renderDashboard();
 
-    fireEvent.click(await screen.findByRole('button', { name: 'Start a class' }));
+    fireEvent.click(await screen.findByRole('button', { name: 'Create' }));
+    fireEvent.click(screen.getByRole('button', { name: 'From a template' }));
     await waitFor(() => expect(document.activeElement).toBe(screen.getByLabelText('Class title')));
     expect(screen.getByRole('dialog', { name: 'Create a class' })).toBeTruthy();
     expect(screen.getByRole('button', { name: '45 min' }).getAttribute('aria-pressed')).toBe(
@@ -288,10 +346,12 @@ describe('Dashboard class library states', () => {
     vi.mocked(api.getRunPayload).mockRejectedValue(new Error('no payload'));
     renderDashboard();
 
-    fireEvent.click(await screen.findByRole('button', { name: 'Start a class' }));
+    fireEvent.click(await screen.findByRole('button', { name: 'Create' }));
+    fireEvent.click(screen.getByRole('button', { name: 'From a template' }));
     fireEvent.change(screen.getByLabelText('Class title'), { target: { value: 'Saturday ride' } });
-    fireEvent.click(screen.getByRole('button', { name: 'Cycle' }));
-    fireEvent.click(screen.getByRole('button', { name: 'Create class' }));
+    const dialog = screen.getByRole('dialog', { name: 'Create a class' });
+    fireEvent.click(within(dialog).getByRole('button', { name: 'Cycle' }));
+    fireEvent.click(within(dialog).getByRole('button', { name: 'Create class' }));
 
     await waitFor(() =>
       expect(api.createClass).toHaveBeenCalledWith({
@@ -302,7 +362,7 @@ describe('Dashboard class library states', () => {
     );
   });
 
-  it('focuses Add music after creating an empty class', async () => {
+  it('focuses Add a playlist after creating an empty class', async () => {
     const created = makeClass('Blank ride');
     vi.mocked(api.listClasses).mockResolvedValue(page([]));
     vi.mocked(api.createClass).mockResolvedValue(
@@ -312,29 +372,33 @@ describe('Dashboard class library states', () => {
     vi.mocked(api.getRunPayload).mockRejectedValue(new Error('no payload'));
     renderDashboard();
 
-    fireEvent.click(await screen.findByRole('button', { name: 'Start empty' }));
+    fireEvent.click(await screen.findByRole('button', { name: 'Create' }));
+    fireEvent.click(screen.getByRole('button', { name: 'New class' }));
     fireEvent.change(screen.getByLabelText('Class title'), { target: { value: 'Blank ride' } });
-    fireEvent.click(screen.getByRole('button', { name: 'Cycle' }));
-    fireEvent.click(screen.getByRole('button', { name: 'Create empty class' }));
+    const dialog = screen.getByRole('dialog', { name: 'Create a class' });
+    fireEvent.click(within(dialog).getByRole('button', { name: 'Cycle' }));
+    fireEvent.click(within(dialog).getByRole('button', { name: 'Create empty class' }));
 
-    const addMusic = await screen.findByRole('button', { name: 'Add music' });
-    await waitFor(() => expect(document.activeElement).toBe(addMusic));
+    const addPlaylist = await screen.findByRole('button', { name: 'Add a playlist' });
+    await waitFor(() => expect(document.activeElement).toBe(addPlaylist));
+    expect(addPlaylist.className).toContain('rf-btn-primary');
   });
 
-  it('folds the rail’s create/filter controls away once a class is open', async () => {
+  it('opens a class in full focus without the class list', async () => {
     const ride = makeClass('Morning ride');
     vi.mocked(api.listClasses).mockResolvedValue(page([ride]));
     vi.mocked(api.listClassTracks).mockResolvedValue([]);
     renderDashboard();
 
-    fireEvent.click((await screen.findAllByRole('button', { name: /^Morning ride/ }))[0]!);
-    const disclosure = await screen.findByText('New class, filters, and search');
-    // Opening a class mounts the builder rail with create/filter folded away —
-    // those controls belong to picking a class, not to editing one.
-    expect(disclosure.closest('details')).toHaveProperty('open', false);
-    // ...and the rail names the card being edited, rather than leaving a ring to
-    // carry "what did I just click?".
-    expect(screen.getByText('Open')).toBeTruthy();
+    fireEvent.click((await screen.findAllByRole('button', { name: /^Morning ride$/ }))[0]!);
+    const header = await screen.findByRole('region', { name: 'Class builder' });
+    expect(within(header).getByRole('heading', { name: 'Morning ride' })).toBeTruthy();
+    expect(within(header).getByText('Cycle')).toBeTruthy();
+    expect(within(header).getByRole('button', { name: 'Back to Classes' })).toBeTruthy();
+    expect(screen.queryByRole('navigation', { name: 'Class chooser' })).toBeNull();
+    expect(screen.queryByText('Your classes')).toBeNull();
+    expect(screen.queryByText('New class, filters, and search')).toBeNull();
+    expect(screen.queryByText('Open')).toBeNull();
   });
 
   it('shows a distinct error state when the class list fails to load, and retries', async () => {
@@ -360,25 +424,23 @@ describe('Dashboard class library states', () => {
 
     renderDashboard();
 
-    expect(
-      await screen.findByRole('heading', {
-        name: 'Pick a discipline. Ritmo lays out the class. You bring the music.',
-      }),
-    ).toBeTruthy();
+    expect(await screen.findByText('There are no classes yet.')).toBeTruthy();
+    expect(screen.getByRole('heading', { name: 'Start from a template' })).toBeTruthy();
+    expect(screen.queryByRole('region', { name: 'Jump back in' })).toBeNull();
   });
 
-  it('guides a brand-new instructor with a first-run workspace when the library is empty', async () => {
+  it('guides a brand-new instructor with templates when the library is empty', async () => {
     vi.mocked(api.listClasses).mockResolvedValue(page([]));
 
     renderDashboard();
 
-    expect(
-      await screen.findByRole('heading', {
-        name: 'Pick a discipline. Ritmo lays out the class. You bring the music.',
-      }),
-    ).toBeTruthy();
-    expect(screen.getByRole('button', { name: 'Start a class' })).toBeTruthy();
-    expect(screen.getByRole('button', { name: 'Start empty' })).toBeTruthy();
+    expect(await screen.findByText('There are no classes yet.')).toBeTruthy();
+    expect(screen.getByRole('heading', { name: 'Start from a template' })).toBeTruthy();
+    expect(screen.getByRole('button', { name: 'Start from the Cycle template' })).toBeTruthy();
+    expect(screen.getByRole('button', { name: 'Start from the Pilates template' })).toBeTruthy();
+    expect(screen.queryByRole('button', { name: /HIIT/ })).toBeNull();
+    expect(screen.queryByRole('region', { name: 'Jump back in' })).toBeNull();
+    expect(screen.getByRole('button', { name: 'Create' })).toBeTruthy();
     expect(screen.queryByRole('button', { name: /Find a track or source/ })).toBeNull();
     expect(screen.queryByText('Select a class to keep building.')).toBeNull();
   });
@@ -389,7 +451,7 @@ describe('Dashboard class library states', () => {
 
     renderDashboard();
     fireEvent.click(await screen.findByRole('button', { name: 'Music' }));
-    fireEvent.click(screen.getAllByRole('button', { name: 'Manage connections' })[0]!);
+    manageMusicConnections();
 
     expect(await screen.findByRole('dialog', { name: 'Music connections' })).toBeTruthy();
   });
@@ -514,15 +576,9 @@ describe('Dashboard class library states', () => {
 
     renderDashboard();
     fireEvent.click(await screen.findByRole('button', { name: 'Music' }));
-    const browseBtn = await screen.findByRole('button', { name: /Browse saved playlists/i });
-    expect(browseBtn).toBeTruthy();
-
-    // Clicking opens the browse dialog, then a playlist detail before class creation.
-    fireEvent.click(browseBtn);
-    expect(await screen.findByRole('dialog', { name: 'Browse Spotify playlists' })).toBeTruthy();
-    expect(screen.getByText('Warmup Ride')).toBeTruthy();
-    fireEvent.click(screen.getByRole('button', { name: 'Open Warmup Ride' }));
-    expect(await screen.findByRole('heading', { name: 'Warmup Ride' })).toBeTruthy();
+    await openSavedPlaylist('Spotify', 'Warmup Ride');
+    const playlistDialog = await screen.findByRole('dialog', { name: 'Browse Spotify playlists' });
+    expect(within(playlistDialog).getByRole('heading', { name: 'Warmup Ride' })).toBeTruthy();
     expect(screen.getByText('Climb Track')).toBeTruthy();
     expect(screen.getByRole('button', { name: 'Start class from Warmup Ride' })).toBeTruthy();
   });
@@ -554,14 +610,13 @@ describe('Dashboard class library states', () => {
 
     renderDashboard();
     fireEvent.click(await screen.findByRole('button', { name: 'Music' }));
-    fireEvent.click(await screen.findByRole('button', { name: /Browse saved playlists/i }));
-    expect(await screen.findByRole('dialog', { name: 'Browse Spotify playlists' })).toBeTruthy();
+    await selectMusicService('Spotify');
 
     // No count claimed for the unknown one, and nothing anywhere reads "0 tracks".
-    expect(screen.getByText('Steven')).toBeTruthy();
+    expect(await screen.findByText('Playlist · Steven')).toBeTruthy();
     expect(screen.queryByText(/0 tracks/)).toBeNull();
     // A known count still renders, and singular stays singular.
-    expect(screen.getByText('Steven · 1 track')).toBeTruthy();
+    expect(screen.getByText('Playlist · Steven · 1 track')).toBeTruthy();
   });
 
   it('shows connected Spotify liked tracks in Music and opens the likes browser', async () => {
@@ -590,13 +645,15 @@ describe('Dashboard class library states', () => {
 
     renderDashboard();
     fireEvent.click(await screen.findByRole('button', { name: 'Music' }));
-    const browseBtn = await screen.findByRole('button', { name: /Browse liked tracks/i });
-    expect(browseBtn).toBeTruthy();
+    await selectMusicService('Spotify');
+    fireEvent.click(screen.getByRole('button', { name: 'Songs' }));
+    expect(await screen.findByText('Levels')).toBeTruthy();
+    expect(screen.getByText('Song · Avicii · 3:20')).toBeTruthy();
 
-    // Clicking opens the likes browser with a track preview + create action.
-    fireEvent.click(browseBtn);
+    // The existing likes browser still holds class creation. Build a class does not.
+    fireEvent.click(screen.getByRole('button', { name: 'Create class from liked songs' }));
     const likesDialog = await screen.findByRole('dialog', { name: 'Browse Spotify likes' });
-    expect(screen.getByText('Levels')).toBeTruthy();
+    expect(within(likesDialog).getByText('Levels')).toBeTruthy();
     const createButton = within(likesDialog).getByRole('button', {
       name: 'Create class from 2 liked tracks',
     });
@@ -618,12 +675,23 @@ describe('Dashboard class library states', () => {
     vi.mocked(api.listClasses).mockResolvedValue(page([]));
     vi.mocked(api.listConnections).mockResolvedValue([spotifyConnection()]);
     vi.mocked(api.listPlaylists).mockResolvedValue([playlist]);
-    vi.mocked(api.listPlaylistTracks).mockRejectedValueOnce(new Error('provider unavailable'));
+    vi.mocked(api.listPlaylistTracks)
+      .mockRejectedValueOnce(new Error('provider unavailable'))
+      .mockResolvedValueOnce([
+        {
+          provider: 'spotify',
+          providerTrackId: 'track-1',
+          providerUri: null,
+          title: 'Recovered Track',
+          artist: 'DJ Test',
+          durationMs: 180000,
+          albumArtUrl: null,
+        },
+      ]);
 
     renderDashboard();
     fireEvent.click(await screen.findByRole('button', { name: 'Music' }));
-    fireEvent.click(await screen.findByRole('button', { name: /Browse saved playlists/i }));
-    fireEvent.click(screen.getByRole('button', { name: 'Open Fetch First' }));
+    await openSavedPlaylist('Spotify', 'Fetch First');
 
     expect(await screen.findByText('provider unavailable')).toBeTruthy();
     const start = screen.getByRole('button', {
@@ -632,6 +700,14 @@ describe('Dashboard class library states', () => {
     expect(start.disabled).toBe(true);
     expect(api.createClass).not.toHaveBeenCalled();
     expect(api.listPlaylistTracks).toHaveBeenCalledTimes(1);
+    expect(screen.queryByText('No tracks found in this playlist.')).toBeNull();
+
+    fireEvent.click(screen.getByRole('button', { name: 'Try again' }));
+    expect(await screen.findByText('Recovered Track')).toBeTruthy();
+    expect(api.createClass).not.toHaveBeenCalled();
+    expect(api.listPlaylistTracks).toHaveBeenCalledTimes(2);
+    expect(screen.getByRole('button', { name: 'Music' }).getAttribute('aria-current')).toBe('page');
+    expect(screen.queryByRole('region', { name: 'Class builder' })).toBeNull();
   });
 
   it('disables class creation when a saved playlist contains no tracks', async () => {
@@ -651,8 +727,7 @@ describe('Dashboard class library states', () => {
 
     renderDashboard();
     fireEvent.click(await screen.findByRole('button', { name: 'Music' }));
-    fireEvent.click(await screen.findByRole('button', { name: /Browse saved playlists/i }));
-    fireEvent.click(screen.getByRole('button', { name: 'Open Empty Ride' }));
+    await openSavedPlaylist('Spotify', 'Empty Ride');
 
     expect(await screen.findByText('No tracks found in this playlist.')).toBeTruthy();
     const createButton = screen.getByRole('button', {
@@ -688,13 +763,65 @@ describe('Dashboard class library states', () => {
 
     renderDashboard();
     fireEvent.click(await screen.findByRole('button', { name: 'Music' }));
-    fireEvent.click(await screen.findByRole('button', { name: /Browse saved playlists/i }));
-    fireEvent.click(screen.getByRole('button', { name: 'Open Emptied Ride' }));
+    await openSavedPlaylist('Spotify', 'Emptied Ride');
     await screen.findByText('Track One');
     fireEvent.click(screen.getByRole('button', { name: 'Start class from Emptied Ride' }));
 
     await waitFor(() => expect(api.createClass).toHaveBeenCalledTimes(1));
     expect(api.listPlaylistTracks).toHaveBeenCalledTimes(1);
+  });
+
+  it('navigates to the class builder after creating a class from a saved playlist', async () => {
+    const playlist = {
+      provider: 'spotify' as const,
+      playlistId: 'pl-warmup',
+      name: 'Warmup Ride',
+      ownerName: 'Steven',
+      trackCount: 1,
+      coverImageUrl: null,
+    };
+    const created = makeClass('Warmup Ride');
+    vi.mocked(api.listClasses).mockResolvedValue(page([]));
+    vi.mocked(api.listConnections).mockResolvedValue([spotifyConnection()]);
+    vi.mocked(api.listPlaylists).mockResolvedValue([playlist]);
+    vi.mocked(api.listPlaylistTracks).mockResolvedValue([
+      {
+        provider: 'spotify',
+        providerTrackId: 'track-1',
+        providerUri: 'spotify:track:track-1',
+        title: 'Climb Track',
+        artist: 'DJ Test',
+        durationMs: 180000,
+        albumArtUrl: null,
+      },
+    ]);
+    vi.mocked(api.createClass).mockResolvedValue(
+      created as Awaited<ReturnType<typeof api.createClass>>,
+    );
+    vi.mocked(api.importTrack).mockResolvedValue({ id: 'imported-track' } as Awaited<
+      ReturnType<typeof api.importTrack>
+    >);
+    vi.mocked(api.listClassTracks).mockResolvedValue([]);
+    vi.mocked(api.getRunPayload).mockRejectedValue(new Error('no payload'));
+
+    renderDashboard();
+    fireEvent.click(await screen.findByRole('button', { name: 'Music' }));
+    expect(screen.getByRole('button', { name: 'Music' }).getAttribute('aria-current')).toBe('page');
+    await openSavedPlaylist('Spotify', 'Warmup Ride');
+    fireEvent.click(await screen.findByRole('button', { name: 'Start class from Warmup Ride' }));
+
+    const header = await screen.findByRole('region', { name: 'Class builder' });
+    expect(within(header).getByRole('heading', { name: 'Warmup Ride' })).toBeTruthy();
+    expect(within(header).getByRole('button', { name: 'Back to Classes' })).toBeTruthy();
+    expect(screen.getByRole('button', { name: 'Classes' }).getAttribute('aria-current')).toBe(
+      'page',
+    );
+    expect(screen.getByRole('button', { name: 'Music' }).getAttribute('aria-current')).toBeNull();
+    expect(screen.queryByRole('dialog', { name: 'Browse Spotify playlists' })).toBeNull();
+    expect(screen.queryByRole('heading', { name: 'Your library' })).toBeNull();
+    expect(document.title).toBe('Warmup Ride - Ritmo Studio');
+    expect(api.createClass).toHaveBeenCalledTimes(1);
+    expect(api.createClass).toHaveBeenCalledWith({ title: 'Warmup Ride', template: 'cycle' });
   });
 
   it('reports partial imports and retries failures against the same class', async () => {
@@ -733,7 +860,7 @@ describe('Dashboard class library states', () => {
 
     renderDashboard();
     fireEvent.click(await screen.findByRole('button', { name: 'Music' }));
-    fireEvent.click(await screen.findByRole('button', { name: /Browse liked tracks/i }));
+    await openLikedSongs();
     fireEvent.click(screen.getByRole('button', { name: 'Create class from 2 liked tracks' }));
 
     const retry = await screen.findByRole('button', { name: 'Retry 1 failed' });
@@ -791,10 +918,7 @@ describe('Dashboard class library states', () => {
       .mockImplementationOnce(async () => receipt);
     renderDashboard();
     fireEvent.click(await screen.findByRole('button', { name: 'Music' }));
-    fireEvent.click(
-      await screen.findByRole('button', { name: 'Browse saved playlists on Apple Music' }),
-    );
-    fireEvent.click(await screen.findByRole('button', { name: 'Open Unconfirmed draft' }));
+    await openSavedPlaylist('Apple Music', 'Unconfirmed draft');
     fireEvent.click(
       await screen.findByRole('button', { name: 'Start class from Unconfirmed draft' }),
     );
@@ -842,22 +966,22 @@ describe('Dashboard class library states', () => {
 
     renderDashboard();
     fireEvent.click(await screen.findByRole('button', { name: 'Music' }));
-    expect(await screen.findByRole('button', { name: /Browse saved playlists/i })).toBeTruthy();
-    expect(screen.getByRole('button', { name: /Browse liked tracks/i })).toBeTruthy();
-    fireEvent.click(screen.getAllByRole('button', { name: 'Manage connections' })[0]!);
-    expect(await screen.findByText('Connected')).toBeTruthy();
+    await selectMusicService('Spotify');
+    expect(await screen.findByRole('button', { name: 'Open Warmup Ride' })).toBeTruthy();
+    fireEvent.click(screen.getByRole('button', { name: 'Songs' }));
+    expect(await screen.findByText('Levels')).toBeTruthy();
+    manageMusicConnections();
+    expect(
+      within(await screen.findByRole('dialog', { name: 'Music connections' })).getByText(
+        'Connected',
+      ),
+    ).toBeTruthy();
     fireEvent.click(screen.getByRole('button', { name: 'Disconnect Spotify' }));
     fireEvent.click(screen.getByRole('button', { name: 'Confirm disconnect Spotify' }));
 
     await waitFor(() => {
-      expect(
-        screen.queryByRole('button', {
-          name: 'Connect this provider to browse saved playlists.',
-        }),
-      ).toBeNull();
-      expect(
-        screen.queryByRole('button', { name: 'Connect this provider to browse liked tracks.' }),
-      ).toBeNull();
+      expect(screen.queryByRole('button', { name: 'Open Warmup Ride' })).toBeNull();
+      expect(screen.queryByText('Levels')).toBeNull();
     });
     expect(
       within(screen.getByRole('dialog')).getByRole('button', { name: 'Connect Spotify' }),
@@ -893,16 +1017,21 @@ describe('Dashboard class library states', () => {
 
     renderDashboard();
     fireEvent.click(await screen.findByRole('button', { name: 'Music' }));
-    expect(await screen.findByRole('button', { name: /Browse saved playlists/i })).toBeTruthy();
-    fireEvent.click(screen.getAllByRole('button', { name: 'Manage connections' })[0]!);
-    expect(await screen.findByText('Connected')).toBeTruthy();
+    await selectMusicService('Spotify');
+    expect(await screen.findByRole('button', { name: 'Open Last Known Ride' })).toBeTruthy();
+    manageMusicConnections();
+    expect(
+      within(await screen.findByRole('dialog', { name: 'Music connections' })).getByText(
+        'Connected',
+      ),
+    ).toBeTruthy();
     fireEvent.click(screen.getByRole('button', { name: 'Disconnect Spotify' }));
     fireEvent.click(screen.getByRole('button', { name: 'Confirm disconnect Spotify' }));
 
     const alert = await screen.findByRole('alert');
-    expect(alert.textContent).toContain('Couldn’t load music connections.');
+    expect(alert.textContent).toContain("Music connections didn't load.");
     expect(alert.textContent).toContain('Showing your last known sources.');
-    expect(screen.getByRole('button', { name: /Browse saved playlists/i })).toBeTruthy();
+    expect(screen.getByRole('button', { name: 'Open Last Known Ride' })).toBeTruthy();
   });
 
   it('ignores late shelf responses after authoritative disconnect truth arrives', async () => {
@@ -922,8 +1051,12 @@ describe('Dashboard class library states', () => {
     renderDashboard();
     fireEvent.click(await screen.findByRole('button', { name: 'Music' }));
     await waitFor(() => expect(api.listPlaylists).toHaveBeenCalledWith('spotify'));
-    fireEvent.click(screen.getAllByRole('button', { name: 'Manage connections' })[0]!);
-    expect(await screen.findByText('Connected')).toBeTruthy();
+    manageMusicConnections();
+    expect(
+      within(await screen.findByRole('dialog', { name: 'Music connections' })).getByText(
+        'Connected',
+      ),
+    ).toBeTruthy();
     fireEvent.click(screen.getByRole('button', { name: 'Disconnect Spotify' }));
     fireEvent.click(screen.getByRole('button', { name: 'Confirm disconnect Spotify' }));
 
@@ -955,10 +1088,13 @@ describe('Dashboard class library states', () => {
       await Promise.all([playlists.promise, likes.promise]);
     });
 
+    await selectMusicService('Spotify');
+    fireEvent.click(screen.getByRole('button', { name: 'Playlists' }));
+    fireEvent.click(screen.getByRole('button', { name: 'Songs' }));
     expect(screen.queryByText(/Late Playlist/)).toBeNull();
     expect(screen.queryByText(/Late Track/)).toBeNull();
     expect(screen.queryByRole('button', { name: /Late Playlist/ })).toBeNull();
-    expect(screen.queryByRole('button', { name: /Late Track/ })).toBeNull();
+    expect(screen.queryByRole('button', { name: /Open Late Playlist/ })).toBeNull();
   });
 
   it('creates a class from liked tracks (imports each, opens the builder)', async () => {
@@ -996,8 +1132,7 @@ describe('Dashboard class library states', () => {
 
     renderDashboard();
     fireEvent.click(await screen.findByRole('button', { name: 'Music' }));
-    const browseBtn = await screen.findByRole('button', { name: /Browse liked tracks/i });
-    fireEvent.click(browseBtn);
+    await openLikedSongs();
     const createBtn = await screen.findByRole('button', {
       name: 'Create class from 2 liked tracks',
     });
@@ -1068,19 +1203,30 @@ describe('Dashboard class library states', () => {
     expect(screen.queryByRole('button', { name: 'Connections' })).toBeNull();
 
     fireEvent.click(screen.getByRole('button', { name: 'Music' }));
-    expect(
-      await screen.findByRole('heading', { name: 'Browse music, then shape it into class.' }),
-    ).toBeTruthy();
+    expect(await screen.findByRole('heading', { name: 'Your library' })).toBeTruthy();
     expect(screen.getByRole('button', { name: 'Music' }).getAttribute('aria-current')).toBe('page');
+    const soundcloud = screen.getByRole('button', { name: 'SoundCloud, Catalog only' });
+    expect(soundcloud.getAttribute('aria-pressed')).toBe('true');
+    expect(soundcloud.className).toContain('border-border-strong');
+    expect(soundcloud.className).toContain('bg-bg-overlay');
+    expect(soundcloud.className).not.toContain('bg-interactive');
+    expect(soundcloud.className).not.toContain('border-interactive');
 
     fireEvent.click(screen.getByRole('button', { name: 'Live' }));
-    expect(
-      await screen.findByRole('heading', { name: 'What are you teaching next?' }),
-    ).toBeTruthy();
+    expect(await screen.findByRole('heading', { name: 'Teach a class' })).toBeTruthy();
+    expect(screen.getByText('Press Preflight on the one you want.')).toBeTruthy();
 
     fireEvent.click(screen.getByRole('button', { name: 'Account' }));
     expect(await screen.findByText('Personal workspace')).toBeTruthy();
     expect(screen.getByRole('heading', { name: 'Provider accounts' })).toBeTruthy();
+    expect(screen.queryByText('Workspace defaults')).toBeNull();
+    expect(screen.queryByRole('link', { name: 'Preferences' })).toBeNull();
+    expect(document.getElementById('account-preferences')).toBeNull();
+    expect(document.getElementById('account-music-connections')?.className).toContain(
+      'rf-anchor-offset',
+    );
+    expect(document.getElementById('account-profile')?.className).toContain('rf-anchor-offset');
+    expect(document.getElementById('account-security')?.className).toContain('rf-anchor-offset');
   });
 
   it('returns from a selected class to the run-of-show shelf through Classes', async () => {
@@ -1094,9 +1240,71 @@ describe('Dashboard class library states', () => {
     expect(await screen.findByRole('heading', { name: 'Return path ride' })).toBeTruthy();
 
     fireEvent.click(screen.getByRole('button', { name: 'Classes' }));
-    expect(
-      await screen.findByRole('heading', { name: 'Pick up where the energy left off.' }),
-    ).toBeTruthy();
+    expect(await screen.findByRole('heading', { name: 'Your Classes' })).toBeTruthy();
+  });
+
+  it('puts an opened class ahead of one that was only edited', async () => {
+    const edited = { ...makeClass('Edited ride'), updatedAt: 9_000, lastOpenedAt: null };
+    const quiet = { ...makeClass('Quiet ride'), updatedAt: 1, lastOpenedAt: null };
+    vi.mocked(api.listClasses).mockResolvedValue(page([edited, quiet]));
+    vi.mocked(api.listClassTracks).mockResolvedValue([]);
+    vi.mocked(api.getRunPayload).mockRejectedValue(new Error('no payload'));
+    vi.mocked(api.markClassOpened).mockResolvedValue({ ...quiet, lastOpenedAt: 50_000 });
+    renderDashboard();
+
+    const recentsTitles = () => {
+      const recents = screen.getByRole('region', { name: 'Recents' });
+      return within(recents)
+        .getAllByRole('button')
+        .map((button) => button.getAttribute('aria-label'))
+        .filter((name) => name === 'Edited ride' || name === 'Quiet ride');
+    };
+
+    expect(await screen.findByRole('button', { name: 'Edited ride' })).toBeTruthy();
+    expect(recentsTitles()).toEqual(['Edited ride', 'Quiet ride']);
+    fireEvent.click(screen.getByRole('button', { name: 'Quiet ride' }));
+    expect(await screen.findByRole('heading', { name: 'Quiet ride' })).toBeTruthy();
+    expect(api.markClassOpened).toHaveBeenCalledWith(quiet.id);
+    fireEvent.click(screen.getByRole('button', { name: 'Back to Classes' }));
+    expect(await screen.findByRole('heading', { name: 'Your Classes' })).toBeTruthy();
+    expect(recentsTitles()).toEqual(['Quiet ride', 'Edited ride']);
+  });
+
+  it('stamps last opened when Live starts, not when the queue is only listed', async () => {
+    const alpha = {
+      ...makeClass('Alpha ride', 'owner', 'me'),
+      trackCount: 1,
+      totalDurationMs: 60_000,
+      lastOpenedAt: 10,
+    };
+    const beta = {
+      ...makeClass('Beta ride', 'owner', 'me'),
+      trackCount: 1,
+      totalDurationMs: 60_000,
+      lastOpenedAt: 20,
+    };
+    const payload = liveRunPayload([{ classTrackId: 'ct-1', durationMs: 60_000 }]);
+    payload.class.id = alpha.id;
+    payload.sections = [];
+    vi.mocked(api.listClasses).mockResolvedValue(page([alpha, beta]));
+    vi.mocked(api.getRunPayload).mockResolvedValue(payload);
+    vi.mocked(api.markClassOpened).mockResolvedValue({ ...alpha, lastOpenedAt: 80_000 });
+    renderDashboard();
+
+    fireEvent.click(await screen.findByRole('button', { name: 'Live' }));
+    const run = await screen.findByRole('button', { name: 'Preflight Alpha ride' });
+    await waitFor(() => expect(run).toHaveProperty('disabled', false));
+    expect(api.markClassOpened).not.toHaveBeenCalled();
+    fireEvent.click(run);
+    await waitFor(() => expect(api.markClassOpened).toHaveBeenCalledWith(alpha.id));
+    fireEvent.click(await screen.findByRole('button', { name: 'Exit' }));
+    fireEvent.click(await screen.findByRole('button', { name: 'Classes' }));
+    const recents = await screen.findByRole('region', { name: 'Recents' });
+    const titles = within(recents)
+      .getAllByRole('button')
+      .map((button) => button.getAttribute('aria-label'))
+      .filter((name) => name === 'Alpha ride' || name === 'Beta ride');
+    expect(titles).toEqual(['Alpha ride', 'Beta ride']);
   });
 
   it('surfaces classes with tracks from the Live destination and runs a ready one', async () => {
@@ -1127,14 +1335,74 @@ describe('Dashboard class library states', () => {
       name: 'Preflight Ready ride',
     })) as HTMLButtonElement;
     await waitFor(() => expect(runBtn.disabled).toBe(false));
-    expect(screen.getByRole('region', { name: 'Class Pulse' })).toBeTruthy();
-    // The queue's Pulse says where its shape came from instead of asking a
-    // read-only card to "confirm" anything.
-    expect(screen.getByText('from track efforts')).toBeTruthy();
+    const card = screen.getByRole('heading', { name: 'Ready ride' }).closest('article')!;
+    // The queue keeps the shape as a sparkline. The repeated "Class Pulse" label,
+    // derivation sentence, and Runnable badge are not on the row.
+    expect(within(card).getByRole('img', { name: /Class Pulse/ })).toBeTruthy();
+    expect(within(card).queryByRole('region', { name: 'Class Pulse' })).toBeNull();
+    expect(within(card).queryByText('from track efforts')).toBeNull();
+    expect(within(card).queryByText('Runnable')).toBeNull();
+    expect(screen.queryByText('Queue readiness')).toBeNull();
     // The mount already fetched the payload for readiness; isolate the run request.
     vi.mocked(api.getRunPayload).mockClear();
     fireEvent.click(runBtn);
     await waitFor(() => expect(api.getRunPayload).toHaveBeenCalledWith(ready.id));
+  });
+
+  it('removes a deleted class from Recents and the Live list', async () => {
+    const morning = {
+      ...makeClass('Morning Climb', 'owner', 'me'),
+      trackCount: 2,
+      totalDurationMs: 120_000,
+    };
+    const evening = {
+      ...makeClass('Evening Ride', 'owner', 'me'),
+      trackCount: 1,
+      totalDurationMs: 60_000,
+    };
+    vi.mocked(api.listClasses).mockResolvedValue(page([morning, evening]));
+    vi.mocked(api.getRunPayload).mockResolvedValue(
+      liveRunPayload([{ classTrackId: 'ct-1', durationMs: 60_000 }]),
+    );
+    vi.mocked(api.deleteClass).mockResolvedValue(undefined);
+
+    renderDashboard();
+
+    const recents = await screen.findByRole('region', { name: 'Recents' });
+    expect(within(recents).getByRole('button', { name: 'Morning Climb' })).toBeTruthy();
+    expect(within(recents).getByRole('button', { name: 'Evening Ride' })).toBeTruthy();
+
+    fireEvent.click(screen.getByRole('button', { name: 'Live' }));
+    expect(await screen.findByRole('heading', { name: 'Morning Climb' })).toBeTruthy();
+    expect(screen.getByRole('heading', { name: 'Evening Ride' })).toBeTruthy();
+
+    fireEvent.click(screen.getByRole('button', { name: 'Classes' }));
+    fireEvent.click(await screen.findByRole('button', { name: 'More actions — Morning Climb' }));
+    fireEvent.click(screen.getByRole('button', { name: 'Delete — Morning Climb' }));
+    expect(
+      screen.getByRole('dialog', { name: "Delete 'Morning Climb'? This can't be undone." }),
+    ).toBeTruthy();
+    expect(api.deleteClass).not.toHaveBeenCalled();
+    fireEvent.click(screen.getByRole('button', { name: 'Cancel' }));
+    expect(api.deleteClass).not.toHaveBeenCalled();
+
+    fireEvent.click(screen.getByRole('button', { name: 'More actions — Morning Climb' }));
+    fireEvent.click(screen.getByRole('button', { name: 'Delete — Morning Climb' }));
+    vi.mocked(api.listClasses).mockResolvedValue(page([evening]));
+    fireEvent.click(screen.getByRole('button', { name: 'Delete class' }));
+    await waitFor(() => expect(api.deleteClass).toHaveBeenCalledWith(morning.id));
+
+    const recentsAfter = await screen.findByRole('region', { name: 'Recents' });
+    await waitFor(() =>
+      expect(within(recentsAfter).queryByRole('button', { name: 'Morning Climb' })).toBeNull(),
+    );
+    expect(within(recentsAfter).getByRole('button', { name: 'Evening Ride' })).toBeTruthy();
+
+    fireEvent.click(screen.getByRole('button', { name: 'Live' }));
+    await waitFor(() =>
+      expect(screen.queryByRole('heading', { name: 'Morning Climb' })).toBeNull(),
+    );
+    expect(await screen.findByRole('heading', { name: 'Evening Ride' })).toBeTruthy();
   });
 
   it('keeps the queue card compact by default and full readiness one disclosure away', async () => {
@@ -1148,17 +1416,43 @@ describe('Dashboard class library states', () => {
     fireEvent.click(await screen.findByRole('button', { name: 'Live' }));
     expect(await screen.findByText('Ready ride')).toBeTruthy();
 
-    // Shape, verdict, and the action are on the scan row; the four-dimension
+    // Name, sparkline, and the action are on the row; the four-dimension
     // readiness readout is collapsed until asked for.
     const card = (await screen.findByText('Ready ride')).closest('article') as HTMLElement;
     const disclosure = card.querySelector('details') as HTMLDetailsElement;
     expect(disclosure).toBeTruthy();
     expect(disclosure.open).toBe(false);
-    expect(screen.getByRole('region', { name: 'Class Pulse' })).toBeTruthy();
+    expect(within(card).getByRole('img', { name: /Class Pulse/ })).toBeTruthy();
+    expect(within(card).queryByText(/to finish/)).toBeNull();
+    expect(within(card).getByText('2 things left')).toBeTruthy();
 
     fireEvent.click(disclosure.querySelector('summary')!);
     await waitFor(() => expect(disclosure.open).toBe(true));
     expect(within(disclosure).getByText(/Durations set|Duration/)).toBeTruthy();
+  });
+
+  it('names a guessed class shape without repeating the auto-shaped sentence', async () => {
+    const shaped = {
+      ...makeClass('Guessed ride', 'owner', 'me'),
+      trackCount: 2,
+      totalDurationMs: 120000,
+    };
+    vi.mocked(api.listClasses).mockResolvedValue(page([shaped]));
+    vi.mocked(api.getRunPayload).mockResolvedValue(
+      liveRunPayload([
+        { classTrackId: 'ct-1', durationMs: 60000 },
+        { classTrackId: 'ct-2', durationMs: 60000 },
+      ]),
+    );
+
+    renderDashboard();
+    fireEvent.click(await screen.findByRole('button', { name: 'Live' }));
+    const card = (await screen.findByText('Guessed ride')).closest('article') as HTMLElement;
+    expect(await within(card).findByText('◇ auto')).toBeTruthy();
+    expect(within(card).queryByText(/Auto-shaped from track order/)).toBeNull();
+    expect(within(card).queryByText('Class Pulse')).toBeNull();
+    expect(screen.queryByText('Queue readiness')).toBeNull();
+    expect(screen.queryByRole('heading', { name: 'What are you teaching next?' })).toBeNull();
   });
 
   it('ranks the Live queue with the ordering chosen on Classes', async () => {
@@ -1223,10 +1517,12 @@ describe('Dashboard class library states', () => {
     });
     // The primary points assistive tech at the reason it exists.
     expect(fixBtn.getAttribute('aria-describedby')).toBe(`live-blocked-${falseRunnable.id}`);
-    // Preflight rail counts it as blocked, not runnable.
-    const rail = screen.getByText('Queue readiness').closest('aside') as HTMLElement;
-    expect(within(rail).getByText('Needs a duration').nextSibling?.textContent).toBe('1');
-    expect(within(rail).getByText('Runnable').nextSibling?.textContent).toBe('0 of 1');
+    // The rollup card is gone. The class itself carries the block, and the
+    // page announces the count without a second "Runnable / Needs a duration" panel.
+    expect(screen.queryByText('Queue readiness')).toBeNull();
+    expect(screen.queryByText('Needs a duration')).toBeNull();
+    expect(screen.queryByText('All linked')).toBeNull();
+    expect(screen.getByText('0 of 1 class ready for Live.')).toBeTruthy();
   });
 
   it('surfaces a retry when a class run-payload fails to load, and keeps Run live disabled', async () => {
@@ -1258,18 +1554,79 @@ describe('Dashboard class library states', () => {
     expect(screen.queryByRole('button', { name: /^Retry readiness/ })).toBeNull();
   });
 
-  it('restores focus to the dashboard heading when Live Mode is exited', async () => {
-    vi.mocked(api.listClasses).mockResolvedValue(
-      page([
-        {
-          ...makeClass('Ready ride', 'owner', 'me'),
-          trackCount: 3,
-          totalDurationMs: 1800000,
-        },
+  it('says class details did not load, never blaming track lengths, after a failed payload read', async () => {
+    const cls = { ...makeClass('Offline ride', 'owner', 'me'), trackCount: 2 };
+    vi.mocked(api.listClasses).mockResolvedValue(page([cls]));
+    vi.mocked(api.listClassTracks).mockResolvedValue([
+      makeClassTrack('ct-1', 0),
+      makeClassTrack('ct-2', 1),
+    ]);
+    vi.mocked(api.getRunPayload).mockRejectedValue(
+      new api.ApiError(
+        "Can't reach Ritmo. Check your connection, then try again.",
+        'NETWORK_ERROR',
+        0,
+      ),
+    );
+
+    renderDashboard();
+    await openClassFromClasses('Offline ride');
+
+    expect(await screen.findByText("Class details didn't load.")).toBeTruthy();
+    expect(screen.queryByText('Give every track a length to run.')).toBeNull();
+    expect(screen.getByRole('button', { name: /Run live/ })).toHaveProperty('disabled', true);
+
+    vi.mocked(api.getRunPayload).mockResolvedValue(
+      liveRunPayload([
+        { classTrackId: 'ct-1', durationMs: 180000 },
+        { classTrackId: 'ct-2', durationMs: 180000 },
       ]),
     );
-    vi.mocked(api.listConnections).mockResolvedValue([]);
-    vi.mocked(api.getRunPayload).mockResolvedValue({
+    fireEvent.click(screen.getByRole('button', { name: 'Retry' }));
+    await waitFor(() =>
+      expect(screen.getByRole('button', { name: /Run live/ })).toHaveProperty('disabled', false),
+    );
+    expect(screen.queryByText("Class details didn't load.")).toBeNull();
+  });
+
+  it('says class details did not load when the plan blocks fail', async () => {
+    const cls = { ...makeClass('Plan offline', 'owner', 'me'), trackCount: 1 };
+    vi.mocked(api.listClasses).mockResolvedValue(page([cls]));
+    vi.mocked(api.listClassTracks).mockResolvedValue([makeClassTrack('ct-1', 0)]);
+    vi.mocked(api.getRunPayload).mockResolvedValue(
+      liveRunPayload([{ classTrackId: 'ct-1', durationMs: 180000 }]),
+    );
+    vi.mocked(api.listClassPlanBlocks).mockRejectedValue(new Error('offline'));
+
+    renderDashboard();
+    await openClassFromClasses('Plan offline');
+
+    expect(await screen.findByText("Class details didn't load.")).toBeTruthy();
+    expect(screen.queryByText('Give every track a length to run.')).toBeNull();
+  });
+
+  it('shows an Offline mark in the app header while the browser is offline', async () => {
+    vi.mocked(api.listClasses).mockResolvedValue(page([]));
+    const onLine = vi.spyOn(navigator, 'onLine', 'get').mockReturnValue(false);
+    try {
+      renderDashboard();
+      const header = (await screen.findByRole('heading', { name: 'Ritmo Studio' })).closest(
+        'header',
+      )!;
+      expect(within(header).getByText('Offline').getAttribute('role')).toBe('status');
+
+      onLine.mockReturnValue(true);
+      act(() => {
+        window.dispatchEvent(new Event('online'));
+      });
+      expect(within(header).queryByText('Offline')).toBeNull();
+    } finally {
+      onLine.mockRestore();
+    }
+  });
+
+  function readyRidePayload(): RunPayload {
+    return {
       schemaVersion: 1,
       class: {
         id: '00000000-0000-4000-8000-000000000101',
@@ -1305,8 +1662,59 @@ describe('Dashboard class library states', () => {
         },
       ],
       sections: [],
-    } satisfies RunPayload);
+    };
+  }
 
+  function mockReadyRide() {
+    vi.mocked(api.listClasses).mockResolvedValue(
+      page([
+        {
+          ...makeClass('Ready ride', 'owner', 'me'),
+          trackCount: 3,
+          totalDurationMs: 1800000,
+        },
+      ]),
+    );
+    vi.mocked(api.listConnections).mockResolvedValue([]);
+    vi.mocked(api.getRunPayload).mockResolvedValue(readyRidePayload());
+  }
+
+  it('keeps the nav and the update toast when the builder crashes, and recovers to Classes', async () => {
+    const consoleError = vi.spyOn(console, 'error').mockImplementation(() => {});
+    const cls = { ...makeClass('Crashing ride', 'owner', 'me'), trackCount: 1 };
+    vi.mocked(api.listClasses).mockResolvedValue(page([cls]));
+    vi.mocked(api.listClassTracks).mockResolvedValue([makeClassTrack('ct-1', 0)]);
+    vi.mocked(api.getRunPayload).mockResolvedValue(
+      liveRunPayload([{ classTrackId: 'ct-1', durationMs: 180000 }]),
+    );
+    crash.planBlocks = true;
+
+    render(
+      <>
+        <Dashboard userId="me" userName="Tester" />
+        <UpdatePrompt />
+      </>,
+    );
+    await openClassFromClasses('Crashing ride');
+
+    expect(
+      await screen.findByRole('heading', { level: 2, name: 'This page lost the beat.' }),
+    ).toBeTruthy();
+    const back = screen.getByRole('button', { name: 'Back to Classes' });
+    expect(document.activeElement).toBe(back);
+    for (const name of ['Classes', 'Music', 'Live', 'Account'])
+      expect(screen.getByRole('button', { name })).toBeTruthy();
+    expect(screen.getByTestId('update-prompt')).toBeTruthy();
+
+    crash.planBlocks = false;
+    fireEvent.click(back);
+    expect(await screen.findByRole('button', { name: 'Crashing ride' })).toBeTruthy();
+    expect(screen.queryByText('This page lost the beat.')).toBeNull();
+    consoleError.mockRestore();
+  });
+
+  it('restores focus to the dashboard heading when Live Mode is exited', async () => {
+    mockReadyRide();
     renderDashboard();
 
     fireEvent.click(await screen.findByRole('button', { name: 'Live' }));
@@ -1315,6 +1723,28 @@ describe('Dashboard class library states', () => {
 
     const heading = await screen.findByRole('heading', { name: 'Ritmo Studio' });
     expect(document.activeElement).toBe(heading);
+  });
+
+  it('flags Live for the session guard and keeps Live mounted when the session is lost', async () => {
+    mockReadyRide();
+    const view = renderDashboard();
+    expect(isLiveActive()).toBe(false);
+
+    fireEvent.click(await screen.findByRole('button', { name: 'Live' }));
+    fireEvent.click(await screen.findByRole('button', { name: /^Preflight / }));
+    const exit = await screen.findByRole('button', { name: 'Exit' });
+    expect(isLiveActive()).toBe(true);
+    expect(screen.queryByText('Signed out. Finish the class, then sign in.')).toBeNull();
+
+    view.rerender(<Dashboard userId="me" userName="Tester" sessionLost />);
+    expect(
+      screen.getByText('Signed out. Finish the class, then sign in.').getAttribute('role'),
+    ).toBe('status');
+    expect(screen.getByRole('button', { name: 'Exit' })).toBe(exit);
+
+    fireEvent.click(exit);
+    await screen.findByRole('heading', { name: 'Ritmo Studio' });
+    expect(isLiveActive()).toBe(false);
   });
 
   it('browses a connected source from the Music workspace sidebar', async () => {
@@ -1334,11 +1764,7 @@ describe('Dashboard class library states', () => {
     renderDashboard();
 
     fireEvent.click(await screen.findByRole('button', { name: 'Music' }));
-    // Saved collections remain directly reachable from the compact provider rail.
-    const sourceBtn = await screen.findByRole('button', {
-      name: 'Browse saved playlists on Spotify',
-    });
-    fireEvent.click(sourceBtn);
+    await openSavedPlaylist('Spotify', 'Warmup Ride');
     expect(await screen.findByRole('dialog', { name: 'Browse Spotify playlists' })).toBeTruthy();
   });
 
@@ -1375,21 +1801,25 @@ describe('Dashboard class library states', () => {
 
     renderDashboard();
     fireEvent.click(await screen.findByRole('button', { name: 'Music' }));
-    expect(
-      await screen.findByRole('button', { name: 'Browse saved playlists on Spotify' }),
-    ).toBeTruthy();
-    expect(screen.getByRole('button', { name: /Browse liked tracks/i })).toBeTruthy();
+    await selectMusicService('Spotify');
+    expect(await screen.findByRole('button', { name: 'Open Recovery Ride' })).toBeTruthy();
+    fireEvent.click(screen.getByRole('button', { name: 'Songs' }));
+    expect(await screen.findByText('Levels')).toBeTruthy();
 
-    fireEvent.click(screen.getAllByRole('button', { name: 'Manage connections' })[0]!);
-    expect(await screen.findByText('Connected')).toBeTruthy();
+    manageMusicConnections();
+    expect(
+      within(await screen.findByRole('dialog', { name: 'Music connections' })).getByText(
+        'Connected',
+      ),
+    ).toBeTruthy();
     fireEvent.click(screen.getByRole('button', { name: 'Disconnect Spotify' }));
     fireEvent.click(screen.getByRole('button', { name: 'Confirm disconnect Spotify' }));
 
-    expect(await screen.findByRole('button', { name: 'Browse Spotify catalog' })).toBeTruthy();
+    expect(await screen.findByRole('button', { name: 'Spotify, Catalog only' })).toBeTruthy();
+    fireEvent.click(screen.getByRole('button', { name: 'Catalog' }));
+    expect(screen.getByRole('searchbox', { name: 'Search Spotify catalog' })).toBeTruthy();
     await waitFor(() =>
-      expect(
-        screen.queryByRole('button', { name: 'Browse saved playlists on Spotify' }),
-      ).toBeNull(),
+      expect(screen.queryByRole('button', { name: 'Open Recovery Ride' })).toBeNull(),
     );
     expect(
       screen.queryByRole('button', { name: 'Connect this provider to browse liked tracks.' }),
@@ -1468,20 +1898,335 @@ describe('Dashboard class library states', () => {
     fireEvent.click(await screen.findByRole('button', { name: 'Music' }));
 
     const alert = await screen.findByRole('alert');
-    expect(alert.textContent).toContain('Couldn’t load music connections.');
-    expect(alert.textContent).toContain('Source status is unavailable.');
+    expect(alert.textContent).toContain("Music connections didn't load.");
+    expect(alert.textContent).toContain('Source status is unavailable');
     expect(screen.queryByText('Connect this provider to browse liked tracks.')).toBeNull();
-    expect(screen.getByRole('button', { name: 'Browse Spotify catalog' }).textContent).toContain(
-      'Unverified',
-    );
-    expect(screen.getAllByText('Status unavailable').length).toBeGreaterThan(0);
+    expect(screen.getByRole('button', { name: 'Spotify, Unavailable' })).toBeTruthy();
 
-    fireEvent.click(within(alert).getByRole('button', { name: 'Try again' }));
+    fireEvent.click(within(alert).getByRole('button', { name: 'Retry' }));
 
-    expect(
-      await screen.findByRole('button', { name: 'Browse saved playlists on Spotify' }),
-    ).toBeTruthy();
+    await selectMusicService('Spotify');
+    expect(await screen.findByRole('button', { name: 'Open Recovery Ride' })).toBeTruthy();
     expect(screen.queryByRole('alert')).toBeNull();
+  });
+});
+
+describe('Music tab library', () => {
+  it('puts library tabs under compact service chips with one Manage connections', async () => {
+    vi.mocked(api.listClasses).mockResolvedValue(page([]));
+    vi.mocked(api.listConnections).mockResolvedValue([]);
+
+    renderDashboard();
+    fireEvent.click(await screen.findByRole('button', { name: 'Music' }));
+    await screen.findByRole('button', { name: 'SoundCloud, Catalog only' });
+
+    const layout = document.querySelector('[data-music-layout="stack"]');
+    expect(layout?.className).toContain('flex-col');
+    expect(layout?.className).not.toContain('grid-cols');
+    const services = screen.getByRole('group', { name: 'Music services' });
+    expect(services.className).toContain('flex-col');
+    expect(services.className).toContain('sm:flex-row');
+    expect(services.className).not.toContain('grid-cols');
+    const chips = within(services).getAllByRole('button');
+    expect(chips.map((chip) => chip.getAttribute('aria-label'))).toEqual([
+      'SoundCloud, Catalog only',
+      'Spotify, Catalog only',
+      'Apple Music, Catalog only',
+    ]);
+    for (const chip of chips) {
+      expect(chip.className).toContain('min-h-11');
+      expect(chip.className).toContain('w-full');
+      expect(chip.className).toContain('sm:flex-1');
+    }
+    expect(screen.queryByText('Browse catalog')).toBeNull();
+    expect(document.querySelector('[aria-label="SoundCloud capabilities"]')).toBeNull();
+    expect(screen.queryByRole('button', { name: /connection$/ })).toBeNull();
+    expect(screen.getAllByRole('button', { name: /^Manage .*connection/ })).toHaveLength(1);
+    expect(screen.queryByRole('button', { name: 'Connect SoundCloud' })).toBeNull();
+    expect(services.nextElementSibling).toBe(screen.getByRole('group', { name: 'Library' }));
+    expect(screen.getByRole('group', { name: 'Library' }).nextElementSibling).toBe(
+      screen.getByRole('searchbox', { name: 'Search SoundCloud catalog' }).closest('section'),
+    );
+
+    fireEvent.click(screen.getByRole('button', { name: 'Playlists' }));
+    expect(screen.getByText(/Connect SoundCloud to see your playlists/)).toBeTruthy();
+    expect(screen.getByRole('button', { name: 'Connect SoundCloud' })).toBeTruthy();
+  });
+
+  it('shows no connection panel or duplicate Connected for a healthy service', async () => {
+    vi.mocked(api.listClasses).mockResolvedValue(page([]));
+    vi.mocked(api.listConnections).mockResolvedValue([
+      spotifyConnection('user-library-read playlist-read-private streaming'),
+    ]);
+    vi.mocked(api.listPlaylists).mockResolvedValue([]);
+    vi.mocked(api.listLikes).mockResolvedValue([]);
+
+    renderDashboard();
+    fireEvent.click(await screen.findByRole('button', { name: 'Music' }));
+    await selectMusicService('Spotify');
+    expect(await screen.findByRole('button', { name: 'Spotify, Connected' })).toBeTruthy();
+    expect(await screen.findByText('No saved playlists')).toBeTruthy();
+    expect(screen.getAllByText('Connected')).toHaveLength(1);
+    expect(document.querySelector('[data-music-connection-notice]')).toBeNull();
+    expect(screen.queryByText('Authorized')).toBeNull();
+  });
+
+  it('names a missing playlist scope on a linked Spotify account', async () => {
+    vi.mocked(api.listClasses).mockResolvedValue(page([]));
+    vi.mocked(api.listConnections).mockResolvedValue([spotifyConnection()]);
+    vi.mocked(api.listPlaylists).mockResolvedValue([]);
+    vi.mocked(api.listLikes).mockResolvedValue([]);
+
+    renderDashboard();
+    fireEvent.click(await screen.findByRole('button', { name: 'Music' }));
+    await selectMusicService('Spotify');
+    expect(await screen.findByText('Reconnect Spotify to load your playlists.')).toBeTruthy();
+    expect(screen.getByText('Reconnect needed')).toBeTruthy();
+    expect(screen.getByRole('button', { name: 'Reconnect Spotify' })).toBeTruthy();
+  });
+
+  it('shows library rows and opens playlist tracks without Build a class', async () => {
+    vi.mocked(api.listClasses).mockResolvedValue(page([]));
+    vi.mocked(api.listConnections).mockResolvedValue([spotifyConnection()]);
+    vi.mocked(api.listPlaylists).mockResolvedValue([
+      {
+        provider: 'spotify',
+        playlistId: 'pl-1',
+        name: 'Warmup Ride',
+        ownerName: 'Steven',
+        trackCount: 24,
+        coverImageUrl: 'https://i.scdn.co/image/pl-1.jpg',
+      },
+    ]);
+    vi.mocked(api.listLikes).mockResolvedValue([
+      {
+        provider: 'spotify',
+        providerTrackId: 'tr-1',
+        providerUri: 'spotify:track:tr-1',
+        title: 'Levels',
+        artist: 'Avicii',
+        albumArtUrl: 'https://i.scdn.co/image/tr-1.jpg',
+        durationMs: 200000,
+      },
+    ]);
+    vi.mocked(api.listPlaylistTracks).mockResolvedValue([
+      {
+        provider: 'spotify',
+        providerTrackId: 'track-1',
+        title: 'Climb Track',
+        artist: 'DJ Test',
+        durationMs: 180000,
+        albumArtUrl: null,
+        providerUri: 'spotify:track:track-1',
+      },
+    ]);
+
+    renderDashboard();
+    fireEvent.click(await screen.findByRole('button', { name: 'Music' }));
+    await selectMusicService('Spotify');
+
+    const row = await screen.findByRole('button', { name: 'Open Warmup Ride' });
+    expect(screen.getByText('Playlist · Steven · 24 tracks')).toBeTruthy();
+    const cover = row.querySelector('img');
+    expect(cover?.getAttribute('src')).toBe('https://i.scdn.co/image/pl-1.jpg');
+    expect(cover?.className).toContain('max-h-11');
+    expect(cover?.className).toContain('max-w-11');
+    expect(row.closest('[data-build-class-slot="playlist"]')).toBeTruthy();
+    expect(screen.queryByRole('button', { name: /Build a class/i })).toBeNull();
+
+    fireEvent.click(screen.getByRole('button', { name: 'Songs' }));
+    expect(await screen.findByText('Song · Avicii · 3:20')).toBeTruthy();
+    const songArt = document.querySelector('[data-build-class-slot="song"] img');
+    expect(songArt?.className).toContain('max-h-11');
+    expect(songArt?.className).toContain('max-w-11');
+    expect(screen.queryByRole('button', { name: /Build a class/i })).toBeNull();
+
+    fireEvent.click(screen.getByRole('button', { name: 'Playlists' }));
+    fireEvent.click(screen.getByRole('button', { name: 'Open Warmup Ride' }));
+    expect(await screen.findByRole('heading', { name: 'Warmup Ride' })).toBeTruthy();
+    expect(screen.getByText('Climb Track')).toBeTruthy();
+  });
+
+  it('searches a catalog when no account is connected', async () => {
+    vi.mocked(api.listClasses).mockResolvedValue(page([]));
+    vi.mocked(api.listConnections).mockResolvedValue([]);
+    vi.mocked(api.searchProvider).mockResolvedValue([
+      {
+        provider: 'soundcloud',
+        providerTrackId: 'tr-1',
+        providerUri: 'https://soundcloud.com/ritmo/climb',
+        title: 'Climb',
+        artist: 'Artist',
+        albumArtUrl: null,
+        durationMs: 180000,
+      },
+    ]);
+
+    renderDashboard();
+    fireEvent.click(await screen.findByRole('button', { name: 'Music' }));
+    const search = screen.getByRole('searchbox', { name: 'Search SoundCloud catalog' });
+    fireEvent.change(search, { target: { value: 'climb' } });
+
+    expect(await screen.findByText('Climb')).toBeTruthy();
+    expect(api.searchProvider).toHaveBeenCalledWith('soundcloud', 'climb');
+    expect(api.listLikes).not.toHaveBeenCalled();
+    expect(api.listPlaylists).not.toHaveBeenCalled();
+  });
+
+  it('keeps a failed Spotify library unavailable instead of showing rows', async () => {
+    vi.mocked(api.listClasses).mockResolvedValue(page([]));
+    vi.mocked(api.listConnections).mockResolvedValue([spotifyConnection()]);
+    vi.mocked(api.listPlaylists).mockRejectedValue(new Error('Library unavailable'));
+    vi.mocked(api.listLikes).mockRejectedValue(new Error('Library unavailable'));
+
+    renderDashboard();
+    fireEvent.click(await screen.findByRole('button', { name: 'Music' }));
+    const spotify = await screen.findByRole('button', { name: 'Spotify, Unavailable' });
+    expect(screen.queryByRole('button', { name: 'Reconnect Spotify' })).toBeNull();
+    fireEvent.click(spotify);
+    expect(api.connectProvider).not.toHaveBeenCalled();
+    expect(screen.queryByRole('button', { name: /Open / })).toBeNull();
+    expect(await screen.findByText('Playlists unavailable')).toBeTruthy();
+    expect(screen.queryByText('Likes & playlists ready')).toBeNull();
+    fireEvent.click(screen.getByRole('button', { name: 'Retry Spotify library' }));
+    await waitFor(() => expect(api.listConnections).toHaveBeenCalledTimes(2));
+
+    fireEvent.click(screen.getByRole('button', { name: 'Catalog' }));
+    expect(screen.getByRole('searchbox', { name: 'Search Spotify catalog' })).toBeTruthy();
+  });
+
+  it('says the Spotify account is not allowlisted instead of Unavailable', async () => {
+    const allowlist = Object.assign(
+      new Error(
+        'Spotify has not allowlisted this account. Add it under User Management in the Spotify developer dashboard, then retry.',
+      ),
+      { code: 'SPOTIFY_DEVELOPMENT_MODE' },
+    );
+    vi.mocked(api.listClasses).mockResolvedValue(page([]));
+    vi.mocked(api.listConnections).mockResolvedValue([spotifyConnection()]);
+    vi.mocked(api.listPlaylists).mockRejectedValue(allowlist);
+    vi.mocked(api.listLikes).mockRejectedValue(allowlist);
+
+    renderDashboard();
+    fireEvent.click(await screen.findByRole('button', { name: 'Music' }));
+    const spotify = await screen.findByRole('button', { name: 'Spotify, Not allowlisted' });
+    expect(screen.queryByRole('button', { name: 'Spotify, Unavailable' })).toBeNull();
+    expect(screen.queryByRole('button', { name: 'Reconnect Spotify' })).toBeNull();
+    fireEvent.click(spotify);
+    expect(api.connectProvider).not.toHaveBeenCalled();
+    expect(
+      await screen.findByText(/User Management in the Spotify developer dashboard/),
+    ).toBeTruthy();
+    expect(screen.queryByText('Playlists unavailable')).toBeNull();
+    expect(screen.queryByText('Connected')).toBeNull();
+    expect(screen.getByRole('button', { name: 'Retry Spotify library' })).toBeTruthy();
+    expect(screen.getByRole('button', { name: 'Manage connections' })).toBeTruthy();
+  });
+
+  it('says the Spotify limit is used up instead of Unavailable', async () => {
+    const quota = Object.assign(
+      new Error("Spotify's usage limit for Ritmo is used up. Try again later."),
+      { code: 'PROVIDER_QUOTA_EXCEEDED' },
+    );
+    vi.mocked(api.listClasses).mockResolvedValue(page([]));
+    vi.mocked(api.listConnections).mockResolvedValue([spotifyConnection()]);
+    vi.mocked(api.listPlaylists).mockRejectedValue(quota);
+    vi.mocked(api.listLikes).mockRejectedValue(quota);
+
+    renderDashboard();
+    fireEvent.click(await screen.findByRole('button', { name: 'Music' }));
+    fireEvent.click(await screen.findByRole('button', { name: 'Spotify, Limit reached' }));
+    expect(api.connectProvider).not.toHaveBeenCalled();
+    expect(await screen.findByText(/usage limit for Ritmo is used up/)).toBeTruthy();
+    expect(screen.queryByText('Playlists unavailable')).toBeNull();
+    expect(screen.queryByRole('button', { name: 'Spotify, Unavailable' })).toBeNull();
+  });
+
+  it('starts SoundCloud OAuth from the Reconnect control', async () => {
+    vi.mocked(api.listClasses).mockResolvedValue(page([]));
+    vi.mocked(api.listConnections).mockResolvedValue([
+      {
+        id: 'conn-sc',
+        userId: 'me',
+        provider: 'soundcloud',
+        providerUserId: 'sc-user',
+        scope: null,
+        expiresAt: 1,
+        createdAt: 1,
+        updatedAt: 1,
+      },
+    ]);
+    vi.mocked(api.connectProvider).mockImplementationOnce(() => new Promise(() => {}));
+
+    renderDashboard();
+    fireEvent.click(await screen.findByRole('button', { name: 'Music' }));
+    fireEvent.click(await screen.findByRole('button', { name: /^SoundCloud$/ }));
+    expect(api.connectProvider).not.toHaveBeenCalled();
+
+    fireEvent.click(screen.getByRole('button', { name: 'Reconnect SoundCloud' }));
+    await waitFor(() =>
+      expect(api.connectProvider).toHaveBeenCalledWith('soundcloud', expect.any(AbortSignal)),
+    );
+  });
+
+  it('shows a SoundCloud reconnect failure next to the button', async () => {
+    vi.mocked(api.listClasses).mockResolvedValue(page([]));
+    vi.mocked(api.listConnections).mockResolvedValue([
+      {
+        id: 'conn-sc',
+        userId: 'me',
+        provider: 'soundcloud',
+        providerUserId: 'sc-user',
+        scope: null,
+        expiresAt: 1,
+        createdAt: 1,
+        updatedAt: 1,
+      },
+    ]);
+    vi.mocked(api.connectProvider).mockRejectedValue(new Error('SoundCloud sign-in did not open.'));
+
+    renderDashboard();
+    fireEvent.click(await screen.findByRole('button', { name: 'Music' }));
+    fireEvent.click(await screen.findByRole('button', { name: 'Reconnect SoundCloud' }));
+
+    const alert = await screen.findByRole('alert');
+    expect(alert.textContent).toContain('SoundCloud sign-in did not open.');
+    expect(screen.getAllByText('SoundCloud sign-in did not open.')).toHaveLength(1);
+    expect(screen.getAllByRole('button', { name: 'Reconnect SoundCloud' })).toHaveLength(1);
+  });
+
+  it('shows a SoundCloud reconnect timeout next to the button', async () => {
+    vi.mocked(api.listClasses).mockResolvedValue(page([]));
+    vi.mocked(api.listConnections).mockResolvedValue([
+      {
+        id: 'conn-sc',
+        userId: 'me',
+        provider: 'soundcloud',
+        providerUserId: 'sc-user',
+        scope: null,
+        expiresAt: 1,
+        createdAt: 1,
+        updatedAt: 1,
+      },
+    ]);
+    vi.mocked(api.connectProvider).mockImplementation(() => new Promise(() => {}));
+
+    renderDashboard();
+    fireEvent.click(await screen.findByRole('button', { name: 'Music' }));
+    const reconnect = await screen.findByRole('button', { name: 'Reconnect SoundCloud' });
+    vi.useFakeTimers();
+    try {
+      fireEvent.click(reconnect);
+      await act(async () => {
+        await vi.advanceTimersByTimeAsync(20_000);
+      });
+      expect(screen.getByRole('alert').textContent).toContain(
+        'SoundCloud did not finish connecting.',
+      );
+      expect(screen.getAllByRole('button', { name: 'Reconnect SoundCloud' })).toHaveLength(1);
+    } finally {
+      vi.useRealTimers();
+    }
   });
 });
 
@@ -1503,15 +2248,19 @@ describe('Dashboard connection-state headers', () => {
     renderDashboard();
     fireEvent.click(await screen.findByRole('button', { name: 'Music' }));
 
+    const spotify = await screen.findByRole('button', { name: 'Reconnect Spotify' });
+    const chipMark = spotify.querySelector('[data-connection-state="expired"]');
+    expect(chipMark?.className).toContain('text-state-caution');
+    expect(chipMark?.className).not.toContain('text-text-tertiary');
+    expect(chipMark?.querySelector('svg[aria-hidden]')).toBeTruthy();
+    fireEvent.click(screen.getByRole('button', { name: /^Spotify$/ }));
+    fireEvent.click(screen.getByRole('button', { name: 'Playlists' }));
+    expect(screen.getByText(/Reconnect Spotify to see your library/)).toBeTruthy();
     const musicExpired = await screen.findAllByText('Session expired');
     expect(musicExpired.length).toBeGreaterThan(0);
     expect(musicExpired.some((node) => node.closest('[data-connection-state="expired"]'))).toBe(
       true,
     );
-    const musicMark = document.querySelector('[data-connection-state="expired"]');
-    expect(musicMark?.className).toContain('text-state-caution');
-    expect(musicMark?.className).not.toContain('text-text-tertiary');
-    expect(musicMark?.querySelector('svg[aria-hidden]')).toBeTruthy();
 
     fireEvent.click(screen.getByRole('button', { name: 'Account' }));
     const accountSection = document.getElementById('account-music-connections');
@@ -1552,7 +2301,7 @@ describe('Dashboard Account status ledger', () => {
     expect(within(musicSection!).getAllByText('Status unavailable').length).toBeGreaterThan(0);
   });
 
-  it('claims only that the profile loaded, never that an identity was verified', async () => {
+  it('shows no status mark for a loaded profile and never claims it was verified', async () => {
     vi.mocked(api.listClasses).mockResolvedValue(page([]));
     vi.mocked(api.getMe).mockResolvedValue(profile);
     vi.mocked(api.listConnections).mockResolvedValue([]);
@@ -1560,10 +2309,46 @@ describe('Dashboard Account status ledger', () => {
     renderDashboard();
     fireEvent.click(await screen.findByRole('button', { name: 'Account' }));
 
-    // `profile !== null` means the payload arrived. Nothing here checks an email
-    // or an identity, so nothing may say "verified" (P1-05).
-    expect(await screen.findByText('Profile loaded')).toBeTruthy();
+    // Nothing here checks an email or an identity, so nothing may say "verified"
+    // (P1-05). A loaded profile is the normal state and needs no chip.
+    expect((await screen.findAllByText('tester@example.com')).length).toBeGreaterThan(0);
+    expect(screen.queryByText('Profile loaded')).toBeNull();
     expect(screen.queryByText('Profile verified')).toBeNull();
+  });
+
+  it('says only "Loading profile…" while the profile loads', async () => {
+    vi.mocked(api.listClasses).mockResolvedValue(page([]));
+    vi.mocked(api.getMe).mockReturnValue(new Promise(() => {}));
+    vi.mocked(api.listConnections).mockResolvedValue([]);
+
+    renderDashboard();
+    fireEvent.click(await screen.findByRole('button', { name: 'Account' }));
+
+    const panel = (await screen.findByRole('status', { name: 'Loading profile' })).closest(
+      'section',
+    )!;
+    expect(within(panel).queryByText(/unavailable/i)).toBeNull();
+    expect(within(panel).queryByText(/Edits paused/)).toBeNull();
+    expect(screen.getByRole('button', { name: 'Save profile' })).toHaveProperty('disabled', true);
+  });
+
+  it('says the provider sentence once and keeps the Account sub-nav on one scrolling row', async () => {
+    vi.mocked(api.listClasses).mockResolvedValue(page([]));
+    vi.mocked(api.getMe).mockResolvedValue(profile);
+    vi.mocked(api.listConnections).mockResolvedValue([]);
+
+    renderDashboard();
+    fireEvent.click(await screen.findByRole('button', { name: 'Account' }));
+
+    const musicSection = await waitFor(() => document.getElementById('account-music-connections')!);
+    expect(
+      within(musicSection).getAllByText(/Provider audio and authorization remain with the music/),
+    ).toHaveLength(1);
+    const subNav = screen.getByRole('link', { name: 'Profile' }).closest('nav')!;
+    // jsdom cannot measure layout: assert one flex row that scrolls, not a wrapping grid.
+    expect(subNav.className).toContain('flex');
+    expect(subNav.className).toContain('overflow-x-auto');
+    expect(subNav.className).not.toContain('grid-cols-2');
   });
 
   it('reports a failed profile read without leaking the upstream message', async () => {
@@ -1591,7 +2376,8 @@ describe('Dashboard Account status ledger', () => {
 
     expect(await screen.findByText('Some account status is unavailable')).toBeTruthy();
     expect(screen.getByRole('heading', { name: 'Tester' })).toBeTruthy();
-    expect(screen.getByText('Signed-in identity · profile details unavailable')).toBeTruthy();
+    expect(screen.getAllByText('Profile details unavailable').length).toBeGreaterThan(0);
+    expect(screen.getByText('Edits paused until the profile loads')).toBeTruthy();
     expect(screen.getByLabelText('Display name')).toHaveProperty('disabled', true);
     expect(screen.getByRole('button', { name: 'Save profile' })).toHaveProperty('disabled', true);
     expect(screen.getByRole('button', { name: 'Sign out' })).toHaveProperty('disabled', false);
@@ -1728,9 +2514,7 @@ describe('Dashboard onboarding video', () => {
 
     renderDashboard();
 
-    await screen.findByRole('heading', {
-      name: 'Pick a discipline. Ritmo lays out the class. You bring the music.',
-    });
+    await screen.findByRole('heading', { name: 'Start from a template' });
     expect(screen.queryByRole('dialog', { name: 'New instructor tutorial video' })).toBeNull();
   });
 });
@@ -1754,6 +2538,39 @@ describe('Dashboard class detail', () => {
     expect(screen.getByRole('button', { name: 'Manual track' })).toBeTruthy();
   });
 
+  it('uses Add a playlist as the empty-music call to action', async () => {
+    const ride = makeClass('Sunset climb');
+    vi.mocked(api.listClasses).mockResolvedValue(page([ride]));
+    vi.mocked(api.listClassTracks).mockResolvedValue([] as ClassTrack[]);
+    vi.mocked(api.getRunPayload).mockRejectedValue(new Error('no payload'));
+    vi.mocked(api.listConnections).mockResolvedValue([]);
+
+    renderDashboard();
+    fireEvent.click(await screen.findByRole('button', { name: /^Sunset climb$/ }));
+
+    const header = await screen.findByRole('region', { name: 'Class builder' });
+    expect(within(header).getByRole('heading', { name: 'Sunset climb' })).toBeTruthy();
+    expect(within(header).getByText('Cycle')).toBeTruthy();
+    expect(within(header).getByRole('button', { name: 'Back to Classes' })).toBeTruthy();
+    expect(within(header).queryByRole('button', { name: 'Add a playlist' })).toBeNull();
+    expect(screen.queryByText(/Adds after your current/)).toBeNull();
+    expect(screen.queryByRole('navigation', { name: 'Class chooser' })).toBeNull();
+    expect(screen.queryByRole('button', { name: 'Build a class' })).toBeNull();
+
+    const empty = screen.getByText('Empty run of show').closest('div');
+    if (!empty) throw new Error('Expected the empty run of show.');
+    const [callToAction] = within(empty).getAllByRole('button');
+    expect(callToAction?.textContent).toBe('Add a playlist');
+    expect(callToAction?.className).toContain('rf-btn-primary');
+    fireEvent.click(callToAction!);
+
+    const region = await screen.findByRole('region', { name: /Add music to Sunset climb/ });
+    expect(
+      within(region).getByRole('button', { name: 'Import Playlist URL', pressed: true }),
+    ).toBeTruthy();
+    expect(screen.getAllByRole('button', { name: 'Add a playlist' })).toHaveLength(1);
+  });
+
   it('keeps the newly selected class when a slower prior load resolves late', async () => {
     const first = makeClass('First ride');
     const second = makeClass('Second ride');
@@ -1767,9 +2584,8 @@ describe('Dashboard class detail', () => {
 
     renderDashboard();
     // Select the slow class, then immediately switch to the fast one.
-    fireEvent.click(await screen.findByRole('button', { name: /^First ride/ }));
-    const chooser = await screen.findByRole('navigation', { name: 'Class chooser' });
-    fireEvent.click(within(chooser).getByRole('button', { name: /^Second ride/ }));
+    fireEvent.click(await screen.findByRole('button', { name: /^First ride$/ }));
+    await openClassFromClasses('Second ride');
 
     expect(await screen.findByRole('heading', { name: 'Second ride' })).toBeTruthy();
 
@@ -1796,7 +2612,8 @@ describe('Dashboard class detail', () => {
     fireEvent.click(await screen.findByRole('button', { name: /^Broken ride/ }));
 
     expect(await screen.findByText('detail boom')).toBeTruthy();
-    const retry = screen.getByRole('button', { name: 'Retry class' });
+    expect(screen.getByRole('heading', { name: "This class didn't load." })).toBeTruthy();
+    const retry = screen.getByRole('button', { name: 'Retry' });
 
     fireEvent.click(retry);
 
@@ -1824,15 +2641,20 @@ describe('Dashboard class detail', () => {
 
     renderDashboard();
     // Initially the home row shows 0 tracks (the list response's aggregate).
+    // Jump back in repeats the same row, so the meta is on both surfaces.
     expect(await screen.findByRole('button', { name: 'Stale card' })).toBeTruthy();
-    expect(screen.getByText(/0 tracks/)).toBeTruthy();
+    expect(screen.getAllByText(/0 tracks/).length).toBeGreaterThan(0);
 
     fireEvent.click(screen.getByRole('button', { name: 'Stale card' }));
 
-    // After the detail (run-payload) loads, the builder rail card reflects 2 tracks · 7:00.
-    expect(
-      await screen.findByRole('button', { name: /^Stale card.*2 tracks.*7:00/i }),
-    ).toBeTruthy();
+    // The builder header shows the loaded shape. Back on Classes, the row keeps
+    // those aggregates without a builder class list.
+    await screen.findByRole('heading', { name: 'Stale card' });
+    expect(screen.getByText('2 tracks')).toBeTruthy();
+    expect(screen.getByText('7:00 total')).toBeTruthy();
+    fireEvent.click(screen.getByRole('button', { name: 'Back to Classes' }));
+    expect((await screen.findAllByText('Cycle · 2 tracks · 7:00')).length).toBeGreaterThan(0);
+    expect(screen.queryByRole('navigation', { name: 'Class chooser' })).toBeNull();
   });
 
   it('submits manually added track durations as parsed minutes and seconds', async () => {
@@ -2360,24 +3182,28 @@ describe('Dashboard track focus management', () => {
     expect(screen.getByRole('button', { name: /run live/i })).toHaveProperty('disabled', true);
   });
 
-  it('keeps compact cross-class orientation while a class is open', async () => {
+  it('returns to the Classes library from the builder back link', async () => {
     const first = installClassWithTracks('Saturday Heat', [
       { classTrackId: 'ct-1', durationMs: 240000, title: 'First Light' },
     ]);
+    first.template = 'sculpt';
     const second = makeClass('Sunrise Source');
     vi.mocked(api.listClasses).mockResolvedValue(page([first, second]));
 
     renderDashboard();
-    fireEvent.click(await screen.findByRole('button', { name: /^Saturday Heat/ }));
+    fireEvent.click(await screen.findByRole('button', { name: /^Saturday Heat$/ }));
 
-    const chooser = await screen.findByRole('navigation', { name: 'Class chooser' });
-    expect(
-      within(chooser)
-        .getByRole('button', { name: /Saturday Heat/ })
-        .getAttribute('aria-current'),
-    ).toBe('page');
-    expect(within(chooser).getByRole('button', { name: /Sunrise Source/ })).toBeTruthy();
-    expect(within(chooser).getByRole('button', { name: 'All classes' })).toBeTruthy();
+    const header = await screen.findByRole('region', { name: 'Class builder' });
+    expect(within(header).getByRole('heading', { name: 'Saturday Heat' })).toBeTruthy();
+    expect(within(header).getByText('Pilates')).toBeTruthy();
+    expect(screen.queryByRole('navigation', { name: 'Class chooser' })).toBeNull();
+    expect(screen.queryByRole('button', { name: 'Build a class' })).toBeNull();
+
+    fireEvent.click(within(header).getByRole('button', { name: 'Back to Classes' }));
+    expect(await screen.findByRole('heading', { name: 'Your Classes' })).toBeTruthy();
+    expect(screen.queryByRole('region', { name: 'Class builder' })).toBeNull();
+    expect(screen.getByRole('button', { name: /^Saturday Heat$/ })).toBeTruthy();
+    expect(screen.getByRole('button', { name: /^Sunrise Source$/ })).toBeTruthy();
   });
 
   it('keeps the selected track and draft stable through an optimistic reorder refresh', async () => {
@@ -2551,8 +3377,7 @@ describe('Dashboard track focus management', () => {
       vi.mocked(api.listClassTracks).mockReturnValueOnce(returning.promise);
       fireEvent.click(screen.getByRole('button', { name: 'Exit' }));
       await waitFor(() => expect(api.listClassTracks).toHaveBeenCalledTimes(2));
-      const chooser = screen.getByRole('navigation', { name: 'Class chooser' });
-      fireEvent.click(within(chooser).getByRole('button', { name: /^Other ride/ }));
+      await openClassFromClasses('Other ride');
       await screen.findByRole('heading', { name: 'Other ride' });
       await act(async () => {
         if (outcome === 'success') returning.resolve([makeClassTrack('ct-1', 0)]);
@@ -2605,7 +3430,7 @@ describe('Dashboard track focus management', () => {
     await screen.findByRole('button', { name: 'Exit' });
     const reads = vi.mocked(api.listClassTracks).mock.calls.length;
     fireEvent.click(screen.getByRole('button', { name: 'Exit' }));
-    await screen.findByText('Live queue');
+    await screen.findByRole('heading', { name: 'Teach a class' });
     expect(api.listClassTracks).toHaveBeenCalledTimes(reads);
     expect(screen.queryByRole('navigation', { name: 'Class chooser' })).toBeNull();
   });
@@ -2631,7 +3456,7 @@ describe('Dashboard track focus management', () => {
     await screen.findByRole('button', { name: 'Exit' });
     const reads = vi.mocked(api.listClassTracks).mock.calls.length;
     fireEvent.click(screen.getByRole('button', { name: 'Exit' }));
-    await screen.findByText('Live queue');
+    await screen.findByRole('heading', { name: 'Teach a class' });
     expect(api.listClassTracks).toHaveBeenCalledTimes(reads);
     expect(screen.queryByRole('navigation', { name: 'Class chooser' })).toBeNull();
   });
@@ -2659,8 +3484,7 @@ describe('Dashboard track focus management', () => {
     const pending = deferred<RunPayload>();
     vi.mocked(api.getRunPayload).mockReturnValueOnce(pending.promise);
     fireEvent.click(screen.getByRole('button', { name: /Run live/ }));
-    const chooser = screen.getByRole('navigation', { name: 'Class chooser' });
-    fireEvent.click(within(chooser).getByRole('button', { name: /^Other ride/ }));
+    await openClassFromClasses('Other ride');
     await screen.findByRole('heading', { name: 'Other ride' });
     await act(async () => pending.resolve(liveReturnPayload(ride)));
     expect(screen.queryByRole('button', { name: 'Exit' })).toBeNull();
@@ -2750,7 +3574,7 @@ describe('Dashboard track focus management', () => {
         });
       renderDashboard();
       fireEvent.click(await screen.findByRole('button', { name: 'Music' }));
-      fireEvent.click(await screen.findByRole('button', { name: /Browse liked tracks/i }));
+      await openLikedSongs();
       fireEvent.click(screen.getByRole('button', { name: 'Create class from 2 liked tracks' }));
       const retry = await screen.findByRole('button', { name: 'Retry 1 failed' });
       await screen.findByRole('heading', { name: 'Spotify likes' });
@@ -2762,10 +3586,9 @@ describe('Dashboard track focus management', () => {
         await screen.findByRole('heading', { name: 'Spotify likes' });
         await act(async () => {});
       } else {
-        const chooser = screen.getByRole('navigation', { name: 'Class chooser' });
-        fireEvent.click(within(chooser).getByRole('button', { name: /^Import other ride/ }));
+        await openClassFromClasses('Import other ride');
         await screen.findByRole('heading', { name: 'Import other ride' });
-        fireEvent.click(within(chooser).getByRole('button', { name: /^Spotify likes/ }));
+        await openClassFromClasses('Spotify likes');
         await screen.findByRole('heading', { name: 'Spotify likes' });
       }
       const readsBeforeCommit = vi.mocked(api.listClassTracks).mock.calls.length;
@@ -2831,8 +3654,7 @@ describe('Dashboard track focus management', () => {
     async (origin: string) => {
       const { other } = await openRefreshRide();
       const deletion = await startDeferredClassDelete();
-      const chooser = screen.getByRole('navigation', { name: 'Class chooser' });
-      fireEvent.click(within(chooser).getByRole('button', { name: /^Other ride/ }));
+      await openClassFromClasses('Other ride');
       await screen.findByRole('heading', { name: 'Other ride' });
       let run: HTMLElement;
       if (origin === 'overview') {
@@ -2857,10 +3679,9 @@ describe('Dashboard track focus management', () => {
       const { ride, other } = await openRefreshRide();
       const deletion = await startDeferredClassDelete();
       if (origin === 'reopened Builder') {
-        const chooser = screen.getByRole('navigation', { name: 'Class chooser' });
-        fireEvent.click(within(chooser).getByRole('button', { name: /^Other ride/ }));
+        await openClassFromClasses('Other ride');
         await screen.findByRole('heading', { name: 'Other ride' });
-        fireEvent.click(within(chooser).getByRole('button', { name: /^Refresh ride/ }));
+        await openClassFromClasses('Refresh ride');
         await screen.findByRole('heading', { name: 'Refresh ride' });
       }
       let run: HTMLElement;
@@ -2895,8 +3716,7 @@ describe('Dashboard track focus management', () => {
   it('preserves B’s inspector draft, focus and scoped read warning when A deletion completes', async () => {
     const { other } = await openRefreshRide();
     const deletion = await startDeferredClassDelete();
-    const chooser = screen.getByRole('navigation', { name: 'Class chooser' });
-    fireEvent.click(within(chooser).getByRole('button', { name: /^Other ride/ }));
+    await openClassFromClasses('Other ride');
     await screen.findByRole('heading', { name: 'Other ride' });
     fireEvent.click(rowSelectButton('ct-other')!);
     const inspector = await screen.findByRole('region', { name: 'Track inspector for Other song' });
@@ -3004,13 +3824,12 @@ describe('Dashboard track focus management', () => {
       fireEvent.keyDown(grip, { key: 'ArrowDown' });
       await waitFor(() => expect(api.listClassTracks).toHaveBeenCalledTimes(2));
       if (leave === 'switch') {
-        const chooser = screen.getByRole('navigation', { name: 'Class chooser' });
-        fireEvent.click(within(chooser).getByRole('button', { name: /^Other ride/ }));
+        await openClassFromClasses('Other ride');
         await screen.findByRole('heading', { name: 'Other ride' });
       } else if (leave === 'music') {
         fireEvent.click(screen.getByRole('button', { name: 'Music' }));
       } else {
-        fireEvent.click(screen.getByRole('button', { name: 'All classes' }));
+        fireEvent.click(screen.getByRole('button', { name: 'Back to Classes' }));
       }
       await act(async () => refresh.reject(new Error('Obsolete read')));
       expect(screen.queryByText(/Obsolete read/)).toBeNull();
@@ -3026,10 +3845,9 @@ describe('Dashboard track focus management', () => {
     const mutation = deferred<Awaited<ReturnType<typeof api.reorderTracks>>>();
     vi.mocked(api.reorderTracks).mockReturnValueOnce(mutation.promise);
     fireEvent.keyDown(grip, { key: 'ArrowDown' });
-    const chooser = screen.getByRole('navigation', { name: 'Class chooser' });
-    fireEvent.click(within(chooser).getByRole('button', { name: /^Other ride/ }));
+    await openClassFromClasses('Other ride');
     await screen.findByRole('heading', { name: 'Other ride' });
-    fireEvent.click(within(chooser).getByRole('button', { name: /^Refresh ride/ }));
+    await openClassFromClasses('Refresh ride');
     await screen.findByRole('heading', { name: 'Refresh ride' });
     const readsBeforeCompletion = vi.mocked(api.listClassTracks).mock.calls.length;
     await act(async () => mutation.resolve([]));
@@ -3057,7 +3875,8 @@ describe('Dashboard track focus management', () => {
     await screen.findByText(/Newest read unavailable/);
     await act(async () => older.resolve([makeClassTrack('ct-1', 0)]));
     expect(screen.queryAllByText('Obsolete song title')).toHaveLength(0);
-    expect(screen.getByRole('button', { name: /^Refresh ride.*2 tracks.*30:00/i })).toBeTruthy();
+    expect(screen.getByText('2 tracks')).toBeTruthy();
+    expect(screen.getByText('30:00 total')).toBeTruthy();
     expect(screen.getByText(/Newest read unavailable/)).toBeTruthy();
   });
 
@@ -3085,7 +3904,8 @@ describe('Dashboard track focus management', () => {
     expect(
       screen.getByRole('region', { name: 'Track inspector for Latest First Light' }),
     ).toBeTruthy();
-    expect(screen.getByRole('button', { name: /^Refresh ride.*2 tracks.*7:00/i })).toBeTruthy();
+    expect(screen.getByText('2 tracks')).toBeTruthy();
+    expect(screen.getByText('7:00 total')).toBeTruthy();
   });
 
   it('does not change Library aggregates from a silent response after switching away', async () => {
@@ -3099,12 +3919,13 @@ describe('Dashboard track focus management', () => {
     vi.mocked(api.getRunPayload).mockResolvedValueOnce(stalePayload);
     fireEvent.keyDown(grip, { key: 'ArrowDown' });
     await waitFor(() => expect(api.listClassTracks).toHaveBeenCalledTimes(2));
-    const chooser = screen.getByRole('navigation', { name: 'Class chooser' });
-    fireEvent.click(within(chooser).getByRole('button', { name: /^Other ride/ }));
+    await openClassFromClasses('Other ride');
     await screen.findByRole('heading', { name: 'Other ride' });
     await act(async () => older.resolve([makeClassTrack('ct-1', 0)]));
-    expect(screen.getByRole('button', { name: /^Refresh ride.*2 tracks.*30:00/i })).toBeTruthy();
     expect(screen.getByRole('button', { name: /Other song.*Artist/ })).toBeTruthy();
+    fireEvent.click(screen.getByRole('button', { name: 'Back to Classes' }));
+    expect((await screen.findAllByText('Cycle · 2 tracks · 30:00')).length).toBeGreaterThan(0);
+    expect(screen.queryByText('Cycle · 1 track · 1:00')).toBeNull();
   });
 
   it('clears only the read warning when refresh recovers after an unrelated mutation error', async () => {
@@ -3433,7 +4254,10 @@ describe('Dashboard track focus management', () => {
     expect(firstRow).not.toBeNull();
     fireEvent.click(firstRow as HTMLElement);
 
-    fireEvent.click(await screen.findByRole('button', { name: 'Remove track' }));
+    const removeTrack = await screen.findByRole('button', { name: 'Remove track' });
+    expect(removeTrack.querySelector('svg')).toBeTruthy();
+    expect(removeTrack.textContent).toContain('Remove track');
+    fireEvent.click(removeTrack);
 
     // Removing the first track lands focus on the track that slides into its slot
     // (the second), not on <body>.
@@ -3600,7 +4424,8 @@ describe('Dashboard plan-first next step', () => {
 
     renderDashboard();
     fireEvent.click(await screen.findByRole('button', { name: /^Plan ride$/ }));
-    const open = await screen.findByRole('button', { name: 'Add a playlist' });
+    const header = await screen.findByRole('region', { name: 'Class builder' });
+    const open = within(header).getByRole('button', { name: 'Add a playlist' });
     expect(screen.getAllByRole('button', { name: 'Add a playlist' })).toHaveLength(1);
     expect(screen.queryByRole('button', { name: 'Import a playlist as song blocks' })).toBeNull();
     expect(screen.queryByRole('button', { name: 'Add music' })).toBeNull();
@@ -3629,10 +4454,16 @@ describe('Dashboard plan-first next step', () => {
     renderDashboard();
     fireEvent.click(await screen.findByRole('button', { name: /^Imported ride$/ }));
     await screen.findByRole('heading', { name: 'Imported ride' });
-    expect(await screen.findByRole('button', { name: 'Add a playlist' })).toBeTruthy();
+    const header = await screen.findByRole('region', { name: 'Class builder' });
+    const playlist = await within(header).findByRole('button', { name: 'Add a playlist' });
     await waitFor(() => expect(screen.queryByRole('button', { name: 'Add music' })).toBeNull());
     expect(screen.queryByRole('button', { name: 'Import a playlist as song blocks' })).toBeNull();
-    expect(screen.getByText('Adds after your current 1 song')).toBeTruthy();
+    const note = within(header).getByText('Adds after your current 1 song');
+    expect(playlist.parentElement).toBe(note.parentElement);
+    expect(within(header).getByRole('heading', { name: 'Imported ride' })).toBeTruthy();
+    expect(within(header).getByText('Cycle')).toBeTruthy();
+    const playback = screen.getByRole('heading', { name: 'Playback order' });
+    expect(playback.parentElement?.parentElement?.contains(playlist)).toBe(false);
 
     fireEvent.click(screen.getByRole('button', { name: 'Add a playlist' }));
     const region = await screen.findByRole('region', { name: /Add music to Imported ride/ });
@@ -3660,10 +4491,14 @@ describe('Dashboard plan-first next step', () => {
     renderDashboard();
     fireEvent.click(await screen.findByRole('button', { name: /^Recipe ride$/ }));
     await screen.findByRole('heading', { name: 'Recipe ride' });
-    expect(await screen.findAllByRole('button', { name: 'Add a playlist' })).toHaveLength(1);
+    const header = await screen.findByRole('region', { name: 'Class builder' });
+    const playlist = within(header).getByRole('button', { name: 'Add a playlist' });
+    expect(screen.getAllByRole('button', { name: 'Add a playlist' })).toHaveLength(1);
     expect(screen.queryByRole('button', { name: 'Import a playlist as song blocks' })).toBeNull();
     expect(screen.queryByRole('button', { name: 'Add music' })).toBeNull();
-    expect(screen.getByText('Adds after your current 2 songs')).toBeTruthy();
+    const note = within(header).getByText('Adds after your current 2 songs');
+    expect(playlist.parentElement).toBe(note.parentElement);
+    expect(screen.queryByRole('navigation', { name: 'Class chooser' })).toBeNull();
   });
 
   it('hides Add a playlist without edit access', async () => {
@@ -3830,7 +4665,12 @@ describe('Dashboard failure copy', () => {
 
     renderDashboard();
     fireEvent.click(await screen.findByRole('button', { name: 'Account' }));
-    expect(await screen.findByText('Profile loaded')).toBeTruthy();
+    await waitFor(() =>
+      expect(screen.getByRole('button', { name: 'Save profile' })).toHaveProperty(
+        'disabled',
+        false,
+      ),
+    );
     fireEvent.click(screen.getByRole('button', { name: 'Save profile' }));
     return screen.findByRole('alert');
   }
@@ -3865,23 +4705,23 @@ describe('Dashboard failure copy', () => {
     fireEvent.click(await screen.findByRole('button', { name: /^Broken ride/ }));
     const alert = await screen.findByRole('alert');
     expect(alert.textContent?.trim().length).toBeGreaterThan(0);
-    expect(screen.getByRole('button', { name: 'Retry class' })).toBeTruthy();
+    expect(screen.getByRole('button', { name: 'Retry' })).toBeTruthy();
     return alert;
   }
 
   it('shows the class-detail fallback for a non-Error', async () => {
     const alert = await openFailedDetail({ code: 'down' });
-    expect(alert.textContent?.trim()).toBe('Could not load this class.');
+    expect(within(alert).getByText('Could not load this class.')).toBeTruthy();
   });
 
   it('shows the class-detail fallback for an empty Error and not a blank alert', async () => {
     const alert = await openFailedDetail(new Error(''));
-    expect(alert.textContent?.trim()).toBe('Could not load this class.');
+    expect(within(alert).getByText('Could not load this class.')).toBeTruthy();
   });
 
   it('keeps a class-detail Error message', async () => {
     const alert = await openFailedDetail(new Error('detail boom'));
-    expect(alert.textContent?.trim()).toBe('detail boom');
+    expect(within(alert).getByText('detail boom')).toBeTruthy();
   });
 
   it('shows playlist and likes shelf labels when those loads throw a non-Error', async () => {
@@ -3892,9 +4732,11 @@ describe('Dashboard failure copy', () => {
 
     renderDashboard();
     fireEvent.click(await screen.findByRole('button', { name: 'Music' }));
+    await selectMusicService('Spotify');
 
     expect(await screen.findByText('Playlists unavailable')).toBeTruthy();
-    expect(screen.getByText('Likes unavailable')).toBeTruthy();
+    fireEvent.click(screen.getByRole('button', { name: 'Songs' }));
+    expect(await screen.findByText('Likes unavailable')).toBeTruthy();
     expect(screen.queryByText('playlist-down')).toBeNull();
     expect(screen.queryByText('likes-down')).toBeNull();
     expect(screen.queryByText('undefined')).toBeNull();
@@ -3930,5 +4772,59 @@ describe('Dashboard failure copy', () => {
     ).toBeTruthy();
     expect(screen.queryByText('undefined')).toBeNull();
     expect(screen.queryByText('conn-down')).toBeNull();
+  });
+});
+
+describe('Dashboard loading and load-error states', () => {
+  it('shows a labelled skeleton, not a sentence, while the builder loads', async () => {
+    const ride = makeClass('Slow ride');
+    vi.mocked(api.listClasses).mockResolvedValue(page([ride]));
+    vi.mocked(api.listClassTracks).mockReturnValue(new Promise(() => {}));
+    vi.mocked(api.getRunPayload).mockReturnValue(new Promise(() => {}));
+
+    renderDashboard();
+    fireEvent.click(await screen.findByRole('button', { name: /^Slow ride/ }));
+
+    expect(await screen.findByRole('status', { name: 'Loading class' })).toBeTruthy();
+    expect(screen.queryByText('Loading class…')).toBeNull();
+  });
+
+  it('shows a labelled skeleton while music connections load', async () => {
+    vi.mocked(api.listClasses).mockResolvedValue(page([]));
+    vi.mocked(api.listConnections).mockReturnValue(new Promise(() => {}));
+
+    renderDashboard();
+    fireEvent.click(await screen.findByRole('button', { name: 'Music' }));
+
+    expect(await screen.findByRole('status', { name: 'Checking music connections' })).toBeTruthy();
+    expect(screen.queryByText('Checking music connections…')).toBeNull();
+  });
+
+  it('shows a labelled skeleton on the Live tab while classes load', async () => {
+    vi.mocked(api.listClasses).mockReturnValue(new Promise(() => {}));
+
+    renderDashboard();
+    fireEvent.click(screen.getByRole('button', { name: 'Live' }));
+
+    expect(await screen.findByRole('status', { name: 'Loading classes' })).toBeTruthy();
+    expect(screen.queryByText('Loading classes…')).toBeNull();
+  });
+
+  it('shows the recovery card with Retry when the Live tab cannot read classes', async () => {
+    vi.mocked(api.listClasses)
+      .mockRejectedValueOnce(new Error('list offline'))
+      .mockResolvedValue(page([]));
+
+    renderDashboard();
+    fireEvent.click(screen.getByRole('button', { name: 'Live' }));
+
+    const alert = await screen.findByRole('alert');
+    expect(within(alert).getByRole('heading', { name: "Your classes didn't load." })).toBeTruthy();
+    expect(screen.queryByText(/No classes with tracks yet/)).toBeNull();
+
+    fireEvent.click(within(alert).getByRole('button', { name: 'Retry' }));
+    expect((await screen.findAllByText(/No classes with tracks yet/)).length).toBeGreaterThan(0);
+    expect(screen.queryByRole('alert')).toBeNull();
+    expect(api.listClasses).toHaveBeenCalledTimes(2);
   });
 });

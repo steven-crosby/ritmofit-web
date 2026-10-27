@@ -70,6 +70,15 @@ export type PlanBlockTarget = { id: string; label: string; position: number };
 export const planBlockOptionLabel = (block: { label: string; position: number }) =>
   `Block ${block.position + 1} · ${block.label}`;
 
+/** Error glyph for destructive actions (05 · Buttons). Paired with the action name. */
+function DestructiveErrorIcon() {
+  return (
+    <svg aria-hidden viewBox="0 0 24 24" className="h-3.5 w-3.5 shrink-0" fill="currentColor">
+      <path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm1 15h-2v-2h2v2zm0-4h-2V7h2v6z" />
+    </svg>
+  );
+}
+
 /**
  * A Cooldown label stays where the instructor left it. Once that block is no
  * longer last, say so once — she moves or renames it. Nothing here rewrites the label.
@@ -139,6 +148,7 @@ export function ClassPlanBlocks({
   onHasPlanBlocks,
   onPlanBlocks,
   onPlanReady,
+  onPlanFailed,
 }: {
   classId: string;
   /** Only scaffold classes gain add, reorder, and delete controls. */
@@ -162,6 +172,8 @@ export function ClassPlanBlocks({
   onPlanBlocks?: (blocks: ClassPlanBlock[]) => void;
   /** False until a plan-block fetch succeeds. A failed fetch does not publish []. */
   onPlanReady?: (ready: boolean) => void;
+  /** True while the latest plan-block fetch has failed, so the header can say why. */
+  onPlanFailed?: (failed: boolean) => void;
 }) {
   const [blocks, setBlocks] = useState<ClassPlanBlock[] | null>(null);
   const [error, setError] = useState<string | null>(null);
@@ -187,6 +199,8 @@ export function ClassPlanBlocks({
   const assignmentKey = tracks.map((track) => `${track.id}:${track.planBlockId ?? ''}`).join('|');
   const onPlanReadyRef = useRef(onPlanReady);
   onPlanReadyRef.current = onPlanReady;
+  const onPlanFailedRef = useRef(onPlanFailed);
+  onPlanFailedRef.current = onPlanFailed;
   const loadedClassRef = useRef(classId);
 
   useEffect(() => {
@@ -203,11 +217,13 @@ export function ClassPlanBlocks({
         if (!alive) return;
         setBlocks(Array.isArray(rows) ? rows : []);
         onPlanReadyRef.current?.(true);
+        onPlanFailedRef.current?.(false);
       } catch (e) {
         if (!alive) return;
         // Keep the last successful plan. Publishing [] would look like an empty class.
         setError(errMessage(e));
         onPlanReadyRef.current?.(false);
+        onPlanFailedRef.current?.(true);
       }
     })();
     return () => {
@@ -748,8 +764,9 @@ function PlanBlockCard({
                       setDeleting(false);
                     });
                   }}
-                  className="min-h-11 rounded-control border border-state-danger px-3 font-ui text-xs font-semibold text-state-danger rf-focus-ring disabled:opacity-40"
+                  className="inline-flex min-h-11 items-center justify-center gap-1.5 rounded-control bg-transparent px-3 font-ui text-xs font-semibold text-state-danger hover:bg-state-danger/10 active:translate-y-px rf-focus-ring disabled:pointer-events-none disabled:opacity-40"
                 >
+                  <DestructiveErrorIcon />
                   {deleting ? 'Deleting…' : 'Delete block'}
                 </button>
                 <button
@@ -772,8 +789,9 @@ function PlanBlockCard({
                 disabled={manageBusy}
                 onClick={() => setConfirmDelete(true)}
                 aria-label={`Delete ${blockName}`}
-                className="min-h-11 rounded-control px-3 font-ui text-xs text-state-danger rf-focus-ring disabled:opacity-40"
+                className="inline-flex min-h-11 items-center justify-center gap-1.5 rounded-control bg-transparent px-3 font-ui text-xs text-state-danger hover:bg-state-danger/10 active:translate-y-px rf-focus-ring disabled:pointer-events-none disabled:opacity-40"
               >
+                <DestructiveErrorIcon />
                 Delete block
               </button>
             )

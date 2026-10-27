@@ -1,0 +1,31 @@
+{
+  "schemaVersion": 1,
+  "id": "RF-85",
+  "title": "Investigate the empty FairPlay probe on the latest deploy",
+  "kind": "investigation",
+  "status": "done",
+  "priority": "untriaged",
+  "parent": "RF-29",
+  "dependsOn": [],
+  "acceptance": [
+    "Historical scope: Explain the empty FairPlay probe on the latest deploy. Review original evidence before relying on broader product acceptance."
+  ],
+  "nextAction": null,
+  "blocker": null,
+  "evidence": [
+    {
+      "kind": "source",
+      "ref": "https://github.com/steven-crosby/ritmofit-web/blob/f35d5d5992035c3895b948b3dc90e96ea6eaffa1/ritmofit_dev_plan/tasks.md#L28",
+      "summary": "Original board entry; historical assertion, not independently verified product behavior.",
+      "checkedOn": null
+    }
+  ],
+  "resolution": "Investigation recorded; root cause and audible playback acceptance remain unresolved under RF-29.",
+  "followUps": [
+    "RF-29"
+  ],
+  "imported": {
+    "status": "Done",
+    "title": "^RF-29 Explain the empty FairPlay probe on the latest deploy"
+  }
+}

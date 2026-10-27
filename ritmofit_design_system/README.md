@@ -8,8 +8,9 @@ bridged into iOS via `tokens.json`. Historical design snapshots may be reference
 
 > Ritmo Studio is for instructors who are creators.
 
-The standing instructor-facing comprehension test is **Simple. Stupid. Swift.** See
-[`01-design-principles.md` §0](./01-design-principles.md) and
+The standing instructor-facing comprehension test is **Simple. Stupid. Swift.** Its hard pass/fail
+bar for every page and card is stated once in
+[`01-design-principles.md` §0](./01-design-principles.md). Product decision:
 [`D23`](../ritmofit_dev_plan/decisions.md).
 
 Ritmo Studio helps rhythm fitness instructors find, shape, and perform the class inside the music. It is

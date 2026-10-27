@@ -15,6 +15,7 @@ import {
   SoundCloudUnauthorizedError,
   SpotifyUnauthorizedError,
   SpotifyForbiddenError,
+  SpotifyDevelopmentModeError,
   SpotifyPlaylistAccessDeniedError,
   AppleMusicUnauthorizedError,
   type OAuthTokens,
@@ -39,6 +40,10 @@ import {
   spotifyCreds,
 } from './provider-config.js';
 import { musicConnections } from '../../db/schema.js';
+import {
+  SPOTIFY_DEVELOPMENT_MODE_CODE,
+  SPOTIFY_DEVELOPMENT_MODE_MESSAGE,
+} from './spotify-development-mode.js';
 
 const EXPIRY_SKEW_MS = 60_000;
 
@@ -71,6 +76,8 @@ interface PlaylistAdapter {
    * unset, so the `?.` call below is a no-op for them.
    */
   isForbidden?(err: unknown): boolean;
+  /** Development Mode 403. Refresh and reconnect do not add the allowlist row. */
+  isDevelopmentMode?(err: unknown): boolean;
   /**
    * A provider can deny one specific playlist even when the user's connection is
    * valid. Reconnecting will not help; tell the user why that playlist cannot open.
@@ -103,6 +110,7 @@ const PLAYLIST_ADAPTERS: Partial<Record<Provider, PlaylistAdapter>> = {
     refreshToken: refreshSpotifyToken,
     isUnauthorized: (err) => err instanceof SpotifyUnauthorizedError,
     isForbidden: (err) => err instanceof SpotifyForbiddenError,
+    isDevelopmentMode: (err) => err instanceof SpotifyDevelopmentModeError,
     isPlaylistAccessDenied: (err) => err instanceof SpotifyPlaylistAccessDeniedError,
   },
   soundcloud: {
@@ -255,6 +263,10 @@ function mapConnectedPlaylistReadError(
   opts: { unauthorizedAsReauth?: boolean; reauthMessage?: string } = {},
 ): never {
   const reauth = opts.reauthMessage ?? `Reconnect your ${adapter.label} account.`;
+  // Allowlist 403 is not a missing scope. Reconnect cannot add the dashboard row.
+  if (adapter.isDevelopmentMode?.(err)) {
+    throw new HttpError(403, SPOTIFY_DEVELOPMENT_MODE_CODE, SPOTIFY_DEVELOPMENT_MODE_MESSAGE);
+  }
   // A missing scope: no refresh can grant it — prompt reconnect, don't burn a cycle.
   if (adapter.isForbidden?.(err)) {
     throw new HttpError(409, 'REAUTH_REQUIRED', reauth);
@@ -263,7 +275,7 @@ function mapConnectedPlaylistReadError(
     throw new HttpError(
       403,
       'PROVIDER_FORBIDDEN',
-      `${adapter.label} only allows opening playlists you own or collaborate on.`,
+      `${adapter.label} only lets Ritmo read playlists you own or collaborate on.`,
     );
   }
   if (opts.unauthorizedAsReauth && adapter.isUnauthorized(err)) {

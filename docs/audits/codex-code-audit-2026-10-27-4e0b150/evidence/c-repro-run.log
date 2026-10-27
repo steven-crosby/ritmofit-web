@@ -1,0 +1,42 @@
+# Reviewer C repro run — worktree /tmp/wt-c @ 4e0b15096995c125b3941bf374a6a580e2ff52f8 (apply: git apply repro/c-provider-repro.patch)
+
+$ (cd apps/web && pnpm exec vitest run src/lib/playback/c-provider-repro.test.ts --reporter=verbose)
+ RUN  v3.2.6 /tmp/wt-c/apps/web
+ ✓ src/lib/playback/c-provider-repro.test.ts > C-1 Spotify playback gated on the ~1h ACCESS-token expiry > marks a Spotify-only track unplayable as "no_connected_provider" 1ms
+ ✓ src/lib/playback/c-provider-repro.test.ts > C-1 Spotify playback gated on the ~1h ACCESS-token expiry > fails Live preflight for the whole class 0ms
+ ✓ src/lib/playback/c-provider-repro.test.ts > C-1 Spotify playback gated on the ~1h ACCESS-token expiry > labels playback "Reconnect for playback" although no reconnect is needed 0ms
+ ✓ src/lib/playback/c-provider-repro.test.ts > C-3 Spotify track relinking reads as a dead device > getTransport rejects when the SDK plays the relinked uri 1ms
+ ✓ src/lib/playback/c-provider-repro.test.ts > C-3 Spotify track relinking reads as a dead device > the music-led runtime turns that into an adapter error that halts the class 3ms
+ ✓ src/lib/playback/c-provider-repro.test.ts > C-3b one transient null Spotify state fails the class at once (no stall budget) > a single null getCurrentState -> error within one 250 ms sample 1ms
+ ✓ src/lib/playback/c-provider-repro.test.ts > C-4 Spotify page-singleton device is never rebuilt after it goes offline > keeps serving the first device_id after not_ready + a new ready 1ms
+ ✓ src/lib/playback/c-provider-repro.test.ts > C-6 (REJECTED upstream: episodes never import) uri builder fallback > turns a non-track uri into spotify:track:<id> (only reachable via manual/legacy refs) 0ms
+ Test Files  1 passed (1)
+      Tests  8 passed (8)
+   Start at  14:26:36
+   Duration  632ms (transform 178ms, setup 0ms, collect 304ms, tests 10ms, environment 0ms, prepare 125ms)
+exit=0
+
+$ (cd apps/api && pnpm exec vitest run src/lib/music/c-provider-repro.test.ts --reporter=verbose)
+ RUN  v3.2.6 /tmp/wt-c/apps/api
+ ✓ src/lib/music/c-provider-repro.test.ts > C-2 transient token-endpoint failure is reported as a dead grant > Spotify playback token: 500 from accounts.spotify.com -> 409 REAUTH_REQUIRED 3ms
+ ✓ src/lib/music/c-provider-repro.test.ts > C-2 transient token-endpoint failure is reported as a dead grant > Spotify playback token: 502 from accounts.spotify.com -> 409 REAUTH_REQUIRED 1ms
+ ✓ src/lib/music/c-provider-repro.test.ts > C-2 transient token-endpoint failure is reported as a dead grant > Spotify playback token: 503 from accounts.spotify.com -> 409 REAUTH_REQUIRED 0ms
+ ✓ src/lib/music/c-provider-repro.test.ts > C-2 transient token-endpoint failure is reported as a dead grant > Spotify playback token: 429 from accounts.spotify.com -> 409 REAUTH_REQUIRED 0ms
+ ✓ src/lib/music/c-provider-repro.test.ts > C-2 transient token-endpoint failure is reported as a dead grant > network failure (fetch throws) -> 409 REAUTH_REQUIRED 0ms
+ ✓ src/lib/music/c-provider-repro.test.ts > C-2 transient token-endpoint failure is reported as a dead grant > SoundCloud likes: 503 from the token endpoint -> 409 REAUTH_REQUIRED 1ms
+ ✓ src/lib/music/c-provider-repro.test.ts > C-2 transient token-endpoint failure is reported as a dead grant > control: a real invalid_grant (400) is the only case that should map to reauth 0ms
+ Test Files  1 passed (1)
+      Tests  7 passed (7)
+   Start at  14:26:37
+   Duration  826ms (transform 216ms, setup 0ms, collect 640ms, tests 7ms, environment 0ms, prepare 44ms)
+exit=0
+
+$ (cd packages/music && pnpm exec vitest run src/c-provider-repro.test.ts --reporter=verbose)
+ RUN  v3.2.6 /tmp/wt-c/packages/music
+ ✓ src/c-provider-repro.test.ts > C-6 (REJECTED) Spotify playlist items: podcast episodes > drops an episode item (no artists -> fails the shared contract) 4ms
+ ✓ src/c-provider-repro.test.ts > C-9 Retry-After that crosses the preview deadline surfaces as a timeout > throws AbortError instead of returning the 429 to the caller 0ms
+ Test Files  1 passed (1)
+      Tests  2 passed (2)
+   Start at  14:26:38
+   Duration  355ms (transform 123ms, setup 0ms, collect 199ms, tests 5ms, environment 0ms, prepare 43ms)
+exit=0

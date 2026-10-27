@@ -1,0 +1,30 @@
+{
+  "schemaVersion": 1,
+  "id": "RF-73",
+  "title": "Classes buttons fail WCAG 2.5.3 label in name",
+  "kind": "task",
+  "status": "backlog",
+  "priority": "untriaged",
+  "parent": null,
+  "dependsOn": [],
+  "acceptance": [
+    "Identify each affected Classes control and show that its accessible name includes its visible text.",
+    "Verify the fix at desktop and phone widths with keyboard navigation after owner implementation approval."
+  ],
+  "nextAction": "Reproduce affected controls, propose the smallest label-in-name correction, then seek implementation approval.",
+  "blocker": null,
+  "evidence": [
+    {
+      "kind": "source",
+      "ref": "https://github.com/steven-crosby/ritmofit-web/blob/f35d5d5992035c3895b948b3dc90e96ea6eaffa1/ritmofit_dev_plan/tasks.md#L23",
+      "summary": "Original board entry; historical assertion, not independently verified product behavior.",
+      "checkedOn": null
+    }
+  ],
+  "resolution": null,
+  "followUps": [],
+  "imported": {
+    "status": "Queued",
+    "title": "Classes buttons fail WCAG 2.5.3 label in name"
+  }
+}

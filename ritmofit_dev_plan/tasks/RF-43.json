@@ -1,0 +1,31 @@
+{
+  "schemaVersion": 1,
+  "id": "RF-43",
+  "title": "Record the playback, Spotify status, and reconnect implementation batch",
+  "kind": "task",
+  "status": "done",
+  "priority": "untriaged",
+  "parent": null,
+  "dependsOn": [],
+  "acceptance": [
+    "Historical scope: Fix playback, Spotify status, and reconnect chips. Review original evidence before relying on broader product acceptance."
+  ],
+  "nextAction": null,
+  "blocker": null,
+  "evidence": [
+    {
+      "kind": "source",
+      "ref": "https://github.com/steven-crosby/ritmofit-web/blob/f35d5d5992035c3895b948b3dc90e96ea6eaffa1/ritmofit_dev_plan/tasks.md#L64",
+      "summary": "Original board entry; historical assertion, not independently verified product behavior.",
+      "checkedOn": null
+    }
+  ],
+  "resolution": "Historical implementation batch recorded complete. iPhone audible acceptance is still RF-29.",
+  "followUps": [
+    "RF-29"
+  ],
+  "imported": {
+    "status": "Done",
+    "title": "Fix playback, Spotify status, and reconnect chips"
+  }
+}

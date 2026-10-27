@@ -7,6 +7,7 @@ import {
   runAuthedSmoke,
   runSmokeCli,
   sessionCookieHeader,
+  sessionCookieName,
 } from './authed-smoke.js';
 
 const TOKEN = 'qa-session-token.signature';
@@ -46,8 +47,34 @@ describe('parseQaBetaToken', () => {
   });
 });
 
+describe('sessionCookieHeader', () => {
+  it('uses the __Secure- name when the base URL is https', () => {
+    expect(sessionCookieName('https://ritmofit.studio')).toBe('__Secure-better-auth.session_token');
+    expect(sessionCookieHeader(TOKEN, 'https://ritmofit.studio')).toBe(
+      `__Secure-better-auth.session_token=${TOKEN}`,
+    );
+    expect(sessionCookieHeader('tok+en/sig=', 'https://ritmofit.studio/')).toBe(
+      '__Secure-better-auth.session_token=tok+en/sig=',
+    );
+  });
+
+  it('uses the plain name for http and localhost', () => {
+    for (const baseUrl of [
+      'http://localhost:8787',
+      'http://127.0.0.1:8787',
+      'http://[::1]:8787',
+      'https://localhost:8787',
+      'https://127.0.0.1:8787',
+      'http://ritmofit.studio',
+    ]) {
+      expect(sessionCookieName(baseUrl)).toBe('better-auth.session_token');
+      expect(sessionCookieHeader(TOKEN, baseUrl)).toBe(`better-auth.session_token=${TOKEN}`);
+    }
+  });
+});
+
 describe('runAuthedSmoke', () => {
-  it('checks classes and the Spotify connection with the session cookie', async () => {
+  it('checks classes and the Spotify connection with the https session cookie', async () => {
     const calls: { url: string; init: RequestInit | undefined }[] = [];
     const fetchImpl: typeof fetch = async (input, init) => {
       calls.push({ url: String(input), init });
@@ -67,7 +94,22 @@ describe('runAuthedSmoke', () => {
       expect(call.url).not.toContain(TOKEN);
       expect(call.init?.redirect).toBe('manual');
       const headers = new Headers(call.init?.headers);
-      expect(headers.get('cookie')).toBe(sessionCookieHeader(TOKEN));
+      expect(headers.get('cookie')).toBe(`__Secure-better-auth.session_token=${TOKEN}`);
+    }
+  });
+
+  it('sends the plain session cookie for http and localhost', async () => {
+    for (const baseUrl of ['http://localhost:8787', 'https://localhost:8787']) {
+      const calls: { init: RequestInit | undefined }[] = [];
+      const fetchImpl: typeof fetch = async (_input, init) => {
+        calls.push({ init });
+        return new Response('[]', { status: 200 });
+      };
+      await runAuthedSmoke({ baseUrl, token: TOKEN, fetchImpl });
+      for (const call of calls) {
+        const headers = new Headers(call.init?.headers);
+        expect(headers.get('cookie')).toBe(`better-auth.session_token=${TOKEN}`);
+      }
     }
   });
 });

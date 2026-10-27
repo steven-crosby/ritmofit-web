@@ -1,7 +1,7 @@
 /**
  * Better Auth-managed tables — `sessions`, `accounts`, `verifications`.
  *
- * These mirror Better Auth 1.6.x's canonical `session` / `account` / `verification`
+ * These mirror Better Auth 1.7.14's canonical `session` / `account` / `verification`
  * models (verified against the installed package's `getAuthTables`). schema.md calls
  * these "owned-but-managed": Better Auth's D1/Drizzle adapter reads and writes them;
  * we only declare their shape so migrations and FKs exist.

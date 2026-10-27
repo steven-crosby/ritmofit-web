@@ -28,7 +28,15 @@ describe('MarketingPage acquisition paths', () => {
       expect(link.getAttribute('href')).toBe('#class-shape');
     }
     expect(screen.getByRole('region', { name: 'Class Pulse' })).toBeTruthy();
-    expect(screen.getByText(/Synthetic class · authored order, duration, and effort/)).toBeTruthy();
+    expect(screen.getByRole('heading', { name: 'Example class' })).toBeTruthy();
+    expect(screen.getByText('27:00')).toBeTruthy();
+    expect(screen.queryByText(/Saturday Heat/)).toBeNull();
+    expect(screen.queryByText('40:50')).toBeNull();
+    expect(screen.queryByText(/Synthetic class/)).toBeNull();
+    expect(screen.queryByText(/from track efforts/i)).toBeNull();
+    expect(document.getElementById('class-shape')?.className).toContain('rf-anchor-offset');
+    expect(document.getElementById('product')?.className).toContain('rf-anchor-offset');
+    expect(document.getElementById('studios')?.className).toContain('rf-anchor-offset');
     for (const step of ['Find', 'Shape', 'Score', 'Lead']) {
       expect(screen.getAllByText(step).length).toBeGreaterThan(0);
     }

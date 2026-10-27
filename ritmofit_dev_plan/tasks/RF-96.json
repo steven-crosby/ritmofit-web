@@ -1,0 +1,26 @@
+{
+  "schemaVersion": 1,
+  "id": "RF-96",
+  "title": "Disposition legacy planning and handoff obligations",
+  "kind": "plan",
+  "status": "review",
+  "priority": "P2",
+  "parent": null,
+  "dependsOn": [],
+  "acceptance": [
+    "Review unresolved legacy backlog and dated handoff obligations against current tasks and live sources.",
+    "Route each remaining obligation to an RF task or explicit defer/reject/duplicate disposition; seek separate approval for cleanup or newly scoped implementation."
+  ],
+  "nextAction": "Triage legacy planning and handoffs without treating their old approval or merge instructions as current authority.",
+  "blocker": null,
+  "evidence": [
+    {
+      "kind": "document",
+      "ref": "ritmofit_dev_plan/DEVELOPMENT_PLAN.md",
+      "summary": "Legacy planning context remains; migration covers the RF board plus explicit intake, not every historical plan item.",
+      "checkedOn": null
+    }
+  ],
+  "resolution": null,
+  "followUps": []
+}

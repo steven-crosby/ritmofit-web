@@ -1,0 +1,35 @@
+{
+  "schemaVersion": 1,
+  "id": "RF-9",
+  "title": "Spotify panel drops a stale Session expired mark after a working paste, live on Worker 9248bbdf",
+  "kind": "task",
+  "status": "done",
+  "priority": "untriaged",
+  "parent": null,
+  "dependsOn": [],
+  "acceptance": [
+    "Historical scope: Spotify panel drops a stale Session expired mark after a working paste, live on Worker 9248bbdf. Review original evidence before relying on broader product acceptance."
+  ],
+  "nextAction": null,
+  "blocker": null,
+  "evidence": [
+    {
+      "kind": "source",
+      "ref": "https://github.com/steven-crosby/ritmofit-web/blob/f35d5d5992035c3895b948b3dc90e96ea6eaffa1/ritmofit_dev_plan/tasks.md#L97",
+      "summary": "Original board entry; historical assertion, not independently verified product behavior.",
+      "checkedOn": null
+    },
+    {
+      "kind": "pr",
+      "ref": "https://github.com/steven-crosby/ritmofit-web/pull/586",
+      "summary": "GitHub state MERGED; mergedAt 2026-10-25T22:48:01Z. This checks PR state only.",
+      "checkedOn": "2026-10-27"
+    }
+  ],
+  "resolution": "Recorded complete on the imported board; product behavior was not re-tested during task migration.",
+  "followUps": [],
+  "imported": {
+    "status": "Done",
+    "title": "[#586](https://github.com/steven-crosby/ritmofit-web/pull/586) Spotify panel drops a stale Session expired mark after a working paste, live on Worker 9248bbdf"
+  }
+}

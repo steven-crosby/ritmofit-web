@@ -1,0 +1,29 @@
+{
+  "schemaVersion": 1,
+  "id": "RF-42",
+  "title": "Production is Worker e7104e5d from cbb8496. Rollback is Worker 4fdba2fc",
+  "kind": "release",
+  "status": "done",
+  "priority": "untriaged",
+  "parent": null,
+  "dependsOn": [],
+  "acceptance": [
+    "Historical scope: Production is Worker e7104e5d from cbb8496. Rollback is Worker 4fdba2fc. Review original evidence before relying on broader product acceptance."
+  ],
+  "nextAction": null,
+  "blocker": null,
+  "evidence": [
+    {
+      "kind": "source",
+      "ref": "https://github.com/steven-crosby/ritmofit-web/blob/f35d5d5992035c3895b948b3dc90e96ea6eaffa1/ritmofit_dev_plan/tasks.md#L75",
+      "summary": "Original board entry; historical assertion, not independently verified product behavior.",
+      "checkedOn": null
+    }
+  ],
+  "resolution": "Recorded complete on the imported board; product behavior was not re-tested during task migration.",
+  "followUps": [],
+  "imported": {
+    "status": "Done",
+    "title": "Production is Worker e7104e5d from cbb8496. Rollback is Worker 4fdba2fc"
+  }
+}

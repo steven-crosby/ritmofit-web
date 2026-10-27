@@ -13,6 +13,239 @@ detail). Current focus and `main` vs production live in the "Now" block of
 
 ## Deploy and session log (newest first)
 
+> **Deploy 2026-10-27 — #637 and #636 on main `535e61a`.** Production deploy at
+> 2026-10-27T20:06:15Z (2:06 PM MT) through
+> `scripts/deploy.sh 535e61aa9e940ca357f7d4d71ac5c65cdf3adf80` from a clean
+> detached worktree. `origin/main` was that commit: [#637](https://github.com/steven-crosby/ritmofit-web/pull/637)
+> (`2bd73e0`, better-auth 1.6.25 → 1.7.14) and
+> [#636](https://github.com/steven-crosby/ritmofit-web/pull/636)
+> (`535e61a`, FairPlay probe on iOS Safari without `WebKitMediaKeys`). The
+> main checkout had an untracked `.claude/` directory and was left untouched.
+> No migration file is in `bf31706..535e61a`. The auth-schema edit is a version
+> comment. The script reported none to apply. None was applied. No production
+> data was edited.
+>
+> New Worker `24cdedc9-8103-417c-a502-23b0846c0967` (message `535e61a`);
+> rollback `df90f169-a51d-4476-bb9a-d4fbf6ab3663` (`bf31706`). SPA
+> `assets/index-CClNobxY.js` (was `assets/index-DvFKqouw.js`); CSS
+> `assets/index-DGcMUSRx.css` unchanged. Propagation 3/3 on the first three
+> cache-busted fetches, and three later cache-busted fetches agreed.
+> `/` 200, `/api/v1/health` 200 with `database: true` and the six security
+> headers; `/classes`, `/explore`, `/teams` 401. `wrangler deployments status`
+> shows this Worker at 100%. Tail for five minutes: four events, all outcome
+> ok, no exceptions and no 5xx (health 200, classes 401, explore 401, teams
+> 401), all on this Worker. #636 is now in production and still awaits
+> Steven's iPhone Apple Music check. This docs record is not in the deployed
+> tree.
+
+> **Deploy 2026-10-27 — #634 on main `bf31706`.** Steven approved at 9:50 AM MT,
+> after the squash was on `origin/main`. Production deploy at
+> 2026-10-27T16:00:38Z (10:00 AM MT) through
+> `scripts/deploy.sh bf31706c64662a3c7e5306359c237b60cbed61c9` from a clean
+> detached worktree. The main checkout had an untracked `.claude/` directory
+> and was left untouched. Against the previous production tree `65d4deb`, the
+> runtime diff is [#634](https://github.com/steven-crosby/ritmofit-web/pull/634)
+> (`bf31706`): `musickit.ts`, `apple-music-adapter.ts`, and their tests.
+> Docs commits in `bf31706` that do not change runtime are
+> [#632](https://github.com/steven-crosby/ritmofit-web/pull/632) (`e470a84`) and
+> [#633](https://github.com/steven-crosby/ritmofit-web/pull/633) (`91a1e7f`, the
+> 4e0b150 code audit).
+> No migration file is in `65d4deb..bf31706`. The script reported none to
+> apply. None was applied. No production data was edited.
+>
+> New Worker `df90f169-a51d-4476-bb9a-d4fbf6ab3663` (message `bf31706`);
+> rollback `94e7003b-af7f-4d56-84e1-3288f0c3a813` (`65d4deb`). SPA
+> `assets/index-DvFKqouw.js` (was `assets/index-B1FRgRjm.js`); CSS
+> `assets/index-DGcMUSRx.css` unchanged. Propagation 3/3 on the first three
+> cache-busted fetches, and three later cache-busted fetches agreed.
+> `/` 200, `/api/v1/health` 200 with `database: true` and the six security
+> headers; `/classes`, `/explore`, `/teams` 401. `wrangler deployments status`
+> shows this Worker at 100%. Tail across two connects (3m54s, then 80s): four
+> events, all outcome ok, no exceptions and no 5xx (health 200, classes 401,
+> explore 401, teams 401), all on this Worker. #634 is now in production and
+> still awaits Steven's iPhone Apple Music check. This docs record is not in
+> the deployed tree.
+
+> **Deploy 2026-10-27 — #629 on main `65d4deb`.** Steven said go at 8:06 AM MT.
+> Production deploy at 2026-10-27T14:11:12Z (8:11 AM MT) through
+> `scripts/deploy.sh 65d4deb4aba90f26c6706a099351709680d11aee` from a clean
+> detached worktree. Since `4e0b150`, `origin/main` adds only the #631 docs
+> (`HISTORY.md`, `DEVELOPMENT_PLAN.md`, and
+> `handoffs/2026-10-27-staged-deploy.md`). Against production tree `04ec72f`,
+> the code diff is exactly [#629](https://github.com/steven-crosby/ritmofit-web/pull/629)
+> (`7ab9bbb`): `LiveMode.tsx`, `LiveMode.test.tsx`, and
+> `apple-music-adapter.ts` plus its test. No migration. The script reported
+> none to apply. None was applied. No production data was edited.
+>
+> New Worker `94e7003b-af7f-4d56-84e1-3288f0c3a813` (message `65d4deb`);
+> rollback `05a49728-aa41-4113-ab52-948a62a091cc` (`04ec72f`). SPA
+> `assets/index-B1FRgRjm.js` (was `assets/index-1IADUpWL.js`); CSS
+> `assets/index-DGcMUSRx.css` unchanged. Propagation 3/3 on the first three
+> cache-busted fetches. `/` 200, `/api/v1/health` 200 with `database: true`
+> and the six security headers; `/classes`, `/explore`, `/teams` 401.
+> `wrangler deployments status` shows this Worker at 100%. Tail for five
+> minutes: five events, all outcome ok, no exceptions and no 5xx (health 200
+> twice, classes 401 once, `GET /api/auth/get-session` 200 twice), all on
+> this Worker. #629 is now in production and still awaits Steven's iPhone
+> Apple Music check. This docs record is not in the deployed tree.
+
+> **Staged deploy 2026-10-27 — main `4e0b150` minus #629.** Owner approved
+> Option B. Three production publishes through `scripts/deploy.sh` from local
+> branch `cursor/staged-deploy-4e0b150-2f76`. That branch was not pushed and
+> has no pull request. No migration file is in `c07bba3..4e0b150`. Each
+> script reported no remote D1 migrations to apply. None was applied. No
+> production data was edited. Node 22.23.4.
+>
+> **Stage 1** at 2026-10-27T13:24:57Z (7:24 AM MT). Tree `361c935`
+> (`4e0b150` with #629, #621, and #617 reverted). #629 and #621 reverted
+> cleanly. #617 (`17a91a9`) conflicted in `Dashboard.tsx` and
+> `Dashboard.test.tsx`. The hand resolution removes only #617: the two
+> `setLiveActive` effects go, and #619's `const online = useOnline()` stays.
+> The session-lost test is deleted. The #619 class-details and Offline tests
+> and the #622 crash test stay. The `readyRidePayload` helper stays; #622
+> inserted its test after that helper and does not own it. Before deploy,
+> the local gate passed: format, typecheck, lint, unit web 1460 / api 557 /
+> music 30, Worker/D1 integration 235, web build with the bundle budget, and
+> `pnpm e2e` (2 passed). Worker `751ea170-9482-440d-b002-47ac9affadda`
+> (message `361c935`); rollback `60dcbb9d-0310-4c86-939b-3201c36498ae`
+> (`c07bba3`). SPA `assets/index-qpATHuVY.js`, CSS
+> `assets/index-BwpPxh8O.css`. Propagation 3/3 after one previous-entry
+> fetch. `/` 200, `/api/v1/health` 200 with `database: true` and the six
+> security headers; `/classes`, `/explore`, `/teams` 401. Tail: health 200
+> and classes 401, both on this Worker, no exceptions and no 5xx.
+>
+> **Stage 2** at 2026-10-27T13:37:49Z (7:37 AM MT). Reapplied #617. `git diff`
+> against `b9e4b8e` was empty, so the tree is `4e0b150` with only #621 and
+> #629 reverted. Commit `810d26c`. Worker
+> `f2526ab0-d65e-462d-9d74-d4154df039d0` (message `810d26c`); rollback
+> `751ea170-9482-440d-b002-47ac9affadda`. SPA `assets/index-Cy9zvPdd.js`,
+> CSS `assets/index-DGcMUSRx.css`. Propagation 3/3 on the first three
+> fetches. Same smoke: `/` and health 200 (`database: true`, six headers);
+> classes, explore, and teams 401. Tail: health 200 and classes 401 on this
+> Worker, no exceptions and no 5xx.
+>
+> **Stage 3** at 2026-10-27T13:46:28Z (7:46 AM MT). Reapplied #621. `git diff`
+> against `121f5ba` was empty, so the tree is `4e0b150` minus #629. Commit
+> `04ec72f`. Worker `05a49728-aa41-4113-ab52-948a62a091cc` (message
+> `04ec72f`); rollback `f2526ab0-d65e-462d-9d74-d4154df039d0`. SPA
+> `assets/index-1IADUpWL.js`, CSS `assets/index-DGcMUSRx.css` unchanged.
+> Propagation 3/3 after two fetches of the stage-2 entry. Same smoke. Tail:
+> health 200 and classes 401 on this Worker, no exceptions and no 5xx.
+>
+> [#629](https://github.com/steven-crosby/ritmofit-web/pull/629) (name Apple
+> Music failures mid-class and mark Offline in Live, `7ab9bbb`) is on `main`
+> and is not in production. It stays held for Steven's iPhone Apple Music
+> check. This docs record is not in the deployed tree.
+
+> **Deploy 2026-10-26 — #604–#613 on main `c07bba3`.** Owner approved.
+> Production deploy at 2026-10-27T04:59:26Z (10:59 PM MT 2026-10-26) through
+> `scripts/deploy.sh c07bba3cc41f720b5e7cf485b640cb443f54f5c0` from a clean
+> detached worktree (the main checkout had an untracked `.claude/` directory,
+> so it was left untouched). The script built and deployed from its own
+> `/tmp/ritmofit-deploy.00lWlF` worktree. New Worker
+> `60dcbb9d-0310-4c86-939b-3201c36498ae` (message `c07bba3`); previous/rollback
+> `e7104e5d-bede-4871-82fb-f69eb8a0db20` (`cbb8496`). SPA entry
+> `assets/index-68HtGOrR.js` (was `assets/index-dMUWppKG.js`); CSS
+> `assets/index-DfzOPjzL.css` (was `assets/index-BI9aa-sY.css`). Three
+> consecutive cache-busted fetches matched the build on the first three tries,
+> and `wrangler deployments status` shows the new Worker at 100%. Script gates
+> passed on Node 22.23.4 (matches `.nvmrc`): `--self-check`, required-secret
+> names present, no remote D1 migrations pending, unit web 1437 / api 557 /
+> music 30, Worker/D1 integration 235, web build, OpenAPI no drift,
+> contract-parity (four allowlisted iOS cue-field lags, no untracked drift),
+> audit (2 ignored). No migration was applied. The range adds no migration
+> file. One preflight `wrangler d1 migrations list` returned Cloudflare 7403;
+> the retry and the deploy script both reported nothing to apply. No production
+> data was edited.
+>
+> Runtime since production `cbb8496`:
+> [#604](https://github.com/steven-crosby/ritmofit-web/pull/604) (modern FairPlay
+> for Safari Apple Music, `9fb1091`; web),
+> [#605](https://github.com/steven-crosby/ritmofit-web/pull/605) (obvious compact
+> Live queue, `e84aab7`; web),
+> [#606](https://github.com/steven-crosby/ritmofit-web/pull/606) (name the Spotify
+> development-mode allowlist and start reconnect; OpenAPI gains a 403
+> description on the existing Spotify routes, `c52cad4`),
+> [#607](https://github.com/steven-crosby/ritmofit-web/pull/607) (open the class
+> builder after a Music playlist create, `d35c5cc`; web),
+> [#608](https://github.com/steven-crosby/ritmofit-web/pull/608) (delete a class
+> from its row, `18557ed`; web, plus a class-delete integration test),
+> [#609](https://github.com/steven-crosby/ritmofit-web/pull/609) (quieter Music
+> connection area, `2d51112`; web),
+> [#610](https://github.com/steven-crosby/ritmofit-web/pull/610) (keep the update
+> toast up when the app shell crashes, `f4d23f5`; web),
+> [#611](https://github.com/steven-crosby/ritmofit-web/pull/611) (show the next
+> track's first cue after a track's last cue, `d787491`; web),
+> [#612](https://github.com/steven-crosby/ritmofit-web/pull/612) (wrap long Live
+> titles and notes so the phone shell cannot scroll sideways, `ccb3460`; web),
+> and [#613](https://github.com/steven-crosby/ritmofit-web/pull/613) (phone
+> Cue-by-Cue first-screen test, `c07bba3`; tests only).
+>
+> Smoke (script): propagation 3/3 on the built entry; `/` 200, `/api/v1/health`
+> 200 with all six security headers; `/classes`, `/explore`, `/teams` 401.
+> Health body: `status: ok`, `database: true`, every required secret `true`
+> (`APPLE_CLIENT_SECRET` `false` as expected — the signing trio is set).
+> Mounted routes reach handlers: `GET /shares`, `GET /shares/x`,
+> `GET /providers/spotify/search`, `POST /providers/track-import`, and
+> `GET /classes/<uuid>/shares`, `POST .../import-playlist`,
+> `POST .../tracks/import`, `GET .../cover`, `POST .../tags` 401;
+> `GET /classes/not-a-uuid/tracks` 404 `application/json`. Landing HTML is 200
+> and serves `assets/index-68HtGOrR.js` plus `assets/index-DfzOPjzL.css`.
+> Authed smoke failed: `GET /api/v1/classes` and
+> `GET /api/v1/providers/spotify/playlists` 401. The QA token file is present
+> and was not printed. Classes, the builder, Music, and Live at rest were not
+> opened. Tail for five minutes on `ritmofit-api`: 18 events, all outcome ok,
+> no exceptions and no 5xx, every event on Worker `60dcbb9d`, all from this
+> session's own checks (health 200, the unauthenticated 401s above, the 404,
+> and the two authed-smoke 401s).
+
+> **Deploy 2026-10-26 — #598 and #599 on main `7163d71`.** Owner approved.
+> Production deploy at 2026-10-27T00:41:51Z (6:41 PM MT 2026-10-26) through
+> `scripts/deploy.sh` from a clean detached worktree (the main checkout had an
+> untracked `.claude/` directory, so it was left untouched). The script built and
+> deployed from its own `/tmp/ritmofit-deploy.qhHsRL` worktree. New Worker
+> `4fdba2fc-9292-4b6f-9658-582b3b27777b` (message `7163d71`); previous/rollback
+> `45dd784f-23ce-4697-bd33-3ab04f8b458e` (`5daee7a`). SPA entry
+> `assets/index-Bz3SPa2S.js` (was `assets/index-SlqjBWky.js`); CSS
+> `assets/index-BypEbwc1.css`. Three consecutive cache-busted fetches matched the
+> build on the first three tries, and `wrangler deployments status` shows the new
+> Worker at 100%. Script gates passed on Node 22.23.4 (matches `.nvmrc`):
+> required-secret names present, no remote D1 migrations pending, unit web 1375 /
+> api 552 / music 30, Worker/D1 integration 233, web build, OpenAPI no drift,
+> contract-parity, audit. No migration was applied.
+>
+> Runtime since production `5daee7a`:
+> [#598](https://github.com/steven-crosby/ritmofit-web/pull/598) (the class
+> builder takes the full Classes page, `34ab5c4`; web) and
+> [#599](https://github.com/steven-crosby/ritmofit-web/pull/599) (narrow Live,
+> Music, and landing polish, `7163d71`; web).
+> [#597](https://github.com/steven-crosby/ritmofit-web/pull/597) (https smoke
+> sends the `__Secure-` session cookie, `f82c3a0`) is in that tree and does not
+> change the served Worker. Docs [#593](https://github.com/steven-crosby/ritmofit-web/pull/593)
+> (`3b57f73`), [#595](https://github.com/steven-crosby/ritmofit-web/pull/595)
+> (`bc84c3b`), and the ignore cleanup [#594](https://github.com/steven-crosby/ritmofit-web/pull/594)
+> (`cd734ee`) do not change runtime.
+>
+> Smoke (script): propagation 3/3 on the built entry; `/` 200, `/api/v1/health`
+> 200 with all six security headers; `/classes`, `/explore`, `/teams` 401.
+> Health body: `status: ok`, `database: true`, every required secret `true`
+> (`APPLE_CLIENT_SECRET` `false` as expected — the signing trio is set).
+> Mounted routes reach handlers: `GET /shares`, `GET /shares/x`,
+> `GET /providers/spotify/search`, `POST /providers/track-import`, and
+> `GET /classes/<uuid>/shares`, `POST .../import-playlist`,
+> `POST .../tracks/import`, `GET .../cover`, `POST .../tags` 401;
+> `GET /classes/not-a-uuid/tracks` 404 JSON. Landing page in Chrome at 1280 and
+> 390: hero "Find the class inside the music.", Start building opens the email
+> field, Back to home returns, no horizontal overflow, no console errors, no
+> 5xx, and the page loaded `assets/index-Bz3SPa2S.js` plus
+> `assets/index-BypEbwc1.css`. Authed smoke failed: `GET /api/v1/classes` and
+> `GET /api/v1/providers/spotify/playlists` 401;
+> `GET /api/auth/get-session` 200 with a null body. The QA token file is present
+> and was not printed. Classes, the builder, Music, and Live at rest were not
+> opened. Tail for five minutes on `ritmofit-api`: five events, all outcome ok,
+> no exceptions and no 5xx (`GET /` 200 four times, `GET /api/v1/health` 200
+> once), from this session's own checks.
+
 > **Deploy 2026-10-25 — #591 and #592 on main `5daee7a`.** Owner approved.
 > Production deploy at 2026-10-26T05:07Z (11:07 PM MT 2026-10-25), the first
 > deploy through `scripts/deploy.sh 5daee7a…` (run from a clean detached

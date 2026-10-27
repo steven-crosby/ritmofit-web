@@ -86,6 +86,13 @@ gate from `AGENTS.md` (includes `theme-classes`).
 
 ## 5. Handoff, docs, and status sync
 
+- [ ] **Tasks first.** Update relevant `ritmofit_dev_plan/tasks/RF-*.json` records with bounded
+  acceptance, dated evidence, resolution or the next action/blocker. Preserve original evidence
+  limits: merged, deployed and audibly accepted are different claims. Give any remaining work a
+  follow-up RF ID; a Done parent cannot have open children. New work needs a task or an explicit
+  defer/reject/duplicate disposition. Run `pnpm tasks:render` and `pnpm tasks:check` before publication.
+  An external board is a view, never authority. Tasks do not grant commit/push/PR/merge/deploy permission.
+
 - [ ] **Handoff.** Write `ritmofit_dev_plan/handoffs/YYYY-MM-DD-<lane-slug>.md` from
   `agent-prompts/templates/handoff.md` and commit it on this session's branch/PR **before** §2's
   merge (describe the state the merge will produce, for example "`main` ahead of production by
@@ -103,7 +110,9 @@ gate from `AGENTS.md` (includes `theme-classes`).
   record is only local or unmerged unless the owner parks it.
 - [ ] Drain `INBOX.md`: capture breadcrumbs that surfaced this session, route each open `- [ ]`
   item via its routing table, **delete each line once routed**, and delete stale ones.
-- [ ] Track forward work in the most specific current doc; do not create parallel backlog lists.
+- [ ] Track actionable forward work in canonical RF records, linking the most specific tracked
+  plan or evidence doc. Do not create parallel backlog lists. Handoffs link RF IDs and retain
+  restart context; product direction stays in DEVELOPMENT_PLAN.
   Use `web-ios-parity.md` only for owner-requested iOS handoff or explicit cross-surface notes.
 - [ ] Update focused docs (`conventions.md`, `authorization.md`, `deployment-runbook.md`, …) when
   their subject changed; update `AGENTS.md` only when durable workflows, boundaries, or canonical
@@ -127,6 +136,7 @@ Print a tight state report that matches the handoff:
 - **Verification:** commands run and results; skipped gates listed.
 - **Deployment:** production vs `main`, Worker version, D1 migration state when checked.
 - **Handoff:** path written (or why none), handoffs retired.
+- **Tasks:** RF IDs updated, remaining blockers, generated-board validation.
 - **Docs:** status/history docs updated or intentionally unchanged; deploy-record PR state.
 - **Next session:** blockers first, then the single highest-value follow-up.
 

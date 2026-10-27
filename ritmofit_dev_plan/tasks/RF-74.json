@@ -1,0 +1,30 @@
+{
+  "schemaVersion": 1,
+  "id": "RF-74",
+  "title": "Spotify playlist dialog offers Try again where retry cannot help",
+  "kind": "task",
+  "status": "backlog",
+  "priority": "untriaged",
+  "parent": null,
+  "dependsOn": [],
+  "acceptance": [
+    "Identify each unretryable playlist error and its actionable recovery.",
+    "After approved implementation, verify retryable errors retain retry and unretryable errors offer the appropriate recovery."
+  ],
+  "nextAction": "Review the error/action mapping; obtain approval before changing Spotify behavior while that work is tabled.",
+  "blocker": null,
+  "evidence": [
+    {
+      "kind": "source",
+      "ref": "https://github.com/steven-crosby/ritmofit-web/blob/f35d5d5992035c3895b948b3dc90e96ea6eaffa1/ritmofit_dev_plan/tasks.md#L24",
+      "summary": "Original board entry; historical assertion, not independently verified product behavior.",
+      "checkedOn": null
+    }
+  ],
+  "resolution": null,
+  "followUps": [],
+  "imported": {
+    "status": "Queued",
+    "title": "Spotify playlist dialog offers Try again where retry cannot help"
+  }
+}

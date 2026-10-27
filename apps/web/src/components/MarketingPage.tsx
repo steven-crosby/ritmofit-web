@@ -138,14 +138,14 @@ export function MarketingPage({ onSignIn, onStartBuilding }: MarketingPageProps)
         <section
           id="product"
           aria-labelledby="features-heading"
-          className="px-6 py-16 sm:px-12 lg:px-24"
+          className="rf-anchor-offset px-6 py-16 sm:px-12 lg:px-24"
         >
           <h2 id="features-heading" className="sr-only">
             Features
           </h2>
           <div
-            className="grid gap-px overflow-hidden rounded-panel border border-border-subtle bg-border-subtle sm:grid-cols-2 lg:grid-cols-4"
             id="method"
+            className="rf-anchor-offset grid gap-px overflow-hidden rounded-panel border border-border-subtle bg-border-subtle sm:grid-cols-2 lg:grid-cols-4"
           >
             <FeatureCard
               eyebrow="01 / Find"
@@ -218,7 +218,7 @@ interface FeatureCardProps {
 
 function FeatureCard({ eyebrow, heading, body, id }: FeatureCardProps) {
   return (
-    <article id={id} className="flex flex-col gap-3 bg-bg-raised p-6 scroll-mt-20">
+    <article id={id} className="rf-anchor-offset flex flex-col gap-3 bg-bg-raised p-6">
       <span className="rf-eyebrow">{eyebrow}</span>
       <h3 className="font-display text-xl font-bold text-text-primary">{heading}</h3>
       <p className="font-ui text-sm text-text-secondary">{body}</p>

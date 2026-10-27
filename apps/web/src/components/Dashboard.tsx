@@ -51,6 +51,7 @@ import {
   removeClassTag,
   uploadClassCover,
   getClass,
+  markClassOpened,
   listConnections,
   listLikes,
   listPlaylists,
@@ -69,11 +70,12 @@ import { useProviderConnect } from '../lib/use-provider-connect.js';
 import { ProviderConnectAction } from './ProviderConnectAction.js';
 import { PlaylistSongPicker } from './PlaylistSongPicker.js';
 import { consumeConnectionReturn, rememberConnectionReturn } from '../lib/connection-return.js';
-import { authClient } from '../lib/auth-client.js';
+import { setLiveActive, signOutByUser } from '../lib/session-guard.js';
 import {
   ConnectionStateMark,
   accountConnectionMark,
   musicConnectionMark,
+  type ConnectionMarkKind,
 } from './ConnectionStateMark.js';
 import { moveItem } from '../lib/reorder.js';
 import {
@@ -95,13 +97,13 @@ import {
   CLASS_ORDERING_OPTIONS,
   classNextStep,
   orderClassesBy,
-  orderingSummary,
   readStoredOrdering,
   storeOrdering,
   type ClassOrdering,
 } from '../lib/class-ordering.js';
 import { summarizeQueue } from '../lib/live-readiness.js';
-import { nextEmptyPlanBlock } from '../lib/class-scaffold.js';
+import { nextEmptyPlanBlock, type ScaffoldDiscipline } from '../lib/class-scaffold.js';
+import { deleteClassConfirmMessage } from '../lib/class-delete.js';
 import { errMessage } from '../lib/errors.js';
 import { errorReference } from '../lib/error-reference.js';
 import { classDetailReducer, initialClassDetailState } from '../lib/class-detail-state.js';
@@ -112,6 +114,7 @@ import {
   type ClassSortKey,
   type ListStatus,
 } from '../lib/library-state.js';
+import { useOnline } from '../lib/use-online.js';
 import { useAsyncAction } from '../lib/use-async-action.js';
 import {
   PROVIDER_ORDER,
@@ -119,6 +122,23 @@ import {
   providerConnectionState,
   providerLabel,
 } from '../lib/providers.js';
+import {
+  defaultLibraryKind,
+  filterLibrary,
+  musicChipBadge,
+  musicChipOffersReconnect,
+  musicConnectionNotice,
+  musicLibraryFailure,
+  musicLibraryKinds,
+  orderLibrary,
+  playlistMetaLine,
+  songMetaLine,
+  SPOTIFY_ALLOWLIST_CODE,
+  PROVIDER_QUOTA_CODE,
+  libraryFailureExplainsItself,
+  type LibrarySort,
+  type MusicLibraryKind,
+} from '../lib/music-library.js';
 import { Dialog } from './Dialog.js';
 import { ErrorBoundary } from './ErrorBoundary.js';
 import { ClassPulse } from './ClassPulse.js';
@@ -139,7 +159,7 @@ import {
 import { OnboardingVideoDialog } from './OnboardingVideoDialog.js';
 import { ClassesHome } from './ClassesHome.js';
 import { LibraryOrganizeControls, TagFilter } from './LibraryOrganize.js';
-import { RecoveryState, StatusLabel } from './SharedState.js';
+import { LoadingSkeleton, RecoveryState, StatusLabel } from './SharedState.js';
 import { ProviderCapabilityLedger } from './ProviderCapabilityLedger.js';
 import { ClassCoverArt, TrackArt } from './TrackArt.js';
 
@@ -184,18 +204,6 @@ interface CollectionImportResult {
   songBlocks?: boolean;
 }
 
-/**
- * True on the xl 3-pane workstation, where the library rail is its own sticky
- * column. Read once for an initial state, never subscribed to: this decides
- * whether the rail's creation controls start expanded, and re-deciding it mid
- * session would reopen a disclosure the instructor deliberately closed. Absent
- * `matchMedia` (jsdom) it reports wide, so the controls default to visible.
- */
-function prefersWideWorkstation(): boolean {
-  if (typeof window === 'undefined' || !window.matchMedia) return true;
-  return window.matchMedia('(min-width: 1280px)').matches;
-}
-
 /** Full-screen Suspense fallback while a lazy chunk (e.g. Live mode) loads. */
 function LoadingScreen() {
   return (
@@ -208,7 +216,16 @@ function LoadingScreen() {
 type DetailWorkspaceOwner = { classId: string; session: object };
 type DetailRefreshOrigin = 'mutation' | 'live-return';
 
-export function Dashboard({ userId, userName }: { userId: string; userName: string }) {
+export function Dashboard({
+  userId,
+  userName,
+  sessionLost = false,
+}: {
+  userId: string;
+  userName: string;
+  /** The session ended while Live was running; Live stays up with a quiet line. */
+  sessionLost?: boolean;
+}) {
   const [profileName, setProfileName] = useState(userName);
   const [destination, setDestination] = useState<DashboardDestination>('classes');
   const [classes, setClasses] = useState<ClassListItem[]>([]);
@@ -244,6 +261,9 @@ export function Dashboard({ userId, userName }: { userId: string; userName: stri
   const restoreRefreshFocus = useRef(false);
   const workspaceRef = useRef<HTMLDivElement>(null);
   const [live, setLive] = useState<RunPayload | null>(null);
+  useEffect(() => setLiveActive(live != null), [live]);
+  useEffect(() => () => setLiveActive(false), []);
+  const online = useOnline();
   // Live Mode is a full-tree swap (see the `if (live)` early return below), so the
   // control that opened it never survives to be refocused on exit — the dashboard
   // remounts fresh. Restore focus to the primary heading instead, the same
@@ -263,6 +283,7 @@ export function Dashboard({ userId, userName }: { userId: string; userName: stri
   const [playlistBrowse, setPlaylistBrowse] = useState<{
     provider: Provider;
     playlists: ProviderPlaylistSummary[];
+    playlistId: string;
   } | null>(null);
   const [likesBrowse, setLikesBrowse] = useState<{
     provider: Provider;
@@ -276,19 +297,16 @@ export function Dashboard({ userId, userName }: { userId: string; userName: stri
   const [importResult, setImportResult] = useState<CollectionImportResult | null>(null);
   const [retryingImport, setRetryingImport] = useState(false);
 
-  /**
-   * The rail's creation + filtering controls collapse behind one affordance so the
-   * library does not become "a large preamble before the work" (canon 09) on a
-   * phone. They stay open on the wide 3-pane layout, where the rail is its own
-   * sticky column and costs the centre nothing.
-   */
-  const [creatorOpen, setCreatorOpen] = useState(prefersWideWorkstation);
   const [createDialogMode, setCreateDialogMode] = useState<CreateClassMode | null>(null);
+  const [createDiscipline, setCreateDiscipline] = useState<ScaffoldDiscipline | null>(null);
   const createDialogOpen = createDialogMode != null;
-  const focusClassCreator = useCallback((mode: CreateClassMode = 'scaffold') => {
-    setCreatorOpen(true);
-    setCreateDialogMode(mode);
-  }, []);
+  const focusClassCreator = useCallback(
+    (mode: CreateClassMode = 'scaffold', discipline: ScaffoldDiscipline | null = null) => {
+      setCreateDiscipline(discipline);
+      setCreateDialogMode(mode);
+    },
+    [],
+  );
 
   // Merge a page's tags into the known-tags set (only an unfiltered page widens
   // it; a filtered page only re-adds the active tag, which is harmless).
@@ -474,13 +492,34 @@ export function Dashboard({ userId, userName }: { userId: string; userName: stri
     if (owner) void loadDetail(owner.classId, { silent: true, owner, origin: 'live-return' });
   }, [selected, loadDetail]);
 
-  const enterLive = useCallback((payload: RunPayload, resumeBuilder = true) => {
-    suspendedWorkspace.current = resumeBuilder ? detailWorkspace.current : null;
-    detailWorkspace.current = null;
-    setRefreshWarning(null);
-    pendingLiveRequest.current = null;
-    setLive(payload);
+  // Open and Live start share one clock. The write does not bump updatedAt.
+  const noteClassOpened = useCallback((classId: string) => {
+    const at = Date.now();
+    setClasses((prev) => prev.map((c) => (c.id === classId ? { ...c, lastOpenedAt: at } : c)));
+    void Promise.resolve()
+      .then(() => markClassOpened(classId))
+      .then((updated) => {
+        if (updated?.lastOpenedAt == null) return;
+        setClasses((prev) =>
+          prev.map((c) => (c.id === classId ? { ...c, lastOpenedAt: updated.lastOpenedAt } : c)),
+        );
+      })
+      .catch(() => {
+        /* The optimistic stamp stands until the next list load. */
+      });
   }, []);
+
+  const enterLive = useCallback(
+    (payload: RunPayload, resumeBuilder = true) => {
+      noteClassOpened(payload.class.id);
+      suspendedWorkspace.current = resumeBuilder ? detailWorkspace.current : null;
+      detailWorkspace.current = null;
+      setRefreshWarning(null);
+      pendingLiveRequest.current = null;
+      setLive(payload);
+    },
+    [noteClassOpened],
+  );
 
   useLayoutEffect(() => {
     if (!restoreRefreshFocus.current) return;
@@ -498,18 +537,25 @@ export function Dashboard({ userId, userName }: { userId: string; userName: stri
 
   const openClass = useCallback(
     async (cls: ClassWithAccess) => {
+      noteClassOpened(cls.id);
       liveRequestId.current += 1;
       detailWorkspace.current = { classId: cls.id, session: {} };
       setRefreshWarning(null);
       setSelected(cls);
-      // Opening a class changes what the rail is for: the create/filter controls
-      // belong to choosing a class, not to editing one, so they fold away rather
-      // than sitting expanded above the list while the instructor works.
-      setCreatorOpen(false);
       await loadDetail(cls.id);
     },
-    [loadDetail],
+    [loadDetail, noteClassOpened],
   );
+
+  // Leave the full-focus builder for the Classes library. Bump the live and
+  // detail generations so a response still in flight cannot reopen this class.
+  const closeBuilder = useCallback(() => {
+    liveRequestId.current += 1;
+    detailWorkspace.current = null;
+    setRefreshWarning(null);
+    setSelected(null);
+    dispatchDetail({ type: 'reset', requestId: ++detailRequestId.current });
+  }, []);
 
   // A provider OAuth round-trip returns the browser to "/?connected=…" or
   // "/?error=…". Open the connections dialog with that result, then strip the
@@ -640,6 +686,7 @@ export function Dashboard({ userId, userName }: { userId: string; userName: stri
       setRefreshWarning((current) => (current?.owner.classId === classId ? null : current));
       if (ownsPresentation || ownsSuspension)
         dispatchDetail({ type: 'reset', requestId: ++detailRequestId.current });
+      setClasses((prev) => prev.filter((c) => c.id !== classId));
       void refreshClasses();
     },
     [refreshClasses],
@@ -702,6 +749,8 @@ export function Dashboard({ userId, userName }: { userId: string; userName: stri
         songBlocks: true,
       });
       setPlaylistBrowse(null);
+      // The builder only mounts on Classes. Closing the dialog is not navigation.
+      setDestination('classes');
       await openClass({ ...cls, accessLevel: 'owner' });
     },
     [applyTagFilter, importCollectionTracks, openClass],
@@ -770,29 +819,45 @@ export function Dashboard({ userId, userName }: { userId: string; userName: stri
     }
   }, [importCollectionTracks, importResult, loadDetail, retryingImport]);
 
+  // The signed-out line pushes Live down by one row. Only then does the wrapper
+  // become a containing block for Live's fixed shell; otherwise it is `contents`.
   if (live)
     return (
-      <ErrorBoundary resetLabel="Exit live mode" onReset={exitLive}>
-        <Suspense fallback={<LoadingScreen />}>
-          <LiveMode
-            payload={live}
-            onExit={exitLive}
-            connectionResult={oauthResult}
-            onConnectionResultDismissed={() => {
-              setOauthResult(null);
-              setConnectionsOpen(false);
-            }}
-            beforeConnectionRedirect={(provider) =>
-              rememberConnectionReturn({
-                userId,
-                destination: 'live',
-                classId: live.class.id,
-                provider,
-              })
-            }
-          />
-        </Suspense>
-      </ErrorBoundary>
+      <div className={sessionLost ? 'flex h-dvh flex-col' : 'contents'}>
+        {sessionLost && (
+          <p
+            role="status"
+            className="shrink-0 border-b border-border-subtle bg-bg-raised px-4 py-2 text-center font-ui text-sm text-text-secondary"
+          >
+            Signed out. Finish the class, then sign in.
+          </p>
+        )}
+        <div
+          className={sessionLost ? 'relative min-h-0 flex-1 [transform:translateZ(0)]' : 'contents'}
+        >
+          <ErrorBoundary resetLabel="Exit live mode" onReset={exitLive}>
+            <Suspense fallback={<LoadingScreen />}>
+              <LiveMode
+                payload={live}
+                onExit={exitLive}
+                connectionResult={oauthResult}
+                onConnectionResultDismissed={() => {
+                  setOauthResult(null);
+                  setConnectionsOpen(false);
+                }}
+                beforeConnectionRedirect={(provider) =>
+                  rememberConnectionReturn({
+                    userId,
+                    destination: 'live',
+                    classId: live.class.id,
+                    provider,
+                  })
+                }
+              />
+            </Suspense>
+          </ErrorBoundary>
+        </div>
+      </div>
     );
 
   return (
@@ -811,6 +876,17 @@ export function Dashboard({ userId, userName }: { userId: string; userName: stri
           >
             Ritmo Studio
           </h1>
+          {!online && (
+            <span
+              role="status"
+              className="inline-flex items-center gap-1 rounded-pill border border-state-caution/40 px-2 py-0.5 font-ui text-xs font-semibold text-state-caution"
+            >
+              <span aria-hidden className="font-data leading-none">
+                !
+              </span>
+              Offline
+            </span>
+          )}
         </div>
         {/* Primary destinations — the same map on every viewport. Mobile compresses
             the rail horizontally; desktop breathes it into the top shell. */}
@@ -892,7 +968,11 @@ export function Dashboard({ userId, userName }: { userId: string; userName: stri
         {createDialogOpen && (
           <CreateClassDialog
             mode={createDialogMode ?? 'scaffold'}
-            onClose={() => setCreateDialogMode(null)}
+            discipline={createDiscipline}
+            onClose={() => {
+              setCreateDialogMode(null);
+              setCreateDiscipline(null);
+            }}
             onError={setError}
             onCreated={async (cls) => {
               if (cls.scaffoldRecipeId == null) setNewEmptyClassId(cls.id);
@@ -905,6 +985,7 @@ export function Dashboard({ userId, userName }: { userId: string; userName: stri
           <PlaylistBrowserDialog
             provider={playlistBrowse.provider}
             playlists={playlistBrowse.playlists}
+            initialPlaylistId={playlistBrowse.playlistId}
             onClose={() => setPlaylistBrowse(null)}
             onCreateClass={handleCreateClassFromPlaylist}
           />
@@ -1012,237 +1093,213 @@ export function Dashboard({ userId, userName }: { userId: string; userName: stri
           </div>
         )}
 
-        {destination === 'classes' ? (
-          selected ? (
-            /* The 3-pane workstation (design system 09): library · class · inspector.
-              Collapses to a single stacked column below xl so it stays usable on
-              smaller laptops. The class workspace contributes the center + inspector
-              columns; the library is the first column. The resting Classes home
-              hides this rail so the ranked list is the page. */
-            <div
-              ref={workspaceRef}
-              className="grid grid-cols-1 gap-6 xl:grid-cols-[266px_minmax(0,1fr)_340px] xl:items-start"
-            >
-              <LibraryRail
-                className="hidden xl:flex"
-                creatorOpen={creatorOpen}
-                onCreatorOpenChange={setCreatorOpen}
+        {/* A crash in one destination keeps the nav. Keyed so switching page or
+            class always starts with a fresh boundary. */}
+        <ErrorBoundary
+          key={`${destination}:${selected?.id ?? ''}`}
+          variant="section"
+          resetLabel="Back to Classes"
+          onReset={() => {
+            setDestination('classes');
+            closeBuilder();
+          }}
+        >
+          {destination === 'classes' ? (
+            selected ? (
+              /* Full-focus builder: the class and its inspector. The Classes library
+              stays on its own page, reached by the back link. */
+              <div
+                ref={workspaceRef}
+                className="grid grid-cols-1 gap-6 xl:grid-cols-[minmax(0,1fr)_340px] xl:items-start"
+              >
+                {detail.classId === selected.id && detail.status === 'ready' ? (
+                  <ClassWorkspace
+                    key={selected.id}
+                    cls={selected}
+                    tracks={detail.tracks}
+                    payload={detail.payload}
+                    onError={setError}
+                    onTrackChanged={() =>
+                      void loadDetail(selected.id, { silent: true, owner: workspaceOwner })
+                    }
+                    onTrackAdded={() =>
+                      void loadDetail(selected.id, { silent: true, owner: workspaceOwner })
+                    }
+                    onChoreographyChanged={() =>
+                      void loadDetail(selected.id, { silent: true, owner: workspaceOwner })
+                    }
+                    onReordered={() =>
+                      void loadDetail(selected.id, { silent: true, owner: workspaceOwner })
+                    }
+                    onTrackRemoved={() =>
+                      void loadDetail(selected.id, { silent: true, owner: workspaceOwner })
+                    }
+                    onRun={() => runClass(selected.id)}
+                    onClassUpdated={applyClassUpdate}
+                    onClassDeleted={handleClassDeleted}
+                    onOpenSongsByMove={() => setSongsByMoveOpen(true)}
+                    onOpenConnections={() => setConnectionsOpen(true)}
+                    connectionRevision={connectionRevision}
+                    focusAddMusic={newEmptyClassId === selected.id}
+                    onFocusedAddMusic={() => setNewEmptyClassId(null)}
+                    onBackToClasses={closeBuilder}
+                    onRetryDetails={() => void loadDetail(selected.id)}
+                  />
+                ) : detail.classId === selected.id && detail.status === 'error' ? (
+                  <section className="flex min-w-0 flex-col gap-4">
+                    <BackToClassesButton onClick={closeBuilder} />
+                    <RecoveryState
+                      kind="error"
+                      compact
+                      role="alert"
+                      title="This class didn't load."
+                      event={detail.error}
+                      safety="Your class is saved. Nothing changed."
+                      primaryAction={
+                        <button
+                          type="button"
+                          className={RETRY_BUTTON_CLASS}
+                          onClick={() => void loadDetail(selected.id)}
+                        >
+                          Retry
+                        </button>
+                      }
+                    />
+                  </section>
+                ) : (
+                  <section className="flex min-w-0 flex-col gap-4">
+                    <BackToClassesButton onClick={closeBuilder} />
+                    <LoadingSkeleton label="Loading class" shape="card" />
+                  </section>
+                )}
+              </div>
+            ) : (
+              <ClassesHome
                 classes={classes}
                 status={listStatus}
+                libraryError={error}
+                activeTag={activeTag}
+                knownTags={knownTags}
                 hasMore={nextClassCursor !== null}
                 loadingMore={loadingMoreClasses}
-                selectedId={selected.id}
-                knownTags={knownTags}
-                activeTag={activeTag}
-                onSelectTag={applyTagFilter}
-                onError={setError}
-                onStartClass={focusClassCreator}
+                onOpen={openClass}
+                onPreview={(cls) => setCardPreview(cls)}
                 onDuplicate={async (cls) => {
-                  // Duplicate an owned class into the library, then refresh so the
-                  // new class appears and open it for immediate editing.
                   const copy = await copyClass(cls.id);
                   await applyTagFilter(null);
                   await refreshClasses();
                   await openClass({ ...copy, accessLevel: 'owner' });
                 }}
-                onOpen={openClass}
-                onPreview={(cls) => setCardPreview(cls)}
-                onLoadMore={loadMoreClasses}
+                onDelete={async (cls) => {
+                  await deleteClass(cls.id);
+                  handleClassDeleted(cls.id);
+                }}
+                onSelectTag={applyTagFilter}
+                onClearTag={() => void applyTagFilter(null)}
                 onRetry={() => {
                   setListStatus('loading');
                   void refreshClasses();
                 }}
+                onLoadMore={loadMoreClasses}
+                onStartClass={focusClassCreator}
+                onStartTemplate={(template) => focusClassCreator('scaffold', template)}
+                onImportPlaylist={() => setDestination('music')}
               />
-
-              <CompactClassChooser
-                classes={classes}
-                selectedId={selected.id}
-                onOpen={openClass}
-                onShowAll={() => {
-                  liveRequestId.current += 1;
-                  detailWorkspace.current = null;
-                  setRefreshWarning(null);
-                  setSelected(null);
-                  dispatchDetail({ type: 'reset', requestId: ++detailRequestId.current });
-                }}
-              />
-
-              {detail.classId === selected.id && detail.status === 'ready' ? (
-                <ClassWorkspace
-                  key={selected.id}
-                  cls={selected}
-                  tracks={detail.tracks}
-                  payload={detail.payload}
-                  onError={setError}
-                  onTrackChanged={() =>
-                    void loadDetail(selected.id, { silent: true, owner: workspaceOwner })
-                  }
-                  onTrackAdded={() =>
-                    void loadDetail(selected.id, { silent: true, owner: workspaceOwner })
-                  }
-                  onChoreographyChanged={() =>
-                    void loadDetail(selected.id, { silent: true, owner: workspaceOwner })
-                  }
-                  onReordered={() =>
-                    void loadDetail(selected.id, { silent: true, owner: workspaceOwner })
-                  }
-                  onTrackRemoved={() =>
-                    void loadDetail(selected.id, { silent: true, owner: workspaceOwner })
-                  }
-                  onRun={() => runClass(selected.id)}
-                  onClassUpdated={applyClassUpdate}
-                  onClassDeleted={handleClassDeleted}
-                  onOpenSongsByMove={() => setSongsByMoveOpen(true)}
-                  onOpenConnections={() => setConnectionsOpen(true)}
-                  connectionRevision={connectionRevision}
-                  focusAddMusic={newEmptyClassId === selected.id}
-                  onFocusedAddMusic={() => setNewEmptyClassId(null)}
-                  onBackToClasses={() => {
-                    liveRequestId.current += 1;
-                    detailWorkspace.current = null;
-                    setRefreshWarning(null);
-                    setSelected(null);
-                    dispatchDetail({ type: 'reset', requestId: ++detailRequestId.current });
-                  }}
-                />
-              ) : detail.classId === selected.id && detail.status === 'error' ? (
-                <section className="rounded-card bg-bg-raised p-8 shadow-card">
-                  <p className="font-ui text-sm text-state-danger" role="alert">
-                    {detail.error}
-                  </p>
-                  <button
-                    type="button"
-                    className="mt-4 rounded-pill rf-btn-primary px-4 py-2 font-ui text-sm font-semibold text-text-on-accent"
-                    onClick={() => void loadDetail(selected.id)}
-                  >
-                    Retry class
-                  </button>
-                </section>
-              ) : (
-                <section className="rounded-card bg-bg-raised p-8 shadow-card" aria-busy="true">
-                  <p className="font-ui text-text-tertiary">Loading class…</p>
-                </section>
-              )}
-            </div>
-          ) : (
-            <ClassesHome
+            )
+          ) : destination === 'music' ? (
+            <MusicWorkspace
+              userId={userId}
+              connectionRevision={connectionRevision}
+              onOpenConnections={() => setConnectionsOpen(true)}
+              onOpenPlaylist={(provider, playlists, playlistId) =>
+                setPlaylistBrowse({ provider, playlists, playlistId })
+              }
+              onBrowseLikes={(provider, tracks) => setLikesBrowse({ provider, tracks })}
+              onCreateClass={handleCreateClassFromLikes}
+            />
+          ) : destination === 'live' ? (
+            <LiveWorkspace
               classes={classes}
               status={listStatus}
-              libraryError={error}
-              activeTag={activeTag}
-              knownTags={knownTags}
-              hasMore={nextClassCursor !== null}
-              loadingMore={loadingMoreClasses}
-              onOpen={openClass}
-              onPreview={(cls) => setCardPreview(cls)}
-              onDuplicate={async (cls) => {
-                const copy = await copyClass(cls.id);
-                await applyTagFilter(null);
-                await refreshClasses();
-                await openClass({ ...copy, accessLevel: 'owner' });
-              }}
-              onSelectTag={applyTagFilter}
-              onClearTag={() => void applyTagFilter(null)}
               onRetry={() => {
                 setListStatus('loading');
                 void refreshClasses();
               }}
-              onLoadMore={loadMoreClasses}
-              onStartClass={focusClassCreator}
+              onRunClass={runClass}
+              onOpenClass={async (cls) => {
+                setDestination('classes');
+                await openClass(cls);
+              }}
             />
-          )
-        ) : destination === 'music' ? (
-          <MusicWorkspace
-            userId={userId}
-            connectionRevision={connectionRevision}
-            onOpenConnections={() => setConnectionsOpen(true)}
-            onBrowsePlaylists={(provider, playlists) => setPlaylistBrowse({ provider, playlists })}
-            onBrowseLikes={(provider, tracks) => setLikesBrowse({ provider, tracks })}
-            onCreateClass={handleCreateClassFromLikes}
-          />
-        ) : destination === 'live' ? (
-          <LiveWorkspace
-            classes={classes}
-            status={listStatus}
-            onRunClass={runClass}
-            onOpenClass={async (cls) => {
-              setDestination('classes');
-              await openClass(cls);
-            }}
-          />
-        ) : (
-          <AccountWorkspace
-            profileName={profileName}
-            connectionRevision={connectionRevision}
-            onProfileUpdated={(user) => setProfileName(user.displayName ?? user.email)}
-            onOpenConnections={() => setConnectionsOpen(true)}
-          />
-        )}
+          ) : (
+            <AccountWorkspace
+              profileName={profileName}
+              connectionRevision={connectionRevision}
+              onProfileUpdated={(user) => setProfileName(user.displayName ?? user.email)}
+              onOpenConnections={() => setConnectionsOpen(true)}
+            />
+          )}
+        </ErrorBoundary>
       </div>
     </main>
   );
 }
 
+/** Leaves the full-focus builder for the Classes library. */
+function BackToClassesButton({ onClick }: { onClick: () => void }) {
+  return (
+    <button
+      type="button"
+      onClick={onClick}
+      className="min-h-11 self-start rounded-control px-1 font-ui text-sm font-semibold text-interactive hover:text-interactive-hover rf-focus-ring"
+    >
+      <span aria-hidden="true">← </span>
+      Back to Classes
+    </button>
+  );
+}
+
 /**
- * Mobile Builder orientation. The full library remains the desktop rail; narrow
- * viewports get one compact, horizontally scrollable chooser so switching class
- * context never requires traversing the entire library below the active workbench.
+ * Add a playlist, with the append note beside the button when the class already
+ * has songs. New songs append; this control does not stretch blocks.
  */
-function CompactClassChooser({
-  classes,
-  selectedId,
-  onOpen,
-  onShowAll,
+function AddPlaylistControl({
+  buttonRef,
+  expanded,
+  note,
+  noteId,
+  onClick,
+  prominent = false,
 }: {
-  classes: ClassListItem[];
-  selectedId: string;
-  onOpen: (cls: ClassListItem) => void;
-  onShowAll: () => void;
+  buttonRef?: Ref<HTMLButtonElement>;
+  expanded: boolean;
+  note: string | null;
+  noteId: string;
+  onClick: () => void;
+  prominent?: boolean;
 }) {
   return (
-    <nav
-      aria-label="Class chooser"
-      className="order-0 min-w-0 rounded-card border border-border-subtle bg-bg-raised p-3 xl:hidden"
-    >
-      <div className="mb-2 flex items-center justify-between gap-3">
-        <span className="font-data text-[10px] font-semibold uppercase tracking-[0.14em] text-text-tertiary">
-          Your classes
-        </span>
-        <button
-          type="button"
-          onClick={onShowAll}
-          className="min-h-11 rounded-control px-2 font-ui text-xs font-semibold text-interactive rf-focus-ring"
-        >
-          All classes
-        </button>
-      </div>
-      <div className="flex max-w-full gap-2 overflow-x-auto pb-1">
-        {classes.map((cls) => {
-          const active = cls.id === selectedId;
-          return (
-            <button
-              key={cls.id}
-              type="button"
-              aria-current={active ? 'page' : undefined}
-              onClick={() => onOpen(cls)}
-              className={`min-h-16 min-w-[11rem] max-w-[15rem] shrink-0 rounded-control border p-3 text-left rf-focus-ring ${
-                active
-                  ? 'border-interactive bg-interactive/5'
-                  : 'border-border-subtle bg-bg-base hover:border-interactive/45'
-              }`}
-            >
-              <span className="block truncate font-ui text-sm font-semibold text-text-primary">
-                {cls.title}
-              </span>
-              <span className="mt-1 block truncate font-data text-[10px] text-text-tertiary">
-                {formatTemplateLabel(cls.template) ?? 'Class'} · {cls.trackCount}{' '}
-                {cls.trackCount === 1 ? 'track' : 'tracks'}
-              </span>
-            </button>
-          );
-        })}
-      </div>
-    </nav>
+    <div className="flex flex-wrap items-center gap-x-3 gap-y-1">
+      <button
+        ref={buttonRef}
+        type="button"
+        onClick={onClick}
+        aria-expanded={expanded}
+        aria-describedby={note ? noteId : undefined}
+        className={
+          prominent
+            ? 'min-h-11 rounded-control rf-btn-primary px-3 font-ui text-sm font-semibold text-text-on-accent rf-focus-ring'
+            : 'min-h-11 rounded-control border border-interactive/50 px-3 font-ui text-sm font-semibold text-interactive rf-focus-ring'
+        }
+      >
+        Add a playlist
+      </button>
+      {note ? (
+        <p id={noteId} className="font-ui text-xs leading-5 text-text-tertiary">
+          {note}
+        </p>
+      ) : null}
+    </div>
   );
 }
 
@@ -1610,6 +1667,19 @@ function retainConnectedProviderState<T>(
   return next;
 }
 
+type ShelfFailure = { message: string; code?: string };
+
+function shelfFailure(error: unknown): ShelfFailure {
+  const code =
+    typeof error === 'object' &&
+    error !== null &&
+    'code' in error &&
+    typeof (error as { code?: unknown }).code === 'string'
+      ? (error as { code: string }).code
+      : undefined;
+  return { message: errMessage(error), ...(code ? { code } : {}) };
+}
+
 function useProviderBrowseState(connectionRevision = 0) {
   const [connections, setConnections] = useState<MusicConnectionView[]>([]);
   const [connectionsStatus, setConnectionsStatus] = useState<'loading' | 'ready' | 'error'>(
@@ -1620,10 +1690,10 @@ function useProviderBrowseState(connectionRevision = 0) {
     {},
   );
   const [playlistsLoading, setPlaylistsLoading] = useState<Partial<Record<Provider, boolean>>>({});
-  const [playlistsError, setPlaylistsError] = useState<Partial<Record<Provider, string>>>({});
+  const [playlistsError, setPlaylistsError] = useState<Partial<Record<Provider, ShelfFailure>>>({});
   const [likes, setLikes] = useState<Partial<Record<Provider, TrackSearchResult[]>>>({});
   const [likesLoading, setLikesLoading] = useState<Partial<Record<Provider, boolean>>>({});
-  const [likesError, setLikesError] = useState<Partial<Record<Provider, string>>>({});
+  const [likesError, setLikesError] = useState<Partial<Record<Provider, ShelfFailure>>>({});
   const connectedProvidersRef = useRef<ReadonlySet<Provider>>(new Set());
 
   useEffect(() => {
@@ -1685,7 +1755,7 @@ function useProviderBrowseState(connectionRevision = 0) {
           setPlaylistsError((prev) => ({ ...prev, [provider]: undefined }));
         } catch (e) {
           if (!alive || !connectedProvidersRef.current.has(provider)) return;
-          setPlaylistsError((prev) => ({ ...prev, [provider]: errMessage(e) }));
+          setPlaylistsError((prev) => ({ ...prev, [provider]: shelfFailure(e) }));
         } finally {
           if (alive && connectedProvidersRef.current.has(provider)) {
             setPlaylistsLoading((prev) => ({ ...prev, [provider]: false }));
@@ -1719,7 +1789,7 @@ function useProviderBrowseState(connectionRevision = 0) {
           setLikesError((prev) => ({ ...prev, [provider]: undefined }));
         } catch (e) {
           if (!alive || !connectedProvidersRef.current.has(provider)) return;
-          setLikesError((prev) => ({ ...prev, [provider]: errMessage(e) }));
+          setLikesError((prev) => ({ ...prev, [provider]: shelfFailure(e) }));
         } finally {
           if (alive && connectedProvidersRef.current.has(provider)) {
             setLikesLoading((prev) => ({ ...prev, [provider]: false }));
@@ -1751,6 +1821,9 @@ function useProviderBrowseState(connectionRevision = 0) {
   };
 }
 
+const RETRY_BUTTON_CLASS =
+  'min-h-11 rounded-control rf-btn-primary px-4 font-ui text-sm font-semibold text-text-on-accent sm:rounded-pill';
+
 function ProviderConnectionsLoadState({
   status,
   hasKnownConnections,
@@ -1763,32 +1836,27 @@ function ProviderConnectionsLoadState({
   if (status === 'ready') return null;
 
   if (status === 'loading') {
-    return (
-      <p role="status" className="font-ui text-xs text-text-tertiary">
-        Checking music connections…
-      </p>
-    );
+    return <LoadingSkeleton label="Checking music connections" shape="line" />;
   }
 
   return (
-    <div
+    <RecoveryState
+      kind="unavailable"
+      compact
       role="alert"
-      className="flex flex-col items-start gap-2 rounded-control border border-state-danger/30 bg-state-danger/5 p-3 font-ui text-xs text-state-danger"
-    >
-      <p>
-        Couldn’t load music connections.
-        {hasKnownConnections
-          ? ' Showing your last known sources.'
-          : ' Source status is unavailable.'}
-      </p>
-      <button
-        type="button"
-        onClick={onRetry}
-        className="min-h-11 rounded-control border border-interactive/50 px-3 font-ui text-sm font-semibold text-interactive hover:bg-interactive/10 rf-focus-ring sm:rounded-pill"
-      >
-        Try again
-      </button>
-    </div>
+      title="Music connections didn't load."
+      event={
+        hasKnownConnections
+          ? 'Showing your last known sources.'
+          : 'Source status is unavailable until Ritmo can check again.'
+      }
+      safety="No connection changed. Catalog search still works."
+      primaryAction={
+        <button type="button" onClick={onRetry} className={RETRY_BUTTON_CLASS}>
+          Retry
+        </button>
+      }
+    />
   );
 }
 
@@ -1796,14 +1864,18 @@ function MusicWorkspace({
   userId,
   connectionRevision,
   onOpenConnections,
-  onBrowsePlaylists,
+  onOpenPlaylist,
   onBrowseLikes,
   onCreateClass,
 }: {
   userId: string;
   connectionRevision: number;
   onOpenConnections: () => void;
-  onBrowsePlaylists: (provider: Provider, playlists: ProviderPlaylistSummary[]) => void;
+  onOpenPlaylist: (
+    provider: Provider,
+    playlists: ProviderPlaylistSummary[],
+    playlistId: string,
+  ) => void;
   onBrowseLikes: (provider: Provider, tracks: TrackSearchResult[]) => void;
   onCreateClass: (
     tracks: TrackSearchResult[],
@@ -1828,6 +1900,10 @@ function MusicWorkspace({
       rememberConnectionReturn({ userId, destination: 'music', provider }),
   });
   const [selectedProvider, setSelectedProvider] = useState<Provider>(PROVIDER_ORDER[0]!);
+  const [libraryKind, setLibraryKind] = useState<MusicLibraryKind>('catalog');
+  const [libraryQuery, setLibraryQuery] = useState('');
+  const [sort, setSort] = useState<LibrarySort>('recents');
+  const typeTouched = useRef(false);
   const [query, setQuery] = useState('');
   const [results, setResults] = useState<TrackSearchResult[] | null>(null);
   const [searching, setSearching] = useState(false);
@@ -1838,6 +1914,17 @@ function MusicWorkspace({
   const [template, setTemplate] = useState<ClassTemplate>('cycle');
   const [creating, setCreating] = useState(false);
   const requestId = useRef(0);
+
+  const libraryKindFor = (provider: Provider): MusicLibraryKind => {
+    const connection = connections.find((row) => row.provider === provider);
+    const connected = providerConnectionState(provider, connection, Date.now()) === 'connected';
+    return defaultLibraryKind(connected, musicLibraryKinds(provider));
+  };
+
+  useEffect(() => {
+    if (typeTouched.current || connectionsStatus === 'loading') return;
+    setLibraryKind(libraryKindFor(selectedProvider));
+  }, [connections, connectionsStatus, selectedProvider]);
 
   useEffect(() => {
     const trimmed = query.trim();
@@ -1899,179 +1986,330 @@ function MusicWorkspace({
     }
   };
 
+  const label = providerLabel(selectedProvider);
+  const connection = connections.find((row) => row.provider === selectedProvider);
+  const connectionState = providerConnectionState(selectedProvider, connection, Date.now());
+  const statusMark = musicConnectionMark(connectionsStatus, connectionState);
+  const truth = providerCapabilityTruth(selectedProvider, connection, Date.now());
+  const connectBusy = !!flow.operation && !flow.operation.error && flow.operation.stage !== 'ready';
+  const ownOperation = flow.operation?.provider === selectedProvider ? flow.operation : null;
+  const notice = musicConnectionNotice({
+    label: providerLabel(selectedProvider),
+    fetchStatus: connectionsStatus,
+    connectionState,
+    libraryKind,
+    scopeGap:
+      connectionState !== 'connected'
+        ? null
+        : truth.library.state === 'partial'
+          ? 'playlists'
+          : truth.playback.state === 'action-required'
+            ? 'playback'
+            : null,
+    connectInFlight: !!ownOperation,
+  });
+  // The expired chip already carries Reconnect and its error; the notice only
+  // adds the in-flight steps (progress, Cancel, Authorize Apple Music).
+  const chipOwnsReconnect =
+    connectionState === 'expired' && (!ownOperation || !!ownOperation.error);
+  const noticeBlock = notice && (
+    <div
+      data-music-connection-notice=""
+      className={`flex flex-col items-start gap-2 font-ui text-sm sm:flex-row sm:items-center sm:justify-between ${
+        notice.tone === 'caution'
+          ? 'rounded-control border border-state-caution/35 bg-state-caution/10 p-3'
+          : ''
+      }`}
+    >
+      <p className="flex min-w-0 flex-col gap-1">
+        {notice.tone === 'caution' && (
+          <ConnectionStateMark
+            kind="expired"
+            label={connectionState === 'expired' ? 'Session expired' : 'Reconnect needed'}
+            className="text-xs"
+          />
+        )}
+        <span className="text-text-secondary">{notice.message}</span>
+      </p>
+      {!chipOwnsReconnect && (
+        <ProviderConnectAction
+          provider={selectedProvider}
+          label={`${notice.action === 'reconnect' ? 'Reconnect' : 'Connect'} ${providerLabel(selectedProvider)}`}
+          flow={flow}
+        />
+      )}
+    </div>
+  );
+  const savedPlaylists = playlists[selectedProvider] ?? null;
+  const likedTracks = likes[selectedProvider] ?? null;
+  const playlistRows = orderLibrary(
+    filterLibrary(
+      savedPlaylists ?? [],
+      libraryQuery,
+      (row) => `${row.name} ${row.ownerName ?? ''}`,
+    ),
+    sort,
+    (row) => row.name,
+  );
+  const songRows = orderLibrary(
+    filterLibrary(likedTracks ?? [], libraryQuery, (row) => `${row.title} ${row.artist}`),
+    sort,
+    (row) => row.title,
+  );
+  const chooseProvider = (provider: Provider) => {
+    if (flow.operation && flow.operation.provider !== provider) flow.cancel();
+    if (provider !== selectedProvider) {
+      typeTouched.current = false;
+      setLibraryQuery('');
+      setLibraryKind(libraryKindFor(provider));
+    }
+    setSelectedProvider(provider);
+  };
+  const chooseKind = (kind: MusicLibraryKind) => {
+    typeTouched.current = true;
+    setLibraryKind(kind);
+    setLibraryQuery('');
+  };
+
   return (
-    <section className="grid w-full min-w-0 gap-5 xl:grid-cols-[260px_minmax(0,1fr)] xl:items-start">
-      <aside className="min-w-0 rounded-card border border-border-subtle bg-bg-raised p-4 xl:sticky xl:top-6">
-        <p className="rf-eyebrow">Sources</p>
-        <div className="mt-3 grid min-w-0 gap-2 sm:grid-cols-3 xl:grid-cols-1">
-          {PROVIDER_ORDER.map((provider) => {
-            const connection = connections.find((row) => row.provider === provider);
-            const connectionState = providerConnectionState(provider, connection, Date.now());
-            const truth = providerCapabilityTruth(
-              provider,
-              connection,
-              Date.now(),
-              connectionsStatus === 'ready' ? 'verified' : 'unverified',
-            );
-            if (likesError[provider] || playlistsError[provider]) {
-              truth.library = { state: 'unverified', label: 'Library unavailable · retry' };
-            }
-            const selected = selectedProvider === provider;
-            const statusMark = musicConnectionMark(connectionsStatus, connectionState);
-            return (
-              <article
-                key={provider}
-                className={`min-w-0 rounded-control border p-2 ${
-                  selected
-                    ? 'border-interactive/50 bg-interactive/10'
-                    : 'border-border-subtle bg-bg-base'
-                }`}
-              >
-                <button
-                  type="button"
-                  aria-label={`Browse ${providerLabel(provider)} catalog`}
-                  aria-pressed={selected}
-                  onClick={() => {
-                    if (flow.operation && flow.operation.provider !== provider) flow.cancel();
-                    setSelectedProvider(provider);
-                  }}
-                  className="flex min-h-11 w-full min-w-0 items-center justify-between gap-2 rounded-control px-1 text-left rf-focus-ring"
-                >
-                  <span className="shrink-0 font-ui text-sm font-semibold text-text-primary">
-                    {providerLabel(provider)}
-                  </span>
-                  <ConnectionStateMark
-                    kind={statusMark.kind}
-                    label={statusMark.label}
-                    className="shrink-0 font-data text-[10px]"
-                  />
-                </button>
-                <ProviderCapabilityLedger provider={provider} truth={truth} compact />
-                {(connectionState === 'disconnected' || connectionState === 'expired') && (
-                  <div className="mt-2">
-                    <ProviderConnectAction
-                      provider={provider}
-                      label={`${connectionState === 'expired' ? 'Reconnect' : 'Connect'} ${providerLabel(provider)}`}
-                      flow={flow}
-                    />
-                  </div>
-                )}
-                {connectionState === 'connected' && (
-                  <button
-                    type="button"
-                    onClick={onOpenConnections}
-                    disabled={
-                      !!flow.operation && !flow.operation.error && flow.operation.stage !== 'ready'
-                    }
-                    className="mt-2 min-h-11 rounded-control px-2 font-ui text-xs text-interactive rf-focus-ring"
-                  >
-                    Manage {providerLabel(provider)} connection
-                  </button>
-                )}
-                {(likesError[provider] || playlistsError[provider]) && (
-                  <button
-                    type="button"
-                    onClick={retryConnections}
-                    className="mt-2 min-h-11 rounded-control px-2 font-ui text-xs text-interactive rf-focus-ring"
-                  >
-                    Retry {providerLabel(provider)} library
-                  </button>
-                )}
-                <div className="mt-1 flex flex-wrap gap-1">
-                  {likes[provider]?.length ? (
-                    <button
-                      type="button"
-                      aria-label={`Browse liked tracks on ${providerLabel(provider)}`}
-                      onClick={() => onBrowseLikes(provider, likes[provider]!)}
-                      className="min-h-11 rounded-control px-2 font-ui text-xs font-semibold text-interactive hover:bg-interactive/10 rf-focus-ring"
-                    >
-                      Liked tracks · {likes[provider]!.length}
-                    </button>
-                  ) : likesLoading[provider] ? (
-                    <span className="px-2 py-1 font-ui text-[11px] text-text-tertiary">
-                      Loading likes…
-                    </span>
-                  ) : likesError[provider] ? (
-                    <span className="px-2 py-1 font-ui text-[11px] text-state-caution">
-                      Likes unavailable
-                    </span>
-                  ) : null}
-                  {playlists[provider]?.length ? (
-                    <button
-                      type="button"
-                      aria-label={`Browse saved playlists on ${providerLabel(provider)}`}
-                      onClick={() => onBrowsePlaylists(provider, playlists[provider]!)}
-                      className="min-h-11 rounded-control px-2 font-ui text-xs font-semibold text-interactive hover:bg-interactive/10 rf-focus-ring"
-                    >
-                      Playlists · {playlists[provider]!.length}
-                    </button>
-                  ) : playlistsLoading[provider] ? (
-                    <span className="px-2 py-1 font-ui text-[11px] text-text-tertiary">
-                      Loading playlists…
-                    </span>
-                  ) : playlistsError[provider] ? (
-                    <span className="px-2 py-1 font-ui text-[11px] text-state-caution">
-                      Playlists unavailable
-                    </span>
-                  ) : providerCapabilities[provider].savedPlaylists &&
-                    connectionState === 'connected' ? (
-                    <span className="px-2 py-1 font-ui text-[11px] text-text-tertiary">
-                      No saved playlists
-                    </span>
-                  ) : null}
-                </div>
-              </article>
-            );
-          })}
+    <section data-music-layout="stack" className="flex w-full min-w-0 flex-col gap-4 lg:gap-5">
+      <header className="flex min-w-0 items-end justify-between gap-3">
+        <div className="min-w-0">
+          <p className="rf-eyebrow">Music</p>
+          <h2 className="mt-2 font-display text-3xl font-bold tracking-[-0.03em] text-text-primary sm:text-4xl">
+            Your library
+          </h2>
         </div>
         <button
           type="button"
           onClick={onOpenConnections}
-          disabled={!!flow.operation && !flow.operation.error && flow.operation.stage !== 'ready'}
-          className="mt-3 min-h-11 w-full rounded-control border border-interactive/35 px-3 font-ui text-sm font-semibold text-interactive hover:bg-interactive/10 rf-focus-ring disabled:opacity-50"
+          disabled={connectBusy}
+          className="min-h-11 shrink-0 rounded-control px-2 font-ui text-sm font-semibold text-interactive hover:bg-interactive/10 rf-focus-ring disabled:opacity-50"
         >
           Manage connections
         </button>
-      </aside>
+      </header>
 
-      <div className="flex w-full min-w-0 flex-col gap-4">
-        <header className="min-w-0">
-          <p className="rf-eyebrow">Music</p>
-          <h2 className="mt-2 text-balance font-display text-3xl font-bold tracking-[-0.03em] text-text-primary sm:text-4xl">
-            Browse music, then shape it into class.
-          </h2>
-          <p className="mt-2 max-w-2xl font-ui text-sm leading-6 text-text-secondary">
-            Provider catalogs are the raw material. Selection carries straight into a class.
-          </p>
-        </header>
+      <ProviderConnectionsLoadState
+        status={connectionsStatus}
+        hasKnownConnections={connections.length > 0}
+        onRetry={retryConnections}
+      />
 
-        <ProviderConnectionsLoadState
-          status={connectionsStatus}
-          hasKnownConnections={connections.length > 0}
+      <div
+        data-music-switcher=""
+        role="group"
+        aria-label="Music services"
+        className="flex flex-col gap-2 sm:flex-row sm:flex-wrap"
+      >
+        {PROVIDER_ORDER.map((provider) => {
+          const row = connections.find((item) => item.provider === provider);
+          const state = providerConnectionState(provider, row, Date.now());
+          const chip = musicChipBadge({
+            fetchStatus: connectionsStatus,
+            connectionState: state,
+            libraryFailure: musicLibraryFailure([playlistsError[provider], likesError[provider]]),
+          });
+          const selected = selectedProvider === provider;
+          const name = providerLabel(provider);
+          const shell = `flex min-h-11 w-full items-center gap-2 rounded-pill border sm:w-auto sm:min-w-[9.5rem] sm:flex-1 ${
+            selected
+              ? 'border-border-strong bg-bg-overlay font-semibold'
+              : 'border-border-subtle bg-bg-base font-medium'
+          }`;
+          if (musicChipOffersReconnect(chip.kind)) {
+            const own = flow.operation?.provider === provider ? flow.operation : null;
+            const busy = !!own && !own.error && own.stage !== 'ready';
+            return (
+              <div
+                key={provider}
+                className="flex w-full min-w-0 flex-col gap-1 sm:w-auto sm:min-w-[9.5rem] sm:flex-1"
+              >
+                <div
+                  className={`flex min-h-11 w-full items-center gap-2 rounded-pill border ${
+                    selected
+                      ? 'border-border-strong bg-bg-overlay font-semibold'
+                      : 'border-border-subtle bg-bg-base font-medium'
+                  }`}
+                >
+                  <button
+                    type="button"
+                    aria-pressed={selected}
+                    aria-label={name}
+                    onClick={() => chooseProvider(provider)}
+                    className="flex min-h-11 min-w-0 flex-1 items-center px-3 text-left font-ui text-sm text-text-primary rf-focus-ring"
+                  >
+                    <span className="truncate">{name}</span>
+                  </button>
+                  <button
+                    type="button"
+                    aria-label={`Reconnect ${name}`}
+                    disabled={busy}
+                    onClick={() => {
+                      chooseProvider(provider);
+                      void flow.start(provider);
+                    }}
+                    className="inline-flex min-h-11 shrink-0 items-center px-3 rf-focus-ring disabled:opacity-50"
+                  >
+                    <ConnectionStateMark
+                      kind="expired"
+                      label={busy ? 'Reconnecting…' : 'Reconnect'}
+                      className="shrink-0 font-data text-[10px]"
+                    />
+                  </button>
+                </div>
+                {own?.error && (
+                  <p role="alert" className="px-1 font-ui text-xs text-state-danger">
+                    {own.error}
+                  </p>
+                )}
+              </div>
+            );
+          }
+          return (
+            <button
+              key={provider}
+              type="button"
+              aria-pressed={selected}
+              aria-label={`${name}, ${chip.label}`}
+              onClick={() => chooseProvider(provider)}
+              className={`${shell} justify-between px-3 rf-focus-ring`}
+            >
+              <span className="truncate font-ui text-sm text-text-primary">{name}</span>
+              <ConnectionStateMark
+                kind={chip.kind}
+                label={chip.label}
+                className="shrink-0 font-data text-[10px]"
+              />
+            </button>
+          );
+        })}
+      </div>
+
+      <div role="group" aria-label="Library" className="flex flex-wrap gap-2">
+        {musicLibraryKinds(selectedProvider).map((kind) => {
+          const kindLabel =
+            kind === 'playlists' ? 'Playlists' : kind === 'songs' ? 'Songs' : 'Catalog';
+          const selected = libraryKind === kind;
+          return (
+            <button
+              key={kind}
+              type="button"
+              aria-pressed={selected}
+              onClick={() => chooseKind(kind)}
+              className={`min-h-11 rounded-pill border px-3 font-ui text-sm rf-focus-ring ${
+                selected
+                  ? 'border-border-strong bg-bg-overlay font-semibold text-text-primary'
+                  : 'border-border-subtle font-medium text-text-secondary'
+              }`}
+            >
+              {kindLabel}
+            </button>
+          );
+        })}
+      </div>
+
+      {libraryKind !== 'catalog' &&
+        connectionState === 'connected' &&
+        !(libraryKind === 'playlists'
+          ? playlistsError[selectedProvider]
+          : likesError[selectedProvider]) && (
+          <div className="flex flex-col gap-3 sm:flex-row sm:items-end sm:justify-between">
+            <label
+              htmlFor="music-library-search"
+              className="block min-w-0 flex-1 font-ui text-xs font-semibold text-text-secondary"
+            >
+              {libraryKind === 'playlists' ? 'Search playlists' : 'Search songs'}
+              <input
+                id="music-library-search"
+                type="search"
+                value={libraryQuery}
+                onChange={(event) => setLibraryQuery(event.target.value)}
+                className="mt-2 min-h-11 w-full rounded-control border border-interactive/30 bg-bg-base px-3 font-ui text-sm text-text-primary rf-focus-ring sm:rounded-pill"
+              />
+            </label>
+            <div role="group" aria-label="Sort" className="flex gap-2">
+              {(
+                [
+                  ['recents', 'Recents'],
+                  ['name', 'Name'],
+                ] as const
+              ).map(([value, sortLabel]) => (
+                <button
+                  key={value}
+                  type="button"
+                  aria-pressed={sort === value}
+                  onClick={() => setSort(value)}
+                  className={`min-h-11 rounded-pill border px-3 font-ui text-sm rf-focus-ring ${
+                    sort === value
+                      ? 'border-border-strong bg-bg-overlay font-semibold text-text-primary'
+                      : 'border-border-subtle font-medium text-text-secondary'
+                  }`}
+                >
+                  {sortLabel}
+                </button>
+              ))}
+            </div>
+          </div>
+        )}
+
+      {libraryKind !== 'catalog' && noticeBlock}
+
+      {libraryKind === 'playlists' ? (
+        <PlaylistShelf
+          label={label}
+          loading={Boolean(playlistsLoading[selectedProvider])}
+          error={playlistsError[selectedProvider] ?? null}
+          connected={connectionState === 'connected'}
+          statusMark={noticeBlock ? null : statusMark}
           onRetry={retryConnections}
+          rows={playlistRows}
+          filtered={libraryQuery.trim() !== ''}
+          onOpen={(playlistId) => {
+            if (!savedPlaylists?.length) return;
+            onOpenPlaylist(selectedProvider, savedPlaylists, playlistId);
+          }}
         />
-
-        <section className="min-w-0 rounded-card border border-border-subtle bg-bg-raised p-3 sm:p-4">
+      ) : libraryKind === 'songs' ? (
+        <SongShelf
+          label={label}
+          loading={Boolean(likesLoading[selectedProvider])}
+          error={likesError[selectedProvider] ?? null}
+          connected={connectionState === 'connected'}
+          statusMark={noticeBlock ? null : statusMark}
+          onRetry={retryConnections}
+          rows={songRows}
+          filtered={libraryQuery.trim() !== ''}
+          onCreateClass={
+            likedTracks && likedTracks.length > 0
+              ? () => onBrowseLikes(selectedProvider, likedTracks)
+              : null
+          }
+        />
+      ) : (
+        <section className="min-w-0">
           <label
             htmlFor="music-catalog-search"
             className="font-ui text-xs font-semibold text-text-secondary"
           >
-            Search {providerLabel(selectedProvider)} catalog
+            Search {label} catalog
           </label>
           <input
             id="music-catalog-search"
             type="search"
             value={query}
             onChange={(event) => setQuery(event.target.value)}
-            placeholder={`Track, artist, or remix on ${providerLabel(selectedProvider)}…`}
+            placeholder={`Track, artist, or remix on ${label}…`}
             className="mt-2 min-h-11 w-full rounded-control border border-interactive/30 bg-bg-base px-3 font-ui text-sm text-text-primary rf-focus-ring sm:rounded-pill"
           />
 
+          {noticeBlock && <div className="mt-3">{noticeBlock}</div>}
+
           <p role="status" className="sr-only">
             {searching
-              ? `Searching ${providerLabel(selectedProvider)}…`
+              ? `Searching ${label}…`
               : results
-                ? `${results.length} ${results.length === 1 ? 'result' : 'results'} on ${providerLabel(selectedProvider)}.`
+                ? `${results.length} ${results.length === 1 ? 'result' : 'results'} on ${label}.`
                 : ''}
           </p>
 
@@ -2092,29 +2330,10 @@ function MusicWorkspace({
             </div>
           )}
 
-          {query.trim() === '' ? (
-            <div className="mt-3 flex min-h-80 items-center justify-center rounded-card bg-bg-base p-6 text-center">
-              <div>
-                <p className="font-display text-lg font-semibold text-text-primary">
-                  Start with the song in your head.
-                </p>
-                <p className="mt-2 max-w-md font-ui text-sm leading-6 text-text-tertiary">
-                  Catalog search works without connecting an account. Link a provider only when you
-                  want its likes, saved playlists, or playback.
-                </p>
-              </div>
-            </div>
-          ) : searching && results === null ? (
-            <p className="mt-3 min-h-80 p-4 font-ui text-sm text-text-tertiary">
-              Searching {providerLabel(selectedProvider)}…
-            </p>
+          {searching && results === null && query.trim() !== '' ? (
+            <p className="mt-3 font-ui text-sm text-text-tertiary">Searching {label}…</p>
           ) : results && results.length === 0 ? (
-            <div className="mt-3 min-h-80 rounded-card bg-bg-base p-6">
-              <p className="font-ui text-sm font-semibold text-text-primary">No matches yet.</p>
-              <p className="mt-1 font-ui text-sm text-text-tertiary">
-                Try the artist, a shorter title, or another provider.
-              </p>
-            </div>
+            <p className="mt-3 font-ui text-sm font-semibold text-text-primary">No matches yet.</p>
           ) : results && results.length > 0 ? (
             <div className="mt-3">
               {selectedTracks.length > 0 && (
@@ -2130,7 +2349,7 @@ function MusicWorkspace({
               )}
               <SourceList
                 tracks={results}
-                ariaLabel={`${providerLabel(selectedProvider)} catalog results`}
+                ariaLabel={`${label} catalog results`}
                 action={{
                   kind: 'selection',
                   selectedKeys,
@@ -2145,7 +2364,7 @@ function MusicWorkspace({
                         aria-label="New class template"
                         className="flex min-w-0 gap-1"
                       >
-                        {CREATE_TEMPLATE_OPTIONS.map(({ value, label }) =>
+                        {CREATE_TEMPLATE_OPTIONS.map(({ value, label: optionLabel }) =>
                           value ? (
                             <button
                               key={value}
@@ -2158,7 +2377,7 @@ function MusicWorkspace({
                                   : 'border-border-subtle text-text-secondary'
                               }`}
                             >
-                              {label}
+                              {optionLabel}
                             </button>
                           ) : null,
                         )}
@@ -2174,8 +2393,246 @@ function MusicWorkspace({
             </div>
           ) : null}
         </section>
-      </div>
+      )}
     </section>
+  );
+}
+
+function ShelfFailureNotice({
+  label,
+  error,
+  fallback,
+  onRetry,
+}: {
+  label: string;
+  error: ShelfFailure;
+  fallback: string;
+  onRetry: () => void;
+}) {
+  const allowlist = error.code === SPOTIFY_ALLOWLIST_CODE;
+  const quota = error.code === PROVIDER_QUOTA_CODE;
+  return (
+    <div
+      role="alert"
+      className="flex flex-col items-start gap-2 rounded-control border border-state-caution/35 bg-state-caution/10 p-3 font-ui text-sm"
+    >
+      <ConnectionStateMark
+        kind="expired"
+        label={allowlist ? 'Not allowlisted' : quota ? 'Limit reached' : fallback}
+        className="text-xs"
+      />
+      {libraryFailureExplainsItself(error.code) && (
+        <p className="text-text-secondary">{error.message}</p>
+      )}
+      <button
+        type="button"
+        onClick={onRetry}
+        className="min-h-11 rounded-control border border-interactive/35 px-3 font-ui text-sm font-semibold text-interactive hover:bg-interactive/10 rf-focus-ring"
+      >
+        Retry {label} library
+      </button>
+    </div>
+  );
+}
+
+function PlaylistShelf({
+  label,
+  loading,
+  error,
+  connected,
+  statusMark,
+  onRetry,
+  rows,
+  filtered,
+  onOpen,
+}: {
+  label: string;
+  loading: boolean;
+  error: ShelfFailure | null;
+  connected: boolean;
+  statusMark: { kind: ConnectionMarkKind; label: string } | null;
+  onRetry: () => void;
+  rows: ProviderPlaylistSummary[];
+  filtered: boolean;
+  onOpen: (playlistId: string) => void;
+}) {
+  if (!connected) {
+    if (!statusMark) return null;
+    return (
+      <ConnectionStateMark
+        kind={statusMark.kind}
+        label={statusMark.label}
+        className="font-ui text-sm"
+      />
+    );
+  }
+  if (loading && rows.length === 0) {
+    return (
+      <p role="status" className="font-ui text-sm text-text-tertiary">
+        Loading playlists…
+      </p>
+    );
+  }
+  if (error) {
+    return (
+      <ShelfFailureNotice
+        label={label}
+        error={error}
+        fallback="Playlists unavailable"
+        onRetry={onRetry}
+      />
+    );
+  }
+  if (rows.length === 0) {
+    return (
+      <p role="status" className="font-ui text-sm text-text-secondary">
+        {filtered ? 'No matches.' : 'No saved playlists'}
+      </p>
+    );
+  }
+  return (
+    <ul aria-label={`${label} playlists`} className="flex flex-col gap-1">
+      {rows.map((playlist, index) => {
+        const meta = playlistMetaLine(playlist.ownerName, playlist.trackCount, label);
+        const metaId = `playlist-meta-${index}`;
+        return (
+          <li
+            key={playlist.playlistId}
+            data-build-class-slot="playlist"
+            className="flex items-center"
+          >
+            {/* Build a class (pull request C) mounts as the next sibling of this row. */}
+            <button
+              type="button"
+              aria-label={`Open ${playlist.name}`}
+              aria-describedby={metaId}
+              onClick={() => onOpen(playlist.playlistId)}
+              className="flex min-h-11 min-w-0 flex-1 items-center gap-3 rounded-control px-1 text-left rf-focus-ring"
+            >
+              {playlist.coverImageUrl ? (
+                <img
+                  src={playlist.coverImageUrl}
+                  alt=""
+                  loading="lazy"
+                  decoding="async"
+                  className="h-11 w-11 max-h-11 max-w-11 shrink-0 rounded-card object-cover"
+                />
+              ) : (
+                <TrackArt
+                  url={null}
+                  identity={playlist.name}
+                  size={44}
+                  className="max-h-11 max-w-11"
+                />
+              )}
+              <span className="min-w-0">
+                <span className="block truncate font-ui text-sm font-semibold text-text-primary">
+                  {playlist.name}
+                </span>
+                <span id={metaId} className="block truncate font-ui text-xs text-text-secondary">
+                  {meta}
+                </span>
+              </span>
+            </button>
+          </li>
+        );
+      })}
+    </ul>
+  );
+}
+
+function SongShelf({
+  label,
+  loading,
+  error,
+  connected,
+  statusMark,
+  onRetry,
+  rows,
+  filtered,
+  onCreateClass,
+}: {
+  label: string;
+  loading: boolean;
+  error: ShelfFailure | null;
+  connected: boolean;
+  statusMark: { kind: ConnectionMarkKind; label: string } | null;
+  onRetry: () => void;
+  rows: TrackSearchResult[];
+  filtered: boolean;
+  onCreateClass: (() => void) | null;
+}) {
+  if (!connected) {
+    if (!statusMark) return null;
+    return (
+      <ConnectionStateMark
+        kind={statusMark.kind}
+        label={statusMark.label}
+        className="font-ui text-sm"
+      />
+    );
+  }
+  if (loading && rows.length === 0) {
+    return (
+      <p role="status" className="font-ui text-sm text-text-tertiary">
+        Loading songs…
+      </p>
+    );
+  }
+  if (error) {
+    return (
+      <ShelfFailureNotice
+        label={label}
+        error={error}
+        fallback="Likes unavailable"
+        onRetry={onRetry}
+      />
+    );
+  }
+  if (rows.length === 0) {
+    return (
+      <p role="status" className="font-ui text-sm text-text-secondary">
+        {filtered ? 'No matches.' : 'No liked songs'}
+      </p>
+    );
+  }
+  return (
+    <div className="flex flex-col gap-2">
+      {onCreateClass && (
+        <button
+          type="button"
+          onClick={onCreateClass}
+          className="min-h-11 self-start rounded-control border border-interactive/35 px-3 font-ui text-sm font-semibold text-interactive rf-focus-ring"
+        >
+          Create class from liked songs
+        </button>
+      )}
+      <ul aria-label="Liked songs" className="flex flex-col gap-1">
+        {rows.map((track) => (
+          <li
+            key={`${track.provider}:${track.providerTrackId}`}
+            data-build-class-slot="song"
+            className="flex min-h-11 items-center gap-3 px-1"
+          >
+            {/* Build a class (pull request C) mounts at the end of this row. */}
+            <TrackArt
+              url={track.albumArtUrl}
+              identity={`${track.title}:${track.artist}`}
+              size={44}
+              className="max-h-11 max-w-11"
+            />
+            <span className="min-w-0">
+              <span className="block truncate font-ui text-sm font-semibold text-text-primary">
+                {track.title}
+              </span>
+              <span className="block truncate font-ui text-xs text-text-secondary">
+                {songMetaLine(track.artist, track.durationMs)}
+              </span>
+            </span>
+          </li>
+        ))}
+      </ul>
+    </div>
   );
 }
 
@@ -2196,11 +2653,13 @@ const noop = (): void => {};
 function LiveWorkspace({
   classes,
   status,
+  onRetry,
   onRunClass,
   onOpenClass,
 }: {
   classes: ClassListItem[];
   status: ListStatus;
+  onRetry: () => void;
   onRunClass: (classId: string) => void;
   onOpenClass: (cls: ClassListItem) => Promise<void>;
 }) {
@@ -2293,7 +2752,6 @@ function LiveWorkspace({
       return s === 'ready' || s === 'error';
     });
   const summary = summarizeQueue(readyReadinesses);
-  const tilesReady = status === 'ready' && allResolved;
 
   // The queue ranks by the same rule Classes does, from the same module: a class
   // that leads the Classes shelf leads here too, and the choice is one session
@@ -2313,113 +2771,92 @@ function LiveWorkspace({
           : `${summary.runnable} of ${candidates.length} ${candidates.length === 1 ? 'class' : 'classes'} ready for Live.`;
 
   return (
-    <section className="grid gap-5 xl:grid-cols-[minmax(0,1fr)_320px] xl:items-start">
-      <div className="min-w-0">
-        <div className="flex flex-col gap-3 lg:flex-row lg:items-start lg:justify-between">
-          <div className="min-w-0">
-            <p className="rf-eyebrow">Live queue</p>
-            <h2 className="mt-2 text-balance font-display text-3xl font-bold leading-tight tracking-[-0.03em] text-text-primary sm:text-4xl">
-              What are you teaching next?
-            </h2>
-            <p className="mt-2 max-w-2xl font-ui text-sm leading-6 text-text-secondary">
-              {orderingSummary(ordering)} Scan, then enter preflight.
-            </p>
-          </div>
-          {/* Same two orderings, same session setting, same words as Classes — the
-              queue must not invent a second ranking vocabulary. */}
-          <div
-            role="group"
-            aria-label="Order the queue by"
-            className="flex shrink-0 flex-wrap gap-2"
-          >
-            {CLASS_ORDERING_OPTIONS.map((option) => {
-              const active = option.value === ordering;
-              return (
-                <button
-                  key={option.value}
-                  type="button"
-                  aria-pressed={active}
-                  onClick={() => {
-                    setOrdering(option.value);
-                    storeOrdering(option.value);
-                  }}
-                  className={`min-h-11 rounded-control border px-4 font-ui text-sm font-semibold rf-focus-ring sm:rounded-pill ${
-                    active
-                      ? 'border-interactive bg-interactive/15 text-text-primary'
-                      : 'border-border-subtle text-text-secondary hover:border-interactive/45 hover:text-text-primary'
-                  }`}
-                >
-                  {option.label}
-                </button>
-              );
-            })}
-          </div>
+    <section className="min-w-0">
+      <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+        <div className="min-w-0">
+          <h2 className="font-display text-2xl font-semibold tracking-[-0.02em] text-text-primary">
+            Teach a class
+          </h2>
+          <p className="mt-1 font-ui text-sm text-text-secondary">
+            Press Preflight on the one you want.
+          </p>
         </div>
-        <p className="sr-only" aria-live="polite" aria-atomic="true">
-          {liveStatus}
-        </p>
-
-        {/* Two columns from xl. A scan row cannot get shorter than the Class Pulse
-            block it carries (~156px floor, and the component is prompt 01's to
-            change, not this slice's), so the fourth card is bought with width
-            rather than by dropping the shape that makes the row worth scanning. */}
-        <div className="mt-5 grid gap-2 xl:grid-cols-2">
-          {status === 'loading' ? (
-            <p className="font-ui text-sm text-text-tertiary">Loading classes…</p>
-          ) : candidates.length === 0 ? (
-            <p className="font-ui text-sm text-text-tertiary">
-              No classes with tracks yet. Add tracks in Classes, then come back here.
-            </p>
-          ) : (
-            ordered.map((cls) => (
-              <LiveQueueCard
-                key={cls.id}
-                cls={cls}
-                state={payloads[cls.id]}
-                onRun={() => onRunClass(cls.id)}
-                onEdit={() => void onOpenClass(cls)}
-                onRetry={() => fetchOne(cls.id)}
-              />
-            ))
-          )}
+        {/* Same two orderings, same session setting, same words as Classes — the
+            queue must not invent a second ranking vocabulary. */}
+        <div role="group" aria-label="Order the queue by" className="flex shrink-0 flex-wrap gap-2">
+          {CLASS_ORDERING_OPTIONS.map((option) => {
+            const active = option.value === ordering;
+            return (
+              <button
+                key={option.value}
+                type="button"
+                aria-pressed={active}
+                onClick={() => {
+                  setOrdering(option.value);
+                  storeOrdering(option.value);
+                }}
+                className={`min-h-11 rounded-control border px-4 font-ui text-sm font-semibold rf-focus-ring sm:rounded-pill ${
+                  active
+                    ? 'border-interactive bg-interactive/15 text-text-primary'
+                    : 'border-border-subtle text-text-secondary hover:border-interactive/45 hover:text-text-primary'
+                }`}
+              >
+                {option.label}
+              </button>
+            );
+          })}
         </div>
       </div>
+      <p className="sr-only" aria-live="polite" aria-atomic="true">
+        {liveStatus}
+      </p>
 
-      <aside className="rounded-card border border-border-subtle bg-bg-sunken p-4 xl:sticky xl:top-6">
-        <p className="font-data text-[11px] font-semibold uppercase tracking-[0.18em] text-text-tertiary">
-          Queue readiness
-        </p>
-        <div className="mt-3 grid gap-2">
-          <ReadinessTile
-            label="Runnable"
-            value={tilesReady ? `${summary.runnable} of ${candidates.length}` : '...'}
-          />
-          <ReadinessTile
-            label="Needs a duration"
-            value={tilesReady ? String(summary.blocked) : '...'}
-          />
-          <ReadinessTile
-            label="Music"
-            value={
-              tilesReady
-                ? summary.musicIncomplete === 0
-                  ? 'All linked'
-                  : `${summary.musicIncomplete} need a link`
-                : '...'
+      {/* Short rows, two columns from lg. The shape is a sparkline on the row,
+          so a phone shows several classes instead of one tall card. */}
+      <div className="mt-4 grid gap-2 lg:grid-cols-2">
+        {status === 'loading' ? (
+          <LoadingSkeleton label="Loading classes" rows={3} className="lg:col-span-2" />
+        ) : status === 'error' ? (
+          <RecoveryState
+            kind="unavailable"
+            compact
+            role="alert"
+            title="Your classes didn't load."
+            event="Ritmo could not read the class list. This is not an empty account."
+            safety="No class was removed."
+            className="lg:col-span-2"
+            primaryAction={
+              <button type="button" className={RETRY_BUTTON_CLASS} onClick={onRetry}>
+                Retry
+              </button>
             }
           />
-        </div>
-      </aside>
+        ) : candidates.length === 0 ? (
+          <p className="font-ui text-sm text-text-tertiary">
+            No classes with tracks yet. Add tracks in Classes, then come back here.
+          </p>
+        ) : (
+          ordered.map((cls) => (
+            <LiveQueueCard
+              key={cls.id}
+              cls={cls}
+              state={payloads[cls.id]}
+              onRun={() => onRunClass(cls.id)}
+              onEdit={() => void onOpenClass(cls)}
+              onRetry={() => fetchOne(cls.id)}
+            />
+          ))
+        )}
+      </div>
     </section>
   );
 }
 
 /**
- * One class in the Live queue. Shows the real four-dimension readiness once the
- * run-payload loads (reusing `ClassReadinessSummary`), and gates "Run live" on the
- * same duration check Live Mode enforces — a blocked class shows the exact
- * `runBlockedMessage` the instructor would hit on click, tied to the disabled
- * button via `aria-describedby`.
+ * One class in the Live queue. A short row: name, shape, and the next action.
+ * Full readiness stays one disclosure away. "Run live" uses the same duration
+ * gate as Live Mode — a blocked class names the fix, and `aria-describedby`
+ * points at `runBlockedMessage`.
  */
 function LiveQueueCard({
   cls,
@@ -2448,111 +2885,86 @@ function LiveQueueCard({
   const step = classNextStep(state);
   const gapCount = state?.status === 'ready' ? state.readiness.attentionCount : 0;
 
+  const gapsLabel =
+    gapCount === 0 ? 'Details' : `${gapCount} ${gapCount === 1 ? 'thing' : 'things'} left`;
+
   return (
     <article
-      className="flex flex-col gap-2 rounded-card border border-border-subtle bg-bg-raised p-3 sm:p-4"
+      className="min-w-0 rounded-card border border-border-subtle bg-bg-raised p-3"
       aria-busy={state === undefined || state.status === 'loading'}
     >
-      {/* One scan row: verdict · name and shape facts · pulse · actions. Stacks
-          below sm, where there is no horizontal room to scan anyway. */}
-      <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:gap-4">
-        <div className="shrink-0 sm:w-[124px]">
-          {state?.status === 'ready' ? (
-            <StatusLabel
-              kind={state.readiness.runnable ? 'recovered' : 'unavailable'}
-              label={state.readiness.runnable ? 'Runnable' : 'Needs a duration'}
-            />
-          ) : state?.status === 'error' ? (
-            <StatusLabel kind="unavailable" label="Readiness unavailable" />
-          ) : (
-            <StatusLabel kind="loading" label="Checking readiness" />
-          )}
-        </div>
-
+      <div className="flex items-center gap-3">
         <div className="min-w-0 flex-1">
-          <h3 className="truncate font-display text-lg font-semibold text-text-primary">
+          <h3 className="truncate font-display text-base font-semibold text-text-primary">
             {cls.title}
           </h3>
           <p className="truncate font-data text-xs text-text-tertiary">
-            {formatTemplateLabel(cls.template) ?? 'Class'} · {cls.trackCount} tracks ·{' '}
-            {formatDuration(cls.totalDurationMs)}
+            {formatTemplateLabel(cls.template) ?? 'Class'} · {cls.trackCount}{' '}
+            {cls.trackCount === 1 ? 'track' : 'tracks'} · {formatDuration(cls.totalDurationMs)}
           </p>
+          {(state === undefined || state.status === 'loading') && (
+            <span
+              aria-hidden="true"
+              className="mt-1.5 block h-2 w-24 rounded-pill bg-bg-sunken motion-safe:animate-pulse"
+            />
+          )}
         </div>
+        {state?.status === 'ready' && (
+          <ClassPulse payload={state.payload} variant="sparkline" className="shrink-0" />
+        )}
+      </div>
 
-        <div className="flex shrink-0 flex-wrap gap-2">
+      <div className="mt-2 flex flex-wrap items-center gap-2">
+        <button
+          type="button"
+          onClick={onEdit}
+          aria-label={`Edit ${cls.title}`}
+          className="min-h-11 rounded-control border border-interactive/35 px-3 font-ui text-sm text-text-secondary hover:text-text-primary rf-focus-ring"
+        >
+          Edit
+        </button>
+        {canRun ? (
+          <button
+            type="button"
+            onClick={onRun}
+            aria-label={`Preflight ${cls.title}`}
+            title="Run this class live"
+            className="min-h-11 rounded-control rf-btn-primary px-4 font-ui text-sm font-semibold text-text-on-accent rf-focus-ring"
+          >
+            Preflight
+          </button>
+        ) : state?.status === 'ready' ? (
           <button
             type="button"
             onClick={onEdit}
-            aria-label={`Edit ${cls.title}`}
-            className="min-h-11 rounded-control border border-interactive/35 px-3 font-ui text-sm text-text-secondary hover:text-text-primary rf-focus-ring sm:rounded-pill"
+            aria-label={`${step.action} — ${cls.title}`}
+            aria-describedby={blockReason ? reasonId : undefined}
+            className="min-h-11 rounded-control rf-btn-primary px-4 font-ui text-sm font-semibold text-text-on-accent rf-focus-ring"
           >
-            Edit
+            {step.action}
           </button>
-          {canRun ? (
-            <button
-              type="button"
-              onClick={onRun}
-              aria-label={`Preflight ${cls.title}`}
-              title="Run this class live"
-              className="min-h-11 rounded-control rf-btn-primary px-4 font-ui text-sm font-semibold text-text-on-accent rf-focus-ring sm:rounded-pill"
-            >
-              Preflight
-            </button>
-          ) : state?.status === 'ready' ? (
-            <button
-              type="button"
-              onClick={onEdit}
-              aria-label={`${step.action} — ${cls.title}`}
-              aria-describedby={blockReason ? reasonId : undefined}
-              className="min-h-11 rounded-control rf-btn-primary px-4 font-ui text-sm font-semibold text-text-on-accent rf-focus-ring sm:rounded-pill"
-            >
-              {step.action}
-            </button>
-          ) : null}
-        </div>
-      </div>
-
-      {state === undefined || state.status === 'loading' ? (
-        <p className="font-ui text-xs text-text-tertiary">Checking readiness…</p>
-      ) : state.status === 'error' ? (
-        <p
-          id={reasonId}
-          role="alert"
-          className="flex items-center gap-2 font-ui text-xs text-state-caution"
-        >
-          <span aria-hidden className="font-data leading-none">
-            !
-          </span>
-          <span className="min-w-0">{blockReason}</span>
+        ) : state?.status === 'error' ? (
           <button
             type="button"
             onClick={onRetry}
             aria-label={`Retry readiness — ${cls.title}`}
-            className="ml-auto min-h-11 shrink-0 rounded-control border border-interactive/50 px-2.5 font-ui text-interactive hover:bg-interactive/10 rf-focus-ring sm:min-h-8 sm:rounded-pill"
+            className="min-h-11 rounded-control rf-btn-primary px-4 font-ui text-sm font-semibold text-text-on-accent rf-focus-ring"
           >
             Retry
           </button>
-        </p>
-      ) : (
-        <>
-          {/* The shape gets the card's full width: the Class Pulse's caption and
-              provenance marker are single lines at ~470px and wrap to five at 140,
-              which is what made the old card tall. */}
-          <ClassPulse payload={state.payload} compact />
-          {/* Full readiness is one disclosure away rather than four stacked detail
-              pages — the queue's job is choosing, not fixing. */}
-          <details className="group">
-            <summary className="inline-flex min-h-11 cursor-pointer items-center gap-1.5 font-ui text-xs font-semibold text-interactive rf-focus-ring sm:min-h-8">
-              <span aria-hidden className="font-data text-[10px]">
-                ▸
-              </span>
-              {gapCount === 0
-                ? 'Readiness detail'
-                : `${gapCount} to finish — ${step.eyebrow.toLowerCase()}`}
+        ) : null}
+        {state?.status === 'ready' && (
+          <details className="ml-auto open:basis-full">
+            <summary
+              className="inline-flex min-h-11 min-w-11 cursor-pointer list-none items-center px-2 font-ui text-sm font-semibold text-interactive rf-focus-ring"
+              aria-label={
+                gapCount === 0 ? `Readiness details, ${cls.title}` : `${gapsLabel}, ${cls.title}`
+              }
+            >
+              {gapsLabel}
             </summary>
             <div className="mt-2">
-              {/* Reuse the builder's readiness readout; the queue can't jump the
-                  inspector, so fix-chips stay off (canEdit=false). */}
+              {/* The queue cannot jump the inspector, so fix-chips stay off. */}
               <ClassReadinessSummary
                 readiness={state.readiness}
                 canEdit={false}
@@ -2561,18 +2973,24 @@ function LiveQueueCard({
               />
             </div>
           </details>
-          {blockReason && (
-            <p
-              id={reasonId}
-              className="flex items-center gap-1.5 font-ui text-xs text-state-caution"
-            >
-              <span aria-hidden className="font-data leading-none">
-                !
-              </span>
-              {blockReason}
-            </p>
-          )}
-        </>
+        )}
+      </div>
+
+      {state?.status === 'error' && (
+        <p id={reasonId} role="alert" className="mt-1 font-ui text-xs text-state-caution">
+          <span aria-hidden className="font-data">
+            !{' '}
+          </span>
+          {blockReason}
+        </p>
+      )}
+      {state?.status === 'ready' && blockReason && (
+        <p id={reasonId} className="mt-1 font-ui text-xs text-state-caution">
+          <span aria-hidden className="font-data">
+            !{' '}
+          </span>
+          {blockReason}
+        </p>
       )}
     </article>
   );
@@ -2692,8 +3110,8 @@ function AccountWorkspace({
     <section className="grid w-full min-w-0 gap-5 xl:grid-cols-[220px_minmax(0,1fr)] xl:items-start">
       <aside className="min-w-0 border-b border-border-subtle pb-4 xl:sticky xl:top-6 xl:border-r xl:border-b-0 xl:pr-4 xl:pb-0">
         <p className="rf-eyebrow">Account</p>
-        <nav className="mt-3 grid max-w-full grid-cols-2 gap-2 xl:flex xl:flex-col">
-          {['Profile', 'Preferences', 'Music connections', 'Security'].map((item) => (
+        <nav className="mt-3 flex max-w-full gap-2 overflow-x-auto xl:flex-col xl:overflow-visible">
+          {['Profile', 'Music connections', 'Security'].map((item) => (
             <a
               key={item}
               href={`#account-${item.toLowerCase().replace(/\s+/g, '-')}`}
@@ -2713,19 +3131,19 @@ function AccountWorkspace({
               <h2 className="break-words font-display text-3xl font-semibold text-text-primary">
                 {profile?.displayName ?? profileName}
               </h2>
-              <p className="mt-1 break-all font-ui text-xs text-text-tertiary">
-                {profile?.email ?? 'Signed-in identity · profile details unavailable'}
-              </p>
+              {profileStatus === 'loading' ? (
+                <LoadingSkeleton label="Loading profile" shape="line" className="mt-2" />
+              ) : (
+                <p className="mt-1 break-all font-ui text-xs text-text-tertiary">
+                  {profile?.email ?? 'Profile details unavailable'}
+                </p>
+              )}
             </div>
             {/* This measures whether the profile payload loaded — nothing here
-                verifies an identity or an email address, and the label used to
-                read as though it did (P1-05). */}
-            {profileStatus === 'loading' ? (
-              <StatusLabel kind="loading" label="Loading profile" />
-            ) : profileStatus === 'error' ? (
+                verifies an identity or an email address (P1-05). A loaded profile
+                needs no mark; only a failed read does. */}
+            {profileStatus === 'error' && (
               <StatusLabel kind="unavailable" label="Profile unavailable" />
-            ) : (
-              <StatusLabel kind="recovered" label="Profile loaded" />
             )}
           </div>
         </header>
@@ -2771,7 +3189,10 @@ function AccountWorkspace({
           </div>
         )}
 
-        <section id="account-profile" className="min-w-0 border-b border-border-subtle p-5 sm:p-6">
+        <section
+          id="account-profile"
+          className="rf-anchor-offset min-w-0 border-b border-border-subtle p-5 sm:p-6"
+        >
           <div className="flex items-start justify-between gap-3">
             <div>
               <p className="font-ui text-xs uppercase tracking-wide text-text-tertiary">Profile</p>
@@ -2779,7 +3200,7 @@ function AccountWorkspace({
                 Identity
               </h3>
             </div>
-            {!profileTrusted && (
+            {profileStatus === 'error' && (
               <StatusLabel kind="disabled" label="Edits paused until the profile loads" />
             )}
           </div>
@@ -2836,7 +3257,7 @@ function AccountWorkspace({
                 <button
                   type="button"
                   className="min-h-11 rounded-control border border-border-subtle px-4 font-ui text-sm text-text-secondary transition-colors hover:text-text-primary sm:rounded-pill"
-                  onClick={() => authClient.signOut()}
+                  onClick={() => void signOutByUser()}
                 >
                   Sign out
                 </button>
@@ -2865,28 +3286,18 @@ function AccountWorkspace({
               <p className="mt-3 truncate font-ui text-sm font-semibold text-text-primary">
                 {profile?.displayName ?? profileName ?? 'Unnamed instructor'}
               </p>
-              <p className="break-all font-ui text-xs text-text-tertiary">
-                {profile?.email ?? 'Profile details unavailable'}
-              </p>
+              {profileStatus !== 'loading' && (
+                <p className="break-all font-ui text-xs text-text-tertiary">
+                  {profile?.email ?? 'Profile details unavailable'}
+                </p>
+              )}
             </div>
           </form>
         </section>
 
-        <section id="account-preferences" className="border-b border-border-subtle p-5 sm:p-6">
-          <p className="font-ui text-xs uppercase tracking-wide text-text-tertiary">Preferences</p>
-          <h3 className="mt-2 font-display text-xl font-semibold text-text-primary">
-            Workspace defaults
-          </h3>
-          <div className="mt-4 grid gap-px overflow-hidden rounded-card border border-border-subtle bg-border-subtle sm:grid-cols-3">
-            <ReadinessTile label="Default templates" value="Cycle / Pilates / HIIT" />
-            <ReadinessTile label="Playback" value="Manual preview" />
-            <ReadinessTile label="Workspace" value="Solo-first" />
-          </div>
-        </section>
-
         <section
           id="account-music-connections"
-          className="min-w-0 border-b border-border-subtle p-5 sm:p-6"
+          className="rf-anchor-offset min-w-0 border-b border-border-subtle p-5 sm:p-6"
         >
           <div className="flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
             <div>
@@ -2897,7 +3308,8 @@ function AccountWorkspace({
                 Provider accounts
               </h3>
               <p className="mt-1 font-ui text-xs leading-5 text-text-tertiary">
-                Catalog, library, and playback remain separate capabilities.
+                Provider audio and authorization remain with the music service. Catalog, library,
+                and playback are separate capabilities.
               </p>
             </div>
             <button
@@ -2932,11 +3344,11 @@ function AccountWorkspace({
                       <p className="font-ui text-sm font-semibold text-text-primary">
                         {providerLabel(provider)}
                       </p>
-                      <p className="mt-1 font-ui text-xs text-text-tertiary">
-                        {connectionsStatus === 'error'
-                          ? 'Current account authorization could not be verified.'
-                          : 'Provider audio and authorization remain with the music service.'}
-                      </p>
+                      {connectionsStatus === 'error' && (
+                        <p className="mt-1 font-ui text-xs text-text-tertiary">
+                          Current account authorization could not be verified.
+                        </p>
+                      )}
                     </div>
                     <ConnectionStateMark
                       kind={statusMark.kind}
@@ -2951,7 +3363,7 @@ function AccountWorkspace({
           </div>
         </section>
 
-        <section id="account-security" className="p-5 sm:p-6">
+        <section id="account-security" className="rf-anchor-offset p-5 sm:p-6">
           <p className="font-ui text-xs uppercase tracking-wide text-text-tertiary">Security</p>
           <p className="mt-2 font-ui text-sm leading-6 text-text-secondary">
             Email, password, and social sign-in remain with the active sign-in provider. Sign in
@@ -2966,15 +3378,6 @@ function AccountWorkspace({
         </section>
       </div>
     </section>
-  );
-}
-
-function ReadinessTile({ label, value }: { label: string; value: string }) {
-  return (
-    <div className="bg-bg-base p-3">
-      <p className="font-ui text-[11px] uppercase tracking-wide text-text-tertiary">{label}</p>
-      <p className="mt-1 font-data text-lg font-semibold text-text-primary">{value}</p>
-    </div>
   );
 }
 
@@ -3185,11 +3588,14 @@ function playlistCountLabel(trackCount: number | null): string {
 function PlaylistBrowserDialog({
   provider,
   playlists,
+  initialPlaylistId = null,
   onClose,
   onCreateClass,
 }: {
   provider: Provider;
   playlists: ProviderPlaylistSummary[];
+  /** Open this playlist's tracks immediately. The library row already listed it. */
+  initialPlaylistId?: string | null;
   onClose: () => void;
   onCreateClass: (
     provider: Provider,
@@ -3208,19 +3614,31 @@ function PlaylistBrowserDialog({
   const [picking, setPicking] = useState(false);
   const label = providerLabel(provider);
 
-  const openPlaylist = async (playlist: ProviderPlaylistSummary) => {
-    setSelectedPlaylist(playlist);
-    setTracks(null);
-    setLoadingTracks(true);
-    setRowError(null);
-    try {
-      setTracks(await listPlaylistTracks(provider, playlist.playlistId));
-    } catch (e) {
-      setRowError(errMessage(e));
-    } finally {
-      setLoadingTracks(false);
-    }
-  };
+  const openPlaylist = useCallback(
+    async (playlist: ProviderPlaylistSummary) => {
+      setSelectedPlaylist(playlist);
+      setTracks(null);
+      setLoadingTracks(true);
+      setRowError(null);
+      try {
+        setTracks(await listPlaylistTracks(provider, playlist.playlistId));
+      } catch (e) {
+        setRowError(errMessage(e));
+      } finally {
+        setLoadingTracks(false);
+      }
+    },
+    [provider],
+  );
+
+  const openedInitial = useRef(false);
+  useEffect(() => {
+    if (openedInitial.current || !initialPlaylistId) return;
+    const playlist = playlists.find((row) => row.playlistId === initialPlaylistId);
+    if (!playlist) return;
+    openedInitial.current = true;
+    void openPlaylist(playlist);
+  }, [initialPlaylistId, openPlaylist, playlists]);
 
   const submitTracks = async (playlist: ProviderPlaylistSummary, chosen: TrackSearchResult[]) => {
     setCreatingId(playlist.playlistId);
@@ -3331,9 +3749,20 @@ function PlaylistBrowserDialog({
       </div>
 
       {rowError && (
-        <p role="alert" className="mb-3 font-ui text-sm text-state-danger">
-          {rowError}
-        </p>
+        <div className="mb-3 flex flex-wrap items-center gap-2">
+          <p role="alert" className="font-ui text-sm text-state-danger">
+            {rowError}
+          </p>
+          {selectedPlaylist && tracks == null && !loadingTracks && (
+            <button
+              type="button"
+              onClick={() => void openPlaylist(selectedPlaylist)}
+              className="min-h-11 rounded-control border border-interactive/35 px-3 font-ui text-sm font-semibold text-interactive rf-focus-ring"
+            >
+              Try again
+            </button>
+          )}
+        </div>
       )}
 
       {selectedPlaylist ? (
@@ -3396,11 +3825,11 @@ function PlaylistBrowserDialog({
                   </li>
                 ))}
               </ol>
-            ) : (
+            ) : tracks && tracks.length === 0 ? (
               <p className="p-3 font-ui text-sm text-text-tertiary">
                 No tracks found in this playlist.
               </p>
-            )}
+            ) : null}
           </div>
         </div>
       ) : (
@@ -3647,8 +4076,8 @@ function LikesBrowserDialog({
 /**
  * The class workspace — the center column (header summary + energy ribbon +
  * track list + add-track) and the sticky right-hand inspector (design system
- * 09). Returns a fragment so both land as siblings of the library rail in the
- * 3-pane grid. Mounted with `key={cls.id}` by the parent, so opening another
+ * 09). Returns a fragment so both land as the two columns of the full-focus
+ * builder. Mounted with `key={cls.id}` by the parent, so opening another
  * class remounts it — clearing the track selection without an effect.
  */
 function ClassWorkspace({
@@ -3670,6 +4099,7 @@ function ClassWorkspace({
   focusAddMusic,
   onFocusedAddMusic,
   onBackToClasses,
+  onRetryDetails,
 }: {
   cls: ClassWithAccess;
   tracks: ClassTrack[];
@@ -3698,8 +4128,10 @@ function ClassWorkspace({
   /** A newly created empty class should land on its first useful action. */
   focusAddMusic: boolean;
   onFocusedAddMusic: () => void;
-  /** Narrow-layout return path when the selected class is shown before the library. */
+  /** Return from the full-focus builder to the Classes library. */
   onBackToClasses: () => void;
+  /** Reload the whole class after its details failed to load. */
+  onRetryDetails: () => void;
 }) {
   // The selected track (by class_track id) drives the inspector.
   const [selectedTrackId, setSelectedTrackId] = useState<string | null>(null);
@@ -3712,6 +4144,7 @@ function ClassWorkspace({
   const [assignStay, setAssignStay] = useState(false);
   const [planLead, setPlanLead] = useState<string | null>(null);
   const [planReady, setPlanReady] = useState(false);
+  const [planFailed, setPlanFailed] = useState(false);
   const [planBlocks, setPlanBlocks] = useState<ClassPlanBlock[]>([]);
   const currentAssigningPlanBlock = assigningPlanBlock
     ? (planBlocks.find((block) => block.id === assigningPlanBlock.id) ?? assigningPlanBlock)
@@ -3735,6 +4168,12 @@ function ClassWorkspace({
       ? `Adds after your current ${tracks.length} ${tracks.length === 1 ? 'song' : 'songs'}`
       : null;
   const playlistAppendNoteId = `playlist-append-note-${cls.id}`;
+  // No music and no teaching plan: Add a playlist is the empty-state call to
+  // action. Otherwise it lives in the header, beside the append note.
+  const playlistInEmptyState =
+    canEdit && tracks.length === 0 && cls.scaffoldRecipeId == null && !hasPlanBlocks;
+  const playlistInHeader = canEdit && !playlistInEmptyState;
+  const playlistExpanded = sourceOpen && !assigningPlanBlock;
   const existingProviderTrackKeys = providerTrackKeysFromRun(payload?.tracks);
 
   useEffect(() => {
@@ -3750,15 +4189,16 @@ function ClassWorkspace({
   const trackListRef = useRef<HTMLDivElement | null>(null);
   const trackSourceRef = useRef<HTMLElement | null>(null);
   const trackSourceToggleRef = useRef<HTMLButtonElement | null>(null);
+  const addPlaylistRef = useRef<HTMLButtonElement>(null);
   const manualEntryRef = useRef<HTMLDetailsElement | null>(null);
   const inspectorPlaceholderRef = useRef<HTMLDivElement | null>(null);
   useLayoutEffect(() => {
-    if (!focusAddMusic || !showStackAddMusic || tracks.length !== 0) return;
-    const addMusic = trackSourceToggleRef.current;
-    if (!addMusic) return;
-    addMusic.focus();
+    if (!focusAddMusic || tracks.length !== 0) return;
+    const addPlaylist = addPlaylistRef.current;
+    if (!addPlaylist) return;
+    addPlaylist.focus();
     onFocusedAddMusic();
-  }, [focusAddMusic, showStackAddMusic, tracks.length, onFocusedAddMusic]);
+  }, [focusAddMusic, tracks.length, onFocusedAddMusic, playlistInEmptyState, playlistInHeader]);
   const [pendingRowFocus, setPendingRowFocus] = useState<string | 'placeholder' | null>(null);
   useLayoutEffect(() => {
     if (pendingRowFocus === null) return;
@@ -3961,32 +4401,41 @@ function ClassWorkspace({
   const timelinePanelId = `builder-timeline-${cls.id}`;
   const sourcePanelId = `builder-source-${cls.id}`;
 
+  const addPlaylistAction = canEdit
+    ? {
+        expanded: playlistExpanded,
+        note: playlistAppendNote,
+        noteId: playlistAppendNoteId,
+        onClick: () => openClassMusic('playlist'),
+        buttonRef: addPlaylistRef,
+      }
+    : null;
+
   return (
     <>
       {/* ── Center column: header summary · energy ribbon · track list ── */}
-      <section className="order-1 flex min-w-0 flex-col gap-4 xl:col-start-2 xl:row-start-1">
-        <button
-          type="button"
-          onClick={onBackToClasses}
-          className="min-h-11 self-start rounded-control px-1 font-ui text-sm font-semibold text-interactive hover:text-interactive-hover xl:hidden"
-        >
-          ← Back to classes
-        </button>
-        <ClassHeaderCard
-          cls={cls}
-          payload={payload}
-          trackCount={payload?.tracks.length ?? tracks.length}
-          isOwner={isOwner}
-          canEdit={canEdit}
-          canRun={payload != null && canRunPayload(payload) && !planLead && planReady}
-          onError={onError}
-          onRun={onRun}
-          onSelectTrack={setSelectedTrackId}
-          onStartChoreography={startChoreography}
-          onClassUpdated={onClassUpdated}
-          onDeleted={() => onClassDeleted(cls.id)}
-          planLead={planLead}
-        />
+      <section className="order-1 flex min-w-0 flex-col gap-4 xl:col-start-1 xl:row-start-1">
+        <div role="region" aria-label="Class builder" className="flex flex-col gap-3">
+          <BackToClassesButton onClick={onBackToClasses} />
+          <ClassHeaderCard
+            cls={cls}
+            payload={payload}
+            trackCount={payload?.tracks.length ?? tracks.length}
+            isOwner={isOwner}
+            canEdit={canEdit}
+            canRun={payload != null && canRunPayload(payload) && !planLead && planReady}
+            onError={onError}
+            onRun={onRun}
+            onSelectTrack={setSelectedTrackId}
+            onStartChoreography={startChoreography}
+            onClassUpdated={onClassUpdated}
+            onDeleted={() => onClassDeleted(cls.id)}
+            planLead={planLead}
+            addPlaylist={playlistInHeader ? addPlaylistAction : null}
+            detailsFailed={payload == null || planFailed}
+            onRetryDetails={onRetryDetails}
+          />
+        </div>
 
         {/* Slice 2 owns this derived presentation. Builder consumes it unchanged as
             the persistent class-shape instrument above the editable track score.
@@ -4033,6 +4482,7 @@ function ClassWorkspace({
           onTracksChanged={onTrackChanged}
           onPlanNextStep={setPlanLead}
           onPlanReady={setPlanReady}
+          onPlanFailed={setPlanFailed}
           onHasPlanBlocks={setHasPlanBlocks}
           onPlanBlocks={setPlanBlocks}
         />
@@ -4115,25 +4565,6 @@ function ClassWorkspace({
               </p>
             </div>
             <div className="flex flex-wrap items-center gap-2">
-              {canEdit && (
-                <button
-                  type="button"
-                  onClick={() => openClassMusic('playlist')}
-                  aria-expanded={sourceOpen && !assigningPlanBlock}
-                  aria-describedby={playlistAppendNote ? playlistAppendNoteId : undefined}
-                  className="min-h-11 rounded-control border border-interactive/50 px-3 font-ui text-sm font-semibold text-interactive rf-focus-ring"
-                >
-                  Add a playlist
-                </button>
-              )}
-              {canEdit && playlistAppendNote && (
-                <p
-                  id={playlistAppendNoteId}
-                  className="font-ui text-xs leading-5 text-text-tertiary"
-                >
-                  {playlistAppendNote}
-                </p>
-              )}
               {(showStackAddMusic || (sourceOpen && !assigningPlanBlock)) && (
                 <button
                   ref={trackSourceToggleRef}
@@ -4162,15 +4593,18 @@ function ClassWorkspace({
           {tracks.length === 0 && cls.scaffoldRecipeId == null && (
             <div className="rounded-card border border-border-subtle bg-bg-sunken p-4">
               <StatusLabel kind="empty" label="Empty run of show" />
-              {/* This promised a ranking the layout does not provide — the four
-                  routes are presented as equals because they are (P1-05, D20). */}
               <h3 className="mt-2 font-display text-lg font-semibold text-text-primary">
-                Start this class any way you like.
+                This class has no music yet.
               </h3>
               <p className="mt-1 font-ui text-sm leading-5 text-text-secondary">
-                All four routes add to this class. The class shape appears once songs have a length
-                and an effort.
+                Add a playlist to start the run of show. New songs append after the songs already
+                here. Search, a move, or a manual track still add to this class.
               </p>
+              {playlistInEmptyState && addPlaylistAction && (
+                <div className="mt-3">
+                  <AddPlaylistControl {...addPlaylistAction} prominent />
+                </div>
+              )}
               <div className="mt-3 grid gap-2 sm:grid-cols-2">
                 <button
                   type="button"
@@ -4244,7 +4678,7 @@ function ClassWorkspace({
       </section>
 
       {/* ── Right column: the sticky inspector for the selected track ── */}
-      <aside className="order-2 min-w-0 xl:sticky xl:top-6 xl:col-start-3 xl:row-start-1 xl:max-h-[calc(100vh-3rem)] xl:overflow-y-auto">
+      <aside className="order-2 min-w-0 xl:sticky xl:top-6 xl:col-start-2 xl:row-start-1 xl:max-h-[calc(100vh-3rem)] xl:overflow-y-auto">
         {selectedTrack ? (
           <div className="flex flex-col gap-3">
             <TrackInspector
@@ -4336,6 +4770,8 @@ function DestructiveControl({
  * run-payload — no new data), and the owner/run actions. Stats use label +
  * number, never color alone.
  */
+const CLASS_DETAILS_NOT_LOADED = "Class details didn't load.";
+
 export function ClassHeaderCard({
   cls,
   payload,
@@ -4350,6 +4786,9 @@ export function ClassHeaderCard({
   onClassUpdated,
   onDeleted,
   planLead = null,
+  addPlaylist = null,
+  detailsFailed = false,
+  onRetryDetails,
 }: {
   cls: ClassWithAccess;
   payload: RunPayload | null;
@@ -4366,6 +4805,17 @@ export function ClassHeaderCard({
   onDeleted: () => void;
   /** Plan-block next step, shown ahead of Live-readiness when the class can already run. */
   planLead?: string | null;
+  /** Header Add a playlist. Absent when the empty run of show owns that action. */
+  addPlaylist?: {
+    expanded: boolean;
+    note: string | null;
+    noteId: string;
+    onClick: () => void;
+    buttonRef: Ref<HTMLButtonElement>;
+  } | null;
+  /** The run payload or the plan blocks failed to load, so readiness is unknown. */
+  detailsFailed?: boolean;
+  onRetryDetails?: () => void;
 }) {
   const { run } = useAsyncAction(onError);
   const { busy: deleting, run: runDelete } = useAsyncAction(onError);
@@ -4432,6 +4882,8 @@ export function ClassHeaderCard({
   // "a track without a length". Especially matters for an empty class, where the
   // readiness panel isn't shown and the greyed button is the only signal.
   const runBlockedId = `run-blocked-${cls.id}`;
+  // A failed load says so; it never blames track lengths it could not read.
+  // While only the plan is still loading, the button stays quiet.
   const runEnabled = canRun && !planLead;
   const runBlockedReason = runEnabled
     ? null
@@ -4439,7 +4891,12 @@ export function ClassHeaderCard({
       ? planLead
       : trackCount === 0
         ? 'Add a track to run this class.'
-        : 'Give every track a length to run.';
+        : detailsFailed
+          ? CLASS_DETAILS_NOT_LOADED
+          : payload && canRunPayload(payload)
+            ? null
+            : 'Give every track a length to run.';
+  const templateLabel = formatTemplateLabel(cls.template);
 
   const startRename = () => {
     setTitleDraft(cls.title);
@@ -4534,11 +4991,25 @@ export function ClassHeaderCard({
               <ClassCoverArt classId={cls.id} title={cls.title} />
             )}
           </div>
-          <h2 className="min-w-0 max-w-full truncate font-display text-xl font-semibold text-text-primary">
-            {cls.title}
-          </h2>
+          <div className="min-w-0 max-w-full">
+            <h2 className="truncate font-display text-xl font-semibold text-text-primary">
+              {cls.title}
+            </h2>
+            {templateLabel && (
+              <p className="mt-1 font-ui text-sm text-text-secondary">{templateLabel}</p>
+            )}
+          </div>
         </div>
-        <div className="flex w-full sm:w-auto sm:shrink-0">
+        <div className="flex w-full flex-col items-stretch gap-2 sm:w-auto sm:shrink-0 sm:items-end">
+          {addPlaylist && (
+            <AddPlaylistControl
+              buttonRef={addPlaylist.buttonRef}
+              expanded={addPlaylist.expanded}
+              note={addPlaylist.note}
+              noteId={addPlaylist.noteId}
+              onClick={addPlaylist.onClick}
+            />
+          )}
           <button
             className={
               planLead
@@ -4565,6 +5036,15 @@ export function ClassHeaderCard({
             !
           </span>
           {runBlockedReason}
+          {runBlockedReason === CLASS_DETAILS_NOT_LOADED && onRetryDetails && (
+            <button
+              type="button"
+              onClick={onRetryDetails}
+              className="ml-1 min-h-11 rounded-control px-2 font-ui text-xs font-semibold text-interactive hover:text-interactive-hover rf-focus-ring"
+            >
+              Retry
+            </button>
+          )}
         </p>
       )}
       {/* Summary stats — BPM/time weighted in the Azeret Mono data face. */}
@@ -4745,22 +5225,27 @@ export function ClassHeaderCard({
             {/* Owner-only delete with inline confirm (no native confirm() dialog). */}
             {isOwner &&
               (confirmingDelete ? (
-                <span className="col-span-2 grid grid-cols-2 gap-1 sm:flex sm:items-center">
-                  <DestructiveControl
-                    onClick={confirmDelete}
-                    busy={deleting}
-                    aria-label="Delete class"
-                  >
-                    Delete class
-                  </DestructiveControl>
-                  <button
-                    type="button"
-                    className="min-h-11 rounded-control border border-interactive/40 px-3 font-ui text-sm text-text-secondary disabled:opacity-40 sm:rounded-pill"
-                    onClick={() => setConfirmingDelete(false)}
-                    disabled={deleting}
-                  >
-                    Cancel
-                  </button>
+                <span className="col-span-2 flex flex-col items-start gap-2">
+                  <p className="font-ui text-sm text-text-primary">
+                    {deleteClassConfirmMessage(cls.title)}
+                  </p>
+                  <span className="grid grid-cols-2 gap-1 sm:flex sm:items-center">
+                    <DestructiveControl
+                      onClick={confirmDelete}
+                      busy={deleting}
+                      aria-label="Delete class"
+                    >
+                      Delete class
+                    </DestructiveControl>
+                    <button
+                      type="button"
+                      className="min-h-11 rounded-control border border-interactive/40 px-3 font-ui text-sm text-text-secondary disabled:opacity-40 sm:rounded-pill"
+                      onClick={() => setConfirmingDelete(false)}
+                      disabled={deleting}
+                    >
+                      Cancel
+                    </button>
+                  </span>
                 </span>
               ) : (
                 <DestructiveControl
@@ -5736,13 +6221,9 @@ function TrackInspector({
               >
                 Save
               </button>
-              <button
-                className="ml-auto min-h-11 rounded-control border border-state-danger/50 px-4 font-ui text-sm text-state-danger disabled:opacity-40 sm:rounded-pill"
-                onClick={remove}
-                disabled={busy}
-              >
+              <DestructiveControl className="ml-auto" onClick={() => void remove()} disabled={busy}>
                 Remove track
-              </button>
+              </DestructiveControl>
             </div>
           </div>
 

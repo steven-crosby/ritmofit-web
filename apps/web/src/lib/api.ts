@@ -76,12 +76,22 @@ export class ApiError extends Error {
   }
 }
 
+export const NETWORK_ERROR_MESSAGE = "Can't reach Ritmo. Check your connection, then try again.";
+
 async function apiResponse(path: string, init?: RequestInit): Promise<Response> {
-  const res = await fetch(`${API_BASE_URL}/api/v1${path}`, {
-    credentials: 'include',
-    headers: { 'Content-Type': 'application/json' },
-    ...init,
-  });
+  let res: Response;
+  try {
+    res = await fetch(`${API_BASE_URL}/api/v1${path}`, {
+      credentials: 'include',
+      headers: { 'Content-Type': 'application/json' },
+      ...init,
+    });
+  } catch (e) {
+    // fetch rejects with a TypeError ("Failed to fetch", "Load failed") only when
+    // the request never got a response. An abort is a DOMException and passes through.
+    if (e instanceof TypeError) throw new ApiError(NETWORK_ERROR_MESSAGE, 'NETWORK_ERROR', 0);
+    throw e;
+  }
   if (!res.ok) {
     // Session expired or was revoked mid-use: clear it so App's useSession() flips
     // back to <Login> rather than dead-ending every action with a generic error.
@@ -158,6 +168,9 @@ export const deleteClass = (classId: string) =>
   api<void>(`/classes/${classId}`, { method: 'DELETE' });
 /** Fetch one class with the caller's access level (used to open a class by id). */
 export const getClass = (classId: string) => api<ClassWithAccess>(`/classes/${classId}`);
+/** Record an open or a Live start. The server sets lastOpenedAt and leaves updatedAt alone. */
+export const markClassOpened = (classId: string) =>
+  api<Class>(`/classes/${classId}/opened`, { method: 'POST' });
 export const addClassTag = (classId: string, tag: string) =>
   api<{ success: true; tag: string }>(`/classes/${classId}/tags`, {
     method: 'POST',

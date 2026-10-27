@@ -34,6 +34,8 @@ vi.mock('../lib/api.js', async (original) => {
   };
 });
 
+const QUOTA_MESSAGE = "Spotify's usage limit for Ritmo is used up. Try again later.";
+
 /** A SoundCloud connection view; `expiresAt` decides connected vs expired. */
 function soundcloudConnection(expiresAt: number | null): MusicConnectionView {
   return {
@@ -100,6 +102,17 @@ describe('TrackSearch stale-result guard', () => {
     await waitFor(() => expect(api.searchProvider).toHaveBeenCalledTimes(2));
     expect(await screen.findByText('Stale Track')).toBeTruthy();
     expect((screen.getByRole('searchbox') as HTMLInputElement).value).toBe('house');
+  });
+
+  it('shows the quota sentence instead of the generic search failure', async () => {
+    vi.mocked(api.searchProvider).mockRejectedValueOnce(
+      new api.ApiError(QUOTA_MESSAGE, 'PROVIDER_QUOTA_EXCEEDED', 429),
+    );
+    render(<TrackSearch classId="c1" onAdded={() => {}} />);
+    fireEvent.click(screen.getByRole('button', { name: 'Spotify' }));
+    fireEvent.change(screen.getByRole('searchbox'), { target: { value: 'house' } });
+
+    expect((await screen.findByRole('alert')).textContent).toBe(QUOTA_MESSAGE);
   });
 
   it('does not let a search cleared mid-flight flash stale results under a new query', async () => {
@@ -690,19 +703,41 @@ describe('TrackSearch saved-playlists drill-in', () => {
     // Backend PROVIDER_FORBIDDEN message (see user-playlists.ts) — an expected
     // limitation: reconnecting/retrying can't grant access to someone else's playlist.
     vi.mocked(api.listPlaylistTracks).mockRejectedValue(
-      new Error('Spotify only allows opening playlists you own or collaborate on.'),
+      new Error('Spotify only lets Ritmo read playlists you own or collaborate on.'),
     );
     await openFirstPlaylist();
 
     expect(
-      await screen.findByText(/only allows opening playlists you own or collaborate on/i),
+      await screen.findByText(/only lets Ritmo read playlists you own or collaborate on/i),
     ).toBeTruthy();
-    // Points to the URL-import escape hatch…
-    expect(screen.getByText(/add it under Import Playlist URL instead/i)).toBeTruthy();
-    // …and offers no retry, since a retry would just repeat the 403.
+    // Paste-a-link reads with the same user token, so it is not offered as a way around this.
+    expect(screen.queryByText(/add it under Import Playlist URL/i)).toBeNull();
+    // No retry, since a retry would just repeat the 403.
     expect(screen.queryByRole('button', { name: /try again/i })).toBeNull();
     // Still announced (kept as role="alert").
     expect(screen.getByRole('alert').textContent).toMatch(/own or collaborate on/i);
+  });
+
+  it('surfaces a spent Spotify quota on drill-in as one sentence with no retry', async () => {
+    vi.mocked(api.listPlaylistTracks).mockRejectedValue(
+      new api.ApiError(QUOTA_MESSAGE, 'PROVIDER_QUOTA_EXCEEDED', 429),
+    );
+    await openFirstPlaylist();
+
+    expect((await screen.findByRole('alert')).textContent).toContain(QUOTA_MESSAGE);
+    expect(screen.queryByRole('button', { name: /try again/i })).toBeNull();
+  });
+
+  it('shows the quota sentence instead of the generic playlist-index failure', async () => {
+    vi.mocked(api.listPlaylists).mockRejectedValueOnce(
+      new api.ApiError(QUOTA_MESSAGE, 'PROVIDER_QUOTA_EXCEEDED', 429),
+    );
+    render(<TrackSearch classId="c1" onAdded={() => {}} />);
+    fireEvent.click(screen.getByRole('button', { name: 'Spotify' }));
+    fireEvent.click(screen.getByRole('button', { name: 'Saved playlists' }));
+
+    expect(await screen.findByText(QUOTA_MESSAGE)).toBeTruthy();
+    expect(screen.queryByText(/Couldn’t load your Spotify playlists/)).toBeNull();
   });
 
   it('surfaces a generic drill-in failure as a retryable error and re-fetches on retry', async () => {
@@ -798,7 +833,7 @@ describe('classifyPlaylistDrillInError (unit)', () => {
   it('classifies the 403 ownership limitation as forbidden', () => {
     expect(
       classifyPlaylistDrillInError(
-        'Spotify only allows opening playlists you own or collaborate on.',
+        'Spotify only lets Ritmo read playlists you own or collaborate on.',
       ),
     ).toBe('forbidden');
   });
@@ -1563,7 +1598,7 @@ describe('TrackSearch playlist song picker', () => {
   it('shows the ownership sentence when Spotify forbids a well-shaped playlist', async () => {
     vi.mocked(api.importPlaylist).mockRejectedValue(
       new api.ApiError(
-        'Spotify only allows opening playlists you own or collaborate on.',
+        'Spotify only lets Ritmo read playlists you own or collaborate on.',
         'PROVIDER_FORBIDDEN',
         403,
       ),
@@ -1577,7 +1612,7 @@ describe('TrackSearch playlist song picker', () => {
     fireEvent.click(screen.getByRole('button', { name: 'Import' }));
 
     expect((await screen.findByRole('alert')).textContent).toBe(
-      'Spotify only allows opening playlists you own or collaborate on.',
+      'Spotify only lets Ritmo read playlists you own or collaborate on.',
     );
     expect(api.importPlaylist).toHaveBeenCalledTimes(1);
     expect(screen.queryByText('A music provider is temporarily unavailable.')).toBeNull();

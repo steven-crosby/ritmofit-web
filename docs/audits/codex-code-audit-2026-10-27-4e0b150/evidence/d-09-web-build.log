@@ -1,0 +1,58 @@
+$ pnpm tokens && tsc --noEmit && vite build && pnpm bundle-budget --selftest && pnpm bundle-budget
+$ node scripts/generate-tokens.mjs
+tokens.css: wrote 196 root + 39 light custom properties → /tmp/wt-d/apps/web/src/styles/tokens.css
+vite v5.4.21 building for production...
+transforming...
+../../node_modules/.pnpm/zod@4.6.7/node_modules/zod/v4/core/util.js (400:0): A comment
+
+"// Wrapped in a `@__PURE__` IIFE: esbuild never tree-shakes a top-level initializer that contains a member access on `Number`, so the bare object literal survived into every bundle."
+
+in "../../node_modules/.pnpm/zod@4.6.7/node_modules/zod/v4/core/util.js" contains an annotation that Rollup cannot interpret due to the position of the comment. The comment will be removed to avoid issues.
+../../node_modules/.pnpm/zod@4.6.7/node_modules/zod/v4/core/regexes.js (74:0): A comment
+
+"/** Anchors a pattern source. The interpolation lives here rather than at the call site because
+ * esbuild will not drop a `@__PURE__` call whose own argument interpolates a variable, but it
+ * will drop `anchor(dateSource)`. Keeping it inline pinned `date` into every bundle. */"
+
+in "../../node_modules/.pnpm/zod@4.6.7/node_modules/zod/v4/core/regexes.js" contains an annotation that Rollup cannot interpret due to the position of the comment. The comment will be removed to avoid issues.
+✓ 278 modules transformed.
+rendering chunks...
+computing gzip size...
+dist/manifest.webmanifest                          0.40 kB
+dist/index.html                                    1.95 kB │ gzip:   0.89 kB
+dist/assets/index-DGcMUSRx.css                    64.49 kB │ gzip:  12.07 kB
+dist/assets/move-pick-ANceoxVS.js                  0.27 kB │ gzip:   0.19 kB
+dist/assets/cue-list-CFLXSRg-.js                   1.02 kB │ gzip:   0.53 kB
+dist/assets/DialogState-CAXVdjI1.js                2.31 kB │ gzip:   0.72 kB
+dist/assets/SongsByMoveDialog-CHcZQOya.js          4.98 kB │ gzip:   1.95 kB
+dist/assets/ConnectionsDialog-2nqiF3v9.js          5.56 kB │ gzip:   2.01 kB
+dist/assets/workbox-window.prod.es5-BqEJf4Xk.js    5.71 kB │ gzip:   2.34 kB
+dist/assets/ClassSummaryView-xBTNoFI6.js           7.52 kB │ gzip:   2.37 kB
+dist/assets/TrackPreview-BausT7h_.js              16.89 kB │ gzip:   4.80 kB
+dist/assets/registry-esHe7XDQ.js                  22.78 kB │ gzip:   6.63 kB
+dist/assets/ChoreographyEditor-DnBRhFy7.js        31.64 kB │ gzip:   8.28 kB
+dist/assets/LiveMode-DsOU948i.js                  70.73 kB │ gzip:  19.15 kB
+dist/assets/index-B1FRgRjm.js                    604.80 kB │ gzip: 172.84 kB
+
+(!) Some chunks are larger than 500 kB after minification. Consider:
+- Using dynamic import() to code-split the application
+- Use build.rollupOptions.output.manualChunks to improve chunking: https://rollupjs.org/configuration-options/#output-manualchunks
+- Adjust chunk size limit for this warning via build.chunkSizeWarningLimit.
+✓ built in 2.39s
+
+PWA v1.3.0
+mode      generateSW
+precache  17 entries (821.55 KiB)
+files generated
+  dist/sw.js
+  dist/workbox-2fbc6a65.js
+$ node scripts/check-bundle-budget.mjs --selftest
+ok    entry under budget passes
+ok    inflated entry fails
+ok    large lazy chunk is not counted
+ok    missing build fails
+ok    index.html with no local script fails
+bundle-budget selftest: 5 cases ok.
+$ node scripts/check-bundle-budget.mjs
+  assets/index-B1FRgRjm.js  605.21 kB raw, 172.40 kB gzip
+Entry 172.40 kB gzip is within the 180.00 kB budget.

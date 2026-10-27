@@ -2,13 +2,17 @@ import { Hono } from 'hono';
 import { cors } from 'hono/cors';
 import { ZodError } from 'zod';
 import { API_VERSION, CLASS_LIST_NEXT_CURSOR_HEADER, uuidSchema } from '@ritmofit/shared';
-import { ProviderError } from '@ritmofit/music';
+import { ProviderError, ProviderQuotaExceededError } from '@ritmofit/music';
 import type { AppEnv, Env } from './lib/types.js';
 import { createAuth } from './lib/auth.js';
 import { createDb } from './lib/db.js';
 import { drainPurgeQueue, createD1PurgeStore } from './lib/music/purge.js';
 import { pruneRateLimits } from './lib/rate-limit.js';
 import { HttpError } from './lib/errors.js';
+import {
+  PROVIDER_QUOTA_EXCEEDED_CODE,
+  PROVIDER_QUOTA_EXCEEDED_MESSAGE,
+} from './lib/music/provider-quota.js';
 import { healthHttpStatus, readHealth } from './lib/health.js';
 import { authRoutes } from './routes/auth.js';
 import { classRoutes } from './routes/classes.js';
@@ -76,6 +80,15 @@ app.onError((err, c) => {
   // An upstream music provider misbehaved (non-JSON / unexpected shape). This is a
   // bad-gateway, NOT a client validation error — keep it out of the 422 branch
   // below (a provider `ZodError` would otherwise read as "your request was invalid").
+  // Spotify's quota for this app is spent. A retry will not help until it refills,
+  // so this is not the generic outage below.
+  if (err instanceof ProviderQuotaExceededError) {
+    console.warn(`[provider:${err.provider}] ${err.message}`);
+    return c.json(
+      { error: { code: PROVIDER_QUOTA_EXCEEDED_CODE, message: PROVIDER_QUOTA_EXCEEDED_MESSAGE } },
+      429,
+    );
+  }
   if (err instanceof ProviderError) {
     // 502, not 500: an upstream provider misbehaved. Log the detail (provider +
     // message) so it stays diagnosable, but never leak it to the client.

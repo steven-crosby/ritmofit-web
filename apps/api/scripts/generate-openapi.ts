@@ -154,6 +154,9 @@ for (const [name, schema] of Object.entries(named)) {
   schemas[name] = z.toJSONSchema(schema, { target: 'draft-2020-12', unrepresentable: 'any' });
 }
 
+const SPOTIFY_QUOTA_429 =
+  "PROVIDER_QUOTA_EXCEEDED — Spotify's usage limit for Ritmo is used up. Try again later. Not retried. No writes.";
+
 const ref = (name: string) => ({ $ref: `#/components/schemas/${name}` });
 const jsonBody = (name: string, required = true) => ({
   required,
@@ -273,6 +276,18 @@ const doc = {
       delete: {
         summary: 'Delete a class (owner)',
         responses: { '204': { description: 'Deleted' } },
+      },
+    },
+    '/classes/{id}/opened': {
+      parameters: [idParam],
+      post: {
+        summary: 'Record that the class was opened or that Live started',
+        description:
+          'Sets lastOpenedAt to the server clock. Does not change updatedAt, so Recents stays independent of edits. View access is enough.',
+        responses: {
+          '200': jsonResp('Class', 'Class with lastOpenedAt set'),
+          '404': { description: 'Not found / hidden' },
+        },
       },
     },
     '/classes/{id}/run-payload': {
@@ -425,6 +440,7 @@ const doc = {
           '422': {
             description: `Playlist has more than ${PLAYLIST_URL_OCCURRENCE_LIMIT} songs`,
           },
+          '429': { description: SPOTIFY_QUOTA_429 },
           '504': {
             description:
               'PROVIDER_TIMEOUT — the playlist took too long to load. Try again. No writes.',
@@ -701,6 +717,7 @@ const doc = {
         parameters: [{ name: 'q', in: 'query', required: false, schema: { type: 'string' } }],
         responses: {
           '200': arrayResp('TrackSearchResult', 'Candidates'),
+          '429': { description: SPOTIFY_QUOTA_429 },
           '501': { description: 'Provider not yet integrated' },
           '503': { description: 'Provider not configured' },
         },
@@ -719,7 +736,12 @@ const doc = {
         summary: "List the caller's liked tracks (M2; spends their per-user OAuth token)",
         responses: {
           '200': arrayResp('TrackSearchResult', 'Liked tracks'),
+          '403': {
+            description:
+              'SPOTIFY_DEVELOPMENT_MODE — this Spotify account is not on the app allowlist. Reconnect does not add it.',
+          },
           '409': { description: 'Not connected / reconnect required' },
+          '429': { description: SPOTIFY_QUOTA_429 },
           '501': { description: 'Provider not yet integrated' },
           '503': { description: 'Provider not configured' },
         },
@@ -738,7 +760,12 @@ const doc = {
         summary: "List the caller's saved playlists (D21; spends their per-user OAuth token)",
         responses: {
           '200': arrayResp('ProviderPlaylistSummary', 'Saved playlists'),
+          '403': {
+            description:
+              'SPOTIFY_DEVELOPMENT_MODE — this Spotify account is not on the app allowlist. Reconnect does not add it.',
+          },
           '409': { description: 'Not connected / reconnect required' },
+          '429': { description: SPOTIFY_QUOTA_429 },
           '501': { description: 'Provider saved playlists not integrated' },
           '503': { description: 'Provider not configured' },
         },
@@ -760,6 +787,7 @@ const doc = {
         responses: {
           '200': arrayResp('TrackSearchResult', 'Playlist tracks'),
           '409': { description: 'Not connected / reconnect required' },
+          '429': { description: SPOTIFY_QUOTA_429 },
           '501': { description: 'Provider saved playlists not integrated' },
           '503': { description: 'Provider not configured' },
         },
@@ -789,6 +817,7 @@ const doc = {
           ),
           '409': { description: 'Not connected / reconnect required' },
           '422': { description: 'Playlist has too many distinct tracks to import at once' },
+          '429': { description: SPOTIFY_QUOTA_429 },
           '501': { description: 'Provider saved playlists not integrated' },
           '503': { description: 'Provider not configured' },
         },

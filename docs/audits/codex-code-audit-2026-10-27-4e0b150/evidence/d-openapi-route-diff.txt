@@ -1,0 +1,3 @@
+hono handlers (src/routes, excl. tests): 82  openapi operations: 81
+mounted but not in openapi: [('get', '/auth/capabilities', 'auth.ts')]
+in openapi but not mounted: []

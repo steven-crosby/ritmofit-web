@@ -1,6 +1,7 @@
 import { getSpotifyPlayback } from '../lib/spotify-playback.js';
 // @vitest-environment jsdom
 import { StrictMode } from 'react';
+import liveModeSource from './LiveMode.tsx?raw';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import { act, cleanup, fireEvent, render, screen, waitFor, within } from '@testing-library/react';
 import type { MusicConnectionView, RunPayload, RunPayloadTrackEntry } from '@ritmofit/shared';
@@ -11,16 +12,22 @@ import {
   listConnections,
 } from '../lib/api.js';
 import { prepareAppleMusic } from '../lib/musickit.js';
+import {
+  appleMusicAuthorizationLostMessage,
+  appleMusicPlayRejectedMessage,
+} from '../lib/playback/apple-music-adapter.js';
 import { soundcloudAdapterFactory } from '../lib/playback/soundcloud-adapter.js';
 import type { AdapterEvents, PlaybackAdapter } from '../lib/playback/types.js';
 import { classReadiness } from '../lib/readiness.js';
 import {
   choreographyQueueAt,
+  followingTrackEvents,
   eventCount,
   LiveMode,
   lastAtOrBefore,
   liveSectionAt,
   TEACHING_PHONE_WIDTH_PX,
+  teachingCountdownContentPx,
   teachingHoldAt,
   teachingUpcomingColumnPx,
   upcomingTeachingCues,
@@ -218,8 +225,9 @@ describe('LiveMode preflight', () => {
     expect(within(list).getByText('No connected provider can play this')).toBeTruthy();
     expect(screen.getByText('Blocked')).toBeTruthy();
     expect(
-      screen.getByRole('heading', { name: '1 track checked · 0 passed · 1 needs attention' }),
+      screen.getByRole('heading', { name: '1 track needs a fix before starting with music.' }),
     ).toBeTruthy();
+    expect(screen.getByText('1 track checked · 0 passed · 1 needs attention')).toBeTruthy();
     expect(screen.getByText('1 track needs a fix before starting with music.')).toBeTruthy();
     expect(
       screen.getByText(
@@ -250,10 +258,7 @@ describe('LiveMode preflight', () => {
     render(<LiveMode payload={{ ...payload, tracks: [soundcloudOnly] }} onExit={() => {}} />);
     const list = await screen.findByRole('list', { name: 'Track playback check' });
     expect(within(list).getByText('Selected: SoundCloud')).toBeTruthy();
-    expect(screen.getByText('Track checks passed')).toBeTruthy();
-    expect(
-      screen.getByRole('heading', { name: '1 track checked · 1 passed · 0 need attention' }),
-    ).toBeTruthy();
+    expect(screen.getByRole('heading', { name: '1 of 1 track ready' })).toBeTruthy();
     expect(
       screen.getByText(
         'Provider links and durations checked for 1 track. Playback availability and audible output are unverified.',
@@ -308,7 +313,8 @@ describe('LiveMode preflight', () => {
     expect(
       await screen.findByText(/Could not check your provider connections: network down/),
     ).toBeTruthy();
-    expect(screen.getByRole('heading', { name: 'Runnable with warnings' })).toBeTruthy();
+    expect(screen.getByRole('heading', { name: 'Retry the connection check' })).toBeTruthy();
+    expect(screen.getByText('Runnable with warnings')).toBeTruthy();
     expect(screen.getByRole('button', { name: 'Run without music' })).toBeTruthy();
 
     expect(screen.getByText(/has not marked any provider disconnected/)).toBeTruthy();
@@ -1260,6 +1266,131 @@ describe('LiveMode waiting panel grace', () => {
   });
 });
 
+describe('LiveMode music failure mid-class', () => {
+  // The SoundCloud factory is mocked, so each case replays the exact sentence the
+  // real adapter or runtime produces; the adapter suites prove they produce it.
+  afterEach(() => {
+    vi.useRealTimers();
+  });
+
+  async function teach(factory: (events: AdapterEvents) => PlaybackAdapter) {
+    vi.mocked(listConnections).mockResolvedValue([soundcloudConnection]);
+    vi.mocked(soundcloudAdapterFactory).mockImplementation(factory);
+    render(<LiveMode payload={payload} onExit={() => {}} />);
+    await screen.findByRole('list', { name: 'Track playback check' });
+    vi.useFakeTimers();
+    fireEvent.click(screen.getByRole('button', { name: 'Start class' }));
+    await act(async () => {
+      await vi.advanceTimersByTimeAsync(1000);
+    });
+  }
+
+  const clock = () => screen.getByText(/^\d+:\d{2} \/ 3:00$/).textContent;
+
+  async function expectSentenceAndRecovery(sentence: string) {
+    const alert = screen.getByRole('alert', { name: 'Playback recovery' });
+    expect(within(alert).getByRole('heading', { name: 'Playback stopped' })).toBeTruthy();
+    // A sentence for the instructor: not blank, not a raw code, ends in a full stop.
+    expect(within(alert).getByText(sentence).textContent).toMatch(/^[A-Z"].{8,}\.$/);
+    expect(within(alert).queryByText(/^[A-Z_]+$/)).toBeNull();
+    expect(within(alert).getByRole('button', { name: 'Retry playback' })).toBeTruthy();
+    // One tap keeps the class going: the clock advances without music.
+    const held = clock();
+    fireEvent.click(within(alert).getByRole('button', { name: 'Continue without music' }));
+    await act(async () => {
+      await vi.advanceTimersByTimeAsync(2200);
+    });
+    expect(clock()).not.toBe(held);
+    expect(screen.queryByRole('alert')).toBeNull();
+    expect(screen.getByText('Music off')).toBeTruthy();
+  }
+
+  it('SoundCloud widget error', async () => {
+    let fail: NonNullable<AdapterEvents['onError']> = () => {};
+    await teach((events) => {
+      fail = (error) => events.onError?.(error);
+      return workingAdapter();
+    });
+    expect(screen.getByText(/Now teaching · Track/)).toBeTruthy();
+    act(() => fail({ message: 'SoundCloud playback failed for "Active Track".' }));
+    await expectSentenceAndRecovery('SoundCloud playback failed for "Active Track".');
+  });
+
+  it('SoundCloud ready timeout', async () => {
+    await teach(() => ({
+      ...workingAdapter(),
+      prepare: () =>
+        Promise.reject(new Error('The SoundCloud player timed out loading "Active Track".')),
+    }));
+    await expectSentenceAndRecovery('The SoundCloud player timed out loading "Active Track".');
+  });
+
+  it('a stalled transport', async () => {
+    const stalled = { current: false };
+    let positionMs = 0;
+    await teach(() => ({
+      ...workingAdapter(),
+      getTransport: () =>
+        stalled.current
+          ? new Promise(() => {})
+          : Promise.resolve({ positionMs: ++positionMs, state: 'playing' as const }),
+    }));
+    expect(screen.getByText(/Now teaching · Track/)).toBeTruthy();
+    stalled.current = true;
+    await act(async () => {
+      await vi.advanceTimersByTimeAsync(10_500);
+    });
+    await expectSentenceAndRecovery('Music stopped reporting progress.');
+  });
+
+  it('Apple Music authorization revoked', async () => {
+    let fail: NonNullable<AdapterEvents['onError']> = () => {};
+    await teach((events) => {
+      fail = (error) => events.onError?.(error);
+      return workingAdapter();
+    });
+    act(() => fail({ message: appleMusicAuthorizationLostMessage() }));
+    await expectSentenceAndRecovery(appleMusicAuthorizationLostMessage());
+  });
+
+  it('Apple Music play rejected', async () => {
+    await teach(() => ({
+      ...workingAdapter(),
+      play: () => Promise.reject(new Error(appleMusicPlayRejectedMessage('Active Track'))),
+    }));
+    await expectSentenceAndRecovery(appleMusicPlayRejectedMessage('Active Track'));
+  });
+});
+
+describe('LiveMode offline mark', () => {
+  it('adds Offline to the status line while the browser has no network', async () => {
+    const onLine = vi.spyOn(navigator, 'onLine', 'get').mockReturnValue(true);
+    try {
+      render(<LiveMode payload={payload} onExit={() => {}} />);
+      await screen.findByRole('list', { name: 'Track playback check' });
+      fireEvent.click(screen.getByRole('button', { name: 'Run without music' }));
+      const transport = screen.getByRole('region', { name: 'Live transport' });
+      expect(within(transport).queryByText('Offline')).toBeNull();
+
+      onLine.mockReturnValue(false);
+      act(() => {
+        window.dispatchEvent(new Event('offline'));
+      });
+      const mark = within(transport).getByText('Offline').closest('[role="status"]');
+      expect(mark?.textContent).toBe('⊘Network: Offline');
+      expect(within(transport).getByText('Music off')).toBeTruthy();
+
+      onLine.mockReturnValue(true);
+      act(() => {
+        window.dispatchEvent(new Event('online'));
+      });
+      expect(within(transport).queryByText('Offline')).toBeNull();
+    } finally {
+      onLine.mockRestore();
+    }
+  });
+});
+
 describe('LiveMode runtime composition', () => {
   const threeTrack = {
     ...payload,
@@ -1302,6 +1433,88 @@ describe('LiveMode runtime composition', () => {
     const nextClock = within(focal).getByLabelText('Time to next cue');
     expect(nextClock.classList.contains('text-text-secondary')).toBe(true);
     expect(nextClock.classList.contains('text-interactive')).toBe(false);
+  });
+
+  it("shows the next track's first cue after this track's last cue", async () => {
+    await renderLive({
+      ...threeTrack,
+      tracks: [
+        threeTrack.tracks[0]!,
+        {
+          ...threeTrack.tracks[1]!,
+          cues: [
+            teachingCue('c3', 'Seated climb', 15000, { position: 0 }),
+            teachingCue('c4', 'Stand and push', 45000, { position: 1 }),
+          ],
+        },
+        threeTrack.tracks[2]!,
+      ],
+    });
+    const slider = screen.getByRole('slider', { name: 'Seek class timeline' });
+    // 60s: track 1's last cue. Track 2 starts at 180s; its first cue is at 195s.
+    fireEvent.keyDown(slider, { key: 'PageUp' });
+    fireEvent.keyDown(slider, { key: 'PageUp' });
+    const focal = screen
+      .getByText('Climb now', { selector: '[data-teaching="hero-name"]' })
+      .closest('[data-live-region="focal"]') as HTMLElement;
+    expect(within(focal).queryByText('End of track')).toBeNull();
+    expect(within(focal).getByText('Seated climb')).toBeTruthy();
+    expect(within(focal).getByLabelText('Time to next cue').textContent).toBe('2:15');
+
+    const queue = screen.getByRole('list', { name: 'Choreography queue' });
+    const rows = within(queue).getAllByRole('listitem');
+    expect(rows.map((row) => row.textContent)).toEqual([
+      expect.stringMatching(/^NowClimb now/),
+      expect.stringMatching(/^NextSeated climbcue · Track 2/),
+      expect.stringMatching(/^\+2Stand and pushcue · Track 2/),
+    ]);
+    // One clock for the next cue: the Now row counts into the next track's first cue
+    // exactly like the hero, and upcoming rows count down to their own start.
+    expect(within(rows[0]!).getByLabelText('Time until the next cue').textContent).toBe(
+      '2:15 until next',
+    );
+    expect(
+      within(queue)
+        .getAllByLabelText('Time until this starts')
+        .map((node) => node.textContent),
+    ).toEqual(['in 2:15', 'in 2:45']);
+  });
+
+  it('still ends at the last cue of the class', async () => {
+    await renderLive({
+      ...payload,
+      tracks: [
+        {
+          ...activeTrack,
+          cues: [teachingCue('c1', 'Final push', 0)],
+        },
+      ],
+    });
+    const focal = screen
+      .getByText('Final push', { selector: '[data-teaching="hero-name"]' })
+      .closest('[data-live-region="focal"]') as HTMLElement;
+    expect(within(focal).getByText('End of track')).toBeTruthy();
+    const queue = screen.getByRole('list', { name: 'Choreography queue' });
+    expect(within(queue).getAllByRole('listitem')).toHaveLength(1);
+    expect(within(queue).getByLabelText('Time left in this track').textContent).toMatch(
+      /^\d+:\d{2} left$/,
+    );
+  });
+
+  it('wraps an unbroken class title and notes so the phone shell cannot scroll sideways', async () => {
+    const title = 'Unbreakable_Supercalifragilisticexpialidocious_Class_Title_Without_Spaces';
+    const notes = 'https://open.spotify.com/playlist/37i9dQZF1DX76Wlfdnj7AP?si=abcdefghijklmnop';
+    await renderLive({
+      ...threeTrack,
+      class: { ...threeTrack.class, title },
+      tracks: [{ ...threeTrack.tracks[0]!, notes }, ...threeTrack.tracks.slice(1)],
+    });
+    // A long word that does not break widens the fixed Live shell's scroll area, so
+    // a sideways swipe moves End Class and the Next countdown off the screen edge.
+    expect(screen.getByRole('heading', { level: 1, name: title }).className).toContain(
+      'break-words',
+    );
+    expect(screen.getByText(notes).className).toContain('break-words');
   });
 
   it('leads the rail with timers and keeps notes ahead of the supporting class shape', async () => {
@@ -1424,7 +1637,8 @@ describe('LiveMode runtime composition', () => {
     expect(details.open).toBe(true);
     expect(within(details).getByText('Climb now')).toBeTruthy();
     expect(within(details).queryByText('Settle in')).toBeNull();
-    expect(within(details).getByText('End of track')).toBeTruthy();
+    expect(within(details).getByText('Next move')).toBeTruthy();
+    expect(within(details).getByText('Reach long')).toBeTruthy();
     for (let i = 0; i < 4; i++) fireEvent.keyDown(slider, { key: 'PageUp' });
     expect(screen.getByText('Full guidance').closest('details')).toBe(details);
     expect(details.open).toBe(true);
@@ -1606,9 +1820,10 @@ describe('LiveMode runtime composition', () => {
     expect(within(queue).getByText('Climb now')).toBeTruthy();
     expect(
       within(queue)
-        .getAllByLabelText('Duration')
+        .getAllByLabelText('Time until this starts')
         .map((node) => node.textContent),
-    ).toEqual(['0:30', '2:00']);
+    ).toEqual(['in 0:30', 'in 1:00']);
+    expect(within(queue).queryByLabelText('Duration')).toBeNull();
   });
 
   it('moves to the previous and next track from the primary transport', async () => {
@@ -1786,15 +2001,19 @@ describe('LiveMode sparse-data fallbacks', () => {
     expect(screen.queryByText('—')).toBeNull();
   });
 
-  it('elevates a missing BPM to a readiness state, not quiet metadata', async () => {
+  it('states a missing BPM on the small caution channel, not as the focal point', async () => {
     const noBpm = {
       ...payload,
       tracks: [{ ...activeTrack, displayBpm: null }],
     } satisfies RunPayload;
     await renderLive(noBpm);
-    expect(screen.getByText('Tempo missing')).toBeTruthy();
-    expect(screen.getByText('Pulse off')).toBeTruthy();
-    expect(screen.queryByText('No BPM set')).toBeNull();
+    const caution = screen.getByText('No BPM set');
+    expect(caution.className).toContain('text-state-caution');
+    expect(caution.className).toContain('text-xs');
+    expect(caution.className).not.toMatch(/text-(2xl|3xl)/);
+    expect(caution.querySelector('[aria-hidden]')?.textContent).toBe('⊘');
+    expect(screen.queryByText('Pulse off')).toBeNull();
+    expect(screen.queryByText('Tempo missing')).toBeNull();
   });
 
   it('uses an affirmative teaching state instead of making missing cue data the hero', async () => {
@@ -1830,8 +2049,17 @@ describe('LiveMode sparse-data fallbacks', () => {
     } satisfies RunPayload;
     await renderLive(durationless);
 
-    const remaining = screen.getByLabelText('Time until the next cue');
+    const remaining = screen.getByLabelText('Time left in this track');
     expect(remaining.textContent).toBe('—');
+  });
+});
+
+describe('LiveMode type tokens', () => {
+  it('sets labels on the eyebrow and caption tokens, never below the 11px caption floor', () => {
+    expect(liveModeSource).not.toMatch(/text-\[1[01]px\]/);
+    expect(liveModeSource).not.toMatch(/tracking-\[0\.(18|22)em\]/);
+    expect(liveModeSource).toContain('rf-eyebrow');
+    expect(liveModeSource).toContain('text-caption');
   });
 });
 
@@ -1884,24 +2112,119 @@ describe('choreographyQueueAt', () => {
     },
   ];
 
-  it('shows upcoming choreography before the first anchor', () => {
+  it('counts upcoming choreography down to each start before the first anchor', () => {
     expect(choreographyQueueAt(events, 0, 90000, 2)).toEqual([
-      { event: events[0], state: 'upcoming', durationMs: 20000, remainingMs: null },
-      { event: events[1], state: 'upcoming', durationMs: 30000, remainingMs: null },
+      { event: events[0], state: 'upcoming', untilMs: 10000, laterTrackIndex: null },
+      { event: events[1], state: 'upcoming', untilMs: 30000, laterTrackIndex: null },
     ]);
   });
 
-  it('counts down the current interval and limits the forward window', () => {
+  it('counts the current row down to the next row and limits the forward window', () => {
     expect(choreographyQueueAt(events, 45000, 90000, 2)).toEqual([
-      { event: events[1], state: 'current', durationMs: 30000, remainingMs: 15000 },
-      { event: events[2], state: 'upcoming', durationMs: 30000, remainingMs: null },
+      { event: events[1], state: 'current', untilMs: 15000, laterTrackIndex: null },
+      { event: events[2], state: 'upcoming', untilMs: 15000, laterTrackIndex: null },
     ]);
   });
 
-  it('does not invent a final interval when the track duration is unset', () => {
-    expect(choreographyQueueAt(events, 70000, null)).toEqual([
-      { event: events[2], state: 'current', durationMs: null, remainingMs: null },
+  it('counts the final row to the track end, and invents nothing without a duration', () => {
+    expect(choreographyQueueAt(events, 70000, 90000)).toEqual([
+      { event: events[2], state: 'current', untilMs: 20000, laterTrackIndex: null },
     ]);
+    expect(choreographyQueueAt(events, 70000, null)).toEqual([
+      { event: events[2], state: 'current', untilMs: null, laterTrackIndex: null },
+    ]);
+  });
+
+  it("counts the last cue through the lead-in to the next track's first cue", () => {
+    const nextTrack: TimelineEvent[] = [
+      { ...events[0]!, atMs: 120000, text: 'Seated climb' },
+      { ...events[0]!, atMs: 150000, text: 'Stand' },
+    ];
+    // This track ends at 90s, but the next cue is at 120s: the Now row and the Next
+    // row both read 50s, the same value as the hero's Next countdown.
+    expect(
+      choreographyQueueAt(events, 70000, 90000, 3, {
+        index: 1,
+        events: nextTrack,
+        trackEndMs: 200000,
+      }),
+    ).toEqual([
+      { event: events[2], state: 'current', untilMs: 50000, laterTrackIndex: null },
+      { event: nextTrack[0], state: 'upcoming', untilMs: 50000, laterTrackIndex: 1 },
+      { event: nextTrack[1], state: 'upcoming', untilMs: 80000, laterTrackIndex: 1 },
+    ]);
+  });
+
+  it('shows the next track when this track has no choreography', () => {
+    const nextTrack: TimelineEvent[] = [{ ...events[0]!, atMs: 120000, text: 'Seated climb' }];
+    expect(
+      choreographyQueueAt([], 10000, 90000, 4, { index: 2, events: nextTrack, trackEndMs: null }),
+    ).toEqual([{ event: nextTrack[0], state: 'upcoming', untilMs: 110000, laterTrackIndex: 2 }]);
+  });
+});
+
+describe('followingTrackEvents', () => {
+  const cue = (atMs: number, text: string): TimelineEvent => ({
+    atMs,
+    kind: 'cue',
+    text,
+    color: null,
+    intensity: null,
+    beat: null,
+    bar: null,
+  });
+  const tracks = {
+    ...payload,
+    tracks: [
+      activeTrack,
+      { ...activeTrack, startOffsetMs: 180000 },
+      { ...activeTrack, startOffsetMs: 360000, track: { ...activeTrack.track, durationMs: null } },
+    ],
+  } satisfies RunPayload;
+
+  it('skips later tracks without choreography and reports the track end', () => {
+    expect(followingTrackEvents(tracks, [[], [cue(200000, 'Climb')], []], 0)).toEqual({
+      index: 1,
+      events: [cue(200000, 'Climb')],
+      trackEndMs: 360000,
+    });
+    expect(followingTrackEvents(tracks, [[], [], [cue(400000, 'Sprint')]], 0)).toEqual({
+      index: 2,
+      events: [cue(400000, 'Sprint')],
+      trackEndMs: null,
+    });
+  });
+
+  it('returns null on the last track or an empty class', () => {
+    expect(followingTrackEvents(tracks, [[], [], [cue(400000, 'Sprint')]], 2)).toBeNull();
+    expect(followingTrackEvents({ ...payload, tracks: [] }, [], -1)).toBeNull();
+  });
+
+  it('ignores earlier tracks and uses duration alone when the next track has no offset', () => {
+    expect(
+      followingTrackEvents(
+        tracks,
+        [[cue(0, 'Past')], [cue(200000, 'Now')], [cue(400000, 'Sprint')]],
+        1,
+      )?.index,
+    ).toBe(2);
+
+    const unplaced = {
+      ...tracks,
+      tracks: [
+        activeTrack,
+        {
+          ...activeTrack,
+          startOffsetMs: null,
+          track: { ...activeTrack.track, durationMs: 180000 },
+        },
+      ],
+    } satisfies RunPayload;
+    expect(followingTrackEvents(unplaced, [[], [cue(0, 'First')]], 0)).toEqual({
+      index: 1,
+      events: [cue(0, 'First')],
+      trackEndMs: 180000,
+    });
   });
 });
 
@@ -2389,6 +2712,7 @@ describe('Live browser authorization gate', () => {
       />,
     );
     await screen.findByText('Selected: Apple Music');
+    expect(screen.getByRole('heading', { name: 'Check Apple Music to start' })).toBeTruthy();
     const start = screen.getByRole('button', { name: 'Start class' }) as HTMLButtonElement;
     expect(start.disabled).toBe(true);
     fireEvent.click(screen.getByRole('button', { name: 'Check Apple Music authorization' }));
@@ -2438,6 +2762,7 @@ it('requires an explicit Spotify activation tap before starting a mixed-provider
     />,
   );
   await screen.findByText('Selected: Spotify');
+  expect(screen.getByRole('heading', { name: 'Check Spotify to start' })).toBeTruthy();
   const start = screen.getByRole('button', { name: 'Start class' }) as HTMLButtonElement;
   expect(start.disabled).toBe(true);
   fireEvent.click(screen.getByRole('button', { name: 'Prepare Spotify playback' }));
@@ -2492,7 +2817,18 @@ function seekTo(ms: number, totalMs: number) {
 /** Used font size from the inline clamp or rem the element actually ships. */
 function usedFontPx(node: HTMLElement, viewportPx: number): number {
   const raw = node.getAttribute('style') ?? '';
-  const fontSize = /font-size:\s*([^;]+)/i.exec(raw)?.[1]?.trim() || node.style.fontSize;
+  // jsdom drops `cqi` from the CSSOM, so the element also carries the formula.
+  const fontSize =
+    node.dataset.countdownSize ||
+    /font-size:\s*([^;]+)/i.exec(raw)?.[1]?.trim() ||
+    node.style.fontSize;
+  const cqi = /^clamp\(([0-9.]+)rem,\s*([0-9.]+)cqi,\s*([0-9.]+)rem\)$/.exec(fontSize);
+  if (cqi) {
+    const min = Number(cqi[1]) * 16;
+    const max = Number(cqi[3]) * 16;
+    const preferred = (Number(cqi[2]) / 100) * teachingCountdownContentPx(viewportPx);
+    return Math.min(max, Math.max(min, preferred));
+  }
   const clamp = /^clamp\(([0-9.]+)rem,\s*([0-9.]+)vw,\s*([0-9.]+)rem\)$/.exec(fontSize);
   if (clamp) {
     const min = Number(clamp[1]) * 16;
@@ -2557,7 +2893,17 @@ describe('Cue-by-Cue teaching reading', () => {
     const focal = document.querySelector('[data-live-region="focal"]') as HTMLElement;
     expect(heroName()?.textContent).toBe('Left Leg Lead');
     expect(countdown()?.textContent).toBe('15s');
-    expect(countdown()?.style.fontSize).toBe('6.5rem');
+    expect(countdown()?.textContent?.endsWith('s')).toBe(true);
+    expect(countdown()?.dataset.countdownSize).toBe('clamp(2.75rem, 18cqi, 6.5rem)');
+    expect(countdown()?.className).toContain('whitespace-nowrap');
+    const nextCue = within(focal).getByText('Right Leg Lead');
+    expect(nextCue.className).toContain('break-words');
+    expect(nextCue.className).not.toContain('truncate');
+    for (const viewport of [320, 390]) {
+      const fontPx = usedFontPx(countdown()!, viewport);
+      const fitted = fontPx * '14.8s'.length * 0.62;
+      expect(fitted).toBeLessThanOrEqual(teachingCountdownContentPx(viewport));
+    }
     expect(scale()?.dataset.scaleMs).toBe('15000');
     expect(playhead()?.dataset.filledMs).toBe('0');
     expect(playhead()?.style.width).toBe('0%');
@@ -2679,14 +3025,52 @@ describe('Cue-by-Cue teaching reading', () => {
     await renderLive(second);
     seekTo(10_000, total);
     expect(heroName()?.textContent ?? '').not.toBe('Left Leg Lead');
-    expect(screen.queryByText('Left Leg Lead')).toBeNull();
+    // Track 1 has no cues, so track 2's cue is only previewed as Next.
+    for (const node of screen.getAllByText('Left Leg Lead')) {
+      expect(node.getAttribute('data-teaching')).not.toBe('hero-name');
+    }
 
     seekTo(70_000, total);
     expect(heroName()?.textContent).toBe('Left Leg Lead');
     expect(countdown()?.textContent).toBe('5s');
   });
 
-  it('keeps the hero and an empty scale when durationMs is unset', async () => {
+  it('drops every empty readout from the focal card instead of printing a dash', async () => {
+    await renderLive({
+      ...payload,
+      tracks: [
+        {
+          ...activeTrack,
+          cues: [
+            teachingCue('00000000-0000-4000-8000-0000000000a6', 'Climb now', 0, {
+              durationMs: null,
+              bpm: null,
+              intensity: null,
+            }),
+            teachingCue('00000000-0000-4000-8000-0000000000a7', 'Recover', 48_000, {
+              durationMs: null,
+              bpm: null,
+              intensity: null,
+              position: 1,
+            }),
+          ],
+        },
+      ],
+    });
+    const focal = document.querySelector('[data-live-region="focal"]') as HTMLElement;
+    expect(heroName()?.textContent).toBe('Climb now');
+    expect(focal.textContent).not.toContain('—');
+    expect(countdown()).toBeNull();
+    expect(focal.querySelector('[data-teaching="hero-effort"]')).toBeNull();
+    expect(focal.querySelector('[data-teaching="hero-bpm"]')).toBeNull();
+    expect(within(focal).getByText('Recover')).toBeTruthy();
+
+    const comingUp = screen.getByRole('list', { name: 'Coming up' });
+    expect(screen.getByText('Coming up', { selector: 'p' })).toBeTruthy();
+    expect(comingUp.textContent).toBe('Recover');
+  });
+
+  it('keeps the hero and drops the countdown and scale when durationMs is unset', async () => {
     await renderLive({
       ...payload,
       tracks: [
@@ -2707,12 +3091,9 @@ describe('Cue-by-Cue teaching reading', () => {
     });
     seekTo(10_000, totalMs);
     expect(heroName()?.textContent).toBe('Left Leg Lead');
-    expect(countdown()?.textContent).toBe('—');
-    expect(countdown()?.textContent).not.toBe('0:38');
+    expect(countdown()).toBeNull();
     expect(playhead()).toBeNull();
-    expect(scale()?.dataset.scaleMs).toBe('');
-    expect(scale()?.dataset.scaleMs).not.toBe('180000');
-    expect(scale()?.dataset.scaleMs).not.toBe('48000');
+    expect(scale()).toBeNull();
   });
 
   it('gives the hero to the next anchor when a hold runs past it', async () => {
@@ -2774,7 +3155,7 @@ describe('Cue-by-Cue teaching reading', () => {
     };
     await renderLive(identity);
     expect(heroName()?.textContent).toBe('Now');
-    const upcoming = screen.getByRole('list', { name: 'Upcoming' });
+    const upcoming = screen.getByRole('list', { name: 'Coming up' });
     expect(within(upcoming).getByText('Later')).toBeTruthy();
     expect(within(upcoming).queryByText('Squat')).toBeNull();
     expect(within(upcoming).queryByText('Now')).toBeNull();
@@ -2783,7 +3164,7 @@ describe('Cue-by-Cue teaching reading', () => {
 
     seekTo(5_000, totalMs);
     expect(heroName()?.textContent).toBe('Now');
-    expect(within(screen.getByRole('list', { name: 'Upcoming' })).queryByText('Squat')).toBeNull();
+    expect(within(screen.getByRole('list', { name: 'Coming up' })).queryByText('Squat')).toBeNull();
 
     seekTo(15_000, totalMs);
     expect(heroName()?.textContent).toBe('Now');
@@ -2812,13 +3193,13 @@ describe('Cue-by-Cue teaching reading', () => {
     });
     expect(heroName()).toBeNull();
     expect(countdown()).toBeNull();
-    expect(screen.getByRole('list', { name: 'Upcoming' }).textContent).toContain('Not yet');
+    expect(screen.getByRole('list', { name: 'Coming up' }).textContent).toContain('Not yet');
   });
 
   it('lists later cues by position with the stored duration and cue BPM', async () => {
     await renderLive(leftLeg);
     seekTo(10_000, totalMs);
-    const upcoming = screen.getByRole('list', { name: 'Upcoming' });
+    const upcoming = screen.getByRole('list', { name: 'Coming up' });
     const row = within(upcoming).getByText('Right Leg Lead').closest('li') as HTMLElement;
     expect(row.querySelector('[data-teaching="upcoming-bpm"]')?.textContent).toBe('110');
     expect(row.querySelector('[data-teaching="upcoming-duration"]')?.textContent).toBe('48s');
@@ -2870,7 +3251,7 @@ describe('Cue-by-Cue teaching reading', () => {
     await renderLive(five);
     const rows = screen
       .getAllByRole('listitem')
-      .filter((item) => item.closest('[aria-label="Upcoming"]'));
+      .filter((item) => item.closest('[data-teaching="upcoming"]'));
     expect(rows.map((row) => row.querySelector('p')?.textContent)).toEqual([
       'Next position',
       'A',
@@ -2879,7 +3260,8 @@ describe('Cue-by-Cue teaching reading', () => {
       'D',
     ]);
     const nullBpm = rows[2]!;
-    expect(nullBpm.querySelector('[data-teaching="upcoming-bpm"]')?.textContent).toBe('BPM —');
+    expect(nullBpm.querySelector('[data-teaching="upcoming-bpm"]')).toBeNull();
+    expect(nullBpm.textContent).not.toContain('—');
     expect(nullBpm.textContent).not.toContain('128');
     expect(nullBpm.querySelector('[data-teaching="upcoming-duration"]')?.textContent).toBe('8s');
   });
@@ -2909,11 +3291,10 @@ describe('Cue-by-Cue teaching reading', () => {
         },
       ],
     });
-    const quiet = document.querySelector('[data-teaching="hero-bpm"]') as HTMLElement;
-    expect(quiet.textContent).toBe('BPM —');
-    expect(quiet.className).not.toContain('rf-beat-pulse');
-    expect(quiet.style.getPropertyValue('--rf-bpm')).toBe('');
-    expect(quiet.textContent).not.toContain('128');
+    expect(document.querySelector('[data-teaching="hero-bpm"]')).toBeNull();
+    expect(document.querySelector('.rf-beat-pulse')).toBeNull();
+    const focal = document.querySelector('[data-live-region="focal"]') as HTMLElement;
+    expect(focal.textContent).not.toContain('128');
   });
 
   it('places the hero beside upcoming from 1024px and stacks under that', async () => {
@@ -2933,6 +3314,35 @@ describe('Cue-by-Cue teaching reading', () => {
     }
     expect(teachingUpcomingColumnPx(390)).toBeNull();
     expect(TEACHING_PHONE_WIDTH_PX).toBe(430);
+  });
+
+  it('leads the 390px first screen with the hero name, countdown, and hold bar together', async () => {
+    const longCue =
+      'Stand up, add two full turns of resistance, and drive through the heels until the chorus drops';
+    await renderLive({
+      ...leftLeg,
+      tracks: [
+        {
+          ...leftLeg.tracks[0]!,
+          cues: [{ ...leftLeg.tracks[0]!.cues[0]!, text: longCue }, leftLeg.tracks[0]!.cues[1]!],
+        },
+      ],
+    } as RunPayload);
+    const focal = document.querySelector('[data-live-region="focal"]') as HTMLElement;
+    const layout = document.querySelector('[data-teaching-layout="cue"]') as HTMLElement;
+    // Phone stacks the regions: hero card, then upcoming, then the timers and rail.
+    expect(layout.className).toMatch(/(^| )flex-col( |$)/);
+    expect(layout.firstElementChild).toBe(focal);
+    // Nothing sits between the name, the countdown, and the bar, and a long cue
+    // clamps to two lines so it cannot push the countdown or bar off the first screen.
+    const name = heroName()!;
+    expect(name.textContent).toBe(longCue);
+    expect(name.className).toContain('line-clamp-2');
+    expect(name.className).toContain('text-[clamp(2.75rem,7vw,5.5rem)]');
+    expect(name.nextElementSibling).toBe(countdown());
+    expect(countdown()!.nextElementSibling).toBe(scale());
+    expect(name.previousElementSibling?.textContent).toBe('Current cue');
+    expect(scale()!.className).toContain('w-full');
   });
 
   it('keeps cue effort words and leaves coaching sentences off the hero', async () => {
@@ -2972,7 +3382,7 @@ describe('Cue-by-Cue teaching reading', () => {
     await renderLive();
     expect(heroName()).toBeNull();
     expect(countdown()).toBeNull();
-    expect(screen.queryByRole('list', { name: 'Upcoming' })).toBeNull();
+    expect(screen.queryByRole('list', { name: 'Coming up' })).toBeNull();
     expect(document.querySelector('[data-teaching="upcoming-row"]')).toBeNull();
     expect(classReadiness(payload).dimensions.find((d) => d.key === 'choreography')!.detail).toBe(
       before,

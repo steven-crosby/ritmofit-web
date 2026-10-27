@@ -93,18 +93,20 @@ export function SourceList({
                   : 'flex items-center'
               } ${
                 selected
-                  ? 'border border-interactive/35 bg-interactive/10'
+                  ? 'border border-border-strong bg-bg-raised'
                   : 'border border-transparent bg-bg-base'
               }`}
             >
               {action.kind === 'selection' && (
-                <input
-                  type="checkbox"
-                  checked={selected}
-                  onChange={() => action.onToggle(track)}
-                  aria-label={checkboxLabel}
-                  className="h-5 w-5 min-h-11 min-w-11 shrink-0 accent-interactive rf-focus-ring"
-                />
+                <label className="inline-flex h-11 w-11 shrink-0 items-center justify-center rf-focus-ring">
+                  <input
+                    type="checkbox"
+                    checked={selected}
+                    onChange={() => action.onToggle(track)}
+                    aria-label={checkboxLabel}
+                    className="h-5 w-5 accent-interactive focus-visible:outline-none"
+                  />
+                </label>
               )}
 
               <TrackArt
@@ -121,7 +123,11 @@ export function SourceList({
                   aria-label={toggleLabel}
                   className="min-h-11 min-w-0 flex-1 text-left rf-focus-ring"
                 >
-                  <span className="block truncate font-ui text-sm font-semibold text-text-primary">
+                  <span
+                    className={`block truncate font-ui text-sm text-text-primary ${
+                      selected ? 'font-semibold' : 'font-normal'
+                    }`}
+                  >
                     {track.title}
                   </span>
                   <span className="block truncate font-ui text-xs text-text-secondary">

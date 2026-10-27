@@ -60,6 +60,14 @@ function Verdict({ result }: { result: PreflightTrackResult }) {
   );
 }
 
+function trackCheckSummary(
+  trackCount: number,
+  passingCount: number,
+  unplayableCount: number,
+): string {
+  return `${trackCount} ${trackCount === 1 ? 'track checked' : 'tracks checked'} · ${passingCount} passed · ${unplayableCount} ${unplayableCount === 1 ? 'needs attention' : 'need attention'}`;
+}
+
 export function LivePreflight({
   preflight,
   connectionsError,
@@ -68,11 +76,17 @@ export function LivePreflight({
   onStart,
   onRunWithoutMusic,
   browserAuthorizationReady = true,
+  authorizationLead,
   browserAuthorization,
 }: {
   /** Null while the provider connections are still loading. */
   preflight: PreflightResult | null;
   browserAuthorizationReady?: boolean;
+  /**
+   * Names the browser check that blocks Start. Counts stay a supporting line
+   * under this action.
+   */
+  authorizationLead?: string;
   browserAuthorization?: ReactNode;
   /** Connections fetch failure — playback can't be verified, prompter still can run. */
   connectionsError: string | null;
@@ -93,46 +107,59 @@ export function LivePreflight({
   const unplayableTracks = preflight?.tracks.filter(
     (result) => result.selection.status === 'unplayable',
   );
+  // Everything passed: one status line and one Start class, no repeated "passed".
+  const allPass = preflight?.ok === true && browserAuthorizationReady && !connectionsError;
+  const counts =
+    preflight == null || allPass
+      ? null
+      : trackCheckSummary(trackCount, passingCount, unplayableCount);
+  const blockedLead = `${unplayableCount} ${unplayableCount === 1 ? 'track needs' : 'tracks need'} a fix before starting with music.`;
+  const lead = connectionsError
+    ? 'Retry the connection check'
+    : preflight == null
+      ? 'Checking readiness'
+      : !preflight.ok
+        ? blockedLead
+        : !browserAuthorizationReady
+          ? (authorizationLead ?? 'Check music authorization to start')
+          : `${passingCount} of ${trackCount} ${trackCount === 1 ? 'track' : 'tracks'} ready`;
   const verdict = connectionsError
     ? {
         label: 'Runnable with warnings',
-        detail:
-          'Provider playback could not be verified. Retry, or run the prompter without music.',
         tone: 'text-state-caution',
       }
     : preflight == null
       ? {
           label: 'Checking readiness',
-          detail: 'Checking stored connections, provider links, and track durations.',
           tone: 'text-text-secondary',
         }
       : preflight.ok
         ? {
-            label: browserAuthorizationReady
-              ? 'Track checks passed'
-              : 'Browser authorization needed',
-            detail: `Provider links and durations checked for ${trackCount} ${trackCount === 1 ? 'track' : 'tracks'}. Playback availability and audible output are unverified.`,
+            label: browserAuthorizationReady ? 'Ready' : 'Browser authorization needed',
             tone: browserAuthorizationReady ? 'text-state-positive' : 'text-state-caution',
           }
         : {
             label: 'Blocked',
-            detail: `${unplayableCount} ${unplayableCount === 1 ? 'track needs' : 'tracks need'} a fix before starting with music.`,
             tone: 'text-state-caution',
           };
+  const playbackCaveat = `Provider links and durations checked for ${trackCount} ${trackCount === 1 ? 'track' : 'tracks'}. Playback availability and audible output are unverified.`;
   return (
     <div className="mx-auto flex min-h-full w-full max-w-5xl flex-col justify-center gap-5 p-4 sm:p-6 lg:p-8">
       <section className="rounded-card border border-border-subtle bg-bg-raised/70 p-5 sm:p-6">
-        <StatusLabel
-          kind={
-            connectionsError || (preflight != null && (!preflight.ok || !browserAuthorizationReady))
-              ? 'unavailable'
-              : preflight == null
-                ? 'loading'
-                : 'recovered'
-          }
-          label={verdict.label}
-        />
-        <div className="mt-3 flex flex-col gap-4 lg:flex-row lg:items-end lg:justify-between">
+        {!allPass && (
+          <StatusLabel
+            kind={
+              connectionsError ||
+              (preflight != null && (!preflight.ok || !browserAuthorizationReady))
+                ? 'unavailable'
+                : 'loading'
+            }
+            label={verdict.label}
+          />
+        )}
+        <div
+          className={`${allPass ? '' : 'mt-3 '}flex flex-col gap-4 lg:flex-row lg:items-start lg:justify-between`}
+        >
           <div className="min-w-0">
             <p className="font-data text-[11px] uppercase tracking-[0.22em] text-text-tertiary">
               Playback preflight
@@ -140,13 +167,24 @@ export function LivePreflight({
             <h2
               className={`mt-1 text-balance font-display text-2xl font-semibold sm:text-3xl ${verdict.tone}`}
             >
-              {preflight == null
-                ? verdict.label
-                : `${trackCount} ${trackCount === 1 ? 'track checked' : 'tracks checked'} · ${passingCount} passed · ${unplayableCount} ${unplayableCount === 1 ? 'needs attention' : 'need attention'}`}
+              {allPass && (
+                <span aria-hidden className="mr-2">
+                  ✓
+                </span>
+              )}
+              {lead}
             </h2>
-            <p className="mt-2 max-w-2xl font-ui text-sm leading-6 text-text-secondary">
-              {verdict.detail}
-            </p>
+            {counts && <p className="mt-2 font-ui text-sm text-text-secondary">{counts}</p>}
+            {connectionsError && (
+              <p className="mt-2 max-w-2xl font-ui text-sm leading-6 text-text-secondary">
+                Provider playback could not be verified. Retry, or run the prompter without music.
+              </p>
+            )}
+            {preflight == null && !connectionsError && (
+              <p className="mt-2 max-w-2xl font-ui text-sm leading-6 text-text-secondary">
+                Checking stored connections, provider links, and track durations.
+              </p>
+            )}
             {preflight != null && !preflight.ok && (
               <p className="mt-2 font-ui text-sm font-semibold text-text-primary">
                 Run without music keeps your cues and timer. Music can be fixed before the run or
@@ -155,25 +193,49 @@ export function LivePreflight({
             )}
           </div>
 
-          <div className="flex flex-wrap items-center gap-2 lg:justify-end">
-            <button
-              className={`min-h-11 rounded-control px-6 py-2 font-ui font-semibold rf-focus-ring sm:rounded-pill ${DISABLED_CONTROL_CLASS} ${preflight?.ok && !connectionsError && browserAuthorizationReady ? 'rf-btn-primary text-text-on-accent' : 'border border-border-strong text-text-secondary'}`}
-              onClick={onStart}
-              disabled={!preflight?.ok || !!connectionsError || !browserAuthorizationReady}
-            >
-              Start class
-            </button>
-            <button
-              className="min-h-11 rounded-control border border-interactive px-4 py-2 font-ui text-sm font-semibold text-interactive transition-colors hover:bg-interactive/10 rf-focus-ring sm:rounded-pill"
-              onClick={onRunWithoutMusic}
-            >
-              Run without music
-            </button>
+          <div className="flex min-w-0 flex-col gap-3 lg:max-w-sm lg:items-end">
+            {browserAuthorization}
+            <div className="flex flex-wrap items-center gap-2 lg:justify-end">
+              <button
+                className={`min-h-11 rounded-control px-6 py-2 font-ui font-semibold rf-focus-ring sm:rounded-pill ${DISABLED_CONTROL_CLASS} ${preflight?.ok && !connectionsError && browserAuthorizationReady ? 'rf-btn-primary text-text-on-accent' : 'border border-border-strong text-text-secondary'}`}
+                onClick={onStart}
+                disabled={!preflight?.ok || !!connectionsError || !browserAuthorizationReady}
+              >
+                Start class
+              </button>
+              <button
+                className="min-h-11 rounded-control border border-interactive px-4 py-2 font-ui text-sm font-semibold text-interactive transition-colors hover:bg-interactive/10 rf-focus-ring sm:rounded-pill"
+                onClick={onRunWithoutMusic}
+              >
+                Run without music
+              </button>
+            </div>
           </div>
         </div>
+        {preflight != null && (
+          <details className="mt-4">
+            <summary className="min-h-11 cursor-pointer rounded-control px-1 py-2 font-ui text-sm font-semibold text-text-secondary rf-focus-ring">
+              What playback checks cover
+            </summary>
+            <div className="flex flex-col gap-2 px-1 pb-1 font-ui text-sm leading-6 text-text-secondary">
+              {preflight.ok && <p>{playbackCaveat}</p>}
+              {preflight.ok && (
+                <p>
+                  Start prepares the first track. The teaching clock waits for confirmed playback
+                  progress. Later tracks may still need recovery. Check your volume and audio output
+                  when music starts. Browser playback permission and each track’s availability may
+                  still require recovery when playback starts.
+                </p>
+              )}
+              <p>
+                Apple Music connects here without leaving preflight. Spotify and SoundCloud
+                authorization open a provider page; returning restores this class’s preflight
+                without starting playback.
+              </p>
+            </div>
+          </details>
+        )}
       </section>
-
-      {browserAuthorization}
 
       {connectionsError ? (
         <RecoveryState
@@ -207,21 +269,16 @@ export function LivePreflight({
           )}
           {passingCount > 0 && (
             <PreflightGroup
-              title={`${passingCount} ${passingCount === 1 ? 'track passed' : 'tracks passed'} checks`}
+              title={
+                allPass
+                  ? 'Track details'
+                  : `${passingCount} ${passingCount === 1 ? 'track passed' : 'tracks passed'} checks`
+              }
               results={playableTracks ?? []}
               disclosure
             />
           )}
         </div>
-      )}
-
-      {preflight?.ok && (
-        <p className="px-1 font-ui text-sm leading-6 text-text-secondary">
-          Start prepares the first track. The teaching clock waits for confirmed playback progress.
-          Later tracks may still need recovery. Check your volume and audio output when music
-          starts. Browser playback permission and each track’s availability may still require
-          recovery when playback starts.
-        </p>
       )}
 
       <div className="flex flex-wrap items-center gap-3">
@@ -234,12 +291,6 @@ export function LivePreflight({
           Manage connections
         </button>
       </div>
-      {preflight != null && (
-        <p className="font-ui text-xs text-text-tertiary">
-          Apple Music connects here without leaving preflight. Spotify and SoundCloud authorization
-          open a provider page; returning restores this class’s preflight without starting playback.
-        </p>
-      )}
     </div>
   );
 }

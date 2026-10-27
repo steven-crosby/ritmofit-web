@@ -25,8 +25,9 @@ Where state lives (so the next session — any tool — can answer "what's next"
 
 | State | Home |
 |---|---|
-| Owed forward: in flight, next action, open owner decisions | `ritmofit_dev_plan/handoffs/` — one file per session/lane ([rules](../ritmofit_dev_plan/handoffs/README.md)) |
-| Current focus, backlog, main vs production | `ritmofit_dev_plan/DEVELOPMENT_PLAN.md` |
+| Session restart context and dated observations; link RF records for actionable work | `ritmofit_dev_plan/handoffs/` — one file per session/lane ([rules](../ritmofit_dev_plan/handoffs/README.md)) |
+| Actionable scope, state, dependencies, acceptance and evidence | `ritmofit_dev_plan/tasks/RF-*.json`; generated [RF board](../ritmofit_dev_plan/tasks.md) and [workflow](../ritmofit_dev_plan/tasks/README.md) |
+| Current product direction and main vs production | `ritmofit_dev_plan/DEVELOPMENT_PLAN.md` |
 | What shipped and when (deploys, verification) | `ritmofit_dev_plan/HISTORY.md` |
 | Locked decisions | `ritmofit_dev_plan/decisions.md` |
 | Unshaped ideas | `INBOX.md` (drained at every close) |

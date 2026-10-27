@@ -1,0 +1,35 @@
+{
+  "schemaVersion": 1,
+  "id": "RF-39",
+  "title": "State the 5–10 second page test beside Principle 0",
+  "kind": "task",
+  "status": "done",
+  "priority": "untriaged",
+  "parent": null,
+  "dependsOn": [],
+  "acceptance": [
+    "Historical scope: State the 5–10 second page test beside Principle 0. Review original evidence before relying on broader product acceptance."
+  ],
+  "nextAction": null,
+  "blocker": null,
+  "evidence": [
+    {
+      "kind": "source",
+      "ref": "https://github.com/steven-crosby/ritmofit-web/blob/f35d5d5992035c3895b948b3dc90e96ea6eaffa1/ritmofit_dev_plan/tasks.md#L79",
+      "summary": "Original board entry; historical assertion, not independently verified product behavior.",
+      "checkedOn": null
+    },
+    {
+      "kind": "pr",
+      "ref": "https://github.com/steven-crosby/ritmofit-web/pull/603",
+      "summary": "GitHub state MERGED; mergedAt 2026-10-27T02:23:47Z. This checks PR state only.",
+      "checkedOn": "2026-10-27"
+    }
+  ],
+  "resolution": "Recorded complete on the imported board; product behavior was not re-tested during task migration.",
+  "followUps": [],
+  "imported": {
+    "status": "Done",
+    "title": "State the 5–10 second page test beside Principle 0 [#603](https://github.com/steven-crosby/ritmofit-web/pull/603)"
+  }
+}

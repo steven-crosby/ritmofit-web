@@ -28,7 +28,14 @@ import type {
   PlaylistImportRef,
   PlaylistReadOptions,
 } from './provider.js';
-import { abortError, PlaylistOverLimitError, ProviderError, readJson } from './errors.js';
+import {
+  abortError,
+  isQuotaExceededBody,
+  PlaylistOverLimitError,
+  ProviderError,
+  ProviderQuotaExceededError,
+  readJson,
+} from './errors.js';
 import { AppTokenCache } from './app-token.js';
 import { fetchWithRetry, type RetryOptions } from './retry.js';
 
@@ -214,6 +221,7 @@ class SpotifyProvider implements MusicProvider {
       retry,
     );
     if (!res.ok) {
+      await throwIfQuotaExceeded(res);
       // One forced refresh on a 401 in case the cached token went stale early.
       if (res.status === 401) {
         this.tokens.invalidate();
@@ -224,6 +232,7 @@ class SpotifyProvider implements MusicProvider {
           retry,
         );
         if (retryRes.ok) return readJson(retryRes, 'spotify');
+        await throwIfQuotaExceeded(retryRes);
       }
       // Surface the upstream message (truncated) so a 400/403 is diagnosable in logs.
       const detail = await res.text().catch(() => '');
@@ -287,6 +296,19 @@ export class SpotifyForbiddenError extends Error {
 }
 
 /**
+ * Spotify accepted the login, then refused a user-token library call because
+ * this account is not on the app's Development Mode allowlist. A refresh or
+ * reconnect does not add that row.
+ */
+export class SpotifyDevelopmentModeError extends Error {
+  readonly status = 403 as const;
+  constructor() {
+    super('Spotify has not allowlisted this user for the app (403).');
+    this.name = 'SpotifyDevelopmentModeError';
+  }
+}
+
+/**
  * Thrown when Spotify denies a **playlist item** read for a valid user token.
  * The 2026 playlist-items endpoint only exposes contents for playlists the user
  * owns or collaborates on, so reconnecting cannot grant access to that playlist.
@@ -312,6 +334,8 @@ export async function fetchSpotifySavedTracks(cfg: {
   apiBase?: string;
   /** Stop after this many tracks so a huge library can't run unbounded. */
   maxTracks?: number;
+  /** One retry on a transient 429/5xx by default; tests inject a no-op sleep. */
+  retry?: RetryOptions;
 }): Promise<TrackSearchResult[]> {
   const base = cfg.apiBase ?? DEFAULT_API_BASE;
   const cap = cfg.maxTracks ?? 200;
@@ -320,11 +344,19 @@ export async function fetchSpotifySavedTracks(cfg: {
   let total = Number.POSITIVE_INFINITY;
 
   while (offset < total && out.length < cap) {
-    const res = await cfg.fetchImpl(
+    const res = await fetchWithRetry(
+      cfg.fetchImpl,
       `${base}/me/tracks?limit=${SAVED_TRACKS_PAGE_LIMIT}&offset=${offset}`,
       { headers: { Authorization: `Bearer ${cfg.accessToken}`, Accept: 'application/json' } },
+      { maxRetries: 1, ...cfg.retry },
     );
+    await throwIfQuotaExceeded(res);
     if (res.status === 401) throw new SpotifyUnauthorizedError();
+    if (res.status === 403) {
+      const detail = await denialDetail(res);
+      if (isSpotifyDevelopmentModeDenial(detail)) throw new SpotifyDevelopmentModeError();
+      throw new ProviderError('spotify', 'Spotify API 403 for /me/tracks');
+    }
     if (!res.ok) throw new ProviderError('spotify', `Spotify API ${res.status} for /me/tracks`);
     const parsed = spSavedPageSchema.safeParse(await readJson(res, 'spotify'));
     if (!parsed.success) {
@@ -353,6 +385,8 @@ export async function fetchSpotifySavedPlaylists(cfg: {
   apiBase?: string;
   /** Stop after this many playlists so browse reads stay bounded. */
   maxPlaylists?: number;
+  /** One retry on a transient 429/5xx by default; tests inject a no-op sleep. */
+  retry?: RetryOptions;
 }): Promise<ProviderPlaylistSummary[]> {
   const base = cfg.apiBase ?? DEFAULT_API_BASE;
   const cap = cfg.maxPlaylists ?? 100;
@@ -361,12 +395,19 @@ export async function fetchSpotifySavedPlaylists(cfg: {
   let total = Number.POSITIVE_INFINITY;
 
   while (offset < total && out.length < cap) {
-    const res = await cfg.fetchImpl(
+    const res = await fetchWithRetry(
+      cfg.fetchImpl,
       `${base}/me/playlists?limit=${SAVED_PLAYLISTS_PAGE_LIMIT}&offset=${offset}`,
       { headers: { Authorization: `Bearer ${cfg.accessToken}`, Accept: 'application/json' } },
+      { maxRetries: 1, ...cfg.retry },
     );
+    await throwIfQuotaExceeded(res);
     if (res.status === 401) throw new SpotifyUnauthorizedError();
-    if (res.status === 403) throw new SpotifyForbiddenError();
+    if (res.status === 403) {
+      const detail = await denialDetail(res);
+      if (isSpotifyDevelopmentModeDenial(detail)) throw new SpotifyDevelopmentModeError();
+      throw new SpotifyForbiddenError();
+    }
     if (!res.ok) throw new ProviderError('spotify', `Spotify API ${res.status} for /me/playlists`);
 
     const parsed = spLibraryPlaylistsPageSchema.safeParse(await readJson(res, 'spotify'));
@@ -441,7 +482,11 @@ export async function fetchSpotifyPlaylistTracks(cfg: {
     const res = retry
       ? await fetchWithRetry(cfg.fetchImpl, url, init, retry)
       : await cfg.fetchImpl(url, init);
+    await throwIfQuotaExceeded(res);
     if (res.status === 401) throw new SpotifyUnauthorizedError();
+    // Spotify documents 403 for a playlist the user neither owns nor collaborates
+    // on. A private playlist that is not theirs answers 404 instead.
+    if (res.status === 404) throw new SpotifyPlaylistAccessDeniedError();
     if (res.status === 403) {
       const detail = await res.text().catch(() => '');
       if (isSpotifyAuthFailure(detail)) throw new SpotifyForbiddenError();
@@ -490,6 +535,34 @@ function isSpotifyAuthFailure(detail: string): boolean {
   return /insufficient client scope|insufficient scope|authentication required|invalid access token/i.test(
     detail,
   );
+}
+
+/**
+ * Development Mode allows login, then returns 403 on user-token reads until
+ * the account is added under User Management. The published wording is
+ * "not registered" (for this application, or in the developer dashboard).
+ */
+function isSpotifyDevelopmentModeDenial(detail: string): boolean {
+  // "not registered for this application" and "the user may not be registered".
+  return /not(?:\s+be)?\s+registered/i.test(detail);
+}
+
+/** Spotify's spent-quota 429. Its body is buffered by `fetchWithRetry`, so reading it here is safe. */
+async function throwIfQuotaExceeded(res: {
+  status: number;
+  text(): Promise<string>;
+}): Promise<void> {
+  if (res.status !== 429) return;
+  const body = await res.text().catch(() => '');
+  if (isQuotaExceededBody(body)) throw new ProviderQuotaExceededError('spotify');
+}
+
+async function denialDetail(res: { text(): Promise<string> }): Promise<string> {
+  try {
+    return await res.text();
+  } catch {
+    return '';
+  }
 }
 
 function previewRetry(

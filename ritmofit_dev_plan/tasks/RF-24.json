@@ -1,0 +1,35 @@
+{
+  "schemaVersion": 1,
+  "id": "RF-24",
+  "title": "Clean ignore-list and documentation references",
+  "kind": "documentation",
+  "status": "done",
+  "priority": "untriaged",
+  "parent": null,
+  "dependsOn": [],
+  "acceptance": [
+    "Historical scope: Ignore lists and docs no longer name a local tool directory. Review original evidence before relying on broader product acceptance."
+  ],
+  "nextAction": null,
+  "blocker": null,
+  "evidence": [
+    {
+      "kind": "source",
+      "ref": "https://github.com/steven-crosby/ritmofit-web/blob/f35d5d5992035c3895b948b3dc90e96ea6eaffa1/ritmofit_dev_plan/tasks.md#L13",
+      "summary": "Original board entry; historical assertion, not independently verified product behavior.",
+      "checkedOn": null
+    },
+    {
+      "kind": "pr",
+      "ref": "https://github.com/steven-crosby/ritmofit-web/pull/594",
+      "summary": "GitHub state MERGED; mergedAt 2026-10-26T05:59:00Z. This checks PR state only.",
+      "checkedOn": "2026-10-27"
+    }
+  ],
+  "resolution": "Repository cleanup merged in #594; GitHub merge state checked during migration.",
+  "followUps": [],
+  "imported": {
+    "status": "For Review",
+    "title": "[#594](https://github.com/steven-crosby/ritmofit-web/pull/594) Ignore lists and docs no longer name a local tool directory"
+  }
+}

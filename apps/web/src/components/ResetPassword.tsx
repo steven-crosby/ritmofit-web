@@ -75,14 +75,16 @@ export function ResetPassword() {
       <section className="order-1 flex min-w-0 items-center justify-center p-5 sm:p-8 lg:order-2 lg:p-12">
         <div className="flex w-full max-w-md flex-col gap-6">
           <header>
-            <p className="rf-eyebrow">Set a new password</p>
+            <p className="rf-eyebrow">{invalid ? 'Reset link' : 'Set a new password'}</p>
             <h1 className="mt-2 font-display text-3xl font-bold tracking-tight text-text-primary">
-              Choose a new password
+              {invalid ? 'This reset link has expired' : 'Choose a new password'}
             </h1>
-            <p className="mt-2 font-ui text-sm leading-6 text-text-secondary">
-              Use at least eight characters. This changes sign-in only; saved classes and provider
-              connections remain unchanged.
-            </p>
+            {!invalid && (
+              <p className="mt-2 font-ui text-sm leading-6 text-text-secondary">
+                Use at least eight characters. This changes sign-in only; saved classes and provider
+                connections remain unchanged.
+              </p>
+            )}
           </header>
 
           {done ? (
@@ -115,13 +117,10 @@ export function ResetPassword() {
               role="alert"
               className="rounded-card border border-state-danger/30 bg-state-danger/5 p-5 outline-none"
             >
-              <p className="font-ui font-semibold text-text-primary">
+              <p className="font-ui text-sm leading-6 text-text-secondary">
                 <span aria-hidden className="mr-1.5 text-state-danger">
                   ⚠
                 </span>
-                This reset link is invalid or has expired
-              </p>
-              <p className="mt-2 font-ui text-sm leading-6 text-text-secondary">
                 No password or saved work changed. Return to sign in and request a fresh link.
               </p>
               <a

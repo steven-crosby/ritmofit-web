@@ -412,9 +412,10 @@ try {
   await checkNoOverflow(page, 'dashboard-empty');
   await page.screenshot({ path: join(shotsDir, 'dashboard-empty.png') });
 
-  // 3. Create a class and open it. The empty Classes home offers copper
-  // "Start a class", which opens the isolated create dialog.
-  await page.getByRole('button', { name: 'Start a class' }).click();
+  // 3. Create a class and open it. The library's copper Create pill opens
+  // From a template, which opens the isolated create dialog.
+  await page.getByRole('button', { name: 'Create', exact: true }).click();
+  await page.getByRole('button', { name: 'From a template' }).click();
   const titleInput = page.getByLabel('Class title');
   await titleInput.waitFor({ state: 'visible', timeout: 10000 });
   await titleInput.fill('Narrow Width Smoke');

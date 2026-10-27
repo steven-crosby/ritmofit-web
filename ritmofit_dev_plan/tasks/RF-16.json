@@ -1,0 +1,30 @@
+{
+  "schemaVersion": 1,
+  "id": "RF-16",
+  "title": "Editorial Spotify playlist 404 still shares the outage envelope",
+  "kind": "investigation",
+  "status": "review",
+  "priority": "untriaged",
+  "parent": null,
+  "dependsOn": [],
+  "acceptance": [
+    "Reproduce the editorial-playlist 404 path and identify whether the standard error envelope distinguishes unavailability from a provider outage.",
+    "Record the disposition and approved follow-up; do not implement a provider change under an investigation task."
+  ],
+  "nextAction": "Reconfirm the 404/error mapping against current code; Spotify implementation remains tabled until reopened.",
+  "blocker": null,
+  "evidence": [
+    {
+      "kind": "source",
+      "ref": "https://github.com/steven-crosby/ritmofit-web/blob/f35d5d5992035c3895b948b3dc90e96ea6eaffa1/ritmofit_dev_plan/tasks.md#L11",
+      "summary": "Original board entry; historical assertion, not independently verified product behavior.",
+      "checkedOn": null
+    }
+  ],
+  "resolution": null,
+  "followUps": [],
+  "imported": {
+    "status": "For Review",
+    "title": "Editorial Spotify playlist 404 still shares the outage envelope"
+  }
+}
