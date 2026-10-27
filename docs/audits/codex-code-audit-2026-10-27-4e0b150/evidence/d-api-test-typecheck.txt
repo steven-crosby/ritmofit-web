@@ -1,0 +1,70 @@
+test/auth-profile.integration.test.ts(144,12): error TS2571: Object is of type 'unknown'.
+test/authz.integration.test.ts(32,12): error TS2571: Object is of type 'unknown'.
+test/authz.integration.test.ts(62,12): error TS2571: Object is of type 'unknown'.
+test/authz.integration.test.ts(111,12): error TS18046: 'payload' is of type 'unknown'.
+test/authz.integration.test.ts(112,12): error TS18046: 'payload' is of type 'unknown'.
+test/authz.integration.test.ts(113,12): error TS18046: 'payload' is of type 'unknown'.
+test/authz.integration.test.ts(125,12): error TS2571: Object is of type 'unknown'.
+test/authz.integration.test.ts(129,12): error TS18046: 'payload' is of type 'unknown'.
+test/authz.integration.test.ts(130,12): error TS18046: 'payload' is of type 'unknown'.
+test/authz.integration.test.ts(143,12): error TS2571: Object is of type 'unknown'.
+test/authz.integration.test.ts(164,12): error TS18046: 'trimmedBody' is of type 'unknown'.
+test/authz.integration.test.ts(165,12): error TS18046: 'trimmedBody' is of type 'unknown'.
+test/authz.integration.test.ts(169,12): error TS18046: 'payload' is of type 'unknown'.
+test/authz.integration.test.ts(170,12): error TS18046: 'payload' is of type 'unknown'.
+test/authz.integration.test.ts(172,12): error TS18046: 'payload' is of type 'unknown'.
+test/authz.integration.test.ts(180,12): error TS2571: Object is of type 'unknown'.
+test/authz.integration.test.ts(193,12): error TS2571: Object is of type 'unknown'.
+test/authz.integration.test.ts(205,19): error TS18046: 'payload' is of type 'unknown'.
+test/authz.integration.test.ts(226,12): error TS2571: Object is of type 'unknown'.
+test/authz.integration.test.ts(240,12): error TS2571: Object is of type 'unknown'.
+test/authz.integration.test.ts(248,12): error TS2571: Object is of type 'unknown'.
+test/authz.integration.test.ts(261,12): error TS18046: 'payload' is of type 'unknown'.
+test/authz.integration.test.ts(262,12): error TS18046: 'payload' is of type 'unknown'.
+test/authz.integration.test.ts(263,20): error TS18046: 'payload' is of type 'unknown'.
+test/authz.integration.test.ts(276,12): error TS2571: Object is of type 'unknown'.
+test/authz.integration.test.ts(302,12): error TS18046: 'copied' is of type 'unknown'.
+test/authz.integration.test.ts(303,12): error TS18046: 'copied' is of type 'unknown'.
+test/authz.integration.test.ts(306,66): error TS18046: 'copied' is of type 'unknown'.
+test/authz.integration.test.ts(365,12): error TS18046: 'payload' is of type 'unknown'.
+test/authz.integration.test.ts(366,12): error TS18046: 'payload' is of type 'unknown'.
+test/authz.integration.test.ts(476,12): error TS18046: 'payload' is of type 'unknown'.
+test/authz.integration.test.ts(477,12): error TS18046: 'payload' is of type 'unknown'.
+test/choreography-access.integration.test.ts(83,12): error TS2571: Object is of type 'unknown'.
+test/class-list.integration.test.ts(160,12): error TS2571: Object is of type 'unknown'.
+test/helpers.ts(56,6): error TS2339: Property 'getSetCookie' does not exist on type 'Headers'.
+test/helpers.ts(57,11): error TS7006: Parameter 'c' implicitly has an 'any' type.
+test/launch-blockers.integration.test.ts(46,12): error TS2571: Object is of type 'unknown'.
+test/launch-blockers.integration.test.ts(57,12): error TS2571: Object is of type 'unknown'.
+test/launch-blockers.integration.test.ts(85,12): error TS2571: Object is of type 'unknown'.
+test/launch-blockers.integration.test.ts(92,12): error TS2571: Object is of type 'unknown'.
+test/nested-resource-access.integration.test.ts(111,12): error TS2571: Object is of type 'unknown'.
+test/nested-resource-access.integration.test.ts(146,12): error TS2571: Object is of type 'unknown'.
+test/ordered-class-import.integration.test.ts(47,5): error TS2322: Type '{ id: string; trackId: string | undefined; }[]' is not assignable to type '{ id: string; trackId: string; }[]'.
+  Type '{ id: string; trackId: string | undefined; }' is not assignable to type '{ id: string; trackId: string; }'.
+    Types of property 'trackId' are incompatible.
+      Type 'string | undefined' is not assignable to type 'string'.
+        Type 'undefined' is not assignable to type 'string'.
+test/ordered-class-import.integration.test.ts(71,40): error TS2322: Type 'string | undefined' is not assignable to type 'string'.
+  Type 'undefined' is not assignable to type 'string'.
+test/ordered-class-import.integration.test.ts(71,47): error TS2322: Type 'string | undefined' is not assignable to type 'string'.
+  Type 'undefined' is not assignable to type 'string'.
+test/ordered-class-import.integration.test.ts(89,47): error TS2322: Type 'string | undefined' is not assignable to type 'string'.
+  Type 'undefined' is not assignable to type 'string'.
+test/ordered-class-import.integration.test.ts(93,12): error TS2532: Object is possibly 'undefined'.
+test/ordered-class-import.integration.test.ts(114,12): error TS2532: Object is possibly 'undefined'.
+test/ordered-class-import.integration.test.ts(333,55): error TS2532: Object is possibly 'undefined'.
+test/ordered-class-import.integration.test.ts(337,78): error TS2532: Object is possibly 'undefined'.
+test/ordered-class-import.integration.test.ts(342,53): error TS2532: Object is possibly 'undefined'.
+test/ordered-class-import.integration.test.ts(342,67): error TS2532: Object is possibly 'undefined'.
+test/ordered-class-import.integration.test.ts(342,81): error TS2532: Object is possibly 'undefined'.
+test/ordered-class-import.integration.test.ts(348,32): error TS2322: Type 'string | undefined' is not assignable to type 'string'.
+  Type 'undefined' is not assignable to type 'string'.
+test/ordered-class-import.integration.test.ts(348,39): error TS2322: Type 'string | undefined' is not assignable to type 'string'.
+  Type 'undefined' is not assignable to type 'string'.
+test/ordered-class-import.integration.test.ts(354,45): error TS2322: Type 'string | undefined' is not assignable to type 'string'.
+  Type 'undefined' is not assignable to type 'string'.
+test/ordered-class-import.integration.test.ts(358,45): error TS2322: Type 'string | undefined' is not assignable to type 'string'.
+  Type 'undefined' is not assignable to type 'string'.
+test/run-payload-beat-grid.integration.test.ts(49,12): error TS2571: Object is of type 'unknown'.
+test/team-access.integration.test.ts(104,12): error TS2571: Object is of type 'unknown'.

@@ -1,0 +1,8 @@
+[B-4a] notes after Back + reopen: ""
+[B-4b] notes after nav away + back: ""
+[B-4c] inspector still open after Exit: false | notes after reselect: ""
+ ✓ src/components/b-draft-loss.repro.test.tsx (3 tests) 738ms
+   ✓ Reviewer B repro: unsaved inspector typing is dropped on leave > B-4a: Back to Classes  323ms
+ Test Files  1 passed (1)
+      Tests  3 passed (3)
+exit=0

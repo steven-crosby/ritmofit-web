@@ -1,0 +1,7 @@
+[A-9] 100 params -> ok
+[A-9] 101 params -> ERROR Error: D1_ERROR: too many SQL variables at offset 246: SQLITE_ERROR
+[A-9 purge] summaries = [{"processed":1,"purged":0,"retried":1,"abandoned":0,"tracksCleared":0,"refsDeleted":0},{"processed":1,"purged":0,"retried":1,"abandoned":0,"tracksCleared":0,"refsDeleted":0},{"processed":1,"purged":0,"retried":1,"abandoned":0,"tracksCleared":0,"refsDeleted":0},{"processed":1,"purged":0,"retried":1,"abandoned":0,"tracksCleared":0,"refsDeleted":0},{"processed":1,"purged":0,"retried":0,"abandoned":1,"tracksCleared":0,"refsDeleted":0}]
+[A-9 purge] first log = purge 25890ca9-9959-40da-a1f7-c4e90453628a moved to failed state after 5 attempts
+[A-9 purge] spotify refs remaining = 120 queue row = {"attempts":5,"failed":1}
+[A-9 class] run-payload -> 500 copy -> 500 list -> 200
+      Tests  3 passed (3)

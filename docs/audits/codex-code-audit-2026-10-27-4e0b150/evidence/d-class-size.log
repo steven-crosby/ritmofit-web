@@ -1,0 +1,584 @@
+
+ RUN  v3.2.6 /tmp/wt-d/apps/api
+
+[vpw:debug] Adding `enable_nodejs_tty_module` compatibility flag during tests as this feature is needed to support the Vitest runner.
+[vpw:debug] Adding `enable_nodejs_fs_module` compatibility flag during tests as this feature is needed to support the Vitest runner.
+[vpw:debug] Adding `enable_nodejs_http_modules` compatibility flag during tests as this feature is needed to support the Vitest runner.
+[vpw:debug] Adding `enable_nodejs_perf_hooks_module` compatibility flag during tests as this feature is needed to support the Vitest runner.
+[vpw:info] Starting single runtime for vitest.integration.config.ts...
+stdout | test/d-audit-class-size.integration.test.ts > d-audit class size > run-payload and copy for a 100-track class
+[email:dev-fallback] to=u-d230abcb-0b48-439c-85f0-916368457ad1@example.com subject="Confirm your Ritmo Studio email"
+Confirm your email
+
+Welcome to Ritmo Studio! Confirm u-d230abcb-0b48-439c-85f0-916368457ad1@example.com to secure your account.
+
+Verify email: https://test.ritmofit.studio/api/auth/verify-email?token=<redacted>&callbackURL=%2F
+
+You can keep using Ritmo Studio while this is pending.
+
+stdout | test/d-audit-class-size.integration.test.ts > d-audit class size > run-payload and copy for a 100-track class
+D-CLASSSIZE n=100 runPayload=200 tracks=100 copy=201
+
+stdout | test/d-audit-class-size.integration.test.ts > d-audit class size > run-payload and copy for a 101-track class
+[email:dev-fallback] to=u-7d465e5f-8076-4de8-ad4b-6722c621dde2@example.com subject="Confirm your Ritmo Studio email"
+Confirm your email
+
+Welcome to Ritmo Studio! Confirm u-7d465e5f-8076-4de8-ad4b-6722c621dde2@example.com to secure your account.
+
+Verify email: https://test.ritmofit.studio/api/auth/verify-email?token=<redacted>&callbackURL=%2F
+
+You can keep using Ritmo Studio while this is pending.
+
+stderr | test/d-audit-class-size.integration.test.ts > d-audit class size > run-payload and copy for a 101-track class
+Unhandled error: DrizzleQueryError: Failed query: select "id", "owner_user_id", "title", "artist", "album_art_url", "duration_ms", "display_bpm", "isrc", "match_key", "created_at", "updated_at" from "tracks" where "tracks"."id" in (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+params: 2bd7293f-feb6-4a1f-b0d0-5d86ca8e9900,75c5b4df-20e0-416d-84c9-88986d31714f,78b951a7-9347-4c99-9da6-f8831e6901ad,1a05dff3-db1f-4670-8f63-9efa4997d44d,98b02034-3efa-45f8-a34b-cd7c6d1eac9e,cc91b775-c381-4dcc-9176-7476ab756c47,a6229352-1690-4dc1-bcbe-4603b9058789,3777541b-9ab6-420d-a673-b5948c67002e,88414934-01dd-4a1f-b309-60e46d0a1f2b,c82eb08b-b63e-464e-9dc0-2969ae7b652b,4a823f94-8390-4995-8672-159513cf58ad,8593e345-05f6-4598-aabc-eff78147dcf5,c46d366b-a2e9-410f-a8f3-fb81f1c9544f,cf69ca71-68ca-4662-a01e-974287442bd6,c02e7c6b-be4d-49c8-b670-4a2ae41b8f5a,aba6c5ff-fc1c-4aff-ab57-19cc7c92773e,18e15ff1-7e25-4a14-98b6-ffff2a260910,16955261-5669-47e1-9285-fd110a82b307,fc868c9d-66fa-449e-9f3c-6508336993d9,4100e590-0e83-4e74-a909-7fe5407cd667,80acb748-925f-41ae-9cc2-844b605856e6,f47001b2-704b-480a-8296-e24db9b652b6,676538e3-59fd-4859-818f-d1d20e32e2a6,83cd3fe6-5c6f-436f-803c-52c3cff8d135,f7d8df62-6516-4170-afc5-90e2105c65ee,be0db2e1-045b-4a26-b09d-c37e785784c5,a5b6ef41-f7b5-4eac-b402-21b785ad08ad,44cb5277-460a-46a8-9ca0-3f2a78314dd8,751f3a40-65c7-4962-868d-9fde62c7ced6,aa407d65-95e6-42e0-a361-21f38e14ccc1,a01c6422-d626-4cc8-9381-35bc9e9464c1,48aa8e1f-3ad1-4b6b-85b3-4e907cb1b915,1408727f-5a1e-409b-9e8c-3c08374c2dea,afd92768-ad57-4524-86ff-90a7fae38cc7,24c6aa52-2338-4831-b563-5fc05e5c695c,c6bcd0c8-5dc4-4d93-99b0-cbeb6ebd147e,f96a514e-6aba-411d-a601-979b3a762583,3abd6600-3065-42ce-a43d-bc70fde1204c,a8ba20f8-32f8-498b-b5be-9c4168d9de75,d69d1d4f-32c0-4e3f-966d-868ee1c78a5c,a46da64a-6a18-41d6-8bf3-677f349933ec,9d6055ea-934c-47ea-9bb6-f8fe5a5e95ab,56bf5d13-6b7f-4115-a0e1-53dfd60645c0,1c5f9be7-eef8-4c8e-9966-e60e9f890dfb,98abf6ec-3a0a-4537-a2c3-6852e535dbdf,e6489c1d-a9c3-42ef-bf7b-6f930067b3ef,a6bf6635-ef7a-463b-aff3-497501699875,44ad1595-3715-41a0-8c7d-8b9406d3cb51,9e8139eb-97c4-47eb-97e3-ef828ee33db8,8b74e33f-f46b-4ccd-857b-d7454e6baee5,bc00710b-f510-4a27-909c-1476879a3108,53edfa31-0a4f-43b2-be5f-a0ef2c9c09e3,2c8a96b9-fa8c-40c0-802d-4d0b0a2ceea1,28205763-3eba-4dcd-9952-d07a6947499a,25616958-b273-46b7-bda6-bd7180305ae8,553a8a02-902e-44a1-bfa1-998bedce2019,bafe5a33-d352-4a9c-84d0-e6775cf95e4d,445e2d8f-a638-4364-8524-da1cc24a62a7,d89938f5-43f6-47fc-9698-124ad93d9576,ee5b63d7-acbd-4def-ac06-fbbd39075a8e,abb9aded-8414-458f-b49b-8258aa8d224c,b894855b-ba46-473a-a1f0-6ef4e9c79336,a8f8687c-ecc9-4f5c-b3e7-3463d7025fc7,bff94715-3209-4cb1-9b01-a6e280c40e90,f2ef526b-0cf8-4ccc-a01e-a21baa3fd6e9,9ba1785d-0341-40dd-bcf4-306c4120fb49,8e6cfb84-7f81-41cb-904c-94daa243e0c8,103e2829-06af-42e1-a8c5-a999ad8caf07,67809e79-7ac3-4766-83bb-f7bd3356d679,50944394-d6d7-479b-8d4b-40250d357ea0,2ec19670-51d2-40ee-b9a9-33b1cc45f7b8,3b34ce1e-e46c-4dff-a3ca-ee2461b8aa7a,4d4012dd-5418-4097-a07a-7bd72e59434d,ba521026-2108-4970-8df6-b35298303c5c,d9df8f3b-4dee-4c62-93d5-5c90e9d198fb,69243de5-415a-4258-bf26-d19c958b3906,6345a95e-3a70-49b7-892a-37238022a1a7,d31019f0-f617-40bf-be9b-69de57a0d025,d5c4ec10-7a05-451c-8651-e42522454f57,6399ceaf-5c82-4359-8e5f-4118d94b301c,acd95479-0823-4df2-a5cb-2d9756748250,ab7673c9-a739-4d6b-8220-3397ba462568,672a3e10-3727-46f6-9075-8785b89da9da,8afc1e53-d07c-4706-9db4-5bd712c6b2dc,90dcbf4f-08b4-4aa4-ad6d-0320314f2627,bdcd3689-e2e1-4624-9726-e768fca344ca,9756de7f-c0b0-4ecb-98e6-3dbddb8050c5,3f4149ba-24b6-4580-a198-ef7ddd8354ba,ba8ad552-3a93-40b7-9c24-a0b9d052859f,a82f673f-a878-4479-ba6b-3299eca86bd1,24850ed9-e8b2-4082-8fd9-ab8b11479c5c,d12116ba-d8e2-429f-a54c-5d5796586063,f3d02aba-8a52-401b-90f8-5168239c998f,dc8f37a3-8a51-433b-9f9e-fba738094045,c7139636-17f8-4420-81a2-2182f1897eed,08f9a6e7-1954-4255-af31-ad0f07d6c441,d5c71921-cb2e-477f-9842-1896918f7c6a,4af38f90-a899-4e04-a235-3fe17426e243,0ca35612-5b66-4711-bf66-bc52706cb082,4fd022dc-dad6-4a91-b223-33020f62ede7,d03e73f5-a54b-4cca-9f4a-0545eede6834
+    at D1PreparedQuery.queryWithCache (tmp/wt-d/node_modules/.pnpm/drizzle-orm@0.45.2_@cloudflare+workers-types@4.20260611.1_kysely@0.29.2/node_modules/drizzle-orm/sqlite-core/session.js:43:15)
+    at D1PreparedQuery.values (tmp/wt-d/node_modules/.pnpm/drizzle-orm@0.45.2_@cloudflare+workers-types@4.20260611.1_kysely@0.29.2/node_modules/drizzle-orm/d1/session.js:180:12)
+    ... 5 lines matching cause stack trace ...
+    at /tmp/wt-d/apps/api/src/middleware/auth.ts:23:3
+    at dispatch (tmp/wt-d/node_modules/.pnpm/hono@4.13.14/node_modules/hono/dist/compose.js:35:11)
+    at cors (tmp/wt-d/node_modules/.pnpm/hono@4.13.14/node_modules/hono/dist/middleware/cors/index.js:103:3) {
+  query: 'select "id", "owner_user_id", "title", "artist", "album_art_url", "duration_ms", "display_bpm", "isrc", "match_key", "created_at", "updated_at" from "tracks" where "tracks"."id" in (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)',
+  params: [
+    '2bd7293f-feb6-4a1f-b0d0-5d86ca8e9900',
+    '75c5b4df-20e0-416d-84c9-88986d31714f',
+    '78b951a7-9347-4c99-9da6-f8831e6901ad',
+    '1a05dff3-db1f-4670-8f63-9efa4997d44d',
+    '98b02034-3efa-45f8-a34b-cd7c6d1eac9e',
+    'cc91b775-c381-4dcc-9176-7476ab756c47',
+    'a6229352-1690-4dc1-bcbe-4603b9058789',
+    '3777541b-9ab6-420d-a673-b5948c67002e',
+    '88414934-01dd-4a1f-b309-60e46d0a1f2b',
+    'c82eb08b-b63e-464e-9dc0-2969ae7b652b',
+    '4a823f94-8390-4995-8672-159513cf58ad',
+    '8593e345-05f6-4598-aabc-eff78147dcf5',
+    'c46d366b-a2e9-410f-a8f3-fb81f1c9544f',
+    'cf69ca71-68ca-4662-a01e-974287442bd6',
+    'c02e7c6b-be4d-49c8-b670-4a2ae41b8f5a',
+    'aba6c5ff-fc1c-4aff-ab57-19cc7c92773e',
+    '18e15ff1-7e25-4a14-98b6-ffff2a260910',
+    '16955261-5669-47e1-9285-fd110a82b307',
+    'fc868c9d-66fa-449e-9f3c-6508336993d9',
+    '4100e590-0e83-4e74-a909-7fe5407cd667',
+    '80acb748-925f-41ae-9cc2-844b605856e6',
+    'f47001b2-704b-480a-8296-e24db9b652b6',
+    '676538e3-59fd-4859-818f-d1d20e32e2a6',
+    '83cd3fe6-5c6f-436f-803c-52c3cff8d135',
+    'f7d8df62-6516-4170-afc5-90e2105c65ee',
+    'be0db2e1-045b-4a26-b09d-c37e785784c5',
+    'a5b6ef41-f7b5-4eac-b402-21b785ad08ad',
+    '44cb5277-460a-46a8-9ca0-3f2a78314dd8',
+    '751f3a40-65c7-4962-868d-9fde62c7ced6',
+    'aa407d65-95e6-42e0-a361-21f38e14ccc1',
+    'a01c6422-d626-4cc8-9381-35bc9e9464c1',
+    '48aa8e1f-3ad1-4b6b-85b3-4e907cb1b915',
+    '1408727f-5a1e-409b-9e8c-3c08374c2dea',
+    'afd92768-ad57-4524-86ff-90a7fae38cc7',
+    '24c6aa52-2338-4831-b563-5fc05e5c695c',
+    'c6bcd0c8-5dc4-4d93-99b0-cbeb6ebd147e',
+    'f96a514e-6aba-411d-a601-979b3a762583',
+    '3abd6600-3065-42ce-a43d-bc70fde1204c',
+    'a8ba20f8-32f8-498b-b5be-9c4168d9de75',
+    'd69d1d4f-32c0-4e3f-966d-868ee1c78a5c',
+    'a46da64a-6a18-41d6-8bf3-677f349933ec',
+    '9d6055ea-934c-47ea-9bb6-f8fe5a5e95ab',
+    '56bf5d13-6b7f-4115-a0e1-53dfd60645c0',
+    '1c5f9be7-eef8-4c8e-9966-e60e9f890dfb',
+    '98abf6ec-3a0a-4537-a2c3-6852e535dbdf',
+    'e6489c1d-a9c3-42ef-bf7b-6f930067b3ef',
+    'a6bf6635-ef7a-463b-aff3-497501699875',
+    '44ad1595-3715-41a0-8c7d-8b9406d3cb51',
+    '9e8139eb-97c4-47eb-97e3-ef828ee33db8',
+    '8b74e33f-f46b-4ccd-857b-d7454e6baee5',
+    'bc00710b-f510-4a27-909c-1476879a3108',
+    '53edfa31-0a4f-43b2-be5f-a0ef2c9c09e3',
+    '2c8a96b9-fa8c-40c0-802d-4d0b0a2ceea1',
+    '28205763-3eba-4dcd-9952-d07a6947499a',
+    '25616958-b273-46b7-bda6-bd7180305ae8',
+    '553a8a02-902e-44a1-bfa1-998bedce2019',
+    'bafe5a33-d352-4a9c-84d0-e6775cf95e4d',
+    '445e2d8f-a638-4364-8524-da1cc24a62a7',
+    'd89938f5-43f6-47fc-9698-124ad93d9576',
+    'ee5b63d7-acbd-4def-ac06-fbbd39075a8e',
+    'abb9aded-8414-458f-b49b-8258aa8d224c',
+    'b894855b-ba46-473a-a1f0-6ef4e9c79336',
+    'a8f8687c-ecc9-4f5c-b3e7-3463d7025fc7',
+    'bff94715-3209-4cb1-9b01-a6e280c40e90',
+    'f2ef526b-0cf8-4ccc-a01e-a21baa3fd6e9',
+    '9ba1785d-0341-40dd-bcf4-306c4120fb49',
+    '8e6cfb84-7f81-41cb-904c-94daa243e0c8',
+    '103e2829-06af-42e1-a8c5-a999ad8caf07',
+    '67809e79-7ac3-4766-83bb-f7bd3356d679',
+    '50944394-d6d7-479b-8d4b-40250d357ea0',
+    '2ec19670-51d2-40ee-b9a9-33b1cc45f7b8',
+    '3b34ce1e-e46c-4dff-a3ca-ee2461b8aa7a',
+    '4d4012dd-5418-4097-a07a-7bd72e59434d',
+    'ba521026-2108-4970-8df6-b35298303c5c',
+    'd9df8f3b-4dee-4c62-93d5-5c90e9d198fb',
+    '69243de5-415a-4258-bf26-d19c958b3906',
+    '6345a95e-3a70-49b7-892a-37238022a1a7',
+    'd31019f0-f617-40bf-be9b-69de57a0d025',
+    'd5c4ec10-7a05-451c-8651-e42522454f57',
+    '6399ceaf-5c82-4359-8e5f-4118d94b301c',
+    'acd95479-0823-4df2-a5cb-2d9756748250',
+    'ab7673c9-a739-4d6b-8220-3397ba462568',
+    '672a3e10-3727-46f6-9075-8785b89da9da',
+    '8afc1e53-d07c-4706-9db4-5bd712c6b2dc',
+    '90dcbf4f-08b4-4aa4-ad6d-0320314f2627',
+    'bdcd3689-e2e1-4624-9726-e768fca344ca',
+    '9756de7f-c0b0-4ecb-98e6-3dbddb8050c5',
+    '3f4149ba-24b6-4580-a198-ef7ddd8354ba',
+    'ba8ad552-3a93-40b7-9c24-a0b9d052859f',
+    'a82f673f-a878-4479-ba6b-3299eca86bd1',
+    '24850ed9-e8b2-4082-8fd9-ab8b11479c5c',
+    'd12116ba-d8e2-429f-a54c-5d5796586063',
+    'f3d02aba-8a52-401b-90f8-5168239c998f',
+    'dc8f37a3-8a51-433b-9f9e-fba738094045',
+    'c7139636-17f8-4420-81a2-2182f1897eed',
+    '08f9a6e7-1954-4255-af31-ad0f07d6c441',
+    'd5c71921-cb2e-477f-9842-1896918f7c6a',
+    '4af38f90-a899-4e04-a235-3fe17426e243',
+    '0ca35612-5b66-4711-bf66-bc52706cb082',
+    '4fd022dc-dad6-4a91-b223-33020f62ede7',
+    ... 1 more item
+  ],
+  cause: Error: D1_ERROR: too many SQL variables at offset 482: SQLITE_ERROR
+      at D1DatabaseSessionAlwaysPrimary._sendOrThrow (cloudflare-internal:d1-api:139:19)
+      at cloudflare-internal:d1-api:379:36
+      ... 7 lines matching cause stack trace ...
+      at /tmp/wt-d/apps/api/src/middleware/auth.ts:23:3 {
+    [cause]: Error: too many SQL variables at offset 482: SQLITE_ERROR
+        at D1DatabaseSessionAlwaysPrimary._sendOrThrow (cloudflare-internal:d1-api:140:24)
+        at cloudflare-internal:d1-api:379:36
+        at D1PreparedQuery.queryWithCache (tmp/wt-d/node_modules/.pnpm/drizzle-orm@0.45.2_@cloudflare+workers-types@4.20260611.1_kysely@0.29.2/node_modules/drizzle-orm/sqlite-core/session.js:41:16)
+        at D1PreparedQuery.values (tmp/wt-d/node_modules/.pnpm/drizzle-orm@0.45.2_@cloudflare+workers-types@4.20260611.1_kysely@0.29.2/node_modules/drizzle-orm/d1/session.js:180:12)
+        at D1PreparedQuery.all (tmp/wt-d/node_modules/.pnpm/drizzle-orm@0.45.2_@cloudflare+workers-types@4.20260611.1_kysely@0.29.2/node_modules/drizzle-orm/d1/session.js:132:18)
+        at async Promise.all (index 0)
+        at Module.assembleRunPayload (/tmp/wt-d/apps/api/src/lib/run-payload.ts:121:56)
+        at /tmp/wt-d/apps/api/src/routes/classes.ts:178:17
+        at dispatch (tmp/wt-d/node_modules/.pnpm/hono@4.13.14/node_modules/hono/dist/compose.js:35:11)
+        at /tmp/wt-d/apps/api/src/middleware/auth.ts:23:3
+  }
+}
+
+stderr | test/d-audit-class-size.integration.test.ts > d-audit class size > run-payload and copy for a 101-track class
+Unhandled error: DrizzleQueryError: Failed query: select "id", "class_track_id", "position", "anchor_ms", "beat", "bar", "text", "duration_ms", "bpm", "intensity", "note", "color", "created_at", "updated_at" from "cues" where "cues"."class_track_id" in (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+params: 7080b3f3-d845-43a0-b2f5-b6af80c0f6a6,469de6ff-0434-4613-a5f2-8bc7ee84bd21,e31699b5-4584-498a-983a-8d6af5c8f531,548b8057-d0f9-46bb-ab32-8d79216ce32f,8cb91639-119a-4ae2-93d2-364536b71a8d,f2e7b9e6-d844-467d-b6a2-a544ad1c88d2,015a6c53-76da-4b38-8ace-d49d92b16bcd,8efa33b5-600f-448d-8a51-ac72a2d17ccf,8d9a6e57-5226-4e9c-b5fc-fde32933a098,b8e6928f-a7ba-4685-8cd4-9039bcdded67,a302440d-ca24-4c02-9521-1927c83a9760,83bb10fd-6510-49e5-8268-92e38f1043c8,2d608bff-200c-4657-be3f-68cf9643891f,e5fd4f24-b5f2-4b67-bfc3-da65e94971ab,7065bed7-ac3d-413a-9216-2ff7b1ad6af6,00e2c70d-5068-4f40-8618-e37d3dae509a,b8808d5f-76d6-4ce3-a626-c839bff56a9c,ca417cf9-4278-4145-b5fa-8df8039be21c,3f493c09-51f4-4ed8-8971-c8dcc57db3f5,b36b0766-0a57-4657-9a5b-bb4c13d61e2b,a7e0b97c-70aa-4610-9d7e-dd14f2091067,e763afce-5ef3-4deb-8865-4c7f167e8f6f,5f4e9d9e-aeb7-49b6-bfe7-fbbfad5b1cf5,8414d02c-cb88-4f80-bc33-5ee2c8d19e4b,42a5f34c-f7cf-4777-9720-cb4e9332be56,acbbeed9-41c3-443f-9102-70bec3b3c568,d43f0fce-041c-465d-a719-db58b498f19d,092169ee-69d5-45cc-b624-4608a3d6acc8,9498ef1c-386f-4f1e-b423-a18816504c9d,9018b273-9599-4a57-a8d4-aec890f7fde8,4b5bb594-913b-4a0c-a268-7eb43bdb0e12,b0735a8e-f985-4950-a6c9-bb70df4b4152,36df2c14-8412-400b-9680-5f5f88afc225,65010345-32cf-499c-8beb-477bd9514539,6b292428-75a3-4265-804c-4977590a53f3,da190c97-1f8a-45d1-8108-ec5035363eaf,4406cec3-6ea1-454c-b212-d15691f866a2,d8a8942e-64c9-4e16-94b0-25000d89ea5f,88e3bb6d-1a11-462c-b540-82bb567b9771,b39aacab-c5b0-42b2-ae4a-a9160df4536d,38c4b35d-8404-4471-b8aa-de918aa355a0,015439c7-4440-4b52-8e03-0fdb4a9bb88d,5458ff1b-ba19-4752-bcaf-c4d6e0e6ae00,fcf31e1e-10c5-46cc-9ad6-cdef8599d16f,b72132ac-6a8f-487f-894d-1a5e4f5d17c4,c76bf4dc-a61f-49b2-b1e7-c8891521efe9,0dbd2f05-ee3d-42f3-8358-0da31531130c,8b779db1-4abd-4820-9972-73ae6fb6caf0,afe550f9-aa83-4387-8b0b-aa311100b9c8,ecd47608-83b7-4fcc-8aa1-fdf64133167a,bc6dbaa6-d13e-4d54-85f9-163b01a25bf6,894ead49-65ba-46f5-b343-25bb6793e62a,620dfbb2-027d-4fa3-a911-6cb716bf8c63,3cd7bdb2-7677-4fbe-97a6-8c4f2339248e,8fc58551-e183-46bd-a06c-073a606c88e7,e331e47b-ef3f-4573-9910-02f4f9909377,30edbfb3-e0f1-475e-acdb-136f235469e5,28268eb7-f863-4ba7-bc8e-50de424b5d9e,636255e2-c0a2-4928-a949-4346f2e58eb2,a34c7e6f-b4ac-41f2-a65a-ffed5f3c1ce8,3c12378c-65d7-43db-b76e-540455c535ca,0bbf8c90-0894-4710-ac5d-51c466f4901f,ce240790-235b-41c1-bc28-64734c5f819f,064d37ce-a0b2-4dfc-b283-66d951c15b4b,dedf27ec-0e8d-4680-b5dd-882e41ee10a4,f09928e5-e14f-426f-8145-7eb2e89b0248,d531623d-639a-4355-b5a8-4fd0ea74da47,f0748c6a-576a-4d4d-b329-aff8b1c3a5e8,cafe8d76-cd54-46b4-a6d4-64435a92fba7,6a2d4f37-90de-4cf4-bf50-03c4d7da4402,89dd7ed4-830d-4db7-a555-5803a634e1f8,ce2ea24c-d169-4ce0-8f99-7dc2dd8537d7,f4a84e72-6e37-4c0e-a56e-53cafbc35337,be59805b-699d-4c1a-92dc-90711128f7a0,19e2d427-a47d-4bc5-b3ae-c65602e4c22c,145d06b1-490e-45c2-905e-6fbfe49c7b3f,2753b2e8-eaf9-476a-ba68-cc58163fdd51,26e81a61-53de-4a61-8e3d-c9863adb1715,7f5f61a7-f150-4111-9e49-ff5c07539b85,b7f81e0c-6aa6-4d86-a396-374eb1917342,ee261898-d42f-4616-9a79-7f79999be437,5c411665-f077-463f-918f-89b79015e535,6987c81b-dcda-4771-b028-3ff7f70ec216,a30f868d-ce25-4e13-ac18-35143018341c,4f80e175-5c40-49ef-9c99-69f7441ed623,0557316a-7058-4ea5-9be5-6006965f5877,12a3c08c-187c-49fe-8a16-f5a6bab742c9,7387052d-4239-4986-892e-60253bcd156c,1aa73fb1-6c3f-45a1-9ebc-4f303fed7ea3,91d53b63-5741-404d-9837-bb7ccc8ba3ed,a39fd7c1-5a57-42b3-8822-69d011abedc3,3bfc452b-7c98-4312-adb4-1af58a605df7,4ebe101a-33ee-4ba5-929e-434641c99bed,cd63d8bc-f59f-4866-9cb3-d25973db063c,7322452e-d9ce-40c9-9aff-0810b7a62e34,cf02bfc0-2dc3-47c2-a1c0-0beeaf369f17,305d25c3-b27c-455b-90ef-9ff94b36b5bb,e6d64824-14f6-42ac-a7e8-b27f00ba207f,17f33195-bccc-4717-8136-2313c8bc4abb,880a99db-f5a2-429e-817d-e61a69452f14,fb004384-f8a1-44ec-88aa-568ed7afb48e
+    at D1PreparedQuery.queryWithCache (tmp/wt-d/node_modules/.pnpm/drizzle-orm@0.45.2_@cloudflare+workers-types@4.20260611.1_kysely@0.29.2/node_modules/drizzle-orm/sqlite-core/session.js:43:15)
+    at D1PreparedQuery.values (tmp/wt-d/node_modules/.pnpm/drizzle-orm@0.45.2_@cloudflare+workers-types@4.20260611.1_kysely@0.29.2/node_modules/drizzle-orm/d1/session.js:180:12)
+    ... 5 lines matching cause stack trace ...
+    at dispatch (tmp/wt-d/node_modules/.pnpm/hono@4.13.14/node_modules/hono/dist/compose.js:35:11)
+    at cors (tmp/wt-d/node_modules/.pnpm/hono@4.13.14/node_modules/hono/dist/middleware/cors/index.js:103:3)
+    at dispatch (tmp/wt-d/node_modules/.pnpm/hono@4.13.14/node_modules/hono/dist/compose.js:35:11) {
+  query: 'select "id", "class_track_id", "position", "anchor_ms", "beat", "bar", "text", "duration_ms", "bpm", "intensity", "note", "color", "created_at", "updated_at" from "cues" where "cues"."class_track_id" in (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)',
+  params: [
+    '7080b3f3-d845-43a0-b2f5-b6af80c0f6a6',
+    '469de6ff-0434-4613-a5f2-8bc7ee84bd21',
+    'e31699b5-4584-498a-983a-8d6af5c8f531',
+    '548b8057-d0f9-46bb-ab32-8d79216ce32f',
+    '8cb91639-119a-4ae2-93d2-364536b71a8d',
+    'f2e7b9e6-d844-467d-b6a2-a544ad1c88d2',
+    '015a6c53-76da-4b38-8ace-d49d92b16bcd',
+    '8efa33b5-600f-448d-8a51-ac72a2d17ccf',
+    '8d9a6e57-5226-4e9c-b5fc-fde32933a098',
+    'b8e6928f-a7ba-4685-8cd4-9039bcdded67',
+    'a302440d-ca24-4c02-9521-1927c83a9760',
+    '83bb10fd-6510-49e5-8268-92e38f1043c8',
+    '2d608bff-200c-4657-be3f-68cf9643891f',
+    'e5fd4f24-b5f2-4b67-bfc3-da65e94971ab',
+    '7065bed7-ac3d-413a-9216-2ff7b1ad6af6',
+    '00e2c70d-5068-4f40-8618-e37d3dae509a',
+    'b8808d5f-76d6-4ce3-a626-c839bff56a9c',
+    'ca417cf9-4278-4145-b5fa-8df8039be21c',
+    '3f493c09-51f4-4ed8-8971-c8dcc57db3f5',
+    'b36b0766-0a57-4657-9a5b-bb4c13d61e2b',
+    'a7e0b97c-70aa-4610-9d7e-dd14f2091067',
+    'e763afce-5ef3-4deb-8865-4c7f167e8f6f',
+    '5f4e9d9e-aeb7-49b6-bfe7-fbbfad5b1cf5',
+    '8414d02c-cb88-4f80-bc33-5ee2c8d19e4b',
+    '42a5f34c-f7cf-4777-9720-cb4e9332be56',
+    'acbbeed9-41c3-443f-9102-70bec3b3c568',
+    'd43f0fce-041c-465d-a719-db58b498f19d',
+    '092169ee-69d5-45cc-b624-4608a3d6acc8',
+    '9498ef1c-386f-4f1e-b423-a18816504c9d',
+    '9018b273-9599-4a57-a8d4-aec890f7fde8',
+    '4b5bb594-913b-4a0c-a268-7eb43bdb0e12',
+    'b0735a8e-f985-4950-a6c9-bb70df4b4152',
+    '36df2c14-8412-400b-9680-5f5f88afc225',
+    '65010345-32cf-499c-8beb-477bd9514539',
+    '6b292428-75a3-4265-804c-4977590a53f3',
+    'da190c97-1f8a-45d1-8108-ec5035363eaf',
+    '4406cec3-6ea1-454c-b212-d15691f866a2',
+    'd8a8942e-64c9-4e16-94b0-25000d89ea5f',
+    '88e3bb6d-1a11-462c-b540-82bb567b9771',
+    'b39aacab-c5b0-42b2-ae4a-a9160df4536d',
+    '38c4b35d-8404-4471-b8aa-de918aa355a0',
+    '015439c7-4440-4b52-8e03-0fdb4a9bb88d',
+    '5458ff1b-ba19-4752-bcaf-c4d6e0e6ae00',
+    'fcf31e1e-10c5-46cc-9ad6-cdef8599d16f',
+    'b72132ac-6a8f-487f-894d-1a5e4f5d17c4',
+    'c76bf4dc-a61f-49b2-b1e7-c8891521efe9',
+    '0dbd2f05-ee3d-42f3-8358-0da31531130c',
+    '8b779db1-4abd-4820-9972-73ae6fb6caf0',
+    'afe550f9-aa83-4387-8b0b-aa311100b9c8',
+    'ecd47608-83b7-4fcc-8aa1-fdf64133167a',
+    'bc6dbaa6-d13e-4d54-85f9-163b01a25bf6',
+    '894ead49-65ba-46f5-b343-25bb6793e62a',
+    '620dfbb2-027d-4fa3-a911-6cb716bf8c63',
+    '3cd7bdb2-7677-4fbe-97a6-8c4f2339248e',
+    '8fc58551-e183-46bd-a06c-073a606c88e7',
+    'e331e47b-ef3f-4573-9910-02f4f9909377',
+    '30edbfb3-e0f1-475e-acdb-136f235469e5',
+    '28268eb7-f863-4ba7-bc8e-50de424b5d9e',
+    '636255e2-c0a2-4928-a949-4346f2e58eb2',
+    'a34c7e6f-b4ac-41f2-a65a-ffed5f3c1ce8',
+    '3c12378c-65d7-43db-b76e-540455c535ca',
+    '0bbf8c90-0894-4710-ac5d-51c466f4901f',
+    'ce240790-235b-41c1-bc28-64734c5f819f',
+    '064d37ce-a0b2-4dfc-b283-66d951c15b4b',
+    'dedf27ec-0e8d-4680-b5dd-882e41ee10a4',
+    'f09928e5-e14f-426f-8145-7eb2e89b0248',
+    'd531623d-639a-4355-b5a8-4fd0ea74da47',
+    'f0748c6a-576a-4d4d-b329-aff8b1c3a5e8',
+    'cafe8d76-cd54-46b4-a6d4-64435a92fba7',
+    '6a2d4f37-90de-4cf4-bf50-03c4d7da4402',
+    '89dd7ed4-830d-4db7-a555-5803a634e1f8',
+    'ce2ea24c-d169-4ce0-8f99-7dc2dd8537d7',
+    'f4a84e72-6e37-4c0e-a56e-53cafbc35337',
+    'be59805b-699d-4c1a-92dc-90711128f7a0',
+    '19e2d427-a47d-4bc5-b3ae-c65602e4c22c',
+    '145d06b1-490e-45c2-905e-6fbfe49c7b3f',
+    '2753b2e8-eaf9-476a-ba68-cc58163fdd51',
+    '26e81a61-53de-4a61-8e3d-c9863adb1715',
+    '7f5f61a7-f150-4111-9e49-ff5c07539b85',
+    'b7f81e0c-6aa6-4d86-a396-374eb1917342',
+    'ee261898-d42f-4616-9a79-7f79999be437',
+    '5c411665-f077-463f-918f-89b79015e535',
+    '6987c81b-dcda-4771-b028-3ff7f70ec216',
+    'a30f868d-ce25-4e13-ac18-35143018341c',
+    '4f80e175-5c40-49ef-9c99-69f7441ed623',
+    '0557316a-7058-4ea5-9be5-6006965f5877',
+    '12a3c08c-187c-49fe-8a16-f5a6bab742c9',
+    '7387052d-4239-4986-892e-60253bcd156c',
+    '1aa73fb1-6c3f-45a1-9ebc-4f303fed7ea3',
+    '91d53b63-5741-404d-9837-bb7ccc8ba3ed',
+    'a39fd7c1-5a57-42b3-8822-69d011abedc3',
+    '3bfc452b-7c98-4312-adb4-1af58a605df7',
+    '4ebe101a-33ee-4ba5-929e-434641c99bed',
+    'cd63d8bc-f59f-4866-9cb3-d25973db063c',
+    '7322452e-d9ce-40c9-9aff-0810b7a62e34',
+    'cf02bfc0-2dc3-47c2-a1c0-0beeaf369f17',
+    '305d25c3-b27c-455b-90ef-9ff94b36b5bb',
+    'e6d64824-14f6-42ac-a7e8-b27f00ba207f',
+    '17f33195-bccc-4717-8136-2313c8bc4abb',
+    '880a99db-f5a2-429e-817d-e61a69452f14',
+    ... 1 more item
+  ],
+  cause: Error: D1_ERROR: too many SQL variables at offset 504: SQLITE_ERROR
+      at D1DatabaseSessionAlwaysPrimary._sendOrThrow (cloudflare-internal:d1-api:139:19)
+      at cloudflare-internal:d1-api:379:36
+      ... 7 lines matching cause stack trace ...
+      at dispatch (tmp/wt-d/node_modules/.pnpm/hono@4.13.14/node_modules/hono/dist/compose.js:35:11) {
+    [cause]: Error: too many SQL variables at offset 504: SQLITE_ERROR
+        at D1DatabaseSessionAlwaysPrimary._sendOrThrow (cloudflare-internal:d1-api:140:24)
+        at cloudflare-internal:d1-api:379:36
+        at D1PreparedQuery.queryWithCache (tmp/wt-d/node_modules/.pnpm/drizzle-orm@0.45.2_@cloudflare+workers-types@4.20260611.1_kysely@0.29.2/node_modules/drizzle-orm/sqlite-core/session.js:41:16)
+        at D1PreparedQuery.values (tmp/wt-d/node_modules/.pnpm/drizzle-orm@0.45.2_@cloudflare+workers-types@4.20260611.1_kysely@0.29.2/node_modules/drizzle-orm/d1/session.js:180:12)
+        at D1PreparedQuery.all (tmp/wt-d/node_modules/.pnpm/drizzle-orm@0.45.2_@cloudflare+workers-types@4.20260611.1_kysely@0.29.2/node_modules/drizzle-orm/d1/session.js:132:18)
+        at async Promise.all (index 0)
+        at /tmp/wt-d/apps/api/src/routes/classes.ts:224:7
+        at dispatch (tmp/wt-d/node_modules/.pnpm/hono@4.13.14/node_modules/hono/dist/compose.js:35:11)
+        at /tmp/wt-d/apps/api/src/middleware/auth.ts:23:3
+        at dispatch (tmp/wt-d/node_modules/.pnpm/hono@4.13.14/node_modules/hono/dist/compose.js:35:11)
+  }
+}
+
+stdout | test/d-audit-class-size.integration.test.ts > d-audit class size > run-payload and copy for a 101-track class
+D-CLASSSIZE n=101 runPayload=500 tracks=n/a copy=500
+
+stdout | test/d-audit-class-size.integration.test.ts > d-audit class size > run-payload and copy for a 150-track class
+[email:dev-fallback] to=u-239bcc58-eb2e-4a17-9792-026a521a259b@example.com subject="Confirm your Ritmo Studio email"
+Confirm your email
+
+Welcome to Ritmo Studio! Confirm u-239bcc58-eb2e-4a17-9792-026a521a259b@example.com to secure your account.
+
+Verify email: https://test.ritmofit.studio/api/auth/verify-email?token=<redacted>&callbackURL=%2F
+
+You can keep using Ritmo Studio while this is pending.
+
+stderr | test/d-audit-class-size.integration.test.ts > d-audit class size > run-payload and copy for a 150-track class
+Unhandled error: DrizzleQueryError: Failed query: select "id", "owner_user_id", "title", "artist", "album_art_url", "duration_ms", "display_bpm", "isrc", "match_key", "created_at", "updated_at" from "tracks" where "tracks"."id" in (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+params: 3fd492eb-225f-472e-b4bd-c4c2b03ebd41,caf0c0b4-cadb-4875-a793-ed35dbd8dd9e,d72e6218-bd47-4b12-ade5-67120f74caf6,11e26086-b4d1-48e2-85c1-dd089801e6f9,8ede79a7-e6f6-4fc8-a5eb-45a4c0fb9216,5db25b7e-a4eb-4894-a212-da3e241ee92a,d92a18fe-b2f2-4ca2-b7da-2823118aa8d8,5e16c685-fa5c-485e-9c1b-ccbd2dde00df,091f8b49-e724-4fea-8ff7-5778bffcb951,4079005f-c895-49ea-beb1-b4b48f07abab,0cb9c23e-f371-4399-8861-2fff54251170,b66afbea-31c8-4054-80b6-f8754898a5cd,07e60650-1e28-4b72-a8b7-8f0a4e4565d5,48681e8c-fbbe-49b6-9b2c-b5df1fe8b2c1,2594af34-fcf1-4aae-805c-20fd000372ee,91213184-15dc-4276-b16c-c3da535f1c13,d2470cc9-24c8-4fcb-9a0f-a07606213fbc,49fbc6ce-db8d-4ea4-b95b-11c11c8dabcb,be80f9ab-2bd2-475c-875c-c152085c2ffc,1531dd50-b7d1-4e3e-99ff-346d4b29810c,cf28c571-6cde-4ab8-8f5d-472d1dac5a08,8e981d33-ff32-4e3c-9496-7b77386c84ef,bd00c912-6574-499b-ac5d-0e09d3b1ac11,fea95dc1-0529-45d6-b8dc-d08a72f106f3,89b5343d-19e5-405e-a9f9-270a74ade7a1,de1556f3-b392-4459-b0df-6a2a89e9a3dc,f230debf-1e57-428c-a0b9-df0fa25b0ef5,d1a6a514-d9e4-4bfb-9315-77106ef41342,d1b51707-7287-447e-ba77-044b0eb3320b,b37e0a2d-a7aa-44f3-a0b5-a284aaddbcc9,9bff8513-b68c-4276-bcc8-ce77584bab3a,0d5a0f95-98bf-4866-9c01-0605e2c12bbb,311c5167-b600-4d2c-ab1a-78a09b63ec80,2b2e8aaf-8a4c-44a6-a539-926542f48dfc,ae30bda9-5cee-4ce7-8b4b-e79220fa8f25,b0fefcf1-75bd-4df3-9038-d5f3e2036c56,9773c232-e40b-44aa-aa1c-c18a08489a75,6a6a5ff9-8160-4449-9973-5226b3bdfbe8,543b92fc-af55-4bb7-81df-7ce59a89d6c6,46d6ab15-7683-413f-8a98-01fc52e06a44,5e003ae9-eafc-4d83-86e1-0fdf97708779,6a5cbbfd-4025-4956-9272-cb01e38e3084,af422f4d-f092-4690-aa34-f1f36292906e,99c227c5-5e1f-4087-bf1e-9758f6725018,e77d94d7-d7f9-4648-b1fb-0c0cc2fcc9ae,68e8f3fa-3d43-4ecb-a2b7-9b05bdcb16c8,22e155de-6132-49bd-b9b9-a5970af89f41,a4903c68-4087-4c61-8a2d-33f03aa45717,539a8c6c-8c86-4a08-a5e6-8dde1f9ddd02,b98cd959-9597-4c5b-b8eb-69dc1d2fa0a9,4b6bdf55-4e40-4302-a4fd-dffa3c7508b0,70710a6b-8ed2-4e16-a3f2-31ff90562980,f3407ee2-876f-421a-beee-4b501782fce9,20bbef71-d6fe-4b2c-a8a8-81553d751c60,937f10bc-a46b-4f06-ac9e-6ac37bdd51ac,1e9eae17-c623-4c26-b9a5-de65a0a1a32e,499662c6-c755-44d4-9ae5-cd0cd2e9413c,00cf6f83-65b1-419a-b057-86dff948692c,1d30f9e7-c536-4caf-baa3-cfec0bedfcdf,a00ae6c3-463f-4588-9c96-92e2a9a97c9e,65e01c06-abc1-41ce-a047-c36198d7650c,db8dec1d-aed4-400a-9204-64a3ca9fa5b8,a0fcdeef-d89d-4e4c-a4ac-f068ab462320,dc510d83-4bc3-4d06-8d62-03f364c3e8ae,91233929-ea4f-454b-83a4-85d3a8e815df,f5d3aaab-d6ed-4536-80ab-51ff83e40298,883717f9-b6f5-4a86-8693-69ad62953e38,89d6e821-7570-480f-b361-61ae0a58c484,c6d16167-81e4-4468-8a36-001c9448da02,851d534b-827a-48da-9252-a4aab1d59524,900d4626-a3df-48a8-a3f2-77e3db3c5040,159f3baa-978f-4750-b9d1-2cefa6ba38d3,e94b834a-cc0f-4ea9-bf8e-26942c3a8ec0,49248eca-08b9-4ebf-a189-095f7f3b0c96,85e70bab-6a07-44af-bd74-d0f95baddc98,9ec1d960-e835-4e49-9163-e5c1a706fafd,5b2aae46-e9d5-4a40-a74f-ace129b3eccc,1acc8893-55f9-44a5-9d9d-f3ca191757ab,348fdab6-ba65-4ab6-8d8e-ee0b3f4efd1b,f44bda06-02d8-4038-9f8d-885116f08b50,52ab433d-fa63-4e4d-8bf8-1e7f13dc3769,46e017e6-eebe-47cb-9c9e-1d5596b96970,efac0a6d-85c7-43f1-896d-27f21a7638da,34df9ae0-7df0-4a9c-b844-2365d15b4b3d,b55e0bf7-1eeb-41e6-bc63-064a97989f7a,6348cef2-bdd5-4bb6-9337-711f76de70c5,6a3e4451-9452-4a01-bdb8-c93b873d6ae9,d4c7e735-a03d-42b1-a308-37c5cbf12405,49a03bbc-172b-4e66-8150-ca43e364cd65,5feb6a6a-12f9-4baa-873e-29fbd625f19c,9992defb-ce82-4d46-a3eb-b59b9389fe25,fc859a4f-6c05-4db1-8b0e-eb045c71c23e,d5b03e11-a995-4469-a604-275fb913bfbe,9cf4b15b-9d15-4155-a847-d4709fc0b19b,bbc48549-6eed-42e6-b813-ea3180cd22ca,c61c0de6-4aaf-4124-9f48-0e08ab821e61,83bdbf60-9a29-4bd6-881a-60e0b901571d,b0da605f-41fe-4f7f-bf42-5aadccc5dfc6,db104212-5d60-4083-931c-0554eb871c8e,4ee410f2-2d30-4081-98a2-9742b8cc5ba2,833f7f60-316e-4838-8fa9-13fcbceb883e,27ea7b70-b8e1-4279-9c94-000440a06b68,e10b1263-d1a8-4389-bfb7-426b207cad08,dda96b6a-4f63-4c10-a118-502e9b9ea56b,8b7c72d3-632d-4b51-b1e7-071e242bf6a9,d0f6fbde-6d4f-417f-91ce-3aa6d69df0f0,477f5b58-d8cf-4a4b-b66f-88dc50102639,2094ef19-67d4-41a2-86c3-62ae9393d051,85461e1a-decb-4358-8f2d-2986c7513448,f2590c21-3fbc-4162-bfb9-1a2724f690b3,44ca5b5f-7ac7-4dfa-93c3-8f3b38b2fa0e,f501cb7a-ff92-42cf-aef0-1cb4d3456621,6cd8f6cf-7948-476e-b889-7e22048973e1,91a742ec-447f-4ad1-9d70-05e5abc68ceb,485e18a1-1cc7-4ef7-a902-51e55a562a1f,14c599ec-d85a-4213-a82e-ab37ec2d55df,46d631cc-1fde-42bc-b3b7-616dfb0ec044,ac1146ac-3502-4351-bba2-5d04926e1ea9,e2a33547-9ee3-4fa8-abe3-a10ab8a42e9c,22cb274b-43b0-4428-bc1e-8df2032711f0,a96cc2fc-d3f8-469d-bde9-0610350b762e,bdfb2f3b-36f2-4621-8680-696e94119d6d,25a014b2-762b-436e-a7e9-569b157851da,d27ea779-9b32-4928-b484-9de1189fa885,28bf11b2-6401-4387-9d3e-a4eda5478e6f,de3bfa39-d75d-4f4b-9d1b-6680d286ade4,7ebd5a87-8c86-407b-b0cb-6102a90b6885,50c4a086-a6e4-4371-99d2-e39dc3619eb2,2dbe9800-f58b-4f14-b870-8643cdb9c77d,3340c840-1a38-4395-9b7a-4d391cfcccdf,62cbfee1-7bea-47b8-a6d7-39889a7161b8,ab6f69b8-96b7-43b1-a8e0-f069fe9fca1c,7a707313-5f58-4546-8da3-7d6c59d356c3,24f13e49-8aee-4e80-be2f-1fb87120eb5e,0d756794-7ecc-4fb5-9f24-04467c3ea199,f82af89c-db3a-4ce8-b2f6-713626a28e5c,cb59daf9-a6fc-42a3-baa7-0932440681dd,e3268f03-bfb1-4b51-b5e0-e8264931ffa7,d6d6d71a-1e27-44dc-9ae0-8472591df962,438d5eb2-7b92-4222-bf21-5f586d3dc8a5,5e7f8952-8ac8-4d4c-b98f-c456c7a921c4,3108e265-1f2b-4026-9fea-a4225d4f5ead,1441f48d-26a7-4b3d-8f05-c1079b7bf936,7c15baa4-b839-4708-8a81-1a26f4e04753,42fd3fbb-629c-4b3e-88d4-8bc5142fb248,3f1dcb90-1cc9-4837-a2ff-92c559cb1b4a,6dce1130-544a-4e60-bd66-6532c8aa5444,229cb7e0-0ab1-4111-bd31-e83c31eed6a6,4f8b3cf3-90dd-48cc-ae31-670ee0dde493,ddb43e4a-ab85-4659-90f2-80191ed74f52
+    at D1PreparedQuery.queryWithCache (tmp/wt-d/node_modules/.pnpm/drizzle-orm@0.45.2_@cloudflare+workers-types@4.20260611.1_kysely@0.29.2/node_modules/drizzle-orm/sqlite-core/session.js:43:15)
+    at D1PreparedQuery.values (tmp/wt-d/node_modules/.pnpm/drizzle-orm@0.45.2_@cloudflare+workers-types@4.20260611.1_kysely@0.29.2/node_modules/drizzle-orm/d1/session.js:180:12)
+    ... 5 lines matching cause stack trace ...
+    at /tmp/wt-d/apps/api/src/middleware/auth.ts:23:3
+    at dispatch (tmp/wt-d/node_modules/.pnpm/hono@4.13.14/node_modules/hono/dist/compose.js:35:11)
+    at cors (tmp/wt-d/node_modules/.pnpm/hono@4.13.14/node_modules/hono/dist/middleware/cors/index.js:103:3) {
+  query: 'select "id", "owner_user_id", "title", "artist", "album_art_url", "duration_ms", "display_bpm", "isrc", "match_key", "created_at", "updated_at" from "tracks" where "tracks"."id" in (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)',
+  params: [
+    '3fd492eb-225f-472e-b4bd-c4c2b03ebd41',
+    'caf0c0b4-cadb-4875-a793-ed35dbd8dd9e',
+    'd72e6218-bd47-4b12-ade5-67120f74caf6',
+    '11e26086-b4d1-48e2-85c1-dd089801e6f9',
+    '8ede79a7-e6f6-4fc8-a5eb-45a4c0fb9216',
+    '5db25b7e-a4eb-4894-a212-da3e241ee92a',
+    'd92a18fe-b2f2-4ca2-b7da-2823118aa8d8',
+    '5e16c685-fa5c-485e-9c1b-ccbd2dde00df',
+    '091f8b49-e724-4fea-8ff7-5778bffcb951',
+    '4079005f-c895-49ea-beb1-b4b48f07abab',
+    '0cb9c23e-f371-4399-8861-2fff54251170',
+    'b66afbea-31c8-4054-80b6-f8754898a5cd',
+    '07e60650-1e28-4b72-a8b7-8f0a4e4565d5',
+    '48681e8c-fbbe-49b6-9b2c-b5df1fe8b2c1',
+    '2594af34-fcf1-4aae-805c-20fd000372ee',
+    '91213184-15dc-4276-b16c-c3da535f1c13',
+    'd2470cc9-24c8-4fcb-9a0f-a07606213fbc',
+    '49fbc6ce-db8d-4ea4-b95b-11c11c8dabcb',
+    'be80f9ab-2bd2-475c-875c-c152085c2ffc',
+    '1531dd50-b7d1-4e3e-99ff-346d4b29810c',
+    'cf28c571-6cde-4ab8-8f5d-472d1dac5a08',
+    '8e981d33-ff32-4e3c-9496-7b77386c84ef',
+    'bd00c912-6574-499b-ac5d-0e09d3b1ac11',
+    'fea95dc1-0529-45d6-b8dc-d08a72f106f3',
+    '89b5343d-19e5-405e-a9f9-270a74ade7a1',
+    'de1556f3-b392-4459-b0df-6a2a89e9a3dc',
+    'f230debf-1e57-428c-a0b9-df0fa25b0ef5',
+    'd1a6a514-d9e4-4bfb-9315-77106ef41342',
+    'd1b51707-7287-447e-ba77-044b0eb3320b',
+    'b37e0a2d-a7aa-44f3-a0b5-a284aaddbcc9',
+    '9bff8513-b68c-4276-bcc8-ce77584bab3a',
+    '0d5a0f95-98bf-4866-9c01-0605e2c12bbb',
+    '311c5167-b600-4d2c-ab1a-78a09b63ec80',
+    '2b2e8aaf-8a4c-44a6-a539-926542f48dfc',
+    'ae30bda9-5cee-4ce7-8b4b-e79220fa8f25',
+    'b0fefcf1-75bd-4df3-9038-d5f3e2036c56',
+    '9773c232-e40b-44aa-aa1c-c18a08489a75',
+    '6a6a5ff9-8160-4449-9973-5226b3bdfbe8',
+    '543b92fc-af55-4bb7-81df-7ce59a89d6c6',
+    '46d6ab15-7683-413f-8a98-01fc52e06a44',
+    '5e003ae9-eafc-4d83-86e1-0fdf97708779',
+    '6a5cbbfd-4025-4956-9272-cb01e38e3084',
+    'af422f4d-f092-4690-aa34-f1f36292906e',
+    '99c227c5-5e1f-4087-bf1e-9758f6725018',
+    'e77d94d7-d7f9-4648-b1fb-0c0cc2fcc9ae',
+    '68e8f3fa-3d43-4ecb-a2b7-9b05bdcb16c8',
+    '22e155de-6132-49bd-b9b9-a5970af89f41',
+    'a4903c68-4087-4c61-8a2d-33f03aa45717',
+    '539a8c6c-8c86-4a08-a5e6-8dde1f9ddd02',
+    'b98cd959-9597-4c5b-b8eb-69dc1d2fa0a9',
+    '4b6bdf55-4e40-4302-a4fd-dffa3c7508b0',
+    '70710a6b-8ed2-4e16-a3f2-31ff90562980',
+    'f3407ee2-876f-421a-beee-4b501782fce9',
+    '20bbef71-d6fe-4b2c-a8a8-81553d751c60',
+    '937f10bc-a46b-4f06-ac9e-6ac37bdd51ac',
+    '1e9eae17-c623-4c26-b9a5-de65a0a1a32e',
+    '499662c6-c755-44d4-9ae5-cd0cd2e9413c',
+    '00cf6f83-65b1-419a-b057-86dff948692c',
+    '1d30f9e7-c536-4caf-baa3-cfec0bedfcdf',
+    'a00ae6c3-463f-4588-9c96-92e2a9a97c9e',
+    '65e01c06-abc1-41ce-a047-c36198d7650c',
+    'db8dec1d-aed4-400a-9204-64a3ca9fa5b8',
+    'a0fcdeef-d89d-4e4c-a4ac-f068ab462320',
+    'dc510d83-4bc3-4d06-8d62-03f364c3e8ae',
+    '91233929-ea4f-454b-83a4-85d3a8e815df',
+    'f5d3aaab-d6ed-4536-80ab-51ff83e40298',
+    '883717f9-b6f5-4a86-8693-69ad62953e38',
+    '89d6e821-7570-480f-b361-61ae0a58c484',
+    'c6d16167-81e4-4468-8a36-001c9448da02',
+    '851d534b-827a-48da-9252-a4aab1d59524',
+    '900d4626-a3df-48a8-a3f2-77e3db3c5040',
+    '159f3baa-978f-4750-b9d1-2cefa6ba38d3',
+    'e94b834a-cc0f-4ea9-bf8e-26942c3a8ec0',
+    '49248eca-08b9-4ebf-a189-095f7f3b0c96',
+    '85e70bab-6a07-44af-bd74-d0f95baddc98',
+    '9ec1d960-e835-4e49-9163-e5c1a706fafd',
+    '5b2aae46-e9d5-4a40-a74f-ace129b3eccc',
+    '1acc8893-55f9-44a5-9d9d-f3ca191757ab',
+    '348fdab6-ba65-4ab6-8d8e-ee0b3f4efd1b',
+    'f44bda06-02d8-4038-9f8d-885116f08b50',
+    '52ab433d-fa63-4e4d-8bf8-1e7f13dc3769',
+    '46e017e6-eebe-47cb-9c9e-1d5596b96970',
+    'efac0a6d-85c7-43f1-896d-27f21a7638da',
+    '34df9ae0-7df0-4a9c-b844-2365d15b4b3d',
+    'b55e0bf7-1eeb-41e6-bc63-064a97989f7a',
+    '6348cef2-bdd5-4bb6-9337-711f76de70c5',
+    '6a3e4451-9452-4a01-bdb8-c93b873d6ae9',
+    'd4c7e735-a03d-42b1-a308-37c5cbf12405',
+    '49a03bbc-172b-4e66-8150-ca43e364cd65',
+    '5feb6a6a-12f9-4baa-873e-29fbd625f19c',
+    '9992defb-ce82-4d46-a3eb-b59b9389fe25',
+    'fc859a4f-6c05-4db1-8b0e-eb045c71c23e',
+    'd5b03e11-a995-4469-a604-275fb913bfbe',
+    '9cf4b15b-9d15-4155-a847-d4709fc0b19b',
+    'bbc48549-6eed-42e6-b813-ea3180cd22ca',
+    'c61c0de6-4aaf-4124-9f48-0e08ab821e61',
+    '83bdbf60-9a29-4bd6-881a-60e0b901571d',
+    'b0da605f-41fe-4f7f-bf42-5aadccc5dfc6',
+    'db104212-5d60-4083-931c-0554eb871c8e',
+    '4ee410f2-2d30-4081-98a2-9742b8cc5ba2',
+    ... 50 more items
+  ],
+  cause: Error: D1_ERROR: too many SQL variables at offset 482: SQLITE_ERROR
+      at D1DatabaseSessionAlwaysPrimary._sendOrThrow (cloudflare-internal:d1-api:139:19)
+      at cloudflare-internal:d1-api:379:36
+      ... 7 lines matching cause stack trace ...
+      at /tmp/wt-d/apps/api/src/middleware/auth.ts:23:3 {
+    [cause]: Error: too many SQL variables at offset 482: SQLITE_ERROR
+        at D1DatabaseSessionAlwaysPrimary._sendOrThrow (cloudflare-internal:d1-api:140:24)
+        at cloudflare-internal:d1-api:379:36
+        at D1PreparedQuery.queryWithCache (tmp/wt-d/node_modules/.pnpm/drizzle-orm@0.45.2_@cloudflare+workers-types@4.20260611.1_kysely@0.29.2/node_modules/drizzle-orm/sqlite-core/session.js:41:16)
+        at D1PreparedQuery.values (tmp/wt-d/node_modules/.pnpm/drizzle-orm@0.45.2_@cloudflare+workers-types@4.20260611.1_kysely@0.29.2/node_modules/drizzle-orm/d1/session.js:180:12)
+        at D1PreparedQuery.all (tmp/wt-d/node_modules/.pnpm/drizzle-orm@0.45.2_@cloudflare+workers-types@4.20260611.1_kysely@0.29.2/node_modules/drizzle-orm/d1/session.js:132:18)
+        at async Promise.all (index 0)
+        at Module.assembleRunPayload (/tmp/wt-d/apps/api/src/lib/run-payload.ts:121:56)
+        at /tmp/wt-d/apps/api/src/routes/classes.ts:178:17
+        at dispatch (tmp/wt-d/node_modules/.pnpm/hono@4.13.14/node_modules/hono/dist/compose.js:35:11)
+        at /tmp/wt-d/apps/api/src/middleware/auth.ts:23:3
+  }
+}
+
+stderr | test/d-audit-class-size.integration.test.ts > d-audit class size > run-payload and copy for a 150-track class
+Unhandled error: DrizzleQueryError: Failed query: select "id", "class_track_id", "position", "anchor_ms", "beat", "bar", "text", "duration_ms", "bpm", "intensity", "note", "color", "created_at", "updated_at" from "cues" where "cues"."class_track_id" in (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+params: 4e8fe8f1-f1ea-4ba4-a6db-4a734ef209f0,9f281821-2442-4bae-896c-b90f403c43d0,f8b3696c-d9b9-47a4-b053-1aa3d160f0e0,39348dc1-ed5f-4cd9-b7e6-f85e0c438f69,ad28de8f-83e0-4649-b0a9-6cf8f53841c5,81479eae-e589-4f85-a99b-499f92019d0c,927ec7fd-8d67-4845-ac03-7f0314508d68,0e824172-6c06-4359-b213-f0733ea1110c,4797fa3b-e41e-4ce9-a66a-01b274a7728a,982e0530-3a77-4a3a-a666-659eb57fc13a,58a2dab6-e99a-45f8-8df6-ea5da22f3743,3e6bdbd9-3e22-4a57-a056-fba32fb7372a,03ad6f1c-dca1-42fd-8964-e9446692d500,c8ac42c8-615d-45be-9c8e-84662c162a75,122ac309-6915-443b-b4b4-1c498b7de670,3b15ab57-ca1b-440f-a6a6-ddcdb12a6f62,a585235d-391d-454a-bfa6-b782ace3f47c,98f71901-c180-4b9a-b36f-64750ff6094d,3bd18d12-8ca4-41e7-93e3-d77270e0b897,23555205-9e3f-4af0-8b98-76f812b4fb47,5f22f287-08f2-4229-a027-3f193cb593da,36743397-065c-448f-8849-73cc741f39d7,8afd46e3-3294-4545-89b7-79c769c87ab1,f35a6e71-3866-4f60-9e15-ee617b8d5bf6,cad30d76-d209-494c-be03-57f3472d88c6,de7ba5d5-3a6f-45b8-b834-3304fc3739b3,537d2856-6730-42a6-8938-c9924e47dc86,9e5431d0-0cce-4a1a-ba3f-e42daedd8127,ea59d6e8-cfe3-48d6-994c-f822491d020f,ff94aaf4-6749-46ff-9f6d-eb5b3b1e07b8,c56986fe-6b66-4c6e-ad3b-4ee07240cc3a,89f54e64-9f7e-44b9-bbf0-23757e6121f1,94772e0f-bacd-49dd-9466-4bb95fd2fb2f,3cd2e8cf-5679-4d6a-bf4b-09ad5e41d0b3,31e09219-a92d-4837-a7f3-4bd9785b6e77,cdb5229b-d344-49f9-a927-df9d377834d9,b48685db-1f79-4b72-a811-9d397a2b30b3,6533fd5f-7aaf-4ace-9d05-e67c67ee9242,46076b39-f952-4e9e-b33e-45db02e9dd00,baf5a4be-09fd-49a0-a2ab-2648485fee07,2646b1eb-bb89-4589-a480-14c035e620a3,b81f66ba-ccdb-452f-9fd2-436546100d07,fd8ba9f3-607d-4c7f-b9de-0c65d99f539d,20ba1739-50c6-48f5-b5e4-95d966d28646,a0ebff5a-4522-4c17-b4ec-75f01134ee7b,c74fa021-899b-4cde-a57e-d4ca03ae26fc,f06865cc-1a7e-48fb-883b-85138746a31b,dace5c61-02a4-4f63-bc5d-019f092f6c49,067428f8-1afa-4c57-9951-c244dc01f950,475889c4-6d63-484d-86a9-7fea87f46fa6,0c0079c6-26e6-4e96-a19f-b5f51c9d3d72,34f90bca-7db3-4e23-bb2e-0198ed2f47e3,abe18daf-ca9f-4937-8029-1c055eb8df24,92bff8c1-4d9d-4e89-9f30-ed5a269db8a6,247c5888-0dc5-4aa7-97ed-f5bd14ec555f,88533c42-6163-4006-85c6-f703a47936ea,bae72e94-0260-4781-899b-e20a3d8fa012,2c84874a-78e3-4055-87c5-55696cc3bd43,40e5baba-7862-4fec-a975-a2a3a682eb09,b202ad7d-3893-4a7a-9124-7e1a3f235d45,8c399072-0f11-424e-a170-b9f591501c71,b4f81be2-60a1-488d-bd8a-f839f07d3949,d61deef1-a2c6-48cf-9076-2b104aab2407,4c42948a-755e-4d7f-abe4-3d075faf1001,a7448f9d-d623-43cd-a6fc-c6a8b3ec44d9,c0245a4a-4154-4389-bf91-44e08696d9b4,44dd357f-ff88-49e8-925b-0bae723e1ae2,172c39b9-e0ab-4191-8213-708e631df66c,17e08a0f-d219-4dee-820a-ccfd64f5b6e6,e1ab6527-31a4-4862-b599-43ae4044ad63,67172ee4-f9d1-4150-ad7d-938461dcae17,d0dc94d5-5428-4e84-b143-d1fb6cf9ff57,8926e351-25c4-449d-a4b2-5bf2e64b3bf3,48592fa9-6621-4bc3-9fb4-e6141db8a01d,eeb1f80d-9499-4a3a-95f5-746eb6369c06,5da8d2ca-3ccf-45d7-a9ec-505f05a1e2d7,0f7d97dc-7c1a-4cd0-b1d4-97ccf505caa2,047a79b4-a386-4997-abb5-316c922c2bcf,d5fcb58d-db6d-4690-8e10-d4f1e7b8d6c7,6626a984-ecef-4b14-a6f3-5fc31be22a00,7a169ac3-4df8-4e86-b0ee-5c126d95aa29,06ddea8f-2f2e-4edf-86c6-21acc1352f64,7c03c3e7-ef28-4f50-ba6a-468232c4b152,4fa3593f-2f25-4a09-af98-5fd08517c1ee,69893e42-7192-4c1b-8116-e66aca4ab389,00b4fa0c-660d-48f1-aa06-4db323ee3808,c5a9b70b-f506-409c-859a-1929ec2cbb5a,ef7ea7a8-a0eb-47b7-b79e-77f58231e787,1d61e272-9134-480a-83ce-606c1d978383,498a6d63-a407-4b44-af85-1600995e7c1e,afd3af58-f0ab-4759-8146-5757022c5102,e740e3d8-16f0-4c4c-992e-007f638c67e3,d8303272-d6db-498e-bef4-d4bae487d2ff,cff726ee-2b64-42d7-a8cb-a529abc61794,bdee72b2-8634-41b6-8e0a-2b8afa989f80,090016b3-15bd-4754-8289-3be5830c69f8,bbe813a0-842c-47fb-b938-a12807e19524,17681083-7b88-4301-b4aa-40bcd27293db,0101e43b-a465-44bc-9748-96e15f390271,1e6b1d0b-7059-4b97-b247-64ef325a17b5,57b5aa8d-f7eb-4607-9d52-a968614ff88f,e037e5a9-7b4d-4cb0-b08c-9df8c6b8fa81,2cd5f7ad-6f94-416f-acf0-9470a7448c59,37b735f7-208a-4214-9e00-bc3417d143ed,aea2efc9-5afc-45b4-b699-89887ade60ae,b78caff0-7590-44a6-b9ed-c0b7c049b1dd,58080612-8ce2-419b-9639-bf39fed96848,9fc4104a-5bf6-4b09-965d-6431d6e7bba2,db107300-e572-438b-a133-e047023fbf5d,f7ca1a3c-4e52-4993-9c43-213b182d167e,5bc393ac-afa7-401f-ba9a-77c20d4a6a21,22385bb0-cdca-4048-b313-e33446ee4ada,153836e9-a217-416e-8783-c0e06c0e0bfc,6ce3dd7b-2540-479b-b00f-27d1b7aa5c3e,096350b1-375d-41a5-9853-16c57de479c5,49b1dafd-4b1a-469d-8793-3077a5895572,face0c9c-96ea-4f18-9656-d1b1bb4667b2,31bbb2ba-f669-4398-ab3e-2f554e873053,9088839b-1156-4099-ba7a-713394989a95,8d7c22b2-5c38-4b73-a637-8567b07dc66c,5fbea475-18f5-4d45-a67b-73cedfa4d528,c55f0167-5bd4-4dd2-b9e2-b47a34d7e6b9,fb025719-871d-418e-ab32-883b46318f15,fb47dc25-93a5-46a2-9bed-ea2b1e06169f,f6c2f03e-2148-4724-9aec-f0169a3081fb,6f5a64d2-7a3c-4a5a-a3b9-a1d7bd1469a1,c09851a6-0f15-4f90-9d6f-fb4d46fcd66b,6e486834-06a5-48d7-b6a1-7e5022ec8ea3,b053881b-26af-4a84-b8fd-0888358bc930,2724b849-8d6c-4d7b-9c51-245a5c859fa5,86bd5dff-5868-46c7-8e83-2147adbda7ff,8492766c-7025-4240-bfef-710b56a0e16e,7b2de2aa-6929-4c76-b593-a51aeaa96dfa,59a1de7c-ef92-4459-b819-a4a656dea9a0,e81b7a4b-f2b0-466c-b0bb-547419f271fa,f3e28dcf-270e-4ab0-b2f8-e83c4620e6b2,053b9cc1-0cec-4b8a-b55c-35e310807011,b64f2b52-d66a-4e6d-a912-dada408075fd,4d9f3958-e975-4705-8c0a-9f65eb040553,6dab7ea0-d57d-4846-ba18-3f09ea692924,ae0e2a88-2707-4827-aaae-29f125575546,56c001f8-4741-4b65-b0d2-9c1b95eeccfa,0af8f35a-a08c-475d-8c35-2607f78bcea8,ffffc5b0-6847-4f3f-b7ad-0f5d1d5e9593,bd48fd1d-82cb-4e56-80e2-f6c060f4dcb7,59caa300-04f6-4007-a0e1-5fb473ef1972,8155ea28-875b-4fe7-8a53-a396d7cab3da,4920c5ab-1a55-4720-91c3-367835d2df0c,1b5e7099-8eaa-4b66-9359-3061eac5986e,9cf8a2c8-fcd4-4556-8195-46dde89e2619
+    at D1PreparedQuery.queryWithCache (tmp/wt-d/node_modules/.pnpm/drizzle-orm@0.45.2_@cloudflare+workers-types@4.20260611.1_kysely@0.29.2/node_modules/drizzle-orm/sqlite-core/session.js:43:15)
+    at D1PreparedQuery.values (tmp/wt-d/node_modules/.pnpm/drizzle-orm@0.45.2_@cloudflare+workers-types@4.20260611.1_kysely@0.29.2/node_modules/drizzle-orm/d1/session.js:180:12)
+    ... 5 lines matching cause stack trace ...
+    at dispatch (tmp/wt-d/node_modules/.pnpm/hono@4.13.14/node_modules/hono/dist/compose.js:35:11)
+    at cors (tmp/wt-d/node_modules/.pnpm/hono@4.13.14/node_modules/hono/dist/middleware/cors/index.js:103:3)
+    at dispatch (tmp/wt-d/node_modules/.pnpm/hono@4.13.14/node_modules/hono/dist/compose.js:35:11) {
+  query: 'select "id", "class_track_id", "position", "anchor_ms", "beat", "bar", "text", "duration_ms", "bpm", "intensity", "note", "color", "created_at", "updated_at" from "cues" where "cues"."class_track_id" in (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)',
+  params: [
+    '4e8fe8f1-f1ea-4ba4-a6db-4a734ef209f0',
+    '9f281821-2442-4bae-896c-b90f403c43d0',
+    'f8b3696c-d9b9-47a4-b053-1aa3d160f0e0',
+    '39348dc1-ed5f-4cd9-b7e6-f85e0c438f69',
+    'ad28de8f-83e0-4649-b0a9-6cf8f53841c5',
+    '81479eae-e589-4f85-a99b-499f92019d0c',
+    '927ec7fd-8d67-4845-ac03-7f0314508d68',
+    '0e824172-6c06-4359-b213-f0733ea1110c',
+    '4797fa3b-e41e-4ce9-a66a-01b274a7728a',
+    '982e0530-3a77-4a3a-a666-659eb57fc13a',
+    '58a2dab6-e99a-45f8-8df6-ea5da22f3743',
+    '3e6bdbd9-3e22-4a57-a056-fba32fb7372a',
+    '03ad6f1c-dca1-42fd-8964-e9446692d500',
+    'c8ac42c8-615d-45be-9c8e-84662c162a75',
+    '122ac309-6915-443b-b4b4-1c498b7de670',
+    '3b15ab57-ca1b-440f-a6a6-ddcdb12a6f62',
+    'a585235d-391d-454a-bfa6-b782ace3f47c',
+    '98f71901-c180-4b9a-b36f-64750ff6094d',
+    '3bd18d12-8ca4-41e7-93e3-d77270e0b897',
+    '23555205-9e3f-4af0-8b98-76f812b4fb47',
+    '5f22f287-08f2-4229-a027-3f193cb593da',
+    '36743397-065c-448f-8849-73cc741f39d7',
+    '8afd46e3-3294-4545-89b7-79c769c87ab1',
+    'f35a6e71-3866-4f60-9e15-ee617b8d5bf6',
+    'cad30d76-d209-494c-be03-57f3472d88c6',
+    'de7ba5d5-3a6f-45b8-b834-3304fc3739b3',
+    '537d2856-6730-42a6-8938-c9924e47dc86',
+    '9e5431d0-0cce-4a1a-ba3f-e42daedd8127',
+    'ea59d6e8-cfe3-48d6-994c-f822491d020f',
+    'ff94aaf4-6749-46ff-9f6d-eb5b3b1e07b8',
+    'c56986fe-6b66-4c6e-ad3b-4ee07240cc3a',
+    '89f54e64-9f7e-44b9-bbf0-23757e6121f1',
+    '94772e0f-bacd-49dd-9466-4bb95fd2fb2f',
+    '3cd2e8cf-5679-4d6a-bf4b-09ad5e41d0b3',
+    '31e09219-a92d-4837-a7f3-4bd9785b6e77',
+    'cdb5229b-d344-49f9-a927-df9d377834d9',
+    'b48685db-1f79-4b72-a811-9d397a2b30b3',
+    '6533fd5f-7aaf-4ace-9d05-e67c67ee9242',
+    '46076b39-f952-4e9e-b33e-45db02e9dd00',
+    'baf5a4be-09fd-49a0-a2ab-2648485fee07',
+    '2646b1eb-bb89-4589-a480-14c035e620a3',
+    'b81f66ba-ccdb-452f-9fd2-436546100d07',
+    'fd8ba9f3-607d-4c7f-b9de-0c65d99f539d',
+    '20ba1739-50c6-48f5-b5e4-95d966d28646',
+    'a0ebff5a-4522-4c17-b4ec-75f01134ee7b',
+    'c74fa021-899b-4cde-a57e-d4ca03ae26fc',
+    'f06865cc-1a7e-48fb-883b-85138746a31b',
+    'dace5c61-02a4-4f63-bc5d-019f092f6c49',
+    '067428f8-1afa-4c57-9951-c244dc01f950',
+    '475889c4-6d63-484d-86a9-7fea87f46fa6',
+    '0c0079c6-26e6-4e96-a19f-b5f51c9d3d72',
+    '34f90bca-7db3-4e23-bb2e-0198ed2f47e3',
+    'abe18daf-ca9f-4937-8029-1c055eb8df24',
+    '92bff8c1-4d9d-4e89-9f30-ed5a269db8a6',
+    '247c5888-0dc5-4aa7-97ed-f5bd14ec555f',
+    '88533c42-6163-4006-85c6-f703a47936ea',
+    'bae72e94-0260-4781-899b-e20a3d8fa012',
+    '2c84874a-78e3-4055-87c5-55696cc3bd43',
+    '40e5baba-7862-4fec-a975-a2a3a682eb09',
+    'b202ad7d-3893-4a7a-9124-7e1a3f235d45',
+    '8c399072-0f11-424e-a170-b9f591501c71',
+    'b4f81be2-60a1-488d-bd8a-f839f07d3949',
+    'd61deef1-a2c6-48cf-9076-2b104aab2407',
+    '4c42948a-755e-4d7f-abe4-3d075faf1001',
+    'a7448f9d-d623-43cd-a6fc-c6a8b3ec44d9',
+    'c0245a4a-4154-4389-bf91-44e08696d9b4',
+    '44dd357f-ff88-49e8-925b-0bae723e1ae2',
+    '172c39b9-e0ab-4191-8213-708e631df66c',
+    '17e08a0f-d219-4dee-820a-ccfd64f5b6e6',
+    'e1ab6527-31a4-4862-b599-43ae4044ad63',
+    '67172ee4-f9d1-4150-ad7d-938461dcae17',
+    'd0dc94d5-5428-4e84-b143-d1fb6cf9ff57',
+    '8926e351-25c4-449d-a4b2-5bf2e64b3bf3',
+    '48592fa9-6621-4bc3-9fb4-e6141db8a01d',
+    'eeb1f80d-9499-4a3a-95f5-746eb6369c06',
+    '5da8d2ca-3ccf-45d7-a9ec-505f05a1e2d7',
+    '0f7d97dc-7c1a-4cd0-b1d4-97ccf505caa2',
+    '047a79b4-a386-4997-abb5-316c922c2bcf',
+    'd5fcb58d-db6d-4690-8e10-d4f1e7b8d6c7',
+    '6626a984-ecef-4b14-a6f3-5fc31be22a00',
+    '7a169ac3-4df8-4e86-b0ee-5c126d95aa29',
+    '06ddea8f-2f2e-4edf-86c6-21acc1352f64',
+    '7c03c3e7-ef28-4f50-ba6a-468232c4b152',
+    '4fa3593f-2f25-4a09-af98-5fd08517c1ee',
+    '69893e42-7192-4c1b-8116-e66aca4ab389',
+    '00b4fa0c-660d-48f1-aa06-4db323ee3808',
+    'c5a9b70b-f506-409c-859a-1929ec2cbb5a',
+    'ef7ea7a8-a0eb-47b7-b79e-77f58231e787',
+    '1d61e272-9134-480a-83ce-606c1d978383',
+    '498a6d63-a407-4b44-af85-1600995e7c1e',
+    'afd3af58-f0ab-4759-8146-5757022c5102',
+    'e740e3d8-16f0-4c4c-992e-007f638c67e3',
+    'd8303272-d6db-498e-bef4-d4bae487d2ff',
+    'cff726ee-2b64-42d7-a8cb-a529abc61794',
+    'bdee72b2-8634-41b6-8e0a-2b8afa989f80',
+    '090016b3-15bd-4754-8289-3be5830c69f8',
+    'bbe813a0-842c-47fb-b938-a12807e19524',
+    '17681083-7b88-4301-b4aa-40bcd27293db',
+    '0101e43b-a465-44bc-9748-96e15f390271',
+    '1e6b1d0b-7059-4b97-b247-64ef325a17b5',
+    ... 50 more items
+  ],
+  cause: Error: D1_ERROR: too many SQL variables at offset 504: SQLITE_ERROR
+      at D1DatabaseSessionAlwaysPrimary._sendOrThrow (cloudflare-internal:d1-api:139:19)
+      at cloudflare-internal:d1-api:379:36
+      ... 7 lines matching cause stack trace ...
+      at dispatch (tmp/wt-d/node_modules/.pnpm/hono@4.13.14/node_modules/hono/dist/compose.js:35:11) {
+    [cause]: Error: too many SQL variables at offset 504: SQLITE_ERROR
+        at D1DatabaseSessionAlwaysPrimary._sendOrThrow (cloudflare-internal:d1-api:140:24)
+        at cloudflare-internal:d1-api:379:36
+        at D1PreparedQuery.queryWithCache (tmp/wt-d/node_modules/.pnpm/drizzle-orm@0.45.2_@cloudflare+workers-types@4.20260611.1_kysely@0.29.2/node_modules/drizzle-orm/sqlite-core/session.js:41:16)
+        at D1PreparedQuery.values (tmp/wt-d/node_modules/.pnpm/drizzle-orm@0.45.2_@cloudflare+workers-types@4.20260611.1_kysely@0.29.2/node_modules/drizzle-orm/d1/session.js:180:12)
+        at D1PreparedQuery.all (tmp/wt-d/node_modules/.pnpm/drizzle-orm@0.45.2_@cloudflare+workers-types@4.20260611.1_kysely@0.29.2/node_modules/drizzle-orm/d1/session.js:132:18)
+        at async Promise.all (index 0)
+        at /tmp/wt-d/apps/api/src/routes/classes.ts:224:7
+        at dispatch (tmp/wt-d/node_modules/.pnpm/hono@4.13.14/node_modules/hono/dist/compose.js:35:11)
+        at /tmp/wt-d/apps/api/src/middleware/auth.ts:23:3
+        at dispatch (tmp/wt-d/node_modules/.pnpm/hono@4.13.14/node_modules/hono/dist/compose.js:35:11)
+  }
+}
+
+stdout | test/d-audit-class-size.integration.test.ts > d-audit class size > run-payload and copy for a 150-track class
+D-CLASSSIZE n=150 runPayload=500 tracks=n/a copy=500
+
+ ✓ test/d-audit-class-size.integration.test.ts (3 tests) 541ms
+
+ Test Files  1 passed (1)
+      Tests  3 passed (3)
+   Start at  14:29:25
+   Duration  2.26s (transform 341ms, setup 1.18s, collect 13ms, tests 541ms, environment 0ms, prepare 93ms)
+
+[vpw:debug] Shutting down runtimes...
+[vpw:debug] Disposing remote proxy sessions...

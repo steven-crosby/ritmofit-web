@@ -1,0 +1,74 @@
+migrations applied: 22
+
+## class list page (owner, updated desc, id)
+select * from classes where owner_user_id=? order by updated_at desc, id desc limit 31
+    SEARCH classes USING INDEX classes_owner_updated_id_idx (owner_user_id=?)
+
+## class list page with tag
+select c.* from classes c join class_tags t on t.class_id=c.id where c.owner_user_id=? and t.tag=? order by c.updated_at desc, c.id desc limit 31
+    SEARCH c USING INDEX classes_owner_updated_id_idx (owner_user_id=?)
+    SEARCH t USING COVERING INDEX class_tags_class_id_tag_unq (class_id=? AND tag=?)
+
+## class card aggregates
+select * from class_tracks ct join tracks t on t.id=ct.track_id where ct.class_id in (?,?,?) order by ct.class_id, ct.position
+    SEARCH ct USING INDEX class_tracks_class_id_idx (class_id=?)
+    SEARCH t USING INDEX sqlite_autoindex_tracks_1 (id=?)
+    USE TEMP B-TREE FOR RIGHT PART OF ORDER BY
+
+## run-payload class_tracks
+select * from class_tracks where class_id=? order by position
+    SEARCH class_tracks USING INDEX class_tracks_class_id_idx (class_id=?)
+    USE TEMP B-TREE FOR ORDER BY
+
+## run-payload sections
+select * from class_sections where class_id=? order by start_offset_ms
+    SEARCH class_sections USING INDEX class_sections_class_idx (class_id=?)
+    USE TEMP B-TREE FOR ORDER BY
+
+## run-payload cues
+select * from cues where class_track_id in (?,?) order by anchor_ms
+    SEARCH cues USING INDEX cues_class_track_id_idx (class_track_id=?)
+    USE TEMP B-TREE FOR ORDER BY
+
+## purge affected tracks
+select t.id from tracks t join track_provider_ids p on p.track_id=t.id where t.owner_user_id=? and p.provider=?
+    SEARCH t USING INDEX tracks_owner_match_key_idx (owner_user_id=?)
+    SEARCH p USING INDEX track_provider_ids_track_id_idx (track_id=?)
+
+## copy: owned provider keys
+select provider, provider_track_id from track_provider_ids where owner_user_id=?
+    SEARCH track_provider_ids USING COVERING INDEX track_provider_ids_owner_provider_id_unique (owner_user_id=?)
+
+## songs-by-move (user move)
+select * from class_track_moves m join class_tracks ct on ct.id=m.class_track_id join classes c on c.id=ct.class_id join tracks t on t.id=ct.track_id where m.user_move_id=? and c.owner_user_id=? order by t.title, c.title, m.anchor_ms
+    SEARCH m USING INDEX class_track_moves_user_move_id_idx (user_move_id=?)
+    SEARCH ct USING INDEX sqlite_autoindex_class_tracks_1 (id=?)
+    SEARCH c USING INDEX sqlite_autoindex_classes_1 (id=?)
+    SEARCH t USING INDEX sqlite_autoindex_tracks_1 (id=?)
+    USE TEMP B-TREE FOR ORDER BY
+
+## user moves list
+select * from user_moves where user_id=? order by name
+    SEARCH user_moves USING INDEX user_moves_user_id_idx (user_id=?)
+    USE TEMP B-TREE FOR ORDER BY
+
+## purge queue
+select * from provider_purge_queue where failed_at is null order by requested_at limit 100
+    SEARCH provider_purge_queue USING INDEX provider_purge_queue_active_requested_idx (failed_at=?)
+
+## tracks library list
+select * from tracks where owner_user_id=? order by updated_at desc
+    SEARCH tracks USING INDEX tracks_owner_match_key_idx (owner_user_id=?)
+    USE TEMP B-TREE FOR ORDER BY
+
+## session by token
+select * from sessions where token=?
+    SEARCH sessions USING INDEX sessions_token_unique (token=?)
+
+## shares for class (authz)
+select * from shares where resource_type='class' and resource_id=? and target_user_id=?
+    SEARCH shares USING INDEX shares_resource_target_user_unique (resource_type=? AND resource_id=? AND target_user_id=?)
+
+## team memberships by team
+select * from team_memberships where team_id=?
+    SCAN team_memberships

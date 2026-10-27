@@ -1,0 +1,12 @@
+ ✓ src/components/SegmentBand.test.tsx (20 tests) 652ms
+ ✓ src/components/MovesSection.test.tsx (21 tests) 724ms
+ ✓ src/components/CuesSection.test.tsx (26 tests) 1091ms
+ ✓ src/lib/use-virtual-clock.test.ts (10 tests) 23ms
+ ✓ src/components/TimelineStrip.test.ts (20 tests) 6ms
+ ✓ src/components/SegmentBand.test.ts (21 tests) 6ms
+ ✓ src/lib/applyServiceWorkerUpdate.test.ts (10 tests) 6ms
+ ✓ src/components/TimelineStrip.test.tsx (8 tests) 209ms
+ ✓ src/lib/lazyWithReload.test.ts (3 tests) 3ms
+ ✓ src/lib/pwa-config.test.ts (2 tests) 2ms
+ Test Files  10 passed (10)
+      Tests  141 passed (141)

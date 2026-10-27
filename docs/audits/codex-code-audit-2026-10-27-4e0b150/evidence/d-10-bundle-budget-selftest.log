@@ -1,0 +1,7 @@
+$ node scripts/check-bundle-budget.mjs --selftest
+ok    entry under budget passes
+ok    inflated entry fails
+ok    large lazy chunk is not counted
+ok    missing build fails
+ok    index.html with no local script fails
+bundle-budget selftest: 5 cases ok.

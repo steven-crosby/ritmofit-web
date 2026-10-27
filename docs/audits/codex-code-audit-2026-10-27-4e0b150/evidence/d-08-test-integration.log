@@ -1,0 +1,1488 @@
+$ vitest run --config vitest.integration.config.ts
+
+ RUN  v3.2.6 /tmp/wt-d/apps/api
+
+[vpw:debug] Adding `enable_nodejs_tty_module` compatibility flag during tests as this feature is needed to support the Vitest runner.
+[vpw:debug] Adding `enable_nodejs_fs_module` compatibility flag during tests as this feature is needed to support the Vitest runner.
+[vpw:debug] Adding `enable_nodejs_http_modules` compatibility flag during tests as this feature is needed to support the Vitest runner.
+[vpw:debug] Adding `enable_nodejs_perf_hooks_module` compatibility flag during tests as this feature is needed to support the Vitest runner.
+[vpw:info] Starting single runtime for vitest.integration.config.ts...
+Cannot optimize dependency: vitest > @vitest/snapshot > magic-string, present in 'ssr.optimizeDeps.include'
+Cannot optimize dependency: vitest > @vitest/expect > chai, present in 'ssr.optimizeDeps.include'
+stdout | test/playlist-import-preview.integration.test.ts > paste-a-link playlist preview > returns 16 ordered occurrences, including a repeated title, and writes nothing
+[email:dev-fallback] to=u-32d97ac2-51f3-4605-8cd3-ad2fdc52ad27@example.com subject="Confirm your Ritmo Studio email"
+Confirm your email
+
+Welcome to Ritmo Studio! Confirm u-32d97ac2-51f3-4605-8cd3-ad2fdc52ad27@example.com to secure your account.
+
+Verify email: https://test.ritmofit.studio/api/auth/verify-email?token=<redacted>&callbackURL=%2F
+
+You can keep using Ritmo Studio while this is pending.
+
+stdout | test/playlist-import-preview.integration.test.ts > paste-a-link playlist preview > omits a non-positive duration and keeps a missing duration as null
+[email:dev-fallback] to=u-223c869e-af7d-4b6a-9aec-2b9ae745ea57@example.com subject="Confirm your Ritmo Studio email"
+Confirm your email
+
+Welcome to Ritmo Studio! Confirm u-223c869e-af7d-4b6a-9aec-2b9ae745ea57@example.com to secure your account.
+
+Verify email: https://test.ritmofit.studio/api/auth/verify-email?token=<redacted>&callbackURL=%2F
+
+You can keep using Ritmo Studio while this is pending.
+
+stdout | test/playlist-import-preview.integration.test.ts > paste-a-link playlist preview > returns 100 songs from exactly two playlist pages in under 2 seconds
+[email:dev-fallback] to=u-0225356f-345f-435e-942f-9fe5b40f0941@example.com subject="Confirm your Ritmo Studio email"
+Confirm your email
+
+Welcome to Ritmo Studio! Confirm u-0225356f-345f-435e-942f-9fe5b40f0941@example.com to secure your account.
+
+Verify email: https://test.ritmofit.studio/api/auth/verify-email?token=<redacted>&callbackURL=%2F
+
+You can keep using Ritmo Studio while this is pending.
+
+stdout | test/playlist-import-preview.integration.test.ts > paste-a-link playlist preview > rejects a Spotify total over 100 after one playlist request
+[email:dev-fallback] to=u-35e94b33-7856-4bcd-bf7a-bfb4a5b3b1ec@example.com subject="Confirm your Ritmo Studio email"
+Confirm your email
+
+Welcome to Ritmo Studio! Confirm u-35e94b33-7856-4bcd-bf7a-bfb4a5b3b1ec@example.com to secure your account.
+
+Verify email: https://test.ritmofit.studio/api/auth/verify-email?token=<redacted>&callbackURL=%2F
+
+You can keep using Ritmo Studio while this is pending.
+
+stdout | test/playlist-import-preview.integration.test.ts > paste-a-link playlist preview > rejects an Apple catalog page of 100 songs that still has a next cursor
+[email:dev-fallback] to=u-9c04a912-c542-4767-80e4-b662a8c1a3c8@example.com subject="Confirm your Ritmo Studio email"
+Confirm your email
+
+Welcome to Ritmo Studio! Confirm u-9c04a912-c542-4767-80e4-b662a8c1a3c8@example.com to secure your account.
+
+Verify email: https://test.ritmofit.studio/api/auth/verify-email?token=<redacted>&callbackURL=%2F
+
+You can keep using Ritmo Studio while this is pending.
+
+stdout | test/playlist-import-preview.integration.test.ts > paste-a-link playlist preview > rejects a SoundCloud page of 100 songs that still has a next href
+[email:dev-fallback] to=u-5964f3d1-2397-4e94-97c6-be46c9a4066e@example.com subject="Confirm your Ritmo Studio email"
+Confirm your email
+
+Welcome to Ritmo Studio! Confirm u-5964f3d1-2397-4e94-97c6-be46c9a4066e@example.com to secure your account.
+
+Verify email: https://test.ritmofit.studio/api/auth/verify-email?token=<redacted>&callbackURL=%2F
+
+You can keep using Ritmo Studio while this is pending.
+
+stdout | test/playlist-import-preview.integration.test.ts > paste-a-link playlist preview > returns 409 NOT_CONNECTED when the instructor has no Spotify connection
+[email:dev-fallback] to=u-20f9dcdf-bbd1-450b-bd67-156ec9637c73@example.com subject="Confirm your Ritmo Studio email"
+Confirm your email
+
+Welcome to Ritmo Studio! Confirm u-20f9dcdf-bbd1-450b-bd67-156ec9637c73@example.com to secure your account.
+
+Verify email: https://test.ritmofit.studio/api/auth/verify-email?token=<redacted>&callbackURL=%2F
+
+You can keep using Ritmo Studio while this is pending.
+
+stdout | test/playlist-import-preview.integration.test.ts > paste-a-link playlist preview > maps a user-token 401 to REAUTH_REQUIRED and does not mint an app token
+[email:dev-fallback] to=u-730d70a9-31ca-4b1c-a53f-e2f78f975221@example.com subject="Confirm your Ritmo Studio email"
+Confirm your email
+
+Welcome to Ritmo Studio! Confirm u-730d70a9-31ca-4b1c-a53f-e2f78f975221@example.com to secure your account.
+
+Verify email: https://test.ritmofit.studio/api/auth/verify-email?token=<redacted>&callbackURL=%2F
+
+You can keep using Ritmo Studio while this is pending.
+
+stdout | test/playlist-import-preview.integration.test.ts > paste-a-link playlist preview > refreshes an expired Spotify user token and previews with the new token
+[email:dev-fallback] to=u-ac4a1dbc-a082-4154-a2c5-c19c44f81492@example.com subject="Confirm your Ritmo Studio email"
+Confirm your email
+
+Welcome to Ritmo Studio! Confirm u-ac4a1dbc-a082-4154-a2c5-c19c44f81492@example.com to secure your account.
+
+Verify email: https://test.ritmofit.studio/api/auth/verify-email?token=<redacted>&callbackURL=%2F
+
+You can keep using Ritmo Studio while this is pending.
+
+stdout | test/playlist-import-preview.integration.test.ts > paste-a-link playlist preview > refreshes after a 401 and retries the playlist read with the new user token
+[email:dev-fallback] to=u-4f4304f8-e1e8-4458-9ae1-35751a9b78df@example.com subject="Confirm your Ritmo Studio email"
+Confirm your email
+
+Welcome to Ritmo Studio! Confirm u-4f4304f8-e1e8-4458-9ae1-35751a9b78df@example.com to secure your account.
+
+Verify email: https://test.ritmofit.studio/api/auth/verify-email?token=<redacted>&callbackURL=%2F
+
+You can keep using Ritmo Studio while this is pending.
+
+stdout | test/playlist-import-preview.integration.test.ts > paste-a-link playlist preview > returns 504 PROVIDER_TIMEOUT when the playlist never responds, with no writes
+[email:dev-fallback] to=u-23f6fd3a-661f-4ef3-a1e4-c1562f12102e@example.com subject="Confirm your Ritmo Studio email"
+Confirm your email
+
+Welcome to Ritmo Studio! Confirm u-23f6fd3a-661f-4ef3-a1e4-c1562f12102e@example.com to secure your account.
+
+Verify email: https://test.ritmofit.studio/api/auth/verify-email?token=<redacted>&callbackURL=%2F
+
+You can keep using Ritmo Studio while this is pending.
+
+stdout | test/playlist-import-preview.integration.test.ts > paste-a-link Spotify limits > maps a 429 QUOTA_EXCEEDED to PROVIDER_QUOTA_EXCEEDED after one request
+[email:dev-fallback] to=u-b0dbfbc5-dc4f-47a0-99d7-c8704a1eae69@example.com subject="Confirm your Ritmo Studio email"
+Confirm your email
+
+Welcome to Ritmo Studio! Confirm u-b0dbfbc5-dc4f-47a0-99d7-c8704a1eae69@example.com to secure your account.
+
+Verify email: https://test.ritmofit.studio/api/auth/verify-email?token=<redacted>&callbackURL=%2F
+
+You can keep using Ritmo Studio while this is pending.
+
+stderr | test/playlist-import-preview.integration.test.ts > paste-a-link Spotify limits > maps a 429 QUOTA_EXCEEDED to PROVIDER_QUOTA_EXCEEDED after one request
+[provider:spotify] spotify quota exceeded (429 QUOTA_EXCEEDED).
+
+stdout | test/playlist-import-preview.integration.test.ts > paste-a-link Spotify limits > maps a 404 for a playlist the user cannot read to the not-owned message
+[email:dev-fallback] to=u-d2c55f6c-0253-4099-a9dc-1b32665cc6e6@example.com subject="Confirm your Ritmo Studio email"
+Confirm your email
+
+Welcome to Ritmo Studio! Confirm u-d2c55f6c-0253-4099-a9dc-1b32665cc6e6@example.com to secure your account.
+
+Verify email: https://test.ritmofit.studio/api/auth/verify-email?token=<redacted>&callbackURL=%2F
+
+You can keep using Ritmo Studio while this is pending.
+
+ ✓ test/playlist-import-preview.integration.test.ts (13 tests) 10177ms
+   ✓ paste-a-link playlist preview > returns 504 PROVIDER_TIMEOUT when the playlist never responds, with no writes  8161ms
+stdout | test/playlist-song-blocks.integration.test.ts > playlist song-block commits (mounted Worker + migrated D1)
+[email:dev-fallback] to=u-10a7e084-eeac-496f-865c-a7fab1d78492@example.com subject="Confirm your Ritmo Studio email"
+Confirm your email
+
+Welcome to Ritmo Studio! Confirm u-10a7e084-eeac-496f-865c-a7fab1d78492@example.com to secure your account.
+
+Verify email: https://test.ritmofit.studio/api/auth/verify-email?token=<redacted>&callbackURL=%2F
+
+You can keep using Ritmo Studio while this is pending.
+
+ ✓ test/playlist-song-blocks.integration.test.ts (15 tests) 2441ms
+stdout | test/authz.integration.test.ts > class authorization (integration)
+[email:dev-fallback] to=u-cbf6ed66-5c19-4e44-8e64-655086c83b52@example.com subject="Confirm your Ritmo Studio email"
+Confirm your email
+
+Welcome to Ritmo Studio! Confirm u-cbf6ed66-5c19-4e44-8e64-655086c83b52@example.com to secure your account.
+
+Verify email: https://test.ritmofit.studio/api/auth/verify-email?token=<redacted>&callbackURL=%2F
+
+You can keep using Ritmo Studio while this is pending.
+
+stdout | test/authz.integration.test.ts > class authorization (integration)
+[email:dev-fallback] to=u-9247e5c1-c098-4163-b438-c011ebaca4ef@example.com subject="Confirm your Ritmo Studio email"
+Confirm your email
+
+Welcome to Ritmo Studio! Confirm u-9247e5c1-c098-4163-b438-c011ebaca4ef@example.com to secure your account.
+
+Verify email: https://test.ritmofit.studio/api/auth/verify-email?token=<redacted>&callbackURL=%2F
+
+You can keep using Ritmo Studio while this is pending.
+
+stdout | test/authz.integration.test.ts > run-payload + copy (integration)
+[email:dev-fallback] to=u-3c818591-05d7-4891-8467-1b1de49ae4be@example.com subject="Confirm your Ritmo Studio email"
+Confirm your email
+
+Welcome to Ritmo Studio! Confirm u-3c818591-05d7-4891-8467-1b1de49ae4be@example.com to secure your account.
+
+Verify email: https://test.ritmofit.studio/api/auth/verify-email?token=<redacted>&callbackURL=%2F
+
+You can keep using Ritmo Studio while this is pending.
+
+stdout | test/authz.integration.test.ts > run-payload + copy (integration)
+[email:dev-fallback] to=u-9e56c60e-5912-4ec3-8921-c66484d6b3d4@example.com subject="Confirm your Ritmo Studio email"
+Confirm your email
+
+Welcome to Ritmo Studio! Confirm u-9e56c60e-5912-4ec3-8921-c66484d6b3d4@example.com to secure your account.
+
+Verify email: https://test.ritmofit.studio/api/auth/verify-email?token=<redacted>&callbackURL=%2F
+
+You can keep using Ritmo Studio while this is pending.
+
+ ✓ test/authz.integration.test.ts (17 tests) 1626ms
+stdout | test/class-route-access.integration.test.ts > class route access (integration)
+[email:dev-fallback] to=u-e597ef2e-40f6-4e2d-bef0-b04dff66aa9f@example.com subject="Confirm your Ritmo Studio email"
+Confirm your email
+
+Welcome to Ritmo Studio! Confirm u-e597ef2e-40f6-4e2d-bef0-b04dff66aa9f@example.com to secure your account.
+
+Verify email: https://test.ritmofit.studio/api/auth/verify-email?token=<redacted>&callbackURL=%2F
+
+You can keep using Ritmo Studio while this is pending.
+
+stdout | test/class-route-access.integration.test.ts > class route access (integration)
+[email:dev-fallback] to=u-10e2c765-4dba-49bc-87fb-cd02c32d155a@example.com subject="Confirm your Ritmo Studio email"
+Confirm your email
+
+Welcome to Ritmo Studio! Confirm u-10e2c765-4dba-49bc-87fb-cd02c32d155a@example.com to secure your account.
+
+Verify email: https://test.ritmofit.studio/api/auth/verify-email?token=<redacted>&callbackURL=%2F
+
+You can keep using Ritmo Studio while this is pending.
+
+stdout | test/class-route-access.integration.test.ts > class route access (integration)
+[email:dev-fallback] to=u-6611a9ff-9287-4c34-ade3-fe017f8aba83@example.com subject="Confirm your Ritmo Studio email"
+Confirm your email
+
+Welcome to Ritmo Studio! Confirm u-6611a9ff-9287-4c34-ade3-fe017f8aba83@example.com to secure your account.
+
+Verify email: https://test.ritmofit.studio/api/auth/verify-email?token=<redacted>&callbackURL=%2F
+
+You can keep using Ritmo Studio while this is pending.
+
+ ✓ test/class-route-access.integration.test.ts (9 tests) 1403ms
+   ✓ class route access (integration) > hides plan-block create, reorder, and delete from a stranger and forbids a view share  338ms
+stdout | test/class-plan-blocks.integration.test.ts > class plan blocks and deterministic scaffolds (integration)
+[email:dev-fallback] to=u-9df234a9-cd1c-4323-ad2d-fed58ac8aa9b@example.com subject="Confirm your Ritmo Studio email"
+Confirm your email
+
+Welcome to Ritmo Studio! Confirm u-9df234a9-cd1c-4323-ad2d-fed58ac8aa9b@example.com to secure your account.
+
+Verify email: https://test.ritmofit.studio/api/auth/verify-email?token=<redacted>&callbackURL=%2F
+
+You can keep using Ritmo Studio while this is pending.
+
+stdout | test/class-plan-blocks.integration.test.ts > class plan blocks and deterministic scaffolds (integration)
+[email:dev-fallback] to=u-9edeae62-d6b2-4e8f-a049-a602fa2f7211@example.com subject="Confirm your Ritmo Studio email"
+Confirm your email
+
+Welcome to Ritmo Studio! Confirm u-9edeae62-d6b2-4e8f-a049-a602fa2f7211@example.com to secure your account.
+
+Verify email: https://test.ritmofit.studio/api/auth/verify-email?token=<redacted>&callbackURL=%2F
+
+You can keep using Ritmo Studio while this is pending.
+
+stdout | test/class-plan-blocks.integration.test.ts > PATCH /plan-blocks/:id keeps planned time, class target, and HIIT rounds independent
+[email:dev-fallback] to=u-46e18ef5-dfe5-4717-994b-0ae58f53c793@example.com subject="Confirm your Ritmo Studio email"
+Confirm your email
+
+Welcome to Ritmo Studio! Confirm u-46e18ef5-dfe5-4717-994b-0ae58f53c793@example.com to secure your account.
+
+Verify email: https://test.ritmofit.studio/api/auth/verify-email?token=<redacted>&callbackURL=%2F
+
+You can keep using Ritmo Studio while this is pending.
+
+stdout | test/class-plan-blocks.integration.test.ts > PATCH /plan-blocks/:id keeps planned time, class target, and HIIT rounds independent
+[email:dev-fallback] to=u-56168fd8-66e2-409b-9927-3916fbacbd7b@example.com subject="Confirm your Ritmo Studio email"
+Confirm your email
+
+Welcome to Ritmo Studio! Confirm u-56168fd8-66e2-409b-9927-3916fbacbd7b@example.com to secure your account.
+
+Verify email: https://test.ritmofit.studio/api/auth/verify-email?token=<redacted>&callbackURL=%2F
+
+You can keep using Ritmo Studio while this is pending.
+
+stdout | test/class-plan-blocks.integration.test.ts > PATCH /plan-blocks/:id keeps planned time, class target, and HIIT rounds independent
+[email:dev-fallback] to=u-f5812ecd-b775-43eb-8021-0438da61316b@example.com subject="Confirm your Ritmo Studio email"
+Confirm your email
+
+Welcome to Ritmo Studio! Confirm u-f5812ecd-b775-43eb-8021-0438da61316b@example.com to secure your account.
+
+Verify email: https://test.ritmofit.studio/api/auth/verify-email?token=<redacted>&callbackURL=%2F
+
+You can keep using Ritmo Studio while this is pending.
+
+ ✓ test/class-plan-blocks.integration.test.ts (13 tests) 1592ms
+stdout | test/clip-window.integration.test.ts > clip-window guard (integration) > rejects a PATCH clip start at/past the track length and keeps run-payload healthy
+[email:dev-fallback] to=u-f0961ec8-1600-44b9-a398-233c440b3a5f@example.com subject="Confirm your Ritmo Studio email"
+Confirm your email
+
+Welcome to Ritmo Studio! Confirm u-f0961ec8-1600-44b9-a398-233c440b3a5f@example.com to secure your account.
+
+Verify email: https://test.ritmofit.studio/api/auth/verify-email?token=<redacted>&callbackURL=%2F
+
+You can keep using Ritmo Studio while this is pending.
+
+stdout | test/clip-window.integration.test.ts > clip-window guard (integration) > rejects an inverted/equal clip window (clipEndMs <= clipStartMs) with a clean 422, not a 500
+[email:dev-fallback] to=u-f2fe226d-b461-4367-80f8-60d17e30d1f3@example.com subject="Confirm your Ritmo Studio email"
+Confirm your email
+
+Welcome to Ritmo Studio! Confirm u-f2fe226d-b461-4367-80f8-60d17e30d1f3@example.com to secure your account.
+
+Verify email: https://test.ritmofit.studio/api/auth/verify-email?token=<redacted>&callbackURL=%2F
+
+You can keep using Ritmo Studio while this is pending.
+
+stdout | test/clip-window.integration.test.ts > clip-window guard (integration) > rejects an add-track with an inverted clip window (clipEndMs <= clipStartMs) with a 422
+[email:dev-fallback] to=u-690b9db2-be07-4e90-a457-7080017507ba@example.com subject="Confirm your Ritmo Studio email"
+Confirm your email
+
+Welcome to Ritmo Studio! Confirm u-690b9db2-be07-4e90-a457-7080017507ba@example.com to secure your account.
+
+Verify email: https://test.ritmofit.studio/api/auth/verify-email?token=<redacted>&callbackURL=%2F
+
+You can keep using Ritmo Studio while this is pending.
+
+stdout | test/clip-window.integration.test.ts > clip-window guard (integration) > rejects an add-track clip start at/past the track length
+[email:dev-fallback] to=u-62c6a943-d62a-40b9-aeca-a01947208054@example.com subject="Confirm your Ritmo Studio email"
+Confirm your email
+
+Welcome to Ritmo Studio! Confirm u-62c6a943-d62a-40b9-aeca-a01947208054@example.com to secure your account.
+
+Verify email: https://test.ritmofit.studio/api/auth/verify-email?token=<redacted>&callbackURL=%2F
+
+You can keep using Ritmo Studio while this is pending.
+
+stdout | test/clip-window.integration.test.ts > clip-window guard (integration) > rejects cue/move anchors outside a trimmed clip window and accepts one inside
+[email:dev-fallback] to=u-f3c5d41c-30a6-4722-8864-9275f2a974e7@example.com subject="Confirm your Ritmo Studio email"
+Confirm your email
+
+Welcome to Ritmo Studio! Confirm u-f3c5d41c-30a6-4722-8864-9275f2a974e7@example.com to secure your account.
+
+Verify email: https://test.ritmofit.studio/api/auth/verify-email?token=<redacted>&callbackURL=%2F
+
+You can keep using Ritmo Studio while this is pending.
+
+stdout | test/clip-window.integration.test.ts > clip-window guard (integration) > rejects shrinking a clip end onto an existing choreography anchor
+[email:dev-fallback] to=u-89d1f20e-27af-4412-8deb-bf35f250d487@example.com subject="Confirm your Ritmo Studio email"
+Confirm your email
+
+Welcome to Ritmo Studio! Confirm u-89d1f20e-27af-4412-8deb-bf35f250d487@example.com to secure your account.
+
+Verify email: https://test.ritmofit.studio/api/auth/verify-email?token=<redacted>&callbackURL=%2F
+
+You can keep using Ritmo Studio while this is pending.
+
+stdout | test/clip-window.integration.test.ts > clip-window guard (integration) > rejects a clip shrink when a concurrent exterior cue arrives after preflight
+[email:dev-fallback] to=u-b4c21aa8-090f-4ef0-b011-2ac456436375@example.com subject="Confirm your Ritmo Studio email"
+Confirm your email
+
+Welcome to Ritmo Studio! Confirm u-b4c21aa8-090f-4ef0-b011-2ac456436375@example.com to secure your account.
+
+Verify email: https://test.ritmofit.studio/api/auth/verify-email?token=<redacted>&callbackURL=%2F
+
+You can keep using Ritmo Studio while this is pending.
+
+stdout | test/clip-window.integration.test.ts > clip-window guard (integration) > rejects a clip start raise when a concurrent exterior cue arrives after preflight
+[email:dev-fallback] to=u-48d23bea-9c78-4723-a051-3b3f4cccb4af@example.com subject="Confirm your Ritmo Studio email"
+Confirm your email
+
+Welcome to Ritmo Studio! Confirm u-48d23bea-9c78-4723-a051-3b3f4cccb4af@example.com to secure your account.
+
+Verify email: https://test.ritmofit.studio/api/auth/verify-email?token=<redacted>&callbackURL=%2F
+
+You can keep using Ritmo Studio while this is pending.
+
+stdout | test/clip-window.integration.test.ts > clip-window guard (integration) > applies a clip-window update when every anchor remains inside the proposed window
+[email:dev-fallback] to=u-8208676c-1ecc-463b-8a35-25543d272bb1@example.com subject="Confirm your Ritmo Studio email"
+Confirm your email
+
+Welcome to Ritmo Studio! Confirm u-8208676c-1ecc-463b-8a35-25543d272bb1@example.com to secure your account.
+
+Verify email: https://test.ritmofit.studio/api/auth/verify-email?token=<redacted>&callbackURL=%2F
+
+You can keep using Ritmo Studio while this is pending.
+
+stdout | test/clip-window.integration.test.ts > clip-window guard (integration) > run-payload re-bases anchors to the clip start but keeps beat/bar track-relative
+[email:dev-fallback] to=u-01194272-c931-44b6-9f97-ce1ba3066582@example.com subject="Confirm your Ritmo Studio email"
+Confirm your email
+
+Welcome to Ritmo Studio! Confirm u-01194272-c931-44b6-9f97-ce1ba3066582@example.com to secure your account.
+
+Verify email: https://test.ritmofit.studio/api/auth/verify-email?token=<redacted>&callbackURL=%2F
+
+You can keep using Ritmo Studio while this is pending.
+
+ ✓ test/clip-window.integration.test.ts (10 tests) 1555ms
+stdout | test/ordered-class-import.integration.test.ts > ordered class import (mounted Worker + migrated D1)
+[email:dev-fallback] to=u-44630a17-4c21-478f-81d2-b9805fd18982@example.com subject="Confirm your Ritmo Studio email"
+Confirm your email
+
+Welcome to Ritmo Studio! Confirm u-44630a17-4c21-478f-81d2-b9805fd18982@example.com to secure your account.
+
+Verify email: https://test.ritmofit.studio/api/auth/verify-email?token=<redacted>&callbackURL=%2F
+
+You can keep using Ritmo Studio while this is pending.
+
+stdout | test/ordered-class-import.integration.test.ts > ordered class import (mounted Worker + migrated D1)
+[email:dev-fallback] to=u-7e14acea-39d3-4933-a09a-59c67187bfbf@example.com subject="Confirm your Ritmo Studio email"
+Confirm your email
+
+Welcome to Ritmo Studio! Confirm u-7e14acea-39d3-4933-a09a-59c67187bfbf@example.com to secure your account.
+
+Verify email: https://test.ritmofit.studio/api/auth/verify-email?token=<redacted>&callbackURL=%2F
+
+You can keep using Ritmo Studio while this is pending.
+
+ ✓ test/ordered-class-import.integration.test.ts (13 tests) 1460ms
+stdout | test/track-duration-dependents.integration.test.ts > library-track duration dependent placements
+[email:dev-fallback] to=u-7f4f1985-72c5-46c4-9b40-5f3dfaa1a6f1@example.com subject="Confirm your Ritmo Studio email"
+Confirm your email
+
+Welcome to Ritmo Studio! Confirm u-7f4f1985-72c5-46c4-9b40-5f3dfaa1a6f1@example.com to secure your account.
+
+Verify email: https://test.ritmofit.studio/api/auth/verify-email?token=<redacted>&callbackURL=%2F
+
+You can keep using Ritmo Studio while this is pending.
+
+stdout | test/track-duration-dependents.integration.test.ts > library-track duration choreography bounds > rejects a cue write when a duration shrink makes its preflight read stale
+[email:dev-fallback] to=u-93404473-3145-4fa0-b039-b54a70c478f5@example.com subject="Confirm your Ritmo Studio email"
+Confirm your email
+
+Welcome to Ritmo Studio! Confirm u-93404473-3145-4fa0-b039-b54a70c478f5@example.com to secure your account.
+
+Verify email: https://test.ritmofit.studio/api/auth/verify-email?token=<redacted>&callbackURL=%2F
+
+You can keep using Ritmo Studio while this is pending.
+
+stdout | test/track-duration-dependents.integration.test.ts > library-track duration choreography bounds > rejects a duration whose exclusive end lands on an inherited 'cue'
+[email:dev-fallback] to=u-e2695337-ea15-40a0-a942-f9fbf2b45394@example.com subject="Confirm your Ritmo Studio email"
+Confirm your email
+
+Welcome to Ritmo Studio! Confirm u-e2695337-ea15-40a0-a942-f9fbf2b45394@example.com to secure your account.
+
+Verify email: https://test.ritmofit.studio/api/auth/verify-email?token=<redacted>&callbackURL=%2F
+
+You can keep using Ritmo Studio while this is pending.
+
+stdout | test/track-duration-dependents.integration.test.ts > library-track duration choreography bounds > rejects a duration whose exclusive end lands on an inherited 'move'
+[email:dev-fallback] to=u-7b9d3774-3dd4-4945-a6b0-b0e7b79af168@example.com subject="Confirm your Ritmo Studio email"
+Confirm your email
+
+Welcome to Ritmo Studio! Confirm u-7b9d3774-3dd4-4945-a6b0-b0e7b79af168@example.com to secure your account.
+
+Verify email: https://test.ritmofit.studio/api/auth/verify-email?token=<redacted>&callbackURL=%2F
+
+You can keep using Ritmo Studio while this is pending.
+
+stdout | test/track-duration-dependents.integration.test.ts > library-track duration choreography bounds > rejects an inherited 'cue' create and anchor update after the duration shrinks first
+[email:dev-fallback] to=u-93182c89-5cad-43be-8c3a-5e436debecc1@example.com subject="Confirm your Ritmo Studio email"
+Confirm your email
+
+Welcome to Ritmo Studio! Confirm u-93182c89-5cad-43be-8c3a-5e436debecc1@example.com to secure your account.
+
+Verify email: https://test.ritmofit.studio/api/auth/verify-email?token=<redacted>&callbackURL=%2F
+
+You can keep using Ritmo Studio while this is pending.
+
+stdout | test/track-duration-dependents.integration.test.ts > library-track duration choreography bounds > rejects an inherited 'move' create and anchor update after the duration shrinks first
+[email:dev-fallback] to=u-6d2336a2-af04-4891-98e6-a8a0f3f14494@example.com subject="Confirm your Ritmo Studio email"
+Confirm your email
+
+Welcome to Ritmo Studio! Confirm u-6d2336a2-af04-4891-98e6-a8a0f3f14494@example.com to secure your account.
+
+Verify email: https://test.ritmofit.studio/api/auth/verify-email?token=<redacted>&callbackURL=%2F
+
+You can keep using Ritmo Studio while this is pending.
+
+stdout | test/track-duration-dependents.integration.test.ts > library-track duration choreography bounds > rejects the duration shrink after an inherited 'cue' anchor update serializes first
+[email:dev-fallback] to=u-d9d66c55-3b37-4b7d-a5c2-fc80f16d1c0c@example.com subject="Confirm your Ritmo Studio email"
+Confirm your email
+
+Welcome to Ritmo Studio! Confirm u-d9d66c55-3b37-4b7d-a5c2-fc80f16d1c0c@example.com to secure your account.
+
+Verify email: https://test.ritmofit.studio/api/auth/verify-email?token=<redacted>&callbackURL=%2F
+
+You can keep using Ritmo Studio while this is pending.
+
+stdout | test/track-duration-dependents.integration.test.ts > library-track duration choreography bounds > rejects the duration shrink after an inherited 'move' anchor update serializes first
+[email:dev-fallback] to=u-94f4448a-20ec-445b-a4b8-3b515c7e3eaf@example.com subject="Confirm your Ritmo Studio email"
+Confirm your email
+
+Welcome to Ritmo Studio! Confirm u-94f4448a-20ec-445b-a4b8-3b515c7e3eaf@example.com to secure your account.
+
+Verify email: https://test.ritmofit.studio/api/auth/verify-email?token=<redacted>&callbackURL=%2F
+
+You can keep using Ritmo Studio while this is pending.
+
+stdout | test/track-duration-dependents.integration.test.ts > library-track duration choreography bounds > maps a zero-row write whose anchor is valid again to an explicit retryable conflict
+[email:dev-fallback] to=u-c044104e-db4b-4ebf-929b-3b002f51729e@example.com subject="Confirm your Ritmo Studio email"
+Confirm your email
+
+Welcome to Ritmo Studio! Confirm u-c044104e-db4b-4ebf-929b-3b002f51729e@example.com to secure your account.
+
+Verify email: https://test.ritmofit.studio/api/auth/verify-email?token=<redacted>&callbackURL=%2F
+
+You can keep using Ritmo Studio while this is pending.
+
+ ✓ test/track-duration-dependents.integration.test.ts (10 tests) 1907ms
+stdout | test/class-list.integration.test.ts > class library pagination (integration)
+[email:dev-fallback] to=u-f76f2bd6-d15f-4670-bfc7-8c91700fcca9@example.com subject="Confirm your Ritmo Studio email"
+Confirm your email
+
+Welcome to Ritmo Studio! Confirm u-f76f2bd6-d15f-4670-bfc7-8c91700fcca9@example.com to secure your account.
+
+Verify email: https://test.ritmofit.studio/api/auth/verify-email?token=<redacted>&callbackURL=%2F
+
+You can keep using Ritmo Studio while this is pending.
+
+stdout | test/class-list.integration.test.ts > class library pagination (integration)
+[email:dev-fallback] to=u-39558e61-516f-4014-8cb3-ba0cb20e4d64@example.com subject="Confirm your Ritmo Studio email"
+Confirm your email
+
+Welcome to Ritmo Studio! Confirm u-39558e61-516f-4014-8cb3-ba0cb20e4d64@example.com to secure your account.
+
+Verify email: https://test.ritmofit.studio/api/auth/verify-email?token=<redacted>&callbackURL=%2F
+
+You can keep using Ritmo Studio while this is pending.
+
+stdout | test/class-list.integration.test.ts > class library pagination (integration) > pages a same-updatedAt group across a boundary without skip or duplicate
+[email:dev-fallback] to=u-df8586a0-a5c3-48ab-a118-35a40bdc6440@example.com subject="Confirm your Ritmo Studio email"
+Confirm your email
+
+Welcome to Ritmo Studio! Confirm u-df8586a0-a5c3-48ab-a118-35a40bdc6440@example.com to secure your account.
+
+Verify email: https://test.ritmofit.studio/api/auth/verify-email?token=<redacted>&callbackURL=%2F
+
+You can keep using Ritmo Studio while this is pending.
+
+stdout | test/class-list.integration.test.ts > class library pagination (integration) > returns Library-card aggregates (track count, total runtime, art collage)
+[email:dev-fallback] to=u-837bbb63-2e31-4c78-a8d5-22d023219efd@example.com subject="Confirm your Ritmo Studio email"
+Confirm your email
+
+Welcome to Ritmo Studio! Confirm u-837bbb63-2e31-4c78-a8d5-22d023219efd@example.com to secure your account.
+
+Verify email: https://test.ritmofit.studio/api/auth/verify-email?token=<redacted>&callbackURL=%2F
+
+You can keep using Ritmo Studio while this is pending.
+
+stdout | test/class-list.integration.test.ts > class library pagination (integration) > moves a class to the recent boundary when its track list changes
+[email:dev-fallback] to=u-04f2319c-91be-49d8-bdfa-2dc114fcc93b@example.com subject="Confirm your Ritmo Studio email"
+Confirm your email
+
+Welcome to Ritmo Studio! Confirm u-04f2319c-91be-49d8-bdfa-2dc114fcc93b@example.com to secure your account.
+
+Verify email: https://test.ritmofit.studio/api/auth/verify-email?token=<redacted>&callbackURL=%2F
+
+You can keep using Ritmo Studio while this is pending.
+
+stdout | test/class-list.integration.test.ts > class library pagination (integration) > returns zeroed aggregates for a class with no tracks
+[email:dev-fallback] to=u-aeb908c3-a6c5-4a59-a3b7-3fd390af89ff@example.com subject="Confirm your Ritmo Studio email"
+Confirm your email
+
+Welcome to Ritmo Studio! Confirm u-aeb908c3-a6c5-4a59-a3b7-3fd390af89ff@example.com to secure your account.
+
+Verify email: https://test.ritmofit.studio/api/auth/verify-email?token=<redacted>&callbackURL=%2F
+
+You can keep using Ritmo Studio while this is pending.
+
+ ✓ test/class-list.integration.test.ts (8 tests) 817ms
+stdout | test/run-payload-contract.integration.test.ts > run-payload contract (integration)
+[email:dev-fallback] to=u-8b07c6ff-dc71-4cc8-93bf-b4a1f9330121@example.com subject="Confirm your Ritmo Studio email"
+Confirm your email
+
+Welcome to Ritmo Studio! Confirm u-8b07c6ff-dc71-4cc8-93bf-b4a1f9330121@example.com to secure your account.
+
+Verify email: https://test.ritmofit.studio/api/auth/verify-email?token=<redacted>&callbackURL=%2F
+
+You can keep using Ritmo Studio while this is pending.
+
+stdout | test/run-payload-contract.integration.test.ts > run-payload contract (integration)
+[email:dev-fallback] to=u-b900136d-c644-4401-bdae-89cfbb40b786@example.com subject="Confirm your Ritmo Studio email"
+Confirm your email
+
+Welcome to Ritmo Studio! Confirm u-b900136d-c644-4401-bdae-89cfbb40b786@example.com to secure your account.
+
+Verify email: https://test.ritmofit.studio/api/auth/verify-email?token=<redacted>&callbackURL=%2F
+
+You can keep using Ritmo Studio while this is pending.
+
+stdout | test/run-payload-contract.integration.test.ts > run-payload contract (integration)
+[email:dev-fallback] to=u-90970c06-76d5-4ea6-842f-03225814d361@example.com subject="Confirm your Ritmo Studio email"
+Confirm your email
+
+Welcome to Ritmo Studio! Confirm u-90970c06-76d5-4ea6-842f-03225814d361@example.com to secure your account.
+
+Verify email: https://test.ritmofit.studio/api/auth/verify-email?token=<redacted>&callbackURL=%2F
+
+You can keep using Ritmo Studio while this is pending.
+
+stdout | test/run-payload-contract.integration.test.ts > run-payload cue fields
+[email:dev-fallback] to=u-4692bb98-a703-4ea2-9fe5-2743367878b4@example.com subject="Confirm your Ritmo Studio email"
+Confirm your email
+
+Welcome to Ritmo Studio! Confirm u-4692bb98-a703-4ea2-9fe5-2743367878b4@example.com to secure your account.
+
+Verify email: https://test.ritmofit.studio/api/auth/verify-email?token=<redacted>&callbackURL=%2F
+
+You can keep using Ritmo Studio while this is pending.
+
+stdout | test/run-payload-contract.integration.test.ts > run-payload cue fields
+[email:dev-fallback] to=u-0adbbb36-01a3-4469-a9ff-74e425684420@example.com subject="Confirm your Ritmo Studio email"
+Confirm your email
+
+Welcome to Ritmo Studio! Confirm u-0adbbb36-01a3-4469-a9ff-74e425684420@example.com to secure your account.
+
+Verify email: https://test.ritmofit.studio/api/auth/verify-email?token=<redacted>&callbackURL=%2F
+
+You can keep using Ritmo Studio while this is pending.
+
+ ✓ test/run-payload-contract.integration.test.ts (5 tests) 822ms
+stdout | test/provider-disconnect.integration.test.ts > provider disconnect purge enqueue (integration) > enqueues a purge on a real disconnect and forgets the connection
+[email:dev-fallback] to=u-eb83d798-e857-4a9f-92e9-a63ee80cfa53@example.com subject="Confirm your Ritmo Studio email"
+Confirm your email
+
+Welcome to Ritmo Studio! Confirm u-eb83d798-e857-4a9f-92e9-a63ee80cfa53@example.com to secure your account.
+
+Verify email: https://test.ritmofit.studio/api/auth/verify-email?token=<redacted>&callbackURL=%2F
+
+You can keep using Ritmo Studio while this is pending.
+
+stdout | test/provider-disconnect.integration.test.ts > provider disconnect purge enqueue (integration) > does not enqueue a duty when disconnecting an absent connection
+[email:dev-fallback] to=u-4c5a26a2-fc93-4970-a9e5-4868bb8858c0@example.com subject="Confirm your Ritmo Studio email"
+Confirm your email
+
+Welcome to Ritmo Studio! Confirm u-4c5a26a2-fc93-4970-a9e5-4868bb8858c0@example.com to secure your account.
+
+Verify email: https://test.ritmofit.studio/api/auth/verify-email?token=<redacted>&callbackURL=%2F
+
+You can keep using Ritmo Studio while this is pending.
+
+stdout | test/provider-disconnect.integration.test.ts > provider disconnect purge enqueue (integration) > does not enqueue a second duty on a repeated disconnect
+[email:dev-fallback] to=u-9b9c2a59-759d-419f-b0e7-b0b0b3c83703@example.com subject="Confirm your Ritmo Studio email"
+Confirm your email
+
+Welcome to Ritmo Studio! Confirm u-9b9c2a59-759d-419f-b0e7-b0b0b3c83703@example.com to secure your account.
+
+Verify email: https://test.ritmofit.studio/api/auth/verify-email?token=<redacted>&callbackURL=%2F
+
+You can keep using Ritmo Studio while this is pending.
+
+stdout | test/provider-disconnect.integration.test.ts > provider disconnect purge enqueue (integration) > cancels the pending purge when the user reconnects the same provider
+[email:dev-fallback] to=u-bc1471a4-5a4c-43b9-9bfd-299703273cd3@example.com subject="Confirm your Ritmo Studio email"
+Confirm your email
+
+Welcome to Ritmo Studio! Confirm u-bc1471a4-5a4c-43b9-9bfd-299703273cd3@example.com to secure your account.
+
+Verify email: https://test.ritmofit.studio/api/auth/verify-email?token=<redacted>&callbackURL=%2F
+
+You can keep using Ritmo Studio while this is pending.
+
+stdout | test/provider-disconnect.integration.test.ts > provider disconnect purge enqueue (integration) > preserves re-imported provider refs + art when the drain runs after a reconnect
+[email:dev-fallback] to=u-930e3e31-1733-448a-bfb7-f8f9593a3fe8@example.com subject="Confirm your Ritmo Studio email"
+Confirm your email
+
+Welcome to Ritmo Studio! Confirm u-930e3e31-1733-448a-bfb7-f8f9593a3fe8@example.com to secure your account.
+
+Verify email: https://test.ritmofit.studio/api/auth/verify-email?token=<redacted>&callbackURL=%2F
+
+You can keep using Ritmo Studio while this is pending.
+
+stdout | test/provider-disconnect.integration.test.ts > provider disconnect purge enqueue (integration) > invalidates a purge item already captured by the drain when the user reconnects
+[email:dev-fallback] to=u-dfc6e4e6-769b-4b11-8f5f-6ef367d7728e@example.com subject="Confirm your Ritmo Studio email"
+Confirm your email
+
+Welcome to Ritmo Studio! Confirm u-dfc6e4e6-769b-4b11-8f5f-6ef367d7728e@example.com to secure your account.
+
+Verify email: https://test.ritmofit.studio/api/auth/verify-email?token=<redacted>&callbackURL=%2F
+
+You can keep using Ritmo Studio while this is pending.
+
+ ✓ test/provider-disconnect.integration.test.ts (6 tests) 652ms
+stdout | test/nested-resource-access.integration.test.ts > by-id nested-resource access (integration)
+[email:dev-fallback] to=u-fd94ce26-21da-4260-be0a-d5b3b3bdbd68@example.com subject="Confirm your Ritmo Studio email"
+Confirm your email
+
+Welcome to Ritmo Studio! Confirm u-fd94ce26-21da-4260-be0a-d5b3b3bdbd68@example.com to secure your account.
+
+Verify email: https://test.ritmofit.studio/api/auth/verify-email?token=<redacted>&callbackURL=%2F
+
+You can keep using Ritmo Studio while this is pending.
+
+stdout | test/nested-resource-access.integration.test.ts > by-id nested-resource access (integration)
+[email:dev-fallback] to=u-85edc1bb-fba0-4da6-a859-4da78d1db02d@example.com subject="Confirm your Ritmo Studio email"
+Confirm your email
+
+Welcome to Ritmo Studio! Confirm u-85edc1bb-fba0-4da6-a859-4da78d1db02d@example.com to secure your account.
+
+Verify email: https://test.ritmofit.studio/api/auth/verify-email?token=<redacted>&callbackURL=%2F
+
+You can keep using Ritmo Studio while this is pending.
+
+stdout | test/nested-resource-access.integration.test.ts > by-id nested-resource access (integration)
+[email:dev-fallback] to=u-7e046a1a-b9f3-4a13-b861-f4bce6e0d9c4@example.com subject="Confirm your Ritmo Studio email"
+Confirm your email
+
+Welcome to Ritmo Studio! Confirm u-7e046a1a-b9f3-4a13-b861-f4bce6e0d9c4@example.com to secure your account.
+
+Verify email: https://test.ritmofit.studio/api/auth/verify-email?token=<redacted>&callbackURL=%2F
+
+You can keep using Ritmo Studio while this is pending.
+
+ ✓ test/nested-resource-access.integration.test.ts (8 tests) 741ms
+stdout | test/playlist-import-url.integration.test.ts > POST /classes/:id/import-playlist (integration) > 404 for a class the caller cannot edit (hidden resource)
+[email:dev-fallback] to=u-aa6097f5-8131-4aa9-8c70-80fcb2f4cf0d@example.com subject="Confirm your Ritmo Studio email"
+Confirm your email
+
+Welcome to Ritmo Studio! Confirm u-aa6097f5-8131-4aa9-8c70-80fcb2f4cf0d@example.com to secure your account.
+
+Verify email: https://test.ritmofit.studio/api/auth/verify-email?token=<redacted>&callbackURL=%2F
+
+You can keep using Ritmo Studio while this is pending.
+
+stdout | test/playlist-import-url.integration.test.ts > POST /classes/:id/import-playlist (integration) > 404 for a class the caller cannot edit (hidden resource)
+[email:dev-fallback] to=u-75fd0051-705d-4f2d-8d8c-e01ae4600de8@example.com subject="Confirm your Ritmo Studio email"
+Confirm your email
+
+Welcome to Ritmo Studio! Confirm u-75fd0051-705d-4f2d-8d8c-e01ae4600de8@example.com to secure your account.
+
+Verify email: https://test.ritmofit.studio/api/auth/verify-email?token=<redacted>&callbackURL=%2F
+
+You can keep using Ritmo Studio while this is pending.
+
+stdout | test/playlist-import-url.integration.test.ts > POST /classes/:id/import-playlist (integration) > 400 for a URL on an unsupported host
+[email:dev-fallback] to=u-35834c95-6ad8-4253-b85e-9ece4d115aab@example.com subject="Confirm your Ritmo Studio email"
+Confirm your email
+
+Welcome to Ritmo Studio! Confirm u-35834c95-6ad8-4253-b85e-9ece4d115aab@example.com to secure your account.
+
+Verify email: https://test.ritmofit.studio/api/auth/verify-email?token=<redacted>&callbackURL=%2F
+
+You can keep using Ritmo Studio while this is pending.
+
+stdout | test/playlist-import-url.integration.test.ts > POST /classes/:id/import-playlist (integration) > 400 with a pointer to saved-playlist browsing for an Apple Music library link
+[email:dev-fallback] to=u-eb8e50c9-a548-42b2-b6fb-7dbcd9be18e0@example.com subject="Confirm your Ritmo Studio email"
+Confirm your email
+
+Welcome to Ritmo Studio! Confirm u-eb8e50c9-a548-42b2-b6fb-7dbcd9be18e0@example.com to secure your account.
+
+Verify email: https://test.ritmofit.studio/api/auth/verify-email?token=<redacted>&callbackURL=%2F
+
+You can keep using Ritmo Studio while this is pending.
+
+A header value for "MF-Vitest-Source" contains non-ASCII characters: "test/playlist-import-url.integration.test.ts's test "400 (unsupported) for a SoundCloud track permalink — playlists only"" (raw bytes: "\x74\x65\x73\x74\x2f\x70\x6c\x61\x79\x6c\x69\x73\x74\x2d\x69\x6d\x70\x6f\x72\x74\x2d\x75\x72\x6c\x2e\x69\x6e\x74\x65\x67\x72\x61\x74\x69\x6f\x6e\x2e\x74\x65\x73\x74\x2e\x74\x73\x27\x73\x20\x74\x65\x73\x74\x20\x22\x34\x30\x30\x20\x28\x75\x6e\x73\x75\x70\x70\x6f\x72\x74\x65\x64\x29\x20\x66\x6f\x72\x20\x61\x20\x53\x6f\x75\x6e\x64\x43\x6c\x6f\x75\x64\x20\x74\x72\x61\x63\x6b\x20\x70\x65\x72\x6d\x61\x6c\x69\x6e\x6b\x20\xe2\x80\x94\x20\x70\x6c\x61\x79\x6c\x69\x73\x74\x73\x20\x6f\x6e\x6c\x79\x22"). As a quirk to support Unicode, we are encoding values as UTF-8 in the header, but in a browser this would likely result in a TypeError exception. Consider encoding this string in ASCII for compatibility with browser implementations of the Fetch specification.
+stdout | test/playlist-import-url.integration.test.ts > POST /classes/:id/import-playlist (integration) > 400 (unsupported) for a SoundCloud track permalink — playlists only
+[email:dev-fallback] to=u-2b133d58-2a23-4e8b-ac35-60eea7eae542@example.com subject="Confirm your Ritmo Studio email"
+Confirm your email
+
+Welcome to Ritmo Studio! Confirm u-2b133d58-2a23-4e8b-ac35-60eea7eae542@example.com to secure your account.
+
+Verify email: https://test.ritmofit.studio/api/auth/verify-email?token=<redacted>&callbackURL=%2F
+
+You can keep using Ritmo Studio while this is pending.
+
+A header value for "MF-Vitest-Source" contains non-ASCII characters: "test/playlist-import-url.integration.test.ts's test "400 (unsupported) for a SoundCloud track permalink — playlists only"" (raw bytes: "\x74\x65\x73\x74\x2f\x70\x6c\x61\x79\x6c\x69\x73\x74\x2d\x69\x6d\x70\x6f\x72\x74\x2d\x75\x72\x6c\x2e\x69\x6e\x74\x65\x67\x72\x61\x74\x69\x6f\x6e\x2e\x74\x65\x73\x74\x2e\x74\x73\x27\x73\x20\x74\x65\x73\x74\x20\x22\x34\x30\x30\x20\x28\x75\x6e\x73\x75\x70\x70\x6f\x72\x74\x65\x64\x29\x20\x66\x6f\x72\x20\x61\x20\x53\x6f\x75\x6e\x64\x43\x6c\x6f\x75\x64\x20\x74\x72\x61\x63\x6b\x20\x70\x65\x72\x6d\x61\x6c\x69\x6e\x6b\x20\xe2\x80\x94\x20\x70\x6c\x61\x79\x6c\x69\x73\x74\x73\x20\x6f\x6e\x6c\x79\x22"). As a quirk to support Unicode, we are encoding values as UTF-8 in the header, but in a browser this would likely result in a TypeError exception. Consider encoding this string in ASCII for compatibility with browser implementations of the Fetch specification.
+stdout | test/playlist-import-url.integration.test.ts > POST /classes/:id/import-playlist (integration) > dispatches a playlist URL for each shipped provider through the registry (mock seam)
+[email:dev-fallback] to=u-b18c91c6-ab94-430d-af66-8a0e78109a86@example.com subject="Confirm your Ritmo Studio email"
+Confirm your email
+
+Welcome to Ritmo Studio! Confirm u-b18c91c6-ab94-430d-af66-8a0e78109a86@example.com to secure your account.
+
+Verify email: https://test.ritmofit.studio/api/auth/verify-email?token=<redacted>&callbackURL=%2F
+
+You can keep using Ritmo Studio while this is pending.
+
+stdout | test/playlist-import-url.integration.test.ts > POST /classes/:id/import-playlist (integration) > moves the class to the recent boundary after a song-block commit
+[email:dev-fallback] to=u-ca3cd457-6a0b-45e8-b477-fd19094fc4c5@example.com subject="Confirm your Ritmo Studio email"
+Confirm your email
+
+Welcome to Ritmo Studio! Confirm u-ca3cd457-6a0b-45e8-b477-fd19094fc4c5@example.com to secure your account.
+
+Verify email: https://test.ritmofit.studio/api/auth/verify-email?token=<redacted>&callbackURL=%2F
+
+You can keep using Ritmo Studio while this is pending.
+
+stdout | test/playlist-import-url.integration.test.ts > POST /classes/:id/import-playlist (integration) > 429 once the per-user import limiter (max 5/min) is exceeded
+[email:dev-fallback] to=u-523174a3-f98e-43c9-a06e-22a6b8b00886@example.com subject="Confirm your Ritmo Studio email"
+Confirm your email
+
+Welcome to Ritmo Studio! Confirm u-523174a3-f98e-43c9-a06e-22a6b8b00886@example.com to secure your account.
+
+Verify email: https://test.ritmofit.studio/api/auth/verify-email?token=<redacted>&callbackURL=%2F
+
+You can keep using Ritmo Studio while this is pending.
+
+ ✓ test/playlist-import-url.integration.test.ts (9 tests) 1358ms
+   ✓ POST /classes/:id/import-playlist (integration) > 429 once the per-user import limiter (max 5/min) is exceeded  329ms
+stdout | test/songs-by-move.integration.test.ts > songs by move (integration)
+[email:dev-fallback] to=u-530e8343-02fc-4928-9d25-5967b5e76335@example.com subject="Confirm your Ritmo Studio email"
+Confirm your email
+
+Welcome to Ritmo Studio! Confirm u-530e8343-02fc-4928-9d25-5967b5e76335@example.com to secure your account.
+
+Verify email: https://test.ritmofit.studio/api/auth/verify-email?token=<redacted>&callbackURL=%2F
+
+You can keep using Ritmo Studio while this is pending.
+
+stdout | test/songs-by-move.integration.test.ts > songs by move (integration)
+[email:dev-fallback] to=u-75c9fcf4-051d-4c5c-8e82-e8dd610f0ad3@example.com subject="Confirm your Ritmo Studio email"
+Confirm your email
+
+Welcome to Ritmo Studio! Confirm u-75c9fcf4-051d-4c5c-8e82-e8dd610f0ad3@example.com to secure your account.
+
+Verify email: https://test.ritmofit.studio/api/auth/verify-email?token=<redacted>&callbackURL=%2F
+
+You can keep using Ritmo Studio while this is pending.
+
+ ✓ test/songs-by-move.integration.test.ts (5 tests) 525ms
+stdout | test/run-payload-base-duration.integration.test.ts > run-payload base vs effective duration > emits source length as base and effective when there is no override or clip
+[email:dev-fallback] to=u-a019f3de-f4df-42fb-ac17-f31bdd430913@example.com subject="Confirm your Ritmo Studio email"
+Confirm your email
+
+Welcome to Ritmo Studio! Confirm u-a019f3de-f4df-42fb-ac17-f31bdd430913@example.com to secure your account.
+
+Verify email: https://test.ritmofit.studio/api/auth/verify-email?token=<redacted>&callbackURL=%2F
+
+You can keep using Ritmo Studio while this is pending.
+
+stdout | test/run-payload-base-duration.integration.test.ts > run-payload base vs effective duration > uses durationMsOverride as base without changing the library source
+[email:dev-fallback] to=u-b56497d5-0e6d-48bd-97a9-dce4f1b3343f@example.com subject="Confirm your Ritmo Studio email"
+Confirm your email
+
+Welcome to Ritmo Studio! Confirm u-b56497d5-0e6d-48bd-97a9-dce4f1b3343f@example.com to secure your account.
+
+Verify email: https://test.ritmofit.studio/api/auth/verify-email?token=<redacted>&callbackURL=%2F
+
+You can keep using Ritmo Studio while this is pending.
+
+stdout | test/run-payload-base-duration.integration.test.ts > run-payload base vs effective duration > keeps base at the source when only a clip start is set
+[email:dev-fallback] to=u-78760cb1-004e-4483-8d9d-9dd2902c945d@example.com subject="Confirm your Ritmo Studio email"
+Confirm your email
+
+Welcome to Ritmo Studio! Confirm u-78760cb1-004e-4483-8d9d-9dd2902c945d@example.com to secure your account.
+
+Verify email: https://test.ritmofit.studio/api/auth/verify-email?token=<redacted>&callbackURL=%2F
+
+You can keep using Ritmo Studio while this is pending.
+
+stdout | test/run-payload-base-duration.integration.test.ts > run-payload base vs effective duration > keeps base at the source when only a clip end is set
+[email:dev-fallback] to=u-8776dc7c-5040-4f6a-9f7a-e87e0d7d8abd@example.com subject="Confirm your Ritmo Studio email"
+Confirm your email
+
+Welcome to Ritmo Studio! Confirm u-8776dc7c-5040-4f6a-9f7a-e87e0d7d8abd@example.com to secure your account.
+
+Verify email: https://test.ritmofit.studio/api/auth/verify-email?token=<redacted>&callbackURL=%2F
+
+You can keep using Ritmo Studio while this is pending.
+
+stdout | test/run-payload-base-duration.integration.test.ts > run-payload base vs effective duration > keeps base at 7:00 and effective at 6:05 for a 0:25-6:30 window
+[email:dev-fallback] to=u-3b25247e-54e6-42a5-a45d-c526a3fca9d5@example.com subject="Confirm your Ritmo Studio email"
+Confirm your email
+
+Welcome to Ritmo Studio! Confirm u-3b25247e-54e6-42a5-a45d-c526a3fca9d5@example.com to secure your account.
+
+Verify email: https://test.ritmofit.studio/api/auth/verify-email?token=<redacted>&callbackURL=%2F
+
+You can keep using Ritmo Studio while this is pending.
+
+stdout | test/run-payload-base-duration.integration.test.ts > run-payload base vs effective duration > does not manufacture an override when PATCH omits durationMsOverride
+[email:dev-fallback] to=u-0b481877-747e-40fa-8cb7-d69934390aa9@example.com subject="Confirm your Ritmo Studio email"
+Confirm your email
+
+Welcome to Ritmo Studio! Confirm u-0b481877-747e-40fa-8cb7-d69934390aa9@example.com to secure your account.
+
+Verify email: https://test.ritmofit.studio/api/auth/verify-email?token=<redacted>&callbackURL=%2F
+
+You can keep using Ritmo Studio while this is pending.
+
+stdout | test/run-payload-base-duration.integration.test.ts > run-payload base vs effective duration > recalculates effective duration from an intentional new base plus the clip
+[email:dev-fallback] to=u-d32896ca-813b-4a32-9082-9ff909e3bcf2@example.com subject="Confirm your Ritmo Studio email"
+Confirm your email
+
+Welcome to Ritmo Studio! Confirm u-d32896ca-813b-4a32-9082-9ff909e3bcf2@example.com to secure your account.
+
+Verify email: https://test.ritmofit.studio/api/auth/verify-email?token=<redacted>&callbackURL=%2F
+
+You can keep using Ritmo Studio while this is pending.
+
+ ✓ test/run-payload-base-duration.integration.test.ts (7 tests) 1026ms
+stdout | test/launch-blockers.integration.test.ts > launch blocker regressions (integration) > rejects an unverified share target, then permits the verified user
+[email:dev-fallback] to=u-832cf11e-4b2a-43c4-9f7c-269457df89c1@example.com subject="Confirm your Ritmo Studio email"
+Confirm your email
+
+Welcome to Ritmo Studio! Confirm u-832cf11e-4b2a-43c4-9f7c-269457df89c1@example.com to secure your account.
+
+Verify email: https://test.ritmofit.studio/api/auth/verify-email?token=<redacted>&callbackURL=%2F
+
+You can keep using Ritmo Studio while this is pending.
+
+stdout | test/launch-blockers.integration.test.ts > launch blocker regressions (integration) > rejects an unverified share target, then permits the verified user
+[email:dev-fallback] to=u-43ba5eb6-5adc-47cd-ac5a-5da1912b4fb1@example.com subject="Confirm your Ritmo Studio email"
+Confirm your email
+
+Welcome to Ritmo Studio! Confirm u-43ba5eb6-5adc-47cd-ac5a-5da1912b4fb1@example.com to secure your account.
+
+Verify email: https://test.ritmofit.studio/api/auth/verify-email?token=<redacted>&callbackURL=%2F
+
+You can keep using Ritmo Studio while this is pending.
+
+stdout | test/launch-blockers.integration.test.ts > launch blocker regressions (integration) > rejects an unverified team member, then permits the verified user
+[email:dev-fallback] to=u-761386e0-5e77-4256-8885-2f39f07d9bb4@example.com subject="Confirm your Ritmo Studio email"
+Confirm your email
+
+Welcome to Ritmo Studio! Confirm u-761386e0-5e77-4256-8885-2f39f07d9bb4@example.com to secure your account.
+
+Verify email: https://test.ritmofit.studio/api/auth/verify-email?token=<redacted>&callbackURL=%2F
+
+You can keep using Ritmo Studio while this is pending.
+
+stdout | test/launch-blockers.integration.test.ts > launch blocker regressions (integration) > rejects an unverified team member, then permits the verified user
+[email:dev-fallback] to=u-3d76752f-314e-43a0-a412-3958b4e00b84@example.com subject="Confirm your Ritmo Studio email"
+Confirm your email
+
+Welcome to Ritmo Studio! Confirm u-3d76752f-314e-43a0-a412-3958b4e00b84@example.com to secure your account.
+
+Verify email: https://test.ritmofit.studio/api/auth/verify-email?token=<redacted>&callbackURL=%2F
+
+You can keep using Ritmo Studio while this is pending.
+
+stdout | test/launch-blockers.integration.test.ts > launch blocker regressions (integration) > clears artwork even when a disconnected track keeps another provider ref
+[email:dev-fallback] to=u-0dc0ee5c-46fc-4ba1-80a5-d31e6310f7e4@example.com subject="Confirm your Ritmo Studio email"
+Confirm your email
+
+Welcome to Ritmo Studio! Confirm u-0dc0ee5c-46fc-4ba1-80a5-d31e6310f7e4@example.com to secure your account.
+
+Verify email: https://test.ritmofit.studio/api/auth/verify-email?token=<redacted>&callbackURL=%2F
+
+You can keep using Ritmo Studio while this is pending.
+
+stdout | test/launch-blockers.integration.test.ts > launch blocker regressions (integration) > retains exhausted purge duties while excluding them from active work
+[email:dev-fallback] to=u-8619ef1f-3ff1-43aa-ad0c-a5c9fcd6de32@example.com subject="Confirm your Ritmo Studio email"
+Confirm your email
+
+Welcome to Ritmo Studio! Confirm u-8619ef1f-3ff1-43aa-ad0c-a5c9fcd6de32@example.com to secure your account.
+
+Verify email: https://test.ritmofit.studio/api/auth/verify-email?token=<redacted>&callbackURL=%2F
+
+You can keep using Ritmo Studio while this is pending.
+
+ ✓ test/launch-blockers.integration.test.ts (6 tests) 754ms
+stdout | test/run-payload-sections.integration.test.ts > run-payload sections[].id (integration) > emits each section stable DB id, preserved across fetches
+[email:dev-fallback] to=u-dea3eeef-a707-4315-9719-625c3a1fa397@example.com subject="Confirm your Ritmo Studio email"
+Confirm your email
+
+Welcome to Ritmo Studio! Confirm u-dea3eeef-a707-4315-9719-625c3a1fa397@example.com to secure your account.
+
+Verify email: https://test.ritmofit.studio/api/auth/verify-email?token=<redacted>&callbackURL=%2F
+
+You can keep using Ritmo Studio while this is pending.
+
+stdout | test/run-payload-sections.integration.test.ts > run-payload free-mode max-end duration (integration) > totals to the latest track end, not the last-positioned track end
+[email:dev-fallback] to=u-f3fac337-39f4-4654-96da-92ca023fec56@example.com subject="Confirm your Ritmo Studio email"
+Confirm your email
+
+Welcome to Ritmo Studio! Confirm u-f3fac337-39f4-4654-96da-92ca023fec56@example.com to secure your account.
+
+Verify email: https://test.ritmofit.studio/api/auth/verify-email?token=<redacted>&callbackURL=%2F
+
+You can keep using Ritmo Studio while this is pending.
+
+ ✓ test/run-payload-sections.integration.test.ts (2 tests) 407ms
+stdout | test/class-tag-filter.integration.test.ts > class tag filter (integration)
+[email:dev-fallback] to=u-76dafc24-da6d-4a8e-b5fc-48ad47bd27b9@example.com subject="Confirm your Ritmo Studio email"
+Confirm your email
+
+Welcome to Ritmo Studio! Confirm u-76dafc24-da6d-4a8e-b5fc-48ad47bd27b9@example.com to secure your account.
+
+Verify email: https://test.ritmofit.studio/api/auth/verify-email?token=<redacted>&callbackURL=%2F
+
+You can keep using Ritmo Studio while this is pending.
+
+stdout | test/class-tag-filter.integration.test.ts > class tag filter (integration)
+[email:dev-fallback] to=u-e9c2fb9e-0b6c-48e6-bed0-e485c9b8de6b@example.com subject="Confirm your Ritmo Studio email"
+Confirm your email
+
+Welcome to Ritmo Studio! Confirm u-e9c2fb9e-0b6c-48e6-bed0-e485c9b8de6b@example.com to secure your account.
+
+Verify email: https://test.ritmofit.studio/api/auth/verify-email?token=<redacted>&callbackURL=%2F
+
+You can keep using Ritmo Studio while this is pending.
+
+ ✓ test/class-tag-filter.integration.test.ts (6 tests) 494ms
+stdout | test/provider-spotify-playback-token.integration.test.ts > Spotify playback-token endpoint (integration) > serves a placeholder token in mock mode (routing + response shape)
+[email:dev-fallback] to=u-33cf16cc-3c54-48d8-83fa-401d4c8776e0@example.com subject="Confirm your Ritmo Studio email"
+Confirm your email
+
+Welcome to Ritmo Studio! Confirm u-33cf16cc-3c54-48d8-83fa-401d4c8776e0@example.com to secure your account.
+
+Verify email: https://test.ritmofit.studio/api/auth/verify-email?token=<redacted>&callbackURL=%2F
+
+You can keep using Ritmo Studio while this is pending.
+
+stdout | test/provider-spotify-playback-token.integration.test.ts > Spotify playback-token endpoint (integration) > prod-like path (mock seam off) > returns 409 NOT_CONNECTED when Spotify is not linked
+[email:dev-fallback] to=u-dd213596-ac3b-4c63-8435-8802229e11bb@example.com subject="Confirm your Ritmo Studio email"
+Confirm your email
+
+Welcome to Ritmo Studio! Confirm u-dd213596-ac3b-4c63-8435-8802229e11bb@example.com to secure your account.
+
+Verify email: https://test.ritmofit.studio/api/auth/verify-email?token=<redacted>&callbackURL=%2F
+
+You can keep using Ritmo Studio while this is pending.
+
+stdout | test/provider-spotify-playback-token.integration.test.ts > Spotify playback-token endpoint (integration) > prod-like path (mock seam off) > returns 409 PLAYBACK_REAUTH_REQUIRED for a pre-expansion library-only connection
+[email:dev-fallback] to=u-a116ebeb-8d90-45ea-9670-06c0c2f4a9b6@example.com subject="Confirm your Ritmo Studio email"
+Confirm your email
+
+Welcome to Ritmo Studio! Confirm u-a116ebeb-8d90-45ea-9670-06c0c2f4a9b6@example.com to secure your account.
+
+Verify email: https://test.ritmofit.studio/api/auth/verify-email?token=<redacted>&callbackURL=%2F
+
+You can keep using Ritmo Studio while this is pending.
+
+stdout | test/provider-spotify-playback-token.integration.test.ts > Spotify playback-token endpoint (integration) > prod-like path (mock seam off) > returns the decrypted access token for a playback-scoped, unexpired connection
+[email:dev-fallback] to=u-069288a0-2c4e-4934-8450-32a9f470e880@example.com subject="Confirm your Ritmo Studio email"
+Confirm your email
+
+Welcome to Ritmo Studio! Confirm u-069288a0-2c4e-4934-8450-32a9f470e880@example.com to secure your account.
+
+Verify email: https://test.ritmofit.studio/api/auth/verify-email?token=<redacted>&callbackURL=%2F
+
+You can keep using Ritmo Studio while this is pending.
+
+stdout | test/provider-spotify-playback-token.integration.test.ts > Spotify playback-token endpoint (integration) > prod-like path (mock seam off) > returns 409 REAUTH_REQUIRED when the token is expired and there is no refresh token
+[email:dev-fallback] to=u-9d86d4ee-0ea1-4030-9f76-a6cf32bc80b0@example.com subject="Confirm your Ritmo Studio email"
+Confirm your email
+
+Welcome to Ritmo Studio! Confirm u-9d86d4ee-0ea1-4030-9f76-a6cf32bc80b0@example.com to secure your account.
+
+Verify email: https://test.ritmofit.studio/api/auth/verify-email?token=<redacted>&callbackURL=%2F
+
+You can keep using Ritmo Studio while this is pending.
+
+ ✓ test/provider-spotify-playback-token.integration.test.ts (6 tests) 465ms
+stdout | test/auth-profile.integration.test.ts > caller profile (integration) > blocks an uninvited signup in provider-mock mode and permits the allowlisted address
+[email:dev-fallback] to=invited-89ec87d9-f687-424e-b4d0-2ed9432cdd0b@example.com subject="Confirm your Ritmo Studio email"
+Confirm your email
+
+Welcome to Ritmo Studio! Confirm invited-89ec87d9-f687-424e-b4d0-2ed9432cdd0b@example.com to secure your account.
+
+Verify email: https://test.ritmofit.studio/api/auth/verify-email?token=<redacted>&callbackURL=%2F
+
+You can keep using Ritmo Studio while this is pending.
+
+stdout | test/auth-profile.integration.test.ts > caller profile (integration) > restores test invitations while existing accounts remain able to sign in
+[email:dev-fallback] to=u-b76a7918-6541-4474-abc0-edda30e79a1c@example.com subject="Confirm your Ritmo Studio email"
+Confirm your email
+
+Welcome to Ritmo Studio! Confirm u-b76a7918-6541-4474-abc0-edda30e79a1c@example.com to secure your account.
+
+Verify email: https://test.ritmofit.studio/api/auth/verify-email?token=<redacted>&callbackURL=%2F
+
+You can keep using Ritmo Studio while this is pending.
+
+stdout | test/auth-profile.integration.test.ts > caller profile (integration) > returns and updates the signed-in caller profile
+[email:dev-fallback] to=u-5e8de273-7497-4ee4-b1f0-db071871afa7@example.com subject="Confirm your Ritmo Studio email"
+Confirm your email
+
+Welcome to Ritmo Studio! Confirm u-5e8de273-7497-4ee4-b1f0-db071871afa7@example.com to secure your account.
+
+Verify email: https://test.ritmofit.studio/api/auth/verify-email?token=<redacted>&callbackURL=%2F
+
+You can keep using Ritmo Studio while this is pending.
+
+stdout | test/auth-profile.integration.test.ts > caller profile (integration) > validates profile image URLs
+[email:dev-fallback] to=u-0f25b92d-68e0-4c2a-a201-d8f7f8e3bfc5@example.com subject="Confirm your Ritmo Studio email"
+Confirm your email
+
+Welcome to Ritmo Studio! Confirm u-0f25b92d-68e0-4c2a-a201-d8f7f8e3bfc5@example.com to secure your account.
+
+Verify email: https://test.ritmofit.studio/api/auth/verify-email?token=<redacted>&callbackURL=%2F
+
+You can keep using Ritmo Studio while this is pending.
+
+ ✓ test/auth-profile.integration.test.ts (6 tests) 610ms
+stderr | test/provider-callback.integration.test.ts > provider OAuth callback configuration (integration) > returns connect_failed when the SoundCloud token exchange cannot complete
+[provider-connect:soundcloud] HttpError: SoundCloud is not configured.
+
+stderr | test/provider-callback.integration.test.ts > provider OAuth callback configuration (integration) > returns connect_failed when the Spotify token exchange cannot complete
+[provider-connect:spotify] HttpError: Spotify is not configured.
+
+ ✓ test/provider-callback.integration.test.ts (8 tests) 98ms
+stdout | test/choreography-access.integration.test.ts > choreography write access (integration)
+[email:dev-fallback] to=u-e1a30c33-c1d0-46d0-aa81-342784ba6f58@example.com subject="Confirm your Ritmo Studio email"
+Confirm your email
+
+Welcome to Ritmo Studio! Confirm u-e1a30c33-c1d0-46d0-aa81-342784ba6f58@example.com to secure your account.
+
+Verify email: https://test.ritmofit.studio/api/auth/verify-email?token=<redacted>&callbackURL=%2F
+
+You can keep using Ritmo Studio while this is pending.
+
+stdout | test/choreography-access.integration.test.ts > choreography write access (integration)
+[email:dev-fallback] to=u-1ece9f3a-17b6-420f-ac46-fd9b4440e2ea@example.com subject="Confirm your Ritmo Studio email"
+Confirm your email
+
+Welcome to Ritmo Studio! Confirm u-1ece9f3a-17b6-420f-ac46-fd9b4440e2ea@example.com to secure your account.
+
+Verify email: https://test.ritmofit.studio/api/auth/verify-email?token=<redacted>&callbackURL=%2F
+
+You can keep using Ritmo Studio while this is pending.
+
+stdout | test/choreography-access.integration.test.ts > choreography write access (integration)
+[email:dev-fallback] to=u-463e1aae-d30c-42d5-a971-5460368e13cd@example.com subject="Confirm your Ritmo Studio email"
+Confirm your email
+
+Welcome to Ritmo Studio! Confirm u-463e1aae-d30c-42d5-a971-5460368e13cd@example.com to secure your account.
+
+Verify email: https://test.ritmofit.studio/api/auth/verify-email?token=<redacted>&callbackURL=%2F
+
+You can keep using Ritmo Studio while this is pending.
+
+stdout | test/choreography-access.integration.test.ts > choreography write access (integration)
+[email:dev-fallback] to=u-d560b25d-5058-41f9-ba12-4be06b3b5736@example.com subject="Confirm your Ritmo Studio email"
+Confirm your email
+
+Welcome to Ritmo Studio! Confirm u-d560b25d-5058-41f9-ba12-4be06b3b5736@example.com to secure your account.
+
+Verify email: https://test.ritmofit.studio/api/auth/verify-email?token=<redacted>&callbackURL=%2F
+
+You can keep using Ritmo Studio while this is pending.
+
+ ✓ test/choreography-access.integration.test.ts (4 tests) 681ms
+stdout | test/reorder-permutation.integration.test.ts > sequential reorder permutation guard (integration)
+[email:dev-fallback] to=u-64a6fb16-a56d-48a2-8294-c1f7a7a8d8a8@example.com subject="Confirm your Ritmo Studio email"
+Confirm your email
+
+Welcome to Ritmo Studio! Confirm u-64a6fb16-a56d-48a2-8294-c1f7a7a8d8a8@example.com to secure your account.
+
+Verify email: https://test.ritmofit.studio/api/auth/verify-email?token=<redacted>&callbackURL=%2F
+
+You can keep using Ritmo Studio while this is pending.
+
+ ✓ test/reorder-permutation.integration.test.ts (4 tests) 310ms
+stdout | test/cue-list.integration.test.ts > builder cue list > stores duration, BPM, Open, and a note, and lists by teaching order
+[email:dev-fallback] to=u-4bcb3129-0252-4e04-b246-d5cd5883db73@example.com subject="Confirm your Ritmo Studio email"
+Confirm your email
+
+Welcome to Ritmo Studio! Confirm u-4bcb3129-0252-4e04-b246-d5cd5883db73@example.com to secure your account.
+
+Verify email: https://test.ritmofit.studio/api/auth/verify-email?token=<redacted>&callbackURL=%2F
+
+You can keep using Ritmo Studio while this is pending.
+
+stdout | test/cue-list.integration.test.ts > builder cue list > rejects Open on a track intensity write
+[email:dev-fallback] to=u-15d6f72b-7dbf-4a14-9d9b-0c4354af63d1@example.com subject="Confirm your Ritmo Studio email"
+Confirm your email
+
+Welcome to Ritmo Studio! Confirm u-15d6f72b-7dbf-4a14-9d9b-0c4354af63d1@example.com to secure your account.
+
+Verify email: https://test.ritmofit.studio/api/auth/verify-email?token=<redacted>&callbackURL=%2F
+
+You can keep using Ritmo Studio while this is pending.
+
+ ✓ test/cue-list.integration.test.ts (2 tests) 379ms
+stdout | test/user-move-class-recency.integration.test.ts > custom-move class recency (integration) > touches each affected class once only when a referenced custom-move name changes
+[email:dev-fallback] to=u-43d2755a-3445-4722-803a-4222d8dccdd8@example.com subject="Confirm your Ritmo Studio email"
+Confirm your email
+
+Welcome to Ritmo Studio! Confirm u-43d2755a-3445-4722-803a-4222d8dccdd8@example.com to secure your account.
+
+Verify email: https://test.ritmofit.studio/api/auth/verify-email?token=<redacted>&callbackURL=%2F
+
+You can keep using Ritmo Studio while this is pending.
+
+ ✓ test/user-move-class-recency.integration.test.ts (1 test) 400ms
+   ✓ custom-move class recency (integration) > touches each affected class once only when a referenced custom-move name changes  350ms
+stdout | test/rpm-holds.integration.test.ts > per-track RPM & holds (integration) > persists RPM/holds on add and surfaces them on the run-payload
+[email:dev-fallback] to=u-18bb69e9-6cb1-437a-bd78-988b665578d8@example.com subject="Confirm your Ritmo Studio email"
+Confirm your email
+
+Welcome to Ritmo Studio! Confirm u-18bb69e9-6cb1-437a-bd78-988b665578d8@example.com to secure your account.
+
+Verify email: https://test.ritmofit.studio/api/auth/verify-email?token=<redacted>&callbackURL=%2F
+
+You can keep using Ritmo Studio while this is pending.
+
+stdout | test/rpm-holds.integration.test.ts > per-track RPM & holds (integration) > PATCH updates RPM/holds, keeps a 0 hold count, and clears with null
+[email:dev-fallback] to=u-9ff486c5-2356-45e0-b508-ed0fc715090d@example.com subject="Confirm your Ritmo Studio email"
+Confirm your email
+
+Welcome to Ritmo Studio! Confirm u-9ff486c5-2356-45e0-b508-ed0fc715090d@example.com to secure your account.
+
+Verify email: https://test.ritmofit.studio/api/auth/verify-email?token=<redacted>&callbackURL=%2F
+
+You can keep using Ritmo Studio while this is pending.
+
+stdout | test/rpm-holds.integration.test.ts > per-track RPM & holds (integration) > rejects a non-positive RPM and a negative hold count
+[email:dev-fallback] to=u-df5edb8a-708c-47d0-afee-915dc37b5f25@example.com subject="Confirm your Ritmo Studio email"
+Confirm your email
+
+Welcome to Ritmo Studio! Confirm u-df5edb8a-708c-47d0-afee-915dc37b5f25@example.com to secure your account.
+
+Verify email: https://test.ritmofit.studio/api/auth/verify-email?token=<redacted>&callbackURL=%2F
+
+You can keep using Ritmo Studio while this is pending.
+
+ ✓ test/rpm-holds.integration.test.ts (3 tests) 332ms
+stdout | test/provider-playlist-import.integration.test.ts > POST /providers/:provider/playlists/:playlistId/import (integration)
+[email:dev-fallback] to=u-dd78f885-18ae-4a08-b05a-74c88eee9b1f@example.com subject="Confirm your Ritmo Studio email"
+Confirm your email
+
+Welcome to Ritmo Studio! Confirm u-dd78f885-18ae-4a08-b05a-74c88eee9b1f@example.com to secure your account.
+
+Verify email: https://test.ritmofit.studio/api/auth/verify-email?token=<redacted>&callbackURL=%2F
+
+You can keep using Ritmo Studio while this is pending.
+
+stdout | test/provider-playlist-import.integration.test.ts > POST /providers/:provider/playlists/:playlistId/import (integration) > 429 once the per-user bulk-import limiter (max 5/min) is exceeded
+[email:dev-fallback] to=u-157fb972-e6fc-43ea-a4a1-f622b9837bf6@example.com subject="Confirm your Ritmo Studio email"
+Confirm your email
+
+Welcome to Ritmo Studio! Confirm u-157fb972-e6fc-43ea-a4a1-f622b9837bf6@example.com to secure your account.
+
+Verify email: https://test.ritmofit.studio/api/auth/verify-email?token=<redacted>&callbackURL=%2F
+
+You can keep using Ritmo Studio while this is pending.
+
+ ✓ test/provider-playlist-import.integration.test.ts (5 tests) 416ms
+stdout | test/class-choreography-recency.integration.test.ts > class choreography recency (integration) > moves the parent class to the recent boundary after every choreography mutation
+[email:dev-fallback] to=u-bd84bde2-16df-4292-bdd6-c71aa62c9947@example.com subject="Confirm your Ritmo Studio email"
+Confirm your email
+
+Welcome to Ritmo Studio! Confirm u-bd84bde2-16df-4292-bdd6-c71aa62c9947@example.com to secure your account.
+
+Verify email: https://test.ritmofit.studio/api/auth/verify-email?token=<redacted>&callbackURL=%2F
+
+You can keep using Ritmo Studio while this is pending.
+
+ ✓ test/class-choreography-recency.integration.test.ts (1 test) 491ms
+   ✓ class choreography recency (integration) > moves the parent class to the recent boundary after every choreography mutation  428ms
+stdout | test/team-access.integration.test.ts > team-share detail access (integration)
+[email:dev-fallback] to=u-611535de-b8a3-4402-847d-3b2c4fe696f4@example.com subject="Confirm your Ritmo Studio email"
+Confirm your email
+
+Welcome to Ritmo Studio! Confirm u-611535de-b8a3-4402-847d-3b2c4fe696f4@example.com to secure your account.
+
+Verify email: https://test.ritmofit.studio/api/auth/verify-email?token=<redacted>&callbackURL=%2F
+
+You can keep using Ritmo Studio while this is pending.
+
+stdout | test/team-access.integration.test.ts > team-share detail access (integration)
+[email:dev-fallback] to=u-a01f8511-2612-4073-940a-3d419f2a3d52@example.com subject="Confirm your Ritmo Studio email"
+Confirm your email
+
+Welcome to Ritmo Studio! Confirm u-a01f8511-2612-4073-940a-3d419f2a3d52@example.com to secure your account.
+
+Verify email: https://test.ritmofit.studio/api/auth/verify-email?token=<redacted>&callbackURL=%2F
+
+You can keep using Ritmo Studio while this is pending.
+
+ ✓ test/team-access.integration.test.ts (3 tests) 445ms
+stdout | test/provider-apple-music-connect.integration.test.ts > Apple Music connect (integration) > serves a developer token from the authed config endpoint
+[email:dev-fallback] to=u-eacbd935-0df6-4f25-9af5-82caabbfb67c@example.com subject="Confirm your Ritmo Studio email"
+Confirm your email
+
+Welcome to Ritmo Studio! Confirm u-eacbd935-0df6-4f25-9af5-82caabbfb67c@example.com to secure your account.
+
+Verify email: https://test.ritmofit.studio/api/auth/verify-email?token=<redacted>&callbackURL=%2F
+
+You can keep using Ritmo Studio while this is pending.
+
+stdout | test/provider-apple-music-connect.integration.test.ts > Apple Music connect (integration) > stores the posted Music-User-Token and surfaces it in connections (tokens stripped)
+[email:dev-fallback] to=u-d57e4ce9-facd-42f7-aa3e-cbe4d0d96dce@example.com subject="Confirm your Ritmo Studio email"
+Confirm your email
+
+Welcome to Ritmo Studio! Confirm u-d57e4ce9-facd-42f7-aa3e-cbe4d0d96dce@example.com to secure your account.
+
+Verify email: https://test.ritmofit.studio/api/auth/verify-email?token=<redacted>&callbackURL=%2F
+
+You can keep using Ritmo Studio while this is pending.
+
+stdout | test/provider-apple-music-connect.integration.test.ts > Apple Music connect (integration) > rejects a connection POST with no token (validation)
+[email:dev-fallback] to=u-e64cb4bc-a836-4626-9370-6cef8de62cb5@example.com subject="Confirm your Ritmo Studio email"
+Confirm your email
+
+Welcome to Ritmo Studio! Confirm u-e64cb4bc-a836-4626-9370-6cef8de62cb5@example.com to secure your account.
+
+Verify email: https://test.ritmofit.studio/api/auth/verify-email?token=<redacted>&callbackURL=%2F
+
+You can keep using Ritmo Studio while this is pending.
+
+stdout | test/provider-apple-music-connect.integration.test.ts > Apple Music connect (integration) > re-storing replaces the token rather than duplicating the connection
+[email:dev-fallback] to=u-e5bfcccc-b9f0-44a0-8e82-39f917a15de0@example.com subject="Confirm your Ritmo Studio email"
+Confirm your email
+
+Welcome to Ritmo Studio! Confirm u-e5bfcccc-b9f0-44a0-8e82-39f917a15de0@example.com to secure your account.
+
+Verify email: https://test.ritmofit.studio/api/auth/verify-email?token=<redacted>&callbackURL=%2F
+
+You can keep using Ritmo Studio while this is pending.
+
+ ✓ test/provider-apple-music-connect.integration.test.ts (5 tests) 396ms
+stdout | test/run-payload-beat-grid.integration.test.ts > run-payload pre-downbeat beat/bar clamp (integration) > emits null beat/bar for a cue before the first downbeat, real bar/beat on it
+[email:dev-fallback] to=u-fb850c28-71b7-4e30-8c49-4a3568227d03@example.com subject="Confirm your Ritmo Studio email"
+Confirm your email
+
+Welcome to Ritmo Studio! Confirm u-fb850c28-71b7-4e30-8c49-4a3568227d03@example.com to secure your account.
+
+Verify email: https://test.ritmofit.studio/api/auth/verify-email?token=<redacted>&callbackURL=%2F
+
+You can keep using Ritmo Studio while this is pending.
+
+ ✓ test/run-payload-beat-grid.integration.test.ts (1 test) 215ms
+stdout | test/password-reset.integration.test.ts > password reset flow (integration) > resets the password end-to-end and rotates the credential
+[email:dev-fallback] to=u-ee7ac708-6ea5-4d36-b2e2-fe657748aad7@example.com subject="Confirm your Ritmo Studio email"
+Confirm your email
+
+Welcome to Ritmo Studio! Confirm u-ee7ac708-6ea5-4d36-b2e2-fe657748aad7@example.com to secure your account.
+
+Verify email: https://test.ritmofit.studio/api/auth/verify-email?token=<redacted>&callbackURL=%2F
+
+You can keep using Ritmo Studio while this is pending.
+
+stdout | test/password-reset.integration.test.ts > password reset flow (integration) > resets the password end-to-end and rotates the credential
+[email:dev-fallback] to=u-ee7ac708-6ea5-4d36-b2e2-fe657748aad7@example.com subject="Reset your Ritmo Studio password"
+Reset your Ritmo Studio password
+
+Someone (hopefully you) asked to reset the password for u-ee7ac708-6ea5-4d36-b2e2-fe657748aad7@example.com. This link expires in 1 hour.
+
+Reset password: https://test.ritmofit.studio/api/auth/reset-password/<redacted>?callbackURL=https%3A%2F%2Ftest.ritmofit.studio%2Freset-password
+
+If you didn't request this, you can safely ignore this email.
+
+stderr | test/password-reset.integration.test.ts > password reset flow (integration) > resets the password end-to-end and rotates the credential
+2026-10-27T14:18:31.771Z WARN [Better Auth]: Invalid password
+
+stderr | test/password-reset.integration.test.ts > password reset flow (integration) > does not create a token or leak existence for an unknown email
+2026-10-27T14:18:31.853Z WARN [Better Auth]: Reset Password: User not found
+
+stderr | test/password-reset.integration.test.ts > password reset flow (integration) > keys the auth rate limit by Cloudflare IP and ignores spoofed forwarded-for values
+2026-10-27T14:18:31.887Z WARN [Better Auth]: Reset Password: User not found
+
+stderr | test/password-reset.integration.test.ts > password reset flow (integration) > keys the auth rate limit by Cloudflare IP and ignores spoofed forwarded-for values
+2026-10-27T14:18:31.898Z WARN [Better Auth]: Reset Password: User not found
+
+stderr | test/password-reset.integration.test.ts > password reset flow (integration) > keys the auth rate limit by Cloudflare IP and ignores spoofed forwarded-for values
+2026-10-27T14:18:31.908Z WARN [Better Auth]: Reset Password: User not found
+
+stderr | test/password-reset.integration.test.ts > password reset flow (integration) > keys the auth rate limit by Cloudflare IP and ignores spoofed forwarded-for values
+2026-10-27T14:18:31.919Z WARN [Better Auth]: Reset Password: User not found
+
+stderr | test/password-reset.integration.test.ts > password reset flow (integration) > keys the auth rate limit by Cloudflare IP and ignores spoofed forwarded-for values
+2026-10-27T14:18:31.930Z WARN [Better Auth]: Reset Password: User not found
+
+ ✓ test/password-reset.integration.test.ts (4 tests) 428ms
+stdout | test/class-cover.integration.test.ts > class cover lifecycle > serves public nosniff images and removes replaced and deleted cover objects
+[email:dev-fallback] to=u-3c5092e4-5c49-46f8-a033-f69f270a6c9b@example.com subject="Confirm your Ritmo Studio email"
+Confirm your email
+
+Welcome to Ritmo Studio! Confirm u-3c5092e4-5c49-46f8-a033-f69f270a6c9b@example.com to secure your account.
+
+Verify email: https://test.ritmofit.studio/api/auth/verify-email?token=<redacted>&callbackURL=%2F
+
+You can keep using Ritmo Studio while this is pending.
+
+stdout | test/class-cover.integration.test.ts > class cover lifecycle > rejects an oversized image without writing an object
+[email:dev-fallback] to=u-4428556e-22ac-40c1-90cd-43680fd08023@example.com subject="Confirm your Ritmo Studio email"
+Confirm your email
+
+Welcome to Ritmo Studio! Confirm u-4428556e-22ac-40c1-90cd-43680fd08023@example.com to secure your account.
+
+Verify email: https://test.ritmofit.studio/api/auth/verify-email?token=<redacted>&callbackURL=%2F
+
+You can keep using Ritmo Studio while this is pending.
+
+ ✓ test/class-cover.integration.test.ts (2 tests) 289ms
+stdout | test/malformed-class-id.integration.test.ts > malformed class id on nested routes (integration)
+[email:dev-fallback] to=u-c74a2ef1-d971-4ab8-90f2-c7a5b028a0fd@example.com subject="Confirm your Ritmo Studio email"
+Confirm your email
+
+Welcome to Ritmo Studio! Confirm u-c74a2ef1-d971-4ab8-90f2-c7a5b028a0fd@example.com to secure your account.
+
+Verify email: https://test.ritmofit.studio/api/auth/verify-email?token=<redacted>&callbackURL=%2F
+
+You can keep using Ritmo Studio while this is pending.
+
+ ✓ test/malformed-class-id.integration.test.ts (5 tests) 210ms
+stdout | test/offset-bounds.integration.test.ts > offsetMsSchema integration limits > rejects 422 for a section startOffsetMs exceeding MAX_DURATION_MS
+[email:dev-fallback] to=u-40400c97-7ef3-449b-a420-b2a62e878b07@example.com subject="Confirm your Ritmo Studio email"
+Confirm your email
+
+Welcome to Ritmo Studio! Confirm u-40400c97-7ef3-449b-a420-b2a62e878b07@example.com to secure your account.
+
+Verify email: https://test.ritmofit.studio/api/auth/verify-email?token=<redacted>&callbackURL=%2F
+
+You can keep using Ritmo Studio while this is pending.
+
+stdout | test/offset-bounds.integration.test.ts > offsetMsSchema integration limits > rejects 422 for a cue anchorMs exceeding MAX_DURATION_MS
+[email:dev-fallback] to=u-cfa1d3b7-8cec-45ad-8512-1e04b7f9c9a7@example.com subject="Confirm your Ritmo Studio email"
+Confirm your email
+
+Welcome to Ritmo Studio! Confirm u-cfa1d3b7-8cec-45ad-8512-1e04b7f9c9a7@example.com to secure your account.
+
+Verify email: https://test.ritmofit.studio/api/auth/verify-email?token=<redacted>&callbackURL=%2F
+
+You can keep using Ritmo Studio while this is pending.
+
+stdout | test/offset-bounds.integration.test.ts > offsetMsSchema integration limits > rejects 422 for a placed-move anchorMs exceeding MAX_DURATION_MS
+[email:dev-fallback] to=u-eef11d20-3422-4f5b-909b-b456437c7084@example.com subject="Confirm your Ritmo Studio email"
+Confirm your email
+
+Welcome to Ritmo Studio! Confirm u-eef11d20-3422-4f5b-909b-b456437c7084@example.com to secure your account.
+
+Verify email: https://test.ritmofit.studio/api/auth/verify-email?token=<redacted>&callbackURL=%2F
+
+You can keep using Ritmo Studio while this is pending.
+
+ ✓ test/offset-bounds.integration.test.ts (6 tests) 438ms
+stdout | test/soundcloud-identity.integration.test.ts > SoundCloud provider identity migration (integration)
+[email:dev-fallback] to=u-431c0f5b-76d8-475c-aed8-47eb6383eeb0@example.com subject="Confirm your Ritmo Studio email"
+Confirm your email
+
+Welcome to Ritmo Studio! Confirm u-431c0f5b-76d8-475c-aed8-47eb6383eeb0@example.com to secure your account.
+
+Verify email: https://test.ritmofit.studio/api/auth/verify-email?token=<redacted>&callbackURL=%2F
+
+You can keep using Ritmo Studio while this is pending.
+
+ ✓ test/soundcloud-identity.integration.test.ts (1 test) 158ms
+stdout | test/user-move-delete-cascade.integration.test.ts > user_move delete cascade (integration) > cascades ON DELETE SET NULL to a placed-move and survives via snapshot nameOverride
+[email:dev-fallback] to=u-10171915-9d1f-4a04-8868-643cfa3f7d5c@example.com subject="Confirm your Ritmo Studio email"
+Confirm your email
+
+Welcome to Ritmo Studio! Confirm u-10171915-9d1f-4a04-8868-643cfa3f7d5c@example.com to secure your account.
+
+Verify email: https://test.ritmofit.studio/api/auth/verify-email?token=<redacted>&callbackURL=%2F
+
+You can keep using Ritmo Studio while this is pending.
+
+ ✓ test/user-move-delete-cascade.integration.test.ts (1 test) 236ms
+stdout | test/provider-apple-music-likes.integration.test.ts > Apple Music likes error contract (integration)
+[email:dev-fallback] to=u-c55494a3-53b7-495d-9ec1-b6fd212ffe27@example.com subject="Confirm your Ritmo Studio email"
+Confirm your email
+
+Welcome to Ritmo Studio! Confirm u-c55494a3-53b7-495d-9ec1-b6fd212ffe27@example.com to secure your account.
+
+Verify email: https://test.ritmofit.studio/api/auth/verify-email?token=<redacted>&callbackURL=%2F
+
+You can keep using Ritmo Studio while this is pending.
+
+ ✓ test/provider-apple-music-likes.integration.test.ts (1 test) 165ms
+stdout | test/class-delete.integration.test.ts > DELETE /classes/:id > drops the class from the owner library and hides it afterwards
+[email:dev-fallback] to=u-8ccf2cd4-8ea9-4974-ba25-10edcdc17880@example.com subject="Confirm your Ritmo Studio email"
+Confirm your email
+
+Welcome to Ritmo Studio! Confirm u-8ccf2cd4-8ea9-4974-ba25-10edcdc17880@example.com to secure your account.
+
+Verify email: https://test.ritmofit.studio/api/auth/verify-email?token=<redacted>&callbackURL=%2F
+
+You can keep using Ritmo Studio while this is pending.
+
+ ✓ test/class-delete.integration.test.ts (1 test) 239ms
+stdout | test/mock-gate-leak.integration.test.ts > mock seam does not shadow sibling routes in production
+[email:dev-fallback] to=u-dd2fc14a-e82b-4baf-a2a0-c21ab76d9435@example.com subject="Confirm your Ritmo Studio email"
+Confirm your email
+
+Welcome to Ritmo Studio! Confirm u-dd2fc14a-e82b-4baf-a2a0-c21ab76d9435@example.com to secure your account.
+
+Verify email: https://test.ritmofit.studio/api/auth/verify-email?token=<redacted>&callbackURL=%2F
+
+You can keep using Ritmo Studio while this is pending.
+
+ ✓ test/mock-gate-leak.integration.test.ts (3 tests) 249ms
+stdout | test/class-opened.integration.test.ts > class last opened
+[email:dev-fallback] to=u-1eddcd8e-bf8a-4cff-abc9-7ef1b4818721@example.com subject="Confirm your Ritmo Studio email"
+Confirm your email
+
+Welcome to Ritmo Studio! Confirm u-1eddcd8e-bf8a-4cff-abc9-7ef1b4818721@example.com to secure your account.
+
+Verify email: https://test.ritmofit.studio/api/auth/verify-email?token=<redacted>&callbackURL=%2F
+
+You can keep using Ritmo Studio while this is pending.
+
+stdout | test/class-opened.integration.test.ts > class last opened
+[email:dev-fallback] to=u-b82971cd-7e40-4e70-8609-3480f204437a@example.com subject="Confirm your Ritmo Studio email"
+Confirm your email
+
+Welcome to Ritmo Studio! Confirm u-b82971cd-7e40-4e70-8609-3480f204437a@example.com to secure your account.
+
+Verify email: https://test.ritmofit.studio/api/auth/verify-email?token=<redacted>&callbackURL=%2F
+
+You can keep using Ritmo Studio while this is pending.
+
+ ✓ test/class-opened.integration.test.ts (1 test) 269ms
+ ✓ test/health.integration.test.ts (1 test) 68ms
+
+ Test Files  42 passed (42)
+      Tests  237 passed (237)
+   Start at  14:17:45
+   Duration  51.80s (transform 631ms, setup 12.48s, collect 523ms, tests 37.74s, environment 0ms, prepare 123ms)
+
+[vpw:debug] Shutting down runtimes...
+[vpw:debug] Disposing remote proxy sessions...

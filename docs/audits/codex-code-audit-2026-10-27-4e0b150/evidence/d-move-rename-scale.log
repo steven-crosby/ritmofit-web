@@ -1,0 +1,214 @@
+
+ RUN  v3.2.6 /tmp/wt-d/apps/api
+
+[vpw:debug] Adding `enable_nodejs_tty_module` compatibility flag during tests as this feature is needed to support the Vitest runner.
+[vpw:debug] Adding `enable_nodejs_fs_module` compatibility flag during tests as this feature is needed to support the Vitest runner.
+[vpw:debug] Adding `enable_nodejs_http_modules` compatibility flag during tests as this feature is needed to support the Vitest runner.
+[vpw:debug] Adding `enable_nodejs_perf_hooks_module` compatibility flag during tests as this feature is needed to support the Vitest runner.
+[vpw:info] Starting single runtime for vitest.integration.config.ts...
+stdout | test/d-audit-move-rename-scale.integration.test.ts > d-audit user-move rename scale > rename a move used in 50 classes
+[email:dev-fallback] to=u-1bd7a8e3-bc49-4016-80fd-0c56fa7495bb@example.com subject="Confirm your Ritmo Studio email"
+Confirm your email
+
+Welcome to Ritmo Studio! Confirm u-1bd7a8e3-bc49-4016-80fd-0c56fa7495bb@example.com to secure your account.
+
+Verify email: https://test.ritmofit.studio/api/auth/verify-email?token=<redacted>&callbackURL=%2F
+
+You can keep using Ritmo Studio while this is pending.
+
+stdout | test/d-audit-move-rename-scale.integration.test.ts > d-audit user-move rename scale > rename a move used in 50 classes
+D-RENAME n=50 create=201 status=200 storedName=New name body={"id":"aee1ae5e-8be5-4c2b-8777-291ff648bfb9","userId":"<redacted>","name":"New name","description"
+
+stdout | test/d-audit-move-rename-scale.integration.test.ts > d-audit user-move rename scale > rename a move used in 97 classes
+[email:dev-fallback] to=u-abc16977-5b25-4614-8490-387a768e9cfe@example.com subject="Confirm your Ritmo Studio email"
+Confirm your email
+
+Welcome to Ritmo Studio! Confirm u-abc16977-5b25-4614-8490-387a768e9cfe@example.com to secure your account.
+
+Verify email: https://test.ritmofit.studio/api/auth/verify-email?token=<redacted>&callbackURL=%2F
+
+You can keep using Ritmo Studio while this is pending.
+
+stdout | test/d-audit-move-rename-scale.integration.test.ts > d-audit user-move rename scale > rename a move used in 97 classes
+D-RENAME n=97 create=201 status=200 storedName=New name body={"id":"096b0350-3b68-4578-ba62-d73d6bd6ffb2","userId":"<redacted>","name":"New name","description"
+
+stdout | test/d-audit-move-rename-scale.integration.test.ts > d-audit user-move rename scale > rename a move used in 98 classes
+[email:dev-fallback] to=u-0d9864eb-89f0-4aa2-85f1-92a6c87c2aef@example.com subject="Confirm your Ritmo Studio email"
+Confirm your email
+
+Welcome to Ritmo Studio! Confirm u-0d9864eb-89f0-4aa2-85f1-92a6c87c2aef@example.com to secure your account.
+
+Verify email: https://test.ritmofit.studio/api/auth/verify-email?token=<redacted>&callbackURL=%2F
+
+You can keep using Ritmo Studio while this is pending.
+
+stdout | test/d-audit-move-rename-scale.integration.test.ts > d-audit user-move rename scale > rename a move used in 98 classes
+D-RENAME n=98 create=201 status=200 storedName=New name body={"id":"1456828e-2302-4730-9527-7bed330c174f","userId":"<redacted>","name":"New name","description"
+
+stdout | test/d-audit-move-rename-scale.integration.test.ts > d-audit user-move rename scale > rename a move used in 99 classes
+[email:dev-fallback] to=u-ce707e76-8db5-4117-98a2-e4db13fad300@example.com subject="Confirm your Ritmo Studio email"
+Confirm your email
+
+Welcome to Ritmo Studio! Confirm u-ce707e76-8db5-4117-98a2-e4db13fad300@example.com to secure your account.
+
+Verify email: https://test.ritmofit.studio/api/auth/verify-email?token=<redacted>&callbackURL=%2F
+
+You can keep using Ritmo Studio while this is pending.
+
+stdout | test/d-audit-move-rename-scale.integration.test.ts > d-audit user-move rename scale > rename a move used in 99 classes
+D-RENAME n=99 create=201 status=200 storedName=New name body={"id":"faeae191-7dd5-48cb-a9a3-4d98a013c56b","userId":"<redacted>","name":"New name","description"
+
+stdout | test/d-audit-move-rename-scale.integration.test.ts > d-audit user-move rename scale > rename a move used in 150 classes
+[email:dev-fallback] to=u-b0218cf6-ad85-4dcc-a86b-ecf936e2cbb4@example.com subject="Confirm your Ritmo Studio email"
+Confirm your email
+
+Welcome to Ritmo Studio! Confirm u-b0218cf6-ad85-4dcc-a86b-ecf936e2cbb4@example.com to secure your account.
+
+Verify email: https://test.ritmofit.studio/api/auth/verify-email?token=<redacted>&callbackURL=%2F
+
+You can keep using Ritmo Studio while this is pending.
+
+stderr | test/d-audit-move-rename-scale.integration.test.ts > d-audit user-move rename scale > rename a move used in 150 classes
+Unhandled error: DrizzleQueryError: Failed query: update "classes" set "updated_at" = max("classes"."updated_at" + 1, ?) where "classes"."id" in (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+params: 1793111216343,362b1f66-5de9-43ab-9811-450f04bca3dd,fa24e459-9f6e-46e2-bd59-9799b65101af,54fb22aa-9be0-4ab7-915f-f32013052fc5,1b884b6f-f7e9-42b7-9738-0ed16f43b849,4ab55590-288a-4bb3-bd14-afb3e9041740,f3414d1a-c104-44ac-8d16-24a3cbc5d217,82fd4539-7540-4bd0-8438-ff95133e6c58,befde583-29ee-4a43-9539-a9f697b7c38d,295f89af-7604-4756-8686-92d48c4490e6,3770180b-1f70-4f86-99c0-a3a76b55aec2,6709f8c0-69dd-478e-afe2-71fa397ed231,474e7d0f-8fbf-46e7-a3c1-7c6596f7c36d,8cbada28-375f-4bf5-b35e-5f335ff063ef,4f16356c-8bb8-4cc8-a03d-677484c10082,09b16d10-4dd1-410d-8915-250e285a424a,bb988256-55e9-4a78-8c82-71029ef441cd,7ec671db-2508-4820-98c8-d71f2011177d,dce913eb-b70f-4cc7-b418-c4c3e4e3ff0c,7f878572-b12e-41ed-aeee-3e675766e6b5,6a6269c4-8181-43db-9ab4-7f3f0540acd3,1d31684d-3947-421d-b493-1de18defd2a5,1b23d3bc-975b-4b61-9e37-514bd4df3e29,3ced545b-dcde-4647-a0d3-b05771359545,473b4c54-6a8e-4dc9-82f3-00bd56e7ca27,ace3d575-a44c-4cb1-9fd6-31e7419a21a3,a3b60635-05ca-4a2a-b37d-450143203841,e612db7e-635c-44fd-b3e7-c9720df808f3,2893de82-22b7-4196-8670-4122670bc11f,a2000dd6-5031-4a29-9f6a-675fb2d52c42,2229602b-1e14-46d7-ac64-0f0458909606,51007ad8-59a7-42af-aba2-54f7b43d409b,d9aae7e8-8bc2-4dda-9812-e9ec2c03227c,4d097c87-fb40-463a-aec1-c589f9e39cd5,de6f9c6e-6731-4a60-bd02-a9e16e1e828f,54f776f7-373d-40ca-9e95-74a303e4f08f,bf84e2b4-fcac-4d58-a2ce-86a1d1c5a50d,e4738140-3811-482a-9faf-c620071c8acb,8721d66a-1d43-442b-ad74-ba1b54b1f7a7,638fa642-7592-484c-8989-b338cf009d02,3236a85c-bd64-4584-8da8-10c5e51860d2,d064436a-a40f-44d1-8783-732a6c03340b,d362f98c-db78-4bce-9fd1-57cb34d92d25,4be761c8-bec6-40fc-a5f0-58f913622f64,262d97e5-283d-417e-a036-51b0d2fc4c73,c478f84c-af4d-4704-80be-56038a8b936f,4c552b3c-d740-4306-9d78-9dadfec5ed81,578e2664-d8f7-446c-8bd3-83b83d90bac1,c0753d93-a730-4d81-b4f6-a0432646c2db,630e2358-6631-460b-a67d-d03fecc0a3d2,c799fc4c-7fd9-4fcc-bd9a-f81d637d0fd7,a4403863-8ce5-4a56-bec8-eeb1df90beba,a8d0d0fb-9188-43c5-b764-7f22d25cd664,d2dc33eb-f714-4705-b973-4eeaf56ab426,0b0185a2-1882-41ef-ad4f-7990abefdade,0a9d6472-12eb-42d0-90ea-003efecf6b9c,62b546f2-1968-4ec4-96d0-6be2365324fd,c8c77f30-f5f2-4229-9a05-83235230420a,ecb8b7a3-d74e-4e19-a0a7-c54c7e3828d0,ea80825f-a6a9-44b0-9577-acd6d279182a,c167cac2-57cf-4711-9718-d7f619795e7c,68ddc00a-42af-4ffa-9a95-30c2e5fe6d4f,a270e0d2-5d37-4e30-8749-3edbca26c14b,ccba7cae-f439-469c-bb8c-8d9a943a3a1b,00acd9ad-d747-4903-a4ce-7ce9902fc60c,073ecc15-25db-4dd5-9fdc-dc1dcf9f6316,d923ae52-333b-4c18-bb38-3014f11133d3,a5dc0c5c-337b-4d9a-b666-52c917303c87,6f71d89e-bf2c-4b0b-a08b-73b93696d681,e92f0d86-7023-4be8-9007-9f32cc7c5494,7399175b-5f01-4ac8-81e2-10173e02ca64,d94336ae-e7c7-4cf9-b39e-3400b3bc9049,7005caf1-98ad-4b70-b1c9-1aae6802cc2e,f663f276-ef15-4ca3-82ba-7c50ab416138,1d8a4869-8652-4a75-80f7-4742ae51614c,4914bd6a-6ff6-4a4a-a391-85ab5eedfb97,6745a85d-b588-4b63-8b7a-22f09d2af7e3,1391e680-a6aa-4faf-ad6d-4d13407ccf20,17e6e34b-809f-4a51-8a16-df6c98deb547,96d475bd-9afc-4bda-aedb-9e2b1a904d1d,a6996853-f0e6-466e-9647-d8bf90edf558,a6d06faa-c6b4-4530-b33b-322e2245c56e,1054638d-dcbe-4c43-840a-1c7f230ec327,5761bb9c-3d2c-40dc-8f97-7876ae9da252,1b14ae5a-3af9-40b5-a0fa-0bb245105f2e,d4d80f3d-4167-4a21-adcc-324aec0802db,8e5e6897-bf86-461d-86a7-0de12a3d1a99,11291f43-5444-470a-8ba4-b842f1edd16a,c22f2cd4-39b1-404b-9e60-b056ce3cfd19,6f679f37-5af0-4146-9498-0c7cda1f1e41,66c04e41-2975-4902-97fe-586d9354b61e,482ce5bf-c1b3-4226-b028-77b52a067d75,13e4e7e3-d90e-45aa-bd1b-5b3b6763c104,66e1917f-3fe0-4a9d-a9ff-58d9c094fd08,a0ba089f-6ee5-48e2-8db7-d625bd0923d7,855a4487-599c-44e3-a19e-f4f1b5cea935,c1790056-47bd-4c51-af2f-9e639af9b772,c5d032fe-efbb-487d-b779-6c79a1993e38,74d63dd2-a1a4-4e22-a49d-2d94b3fc574b,a183146a-4880-4f9d-b860-3a625473a2fd,b88c7a65-d764-466d-99a4-141a96c57b14,c57f5f19-72b3-4a15-814a-11098d056a4c,5e1d08d3-d268-4d75-a938-872cfeebfe5c,da0b60ac-c998-4ffa-969a-fe27d382ab0e,0b48ae47-3b64-417b-9711-73ab54b442df,bb990126-5670-42e1-89a8-0b1d66b2d034,c595426b-0644-459a-8188-4232203e770d,9fffd3f8-e88d-4f0f-809e-11f61620a33e,07f08150-b859-45a1-9a42-19074d661d96,f0fbd5eb-86f8-407c-aa18-77d9a0e7a436,0c7d5a0d-6612-449f-be74-b5cbdcc6206a,ee55693c-bf56-4b25-a3ef-ff7ca4943050,855970dd-3a45-40c6-b967-9947db84ca97,b1018a6d-a3e8-497f-abfa-5eebe7e419c9,c6a945d1-075e-4d94-be63-de7d5e5071e5,ccec77d0-23c9-46d9-9c64-1382822748e1,dfc067d8-78c3-48c8-ac9a-e2a4e5fd7e24,f4c95a50-8b7a-4cc9-9b18-d46b759e752f,18ec2893-316d-4916-b4cd-6b9235d53029,49d09e65-9d02-40b9-b01c-adf75ec17b7d,60a8eba2-1ddc-4866-8cd6-bc05fa0690e3,fae632da-88cf-4a36-aaf3-b1a82dbca717,a76a546d-b673-486e-9c2d-86270c1e3b76,fbd316bf-13ea-4b26-865a-35b27c0d26bb,d86110da-7954-4a82-bd95-0c55d90ba1f3,d208c43e-1425-4fff-8562-0670c53b32e1,cd4727c5-35ae-446d-855a-ab4bd8e36185,6ba09f67-efc3-4623-aaa1-e3398de382e2,018ff4c4-db71-4ece-b17b-406a6d1987d2,9843aae3-dd2f-4b73-a567-47189ca81a0b,169a42cf-41be-4f1b-9977-ece2da5cbbb7,92351464-dc25-49ef-877c-521a0e13baf3,69754378-d0e2-415a-8c33-f9985cb19366,c135398b-ff67-420e-a536-2ceae9e0ee23,5651db4e-b6fc-47d9-b6bb-c7c26f9f22e2,b75ce897-5c83-4285-bae0-357a1a59c8bf,aff7ca28-d716-4257-b706-610c1cc04ec6,a54e4cfe-f1cc-40ce-934d-6246e7ede90d,1f9e6a85-5031-4da7-a762-dd79cd0991c6,08bf9052-78b0-47e7-8e0d-40d14a033289,1fcb1049-8f35-458d-b0f8-5ffb863cddcd,641dac1e-fa7b-4f37-b22d-8b82d0be41c2,2b4057e5-1c06-44b9-89bc-41b97b9836df,f2b6ec42-ad30-4f49-aec0-b3f22bb13e19,e741e6df-f42b-439c-beb5-09bd9592e6c9,ea61048b-63b0-4c4a-97d6-46d0c5dd5547,f1ba0c8d-ce6b-4d8f-bc33-e365d5b6a35a,1d97cc16-4eae-4501-908e-9ead1d532430,5d226968-1824-46c0-8afc-7a266adf493b,2db03169-1e17-4942-981f-4d6e7f3a9dba,4227618c-8d9f-4e59-b01b-1ad949755a8b
+    at D1PreparedQuery.queryWithCache (tmp/wt-d/node_modules/.pnpm/drizzle-orm@0.45.2_@cloudflare+workers-types@4.20260611.1_kysely@0.29.2/node_modules/drizzle-orm/sqlite-core/session.js:43:15)
+    at D1PreparedQuery.run (tmp/wt-d/node_modules/.pnpm/drizzle-orm@0.45.2_@cloudflare+workers-types@4.20260611.1_kysely@0.29.2/node_modules/drizzle-orm/d1/session.js:119:12)
+    ... 5 lines matching cause stack trace ...
+    at /tmp/wt-d/apps/api/src/middleware/auth.ts:23:3
+    at dispatch (tmp/wt-d/node_modules/.pnpm/hono@4.13.14/node_modules/hono/dist/compose.js:35:11)
+    at /tmp/wt-d/apps/api/src/middleware/auth.ts:23:3 {
+  query: 'update "classes" set "updated_at" = max("classes"."updated_at" + 1, ?) where "classes"."id" in (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)',
+  params: [
+    1793111216343,
+    '362b1f66-5de9-43ab-9811-450f04bca3dd',
+    'fa24e459-9f6e-46e2-bd59-9799b65101af',
+    '54fb22aa-9be0-4ab7-915f-f32013052fc5',
+    '1b884b6f-f7e9-42b7-9738-0ed16f43b849',
+    '4ab55590-288a-4bb3-bd14-afb3e9041740',
+    'f3414d1a-c104-44ac-8d16-24a3cbc5d217',
+    '82fd4539-7540-4bd0-8438-ff95133e6c58',
+    'befde583-29ee-4a43-9539-a9f697b7c38d',
+    '295f89af-7604-4756-8686-92d48c4490e6',
+    '3770180b-1f70-4f86-99c0-a3a76b55aec2',
+    '6709f8c0-69dd-478e-afe2-71fa397ed231',
+    '474e7d0f-8fbf-46e7-a3c1-7c6596f7c36d',
+    '8cbada28-375f-4bf5-b35e-5f335ff063ef',
+    '4f16356c-8bb8-4cc8-a03d-677484c10082',
+    '09b16d10-4dd1-410d-8915-250e285a424a',
+    'bb988256-55e9-4a78-8c82-71029ef441cd',
+    '7ec671db-2508-4820-98c8-d71f2011177d',
+    'dce913eb-b70f-4cc7-b418-c4c3e4e3ff0c',
+    '7f878572-b12e-41ed-aeee-3e675766e6b5',
+    '6a6269c4-8181-43db-9ab4-7f3f0540acd3',
+    '1d31684d-3947-421d-b493-1de18defd2a5',
+    '1b23d3bc-975b-4b61-9e37-514bd4df3e29',
+    '3ced545b-dcde-4647-a0d3-b05771359545',
+    '473b4c54-6a8e-4dc9-82f3-00bd56e7ca27',
+    'ace3d575-a44c-4cb1-9fd6-31e7419a21a3',
+    'a3b60635-05ca-4a2a-b37d-450143203841',
+    'e612db7e-635c-44fd-b3e7-c9720df808f3',
+    '2893de82-22b7-4196-8670-4122670bc11f',
+    'a2000dd6-5031-4a29-9f6a-675fb2d52c42',
+    '2229602b-1e14-46d7-ac64-0f0458909606',
+    '51007ad8-59a7-42af-aba2-54f7b43d409b',
+    'd9aae7e8-8bc2-4dda-9812-e9ec2c03227c',
+    '4d097c87-fb40-463a-aec1-c589f9e39cd5',
+    'de6f9c6e-6731-4a60-bd02-a9e16e1e828f',
+    '54f776f7-373d-40ca-9e95-74a303e4f08f',
+    'bf84e2b4-fcac-4d58-a2ce-86a1d1c5a50d',
+    'e4738140-3811-482a-9faf-c620071c8acb',
+    '8721d66a-1d43-442b-ad74-ba1b54b1f7a7',
+    '638fa642-7592-484c-8989-b338cf009d02',
+    '3236a85c-bd64-4584-8da8-10c5e51860d2',
+    'd064436a-a40f-44d1-8783-732a6c03340b',
+    'd362f98c-db78-4bce-9fd1-57cb34d92d25',
+    '4be761c8-bec6-40fc-a5f0-58f913622f64',
+    '262d97e5-283d-417e-a036-51b0d2fc4c73',
+    'c478f84c-af4d-4704-80be-56038a8b936f',
+    '4c552b3c-d740-4306-9d78-9dadfec5ed81',
+    '578e2664-d8f7-446c-8bd3-83b83d90bac1',
+    'c0753d93-a730-4d81-b4f6-a0432646c2db',
+    '630e2358-6631-460b-a67d-d03fecc0a3d2',
+    'c799fc4c-7fd9-4fcc-bd9a-f81d637d0fd7',
+    'a4403863-8ce5-4a56-bec8-eeb1df90beba',
+    'a8d0d0fb-9188-43c5-b764-7f22d25cd664',
+    'd2dc33eb-f714-4705-b973-4eeaf56ab426',
+    '0b0185a2-1882-41ef-ad4f-7990abefdade',
+    '0a9d6472-12eb-42d0-90ea-003efecf6b9c',
+    '62b546f2-1968-4ec4-96d0-6be2365324fd',
+    'c8c77f30-f5f2-4229-9a05-83235230420a',
+    'ecb8b7a3-d74e-4e19-a0a7-c54c7e3828d0',
+    'ea80825f-a6a9-44b0-9577-acd6d279182a',
+    'c167cac2-57cf-4711-9718-d7f619795e7c',
+    '68ddc00a-42af-4ffa-9a95-30c2e5fe6d4f',
+    'a270e0d2-5d37-4e30-8749-3edbca26c14b',
+    'ccba7cae-f439-469c-bb8c-8d9a943a3a1b',
+    '00acd9ad-d747-4903-a4ce-7ce9902fc60c',
+    '073ecc15-25db-4dd5-9fdc-dc1dcf9f6316',
+    'd923ae52-333b-4c18-bb38-3014f11133d3',
+    'a5dc0c5c-337b-4d9a-b666-52c917303c87',
+    '6f71d89e-bf2c-4b0b-a08b-73b93696d681',
+    'e92f0d86-7023-4be8-9007-9f32cc7c5494',
+    '7399175b-5f01-4ac8-81e2-10173e02ca64',
+    'd94336ae-e7c7-4cf9-b39e-3400b3bc9049',
+    '7005caf1-98ad-4b70-b1c9-1aae6802cc2e',
+    'f663f276-ef15-4ca3-82ba-7c50ab416138',
+    '1d8a4869-8652-4a75-80f7-4742ae51614c',
+    '4914bd6a-6ff6-4a4a-a391-85ab5eedfb97',
+    '6745a85d-b588-4b63-8b7a-22f09d2af7e3',
+    '1391e680-a6aa-4faf-ad6d-4d13407ccf20',
+    '17e6e34b-809f-4a51-8a16-df6c98deb547',
+    '96d475bd-9afc-4bda-aedb-9e2b1a904d1d',
+    'a6996853-f0e6-466e-9647-d8bf90edf558',
+    'a6d06faa-c6b4-4530-b33b-322e2245c56e',
+    '1054638d-dcbe-4c43-840a-1c7f230ec327',
+    '5761bb9c-3d2c-40dc-8f97-7876ae9da252',
+    '1b14ae5a-3af9-40b5-a0fa-0bb245105f2e',
+    'd4d80f3d-4167-4a21-adcc-324aec0802db',
+    '8e5e6897-bf86-461d-86a7-0de12a3d1a99',
+    '11291f43-5444-470a-8ba4-b842f1edd16a',
+    'c22f2cd4-39b1-404b-9e60-b056ce3cfd19',
+    '6f679f37-5af0-4146-9498-0c7cda1f1e41',
+    '66c04e41-2975-4902-97fe-586d9354b61e',
+    '482ce5bf-c1b3-4226-b028-77b52a067d75',
+    '13e4e7e3-d90e-45aa-bd1b-5b3b6763c104',
+    '66e1917f-3fe0-4a9d-a9ff-58d9c094fd08',
+    'a0ba089f-6ee5-48e2-8db7-d625bd0923d7',
+    '855a4487-599c-44e3-a19e-f4f1b5cea935',
+    'c1790056-47bd-4c51-af2f-9e639af9b772',
+    'c5d032fe-efbb-487d-b779-6c79a1993e38',
+    '74d63dd2-a1a4-4e22-a49d-2d94b3fc574b',
+    'a183146a-4880-4f9d-b860-3a625473a2fd',
+    ... 51 more items
+  ],
+  cause: Error: D1_ERROR: too many SQL variables at offset 393: SQLITE_ERROR
+      at D1DatabaseSessionAlwaysPrimary._sendOrThrow (cloudflare-internal:d1-api:139:19)
+      at cloudflare-internal:d1-api:353:41
+      ... 7 lines matching cause stack trace ...
+      at /tmp/wt-d/apps/api/src/middleware/auth.ts:23:3 {
+    [cause]: Error: too many SQL variables at offset 393: SQLITE_ERROR
+        at D1DatabaseSessionAlwaysPrimary._sendOrThrow (cloudflare-internal:d1-api:140:24)
+        at cloudflare-internal:d1-api:353:41
+        at D1PreparedQuery.queryWithCache (tmp/wt-d/node_modules/.pnpm/drizzle-orm@0.45.2_@cloudflare+workers-types@4.20260611.1_kysely@0.29.2/node_modules/drizzle-orm/sqlite-core/session.js:41:16)
+        at D1PreparedQuery.run (tmp/wt-d/node_modules/.pnpm/drizzle-orm@0.45.2_@cloudflare+workers-types@4.20260611.1_kysely@0.29.2/node_modules/drizzle-orm/d1/session.js:119:12)
+        at Module.touchUserMoveParentClassesUpdatedAt (/tmp/wt-d/apps/api/src/lib/class-recency.ts:39:3)
+        at /tmp/wt-d/apps/api/src/routes/moves.ts:177:5
+        at dispatch (tmp/wt-d/node_modules/.pnpm/hono@4.13.14/node_modules/hono/dist/compose.js:35:11)
+        at /tmp/wt-d/apps/api/src/middleware/auth.ts:23:3
+        at dispatch (tmp/wt-d/node_modules/.pnpm/hono@4.13.14/node_modules/hono/dist/compose.js:35:11)
+        at /tmp/wt-d/apps/api/src/middleware/auth.ts:23:3
+  }
+}
+
+stdout | test/d-audit-move-rename-scale.integration.test.ts > d-audit user-move rename scale > rename a move used in 150 classes
+D-RENAME n=150 create=201 status=500 storedName=New name body={"error":{"code":"INTERNAL_ERROR","message":"An unexpected error occurred."}}
+
+ ✓ test/d-audit-move-rename-scale.integration.test.ts (5 tests) 948ms
+
+ Test Files  1 passed (1)
+      Tests  5 passed (5)
+   Start at  14:26:53
+   Duration  2.81s (transform 359ms, setup 1.29s, collect 15ms, tests 948ms, environment 0ms, prepare 108ms)
+
+[vpw:debug] Shutting down runtimes...
+[vpw:debug] Disposing remote proxy sessions...
