@@ -12,6 +12,7 @@ import {
   SoundCloudUnauthorizedError,
   SpotifyUnauthorizedError,
   SpotifyForbiddenError,
+  SpotifyDevelopmentModeError,
   SpotifyPlaylistAccessDeniedError,
 } from '@ritmofit/music';
 import {
@@ -22,6 +23,7 @@ import {
   SPOTIFY_PLAYLIST_PREVIEW_RECONNECT_MESSAGE,
 } from './user-playlists.js';
 import { HttpError } from '../errors.js';
+import { SPOTIFY_DEVELOPMENT_MODE_MESSAGE } from './spotify-development-mode.js';
 import type { Db } from '../db.js';
 import type { Env } from '../types.js';
 
@@ -201,6 +203,18 @@ describe('user playlist token helper', () => {
     } satisfies Partial<HttpError>);
     expect(refreshSpotifyToken).not.toHaveBeenCalled();
     expect(fetchSpotifySavedPlaylists).toHaveBeenCalledTimes(1);
+  });
+
+  it('maps a Development Mode 403 to the allowlist code without refreshing', async () => {
+    const { db } = makeDb(makeConnection());
+    vi.mocked(fetchSpotifySavedPlaylists).mockRejectedValueOnce(new SpotifyDevelopmentModeError());
+
+    await expect(fetchUserPlaylists(db, env, 'user-1', 'spotify')).rejects.toMatchObject({
+      status: 403,
+      code: 'SPOTIFY_DEVELOPMENT_MODE',
+      message: SPOTIFY_DEVELOPMENT_MODE_MESSAGE,
+    } satisfies Partial<HttpError>);
+    expect(refreshSpotifyToken).not.toHaveBeenCalled();
   });
 
   it('maps a stale-scope 403 straight to REAUTH_REQUIRED without attempting a refresh', async () => {

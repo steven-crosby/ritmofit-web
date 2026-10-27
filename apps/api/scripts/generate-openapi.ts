@@ -731,6 +731,10 @@ const doc = {
         summary: "List the caller's liked tracks (M2; spends their per-user OAuth token)",
         responses: {
           '200': arrayResp('TrackSearchResult', 'Liked tracks'),
+          '403': {
+            description:
+              'SPOTIFY_DEVELOPMENT_MODE — this Spotify account is not on the app allowlist. Reconnect does not add it.',
+          },
           '409': { description: 'Not connected / reconnect required' },
           '501': { description: 'Provider not yet integrated' },
           '503': { description: 'Provider not configured' },
@@ -750,6 +754,10 @@ const doc = {
         summary: "List the caller's saved playlists (D21; spends their per-user OAuth token)",
         responses: {
           '200': arrayResp('ProviderPlaylistSummary', 'Saved playlists'),
+          '403': {
+            description:
+              'SPOTIFY_DEVELOPMENT_MODE — this Spotify account is not on the app allowlist. Reconnect does not add it.',
+          },
           '409': { description: 'Not connected / reconnect required' },
           '501': { description: 'Provider saved playlists not integrated' },
           '503': { description: 'Provider not configured' },

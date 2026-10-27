@@ -287,6 +287,19 @@ export class SpotifyForbiddenError extends Error {
 }
 
 /**
+ * Spotify accepted the login, then refused a user-token library call because
+ * this account is not on the app's Development Mode allowlist. A refresh or
+ * reconnect does not add that row.
+ */
+export class SpotifyDevelopmentModeError extends Error {
+  readonly status = 403 as const;
+  constructor() {
+    super('Spotify has not allowlisted this user for the app (403).');
+    this.name = 'SpotifyDevelopmentModeError';
+  }
+}
+
+/**
  * Thrown when Spotify denies a **playlist item** read for a valid user token.
  * The 2026 playlist-items endpoint only exposes contents for playlists the user
  * owns or collaborates on, so reconnecting cannot grant access to that playlist.
@@ -325,6 +338,11 @@ export async function fetchSpotifySavedTracks(cfg: {
       { headers: { Authorization: `Bearer ${cfg.accessToken}`, Accept: 'application/json' } },
     );
     if (res.status === 401) throw new SpotifyUnauthorizedError();
+    if (res.status === 403) {
+      const detail = await denialDetail(res);
+      if (isSpotifyDevelopmentModeDenial(detail)) throw new SpotifyDevelopmentModeError();
+      throw new ProviderError('spotify', 'Spotify API 403 for /me/tracks');
+    }
     if (!res.ok) throw new ProviderError('spotify', `Spotify API ${res.status} for /me/tracks`);
     const parsed = spSavedPageSchema.safeParse(await readJson(res, 'spotify'));
     if (!parsed.success) {
@@ -366,7 +384,11 @@ export async function fetchSpotifySavedPlaylists(cfg: {
       { headers: { Authorization: `Bearer ${cfg.accessToken}`, Accept: 'application/json' } },
     );
     if (res.status === 401) throw new SpotifyUnauthorizedError();
-    if (res.status === 403) throw new SpotifyForbiddenError();
+    if (res.status === 403) {
+      const detail = await denialDetail(res);
+      if (isSpotifyDevelopmentModeDenial(detail)) throw new SpotifyDevelopmentModeError();
+      throw new SpotifyForbiddenError();
+    }
     if (!res.ok) throw new ProviderError('spotify', `Spotify API ${res.status} for /me/playlists`);
 
     const parsed = spLibraryPlaylistsPageSchema.safeParse(await readJson(res, 'spotify'));
@@ -490,6 +512,24 @@ function isSpotifyAuthFailure(detail: string): boolean {
   return /insufficient client scope|insufficient scope|authentication required|invalid access token/i.test(
     detail,
   );
+}
+
+/**
+ * Development Mode allows login, then returns 403 on user-token reads until
+ * the account is added under User Management. The published wording is
+ * "not registered" (for this application, or in the developer dashboard).
+ */
+function isSpotifyDevelopmentModeDenial(detail: string): boolean {
+  // "not registered for this application" and "the user may not be registered".
+  return /not(?:\s+be)?\s+registered/i.test(detail);
+}
+
+async function denialDetail(res: { text(): Promise<string> }): Promise<string> {
+  try {
+    return await res.text();
+  } catch {
+    return '';
+  }
 }
 
 function previewRetry(

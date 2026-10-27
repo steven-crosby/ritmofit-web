@@ -3,6 +3,8 @@ import {
   defaultLibraryKind,
   filterLibrary,
   musicChipBadge,
+  musicChipOffersReconnect,
+  musicLibraryFailure,
   musicLibraryKinds,
   orderLibrary,
   playlistMetaLine,
@@ -15,9 +17,25 @@ describe('musicChipBadge', () => {
       musicChipBadge({
         fetchStatus: 'ready',
         connectionState: 'connected',
-        libraryFailed: true,
+        libraryFailure: 'unavailable',
       }),
     ).toEqual({ kind: 'unverified', label: 'Unavailable' });
+  });
+
+  it('names a Spotify allowlist block instead of Unavailable, and does not offer reconnect', () => {
+    const badge = musicChipBadge({
+      fetchStatus: 'ready',
+      connectionState: 'connected',
+      libraryFailure: 'spotify-allowlist',
+    });
+    expect(badge).toEqual({ kind: 'unverified', label: 'Not allowlisted' });
+    expect(musicChipOffersReconnect(badge.kind)).toBe(false);
+    expect(musicChipOffersReconnect('expired')).toBe(true);
+    expect(musicLibraryFailure([null, { code: 'SPOTIFY_DEVELOPMENT_MODE' }])).toBe(
+      'spotify-allowlist',
+    );
+    expect(musicLibraryFailure([{ code: 'PROVIDER_UNAVAILABLE' }])).toBe('unavailable');
+    expect(musicLibraryFailure([undefined])).toBe('none');
   });
 
   it('uses Reconnect for an expired session and Catalog only when nothing is linked', () => {
@@ -25,14 +43,14 @@ describe('musicChipBadge', () => {
       musicChipBadge({
         fetchStatus: 'ready',
         connectionState: 'expired',
-        libraryFailed: false,
+        libraryFailure: 'none',
       }),
     ).toEqual({ kind: 'expired', label: 'Reconnect' });
     expect(
       musicChipBadge({
         fetchStatus: 'ready',
         connectionState: 'disconnected',
-        libraryFailed: false,
+        libraryFailure: 'none',
       }),
     ).toEqual({ kind: 'catalog-only', label: 'Catalog only' });
   });
@@ -42,14 +60,14 @@ describe('musicChipBadge', () => {
       musicChipBadge({
         fetchStatus: 'error',
         connectionState: 'connected',
-        libraryFailed: false,
+        libraryFailure: 'none',
       }).label,
     ).toBe('Unavailable');
     expect(
       musicChipBadge({
         fetchStatus: 'loading',
         connectionState: 'disconnected',
-        libraryFailed: false,
+        libraryFailure: 'none',
       }).label,
     ).toBe('Checking');
   });
