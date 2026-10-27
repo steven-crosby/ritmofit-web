@@ -1,12 +1,6 @@
 import { spawnSync } from 'node:child_process';
 import { describe, expect, it } from 'vitest';
 
-declare global {
-  interface ImportMeta {
-    readonly url: string;
-  }
-}
-
 const repoRoot = decodeURIComponent(new URL('../../../..', import.meta.url).pathname);
 
 describe('scripts/deploy.sh guards', () => {
