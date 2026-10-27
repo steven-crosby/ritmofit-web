@@ -48,6 +48,7 @@ import { LivenessObserver, publishLivenessInspector } from '../lib/playback/live
 import { LIVE_PLAYBACK_ADAPTERS, PLAYBACK_ADAPTER_PROVIDERS } from '../lib/playback/registry.js';
 import { PROVIDER_ORDER, providerHandoffHref, providerLabel } from '../lib/providers.js';
 import { useWakeLock, type WakeLockStatus } from '../lib/use-wake-lock.js';
+import { useOnline } from '../lib/use-online.js';
 import { useVirtualClock, type ClockStore } from '../lib/use-virtual-clock.js';
 import { createTrailingThrottle } from '../lib/trailing-throttle.js';
 import { ConnectionsDialog } from './ConnectionsDialog.js';
@@ -1386,6 +1387,26 @@ function WakeRail({ status }: { status: WakeLockStatus }) {
   );
 }
 
+/**
+ * A quiet glyph + label beside the music and screen chips while the browser has
+ * no network. The class clock is local, so teaching continues; this only tells
+ * the instructor why provider music or a later save may fail.
+ */
+function OfflineRail() {
+  const online = useOnline();
+  if (online) return null;
+  return (
+    <p
+      role="status"
+      className="flex min-w-0 items-center gap-1.5 font-data text-xs text-state-caution"
+    >
+      <span aria-hidden>⊘</span>
+      <span className="sr-only">Network: </span>
+      <span className="min-w-0 truncate">Offline</span>
+    </p>
+  );
+}
+
 const VIEW_TABS = ['cue', 'list'] as const;
 
 function ViewToggle({ view, setView }: { view: View; setView: (v: View) => void }) {
@@ -2314,6 +2335,7 @@ function Transport({
       <div className="mt-1 flex min-w-0 flex-wrap items-center gap-x-3 gap-y-1">
         <PlaybackRail status={playback} />
         <WakeRail status={wakeStatus} />
+        <OfflineRail />
       </div>
       <div
         id="live-transport-more"
