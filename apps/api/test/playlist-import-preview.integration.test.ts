@@ -518,3 +518,65 @@ describe('paste-a-link playlist preview', () => {
     expect(await counts(classId, user.userId)).toEqual(before);
   }, 15_000);
 });
+
+describe('paste-a-link Spotify limits', () => {
+  async function connectedUserWithClass(): Promise<{ user: TestUser; classId: string }> {
+    const user = await signUpUser();
+    await verifyUserEmail(user.userId);
+    const res = await authed(user.cookie)('/api/v1/classes', {
+      method: 'POST',
+      body: JSON.stringify({ title: 'Limit target' }),
+    });
+    expect(res.status).toBe(201);
+    await seedSpotify(user.userId);
+    return { user, classId: ((await res.json()) as { id: string }).id };
+  }
+
+  it('maps a 429 QUOTA_EXCEEDED to PROVIDER_QUOTA_EXCEEDED after one request', async () => {
+    const { user, classId } = await connectedUserWithClass();
+    installFetch(async (url) => {
+      if (url.includes(`/playlists/${SPOTIFY_ID}/items`)) {
+        return json(
+          { error: { status: 429, message: 'Too many requests', reason: 'QUOTA_EXCEEDED' } },
+          429,
+        );
+      }
+      return json({ error: 'unexpected' }, 500);
+    });
+
+    const res = await preview(user.cookie, classId, SPOTIFY_URL, {
+      SPOTIFY_CLIENT_ID: `cid-${crypto.randomUUID()}`,
+      SPOTIFY_CLIENT_SECRET: 'secret',
+    });
+    expect(res.status).toBe(429);
+    expect(await res.json()).toEqual({
+      error: {
+        code: 'PROVIDER_QUOTA_EXCEEDED',
+        message: "Spotify's usage limit for Ritmo is used up. Try again later.",
+      },
+    });
+    expect(calls.filter((url) => url.includes('/items'))).toHaveLength(1);
+  });
+
+  it('maps a 404 for a playlist the user cannot read to the not-owned message', async () => {
+    const { user, classId } = await connectedUserWithClass();
+    installFetch(async (url) => {
+      if (url.includes(`/playlists/${SPOTIFY_ID}/items`)) {
+        return json({ error: { status: 404, message: 'Resource not found' } }, 404);
+      }
+      return json({ error: 'unexpected' }, 500);
+    });
+
+    const res = await preview(user.cookie, classId, SPOTIFY_URL, {
+      SPOTIFY_CLIENT_ID: `cid-${crypto.randomUUID()}`,
+      SPOTIFY_CLIENT_SECRET: 'secret',
+    });
+    expect(res.status).toBe(403);
+    expect(await res.json()).toEqual({
+      error: {
+        code: 'PROVIDER_FORBIDDEN',
+        message: 'Spotify only lets Ritmo read playlists you own or collaborate on.',
+      },
+    });
+  });
+});

@@ -134,6 +134,8 @@ import {
   playlistMetaLine,
   songMetaLine,
   SPOTIFY_ALLOWLIST_CODE,
+  PROVIDER_QUOTA_CODE,
+  libraryFailureExplainsItself,
   type LibrarySort,
   type MusicLibraryKind,
 } from '../lib/music-library.js';
@@ -2408,6 +2410,7 @@ function ShelfFailureNotice({
   onRetry: () => void;
 }) {
   const allowlist = error.code === SPOTIFY_ALLOWLIST_CODE;
+  const quota = error.code === PROVIDER_QUOTA_CODE;
   return (
     <div
       role="alert"
@@ -2415,10 +2418,12 @@ function ShelfFailureNotice({
     >
       <ConnectionStateMark
         kind="expired"
-        label={allowlist ? 'Not allowlisted' : fallback}
+        label={allowlist ? 'Not allowlisted' : quota ? 'Limit reached' : fallback}
         className="text-xs"
       />
-      {allowlist && <p className="text-text-secondary">{error.message}</p>}
+      {libraryFailureExplainsItself(error.code) && (
+        <p className="text-text-secondary">{error.message}</p>
+      )}
       <button
         type="button"
         onClick={onRetry}

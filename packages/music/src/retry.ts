@@ -9,7 +9,7 @@
  * the per-user likes path keep their own logic. The `sleep` seam is injectable so
  * the behavior is unit-tested without real timers.
  */
-import { abortError } from './errors.js';
+import { abortError, isQuotaExceededBody } from './errors.js';
 import type { FetchLike, ProviderAbortSignal } from './provider.js';
 
 // Available in the Workers runtime and Node (vitest). Declared here so the package
@@ -23,6 +23,12 @@ export interface RetryOptions {
   baseDelayMs?: number;
   /** Cap on a single backoff wait, in ms (default 2000). */
   maxDelayMs?: number;
+  /**
+   * Longest `Retry-After` worth waiting for inside one Worker request, in ms
+   * (default 5000). A longer one returns the response at once rather than
+   * stalling the request or retrying early into the same limit.
+   */
+  maxRetryAfterMs?: number;
   /** Sleep seam — tests pass a no-op/spy. Defaults to a real `setTimeout`. */
   sleep?: (ms: number) => Promise<void>;
   /** Clock seam for `Retry-After` HTTP-date math (defaults to `Date.now`). */
@@ -90,20 +96,37 @@ export function parseRetryAfterMs(
   return Number.isNaN(dateMs) ? null : Math.max(0, dateMs - now);
 }
 
+type FetchResponse = Awaited<ReturnType<FetchLike>>;
+
+/** The same response with its body already read, so the caller can read it again. */
+function withBufferedBody(res: FetchResponse, body: string): FetchResponse {
+  return {
+    ok: res.ok,
+    status: res.status,
+    ...(res.headers ? { headers: res.headers } : {}),
+    text: async () => body,
+    json: async () => JSON.parse(body) as unknown,
+  };
+}
+
 /**
  * Fetch `input`, retrying on a transient status with exponential backoff. Returns
  * the final response (ok, non-transient, or attempts exhausted) for the caller to
  * map as it would a single fetch — this never throws on its own.
+ *
+ * Not retried: a 429 whose body says `QUOTA_EXCEEDED` (the quota will not refill
+ * within this request), and a `Retry-After` longer than `maxRetryAfterMs`.
  */
 export async function fetchWithRetry(
   fetchImpl: FetchLike,
   input: string,
   init?: Parameters<FetchLike>[1],
   opts: RetryOptions = {},
-): Promise<Awaited<ReturnType<FetchLike>>> {
+): Promise<FetchResponse> {
   const maxRetries = opts.maxRetries ?? 2;
   const baseDelayMs = opts.baseDelayMs ?? 200;
   const maxDelayMs = opts.maxDelayMs ?? 2000;
+  const maxRetryAfterMs = opts.maxRetryAfterMs ?? 5000;
   const sleep = opts.sleep ?? defaultSleep;
   const now = opts.now ?? (() => Date.now());
 
@@ -111,11 +134,16 @@ export async function fetchWithRetry(
   for (;;) {
     const clock = now();
     throwIfAborted(opts.signal, opts.deadlineAt, clock);
-    const res = await fetchImpl(input, init);
-    if (res.ok || !isTransientStatus(res.status) || attempt >= maxRetries) {
-      return res;
+    let res = await fetchImpl(input, init);
+    if (res.ok || !isTransientStatus(res.status)) return res;
+    if (res.status === 429) {
+      const body = await res.text().catch(() => '');
+      res = withBufferedBody(res, body);
+      if (isQuotaExceededBody(body)) return res;
     }
+    if (attempt >= maxRetries) return res;
     const headerMs = parseRetryAfterMs(res.headers?.get('retry-after'), now());
+    if (headerMs != null && headerMs > maxRetryAfterMs) return res;
     const backoffMs = Math.min(maxDelayMs, baseDelayMs * 2 ** attempt);
     const wait = headerMs ?? backoffMs;
     const after = now();

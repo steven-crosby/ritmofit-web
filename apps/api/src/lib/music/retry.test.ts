@@ -174,4 +174,77 @@ describe('fetchWithRetry', () => {
     expect(fetches).toBe(1);
     expect(sleep).toHaveBeenCalledTimes(1);
   });
+
+  it('does not retry a 429 QUOTA_EXCEEDED and keeps its body readable', async () => {
+    const body = JSON.stringify({
+      error: { status: 429, message: 'Too many requests', reason: 'QUOTA_EXCEEDED' },
+    });
+    let fetches = 0;
+    const fetchImpl: FetchLike = async () => {
+      fetches += 1;
+      return {
+        ok: false,
+        status: 429,
+        json: async () => JSON.parse(body) as unknown,
+        text: async () => body,
+        headers: { get: () => null },
+      };
+    };
+    const sleep = vi.fn<(ms: number) => Promise<void>>();
+    const res = await fetchWithRetry(fetchImpl, 'https://x/y', undefined, { sleep });
+    expect(res.status).toBe(429);
+    expect(fetches).toBe(1);
+    expect(sleep).not.toHaveBeenCalled();
+    expect(await res.text()).toBe(body);
+    expect(await res.text()).toBe(body);
+  });
+
+  it('retries a plain 429 with exponential backoff', async () => {
+    const { fetchImpl, calls } = queuedFetch([429, 429, 200]);
+    const sleep = vi.fn<(ms: number) => Promise<void>>();
+    const res = await fetchWithRetry(fetchImpl, 'https://x/y', undefined, { sleep });
+    expect(res.status).toBe(200);
+    expect(calls).toHaveLength(3);
+    expect(sleep.mock.calls.map((c) => c[0])).toEqual([200, 400]);
+  });
+
+  it('fails fast instead of sleeping a long Retry-After with no deadline', async () => {
+    let fetches = 0;
+    const fetchImpl: FetchLike = async () => {
+      fetches += 1;
+      return {
+        ok: false,
+        status: 429,
+        json: async () => ({}),
+        text: async () => '',
+        headers: { get: (n: string) => (n.toLowerCase() === 'retry-after' ? '120' : null) },
+      };
+    };
+    const sleep = vi.fn<(ms: number) => Promise<void>>();
+    const res = await fetchWithRetry(fetchImpl, 'https://x/y', undefined, { sleep });
+    expect(res.status).toBe(429);
+    expect(fetches).toBe(1);
+    expect(sleep).not.toHaveBeenCalled();
+  });
+
+  it('still waits a Retry-After within the cap', async () => {
+    let fetches = 0;
+    const fetchImpl: FetchLike = async () => {
+      fetches += 1;
+      const limited = fetches === 1;
+      return {
+        ok: !limited,
+        status: limited ? 429 : 200,
+        json: async () => ({}),
+        text: async () => '',
+        headers: {
+          get: (n: string) => (limited && n.toLowerCase() === 'retry-after' ? '5' : null),
+        },
+      };
+    };
+    const sleep = vi.fn<(ms: number) => Promise<void>>();
+    const res = await fetchWithRetry(fetchImpl, 'https://x/y', undefined, { sleep });
+    expect(res.status).toBe(200);
+    expect(sleep).toHaveBeenCalledWith(5000);
+  });
 });
