@@ -10,7 +10,7 @@ to commit, push, merge, deploy, send, delete, or access production data.
 Evidence marked **recorded** is a carried-forward claim, not fresh verification.
 A checked PR proves its GitHub state, not product acceptance or production behavior.
 
-94 tasks. backlog: 3 · ready: 0 · in_progress: 0 · blocked: 3 · review: 10 · done: 78 · cancelled: 0.
+94 tasks. backlog: 3 · ready: 0 · in_progress: 0 · blocked: 3 · review: 8 · done: 80 · cancelled: 0.
 
 ## In progress
 
@@ -33,8 +33,6 @@ A checked PR proves its GitHub state, not product acceptance or production behav
 | [RF-90](tasks/RF-90.json) Triage Builder timing and lost-update findings B-3, B-2, B-1 | P1 / plan | — | Review audit packet 1 and seek owner implementation approval. | recorded |
 | [RF-91](tasks/RF-91.json) Triage D1 parameter-limit finding D-1 | P1 / plan | — | Review packet 2 and seek approval; do not query production or modify data. | recorded |
 | [RF-93](tasks/RF-93.json) Triage latent migration rebuild finding A-7 | P1 / plan | — | Review packet 4 and seek approval for a local guard. No historical or production data-loss claim. | recorded |
-| [RF-88](tasks/RF-88.json) Review deploy guard regression coverage PR #596 | P2 / task | — | Review the draft and determine whether it is ready or requires follow-up. | recorded |
-| [RF-89](tasks/RF-89.json) Review core workflow regression coverage PR #625 | P2 / task | — | Review #625 and resolve its disposition. | recorded |
 | [RF-94](tasks/RF-94.json) Disposition the remaining engineering audit findings | P2 / plan | — | Review the remaining ranked findings with Steven before scheduling implementation. | recorded |
 | [RF-96](tasks/RF-96.json) Disposition legacy planning and handoff obligations | P2 / plan | — | Triage legacy planning and handoffs without treating their old approval or merge instructions as current authority. | recorded |
 | [RF-16](tasks/RF-16.json) Editorial Spotify playlist 404 still shares the outage envelope | untriaged / investigation | — | Reconfirm the 404/error mapping against current code; Spotify implementation remains tabled until reopened. | recorded |
@@ -59,6 +57,8 @@ A checked PR proves its GitHub state, not product acceptance or production behav
 
 | Task | Priority / kind | Relationships | Next action / resolution | Evidence |
 | --- | --- | --- | --- | --- |
+| [RF-88](tasks/RF-88.json) Review deploy guard regression coverage PR #596 | P2 / task | — | Reviewed against current main on 2026-10-27: the self-check assertions are meaningful (ran under macOS bash 3.2; no temp files or worktrees left). Typecheck failed on current dependencies because the test redeclared ImportMeta.url; that block was removed in c906cf4. Squash-merged as d76fbd3. Tests and self-check only; deploy behavior unchanged. | recorded; checked 2026-10-27 |
+| [RF-89](tasks/RF-89.json) Review core workflow regression coverage PR #625 | P2 / task | — | Reviewed against current main on 2026-10-27: web 171, Spotify 49 and D1 integration 4 tests passed on the merged tree. Squash-merged as 0065eaf. Tests only; its handoff, whose sole action was this merge, is retired. | recorded; checked 2026-10-27 |
 | [RF-95](tasks/RF-95.json) Implement the repository-owned RF task system | P2 / task | — | Repository-owned task tooling and migration completed; all acceptance checks passed locally. PR #640 publishes this result once merged. No deployment is required. | checked 2026-10-27 |
 | [RF-1](tasks/RF-1.json) Desktop hold, BPM, and effort recorded on the QA cycle song | untriaged / task | — | Recorded complete on the imported board; product behavior was not re-tested during task migration. | recorded |
 | [RF-2](tasks/RF-2.json) Teaching-screen deploy record on main | untriaged / documentation | — | Recorded complete on the imported board; product behavior was not re-tested during task migration. | recorded; checked 2026-10-27 |
