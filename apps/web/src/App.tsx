@@ -3,11 +3,14 @@
  * - Signed out at "/" → MarketingPage (public front door, D15).
  *   Marketing CTAs carry an explicit sign-in/sign-up intent into Login.
  * - Signed in → Dashboard.
+ * - Session lost during Live → Live stays mounted with a signed-out line.
+ * - Session lost elsewhere (not Sign out) → Login with a "session ended" line.
  * - "/reset-password" → ResetPassword (works while signed out).
  * - Unknown path → NotFound.
  */
-import { useState } from 'react';
+import { useReducer, useRef, useState } from 'react';
 import { authClient } from './lib/auth-client.js';
+import { clearExplicitSignOut, useLiveActive, wasExplicitSignOut } from './lib/session-guard.js';
 import { Login } from './components/Login.js';
 import { Dashboard } from './components/Dashboard.js';
 import { MarketingPage } from './components/MarketingPage.js';
@@ -32,6 +35,17 @@ export function App() {
   // Preserve the acquisition promise across the signed-out state switch: a
   // "Start building" click must land on account creation, never generic sign-in.
   const [authIntent, setAuthIntent] = useState<'signin' | 'signup' | null>(initialAuthIntent);
+  const liveActive = useLiveActive();
+  const [, rerender] = useReducer((n: number) => n + 1, 0);
+  // The last signed-in user, kept so a session lost mid-class can leave Live mounted
+  // and a session lost elsewhere can say so on Sign in instead of showing marketing.
+  const lastUser = useRef<{ id: string; name: string } | null>(null);
+  if (session) {
+    lastUser.current = { id: session.user.id, name: session.user.name || session.user.email };
+    clearExplicitSignOut();
+  } else if (!isPending && wasExplicitSignOut()) {
+    lastUser.current = null;
+  }
 
   const skipLink = (
     <a
@@ -50,16 +64,35 @@ export function App() {
   // Unknown path → 404 (Cloudflare SPA fallback serves index.html for all paths).
   if (!KNOWN_PATHS.has(window.location.pathname)) return <NotFound />;
 
+  // Signed in → Dashboard. A session lost while Live runs keeps Live mounted.
+  const retained = session || liveActive ? lastUser.current : null;
+  if (retained) {
+    return (
+      <>
+        {skipLink}
+        <Dashboard userId={retained.id} userName={retained.name} sessionLost={!session} />
+      </>
+    );
+  }
+
   if (isPending) {
     return <WorkspaceLoadingState />;
   }
 
-  // Signed in → Dashboard.
-  if (session) {
+  // Lost without the instructor pressing Sign out → Sign in, saying why.
+  if (lastUser.current) {
     return (
       <>
         {skipLink}
-        <Dashboard userId={session.user.id} userName={session.user.name || session.user.email} />
+        <Login
+          statusNotice="Your session ended. Sign in to continue."
+          onBack={() => {
+            lastUser.current = null;
+            window.history.replaceState({}, '', '/');
+            setAuthIntent(null);
+            rerender();
+          }}
+        />
       </>
     );
   }

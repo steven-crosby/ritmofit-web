@@ -70,7 +70,7 @@ import { useProviderConnect } from '../lib/use-provider-connect.js';
 import { ProviderConnectAction } from './ProviderConnectAction.js';
 import { PlaylistSongPicker } from './PlaylistSongPicker.js';
 import { consumeConnectionReturn, rememberConnectionReturn } from '../lib/connection-return.js';
-import { authClient } from '../lib/auth-client.js';
+import { setLiveActive, signOutByUser } from '../lib/session-guard.js';
 import {
   ConnectionStateMark,
   accountConnectionMark,
@@ -213,7 +213,16 @@ function LoadingScreen() {
 type DetailWorkspaceOwner = { classId: string; session: object };
 type DetailRefreshOrigin = 'mutation' | 'live-return';
 
-export function Dashboard({ userId, userName }: { userId: string; userName: string }) {
+export function Dashboard({
+  userId,
+  userName,
+  sessionLost = false,
+}: {
+  userId: string;
+  userName: string;
+  /** The session ended while Live was running; Live stays up with a quiet line. */
+  sessionLost?: boolean;
+}) {
   const [profileName, setProfileName] = useState(userName);
   const [destination, setDestination] = useState<DashboardDestination>('classes');
   const [classes, setClasses] = useState<ClassListItem[]>([]);
@@ -249,6 +258,8 @@ export function Dashboard({ userId, userName }: { userId: string; userName: stri
   const restoreRefreshFocus = useRef(false);
   const workspaceRef = useRef<HTMLDivElement>(null);
   const [live, setLive] = useState<RunPayload | null>(null);
+  useEffect(() => setLiveActive(live != null), [live]);
+  useEffect(() => () => setLiveActive(false), []);
   // Live Mode is a full-tree swap (see the `if (live)` early return below), so the
   // control that opened it never survives to be refocused on exit — the dashboard
   // remounts fresh. Restore focus to the primary heading instead, the same
@@ -804,29 +815,45 @@ export function Dashboard({ userId, userName }: { userId: string; userName: stri
     }
   }, [importCollectionTracks, importResult, loadDetail, retryingImport]);
 
+  // The signed-out line pushes Live down by one row. Only then does the wrapper
+  // become a containing block for Live's fixed shell; otherwise it is `contents`.
   if (live)
     return (
-      <ErrorBoundary resetLabel="Exit live mode" onReset={exitLive}>
-        <Suspense fallback={<LoadingScreen />}>
-          <LiveMode
-            payload={live}
-            onExit={exitLive}
-            connectionResult={oauthResult}
-            onConnectionResultDismissed={() => {
-              setOauthResult(null);
-              setConnectionsOpen(false);
-            }}
-            beforeConnectionRedirect={(provider) =>
-              rememberConnectionReturn({
-                userId,
-                destination: 'live',
-                classId: live.class.id,
-                provider,
-              })
-            }
-          />
-        </Suspense>
-      </ErrorBoundary>
+      <div className={sessionLost ? 'flex h-dvh flex-col' : 'contents'}>
+        {sessionLost && (
+          <p
+            role="status"
+            className="shrink-0 border-b border-border-subtle bg-bg-raised px-4 py-2 text-center font-ui text-sm text-text-secondary"
+          >
+            Signed out. Finish the class, then sign in.
+          </p>
+        )}
+        <div
+          className={sessionLost ? 'relative min-h-0 flex-1 [transform:translateZ(0)]' : 'contents'}
+        >
+          <ErrorBoundary resetLabel="Exit live mode" onReset={exitLive}>
+            <Suspense fallback={<LoadingScreen />}>
+              <LiveMode
+                payload={live}
+                onExit={exitLive}
+                connectionResult={oauthResult}
+                onConnectionResultDismissed={() => {
+                  setOauthResult(null);
+                  setConnectionsOpen(false);
+                }}
+                beforeConnectionRedirect={(provider) =>
+                  rememberConnectionReturn({
+                    userId,
+                    destination: 'live',
+                    classId: live.class.id,
+                    provider,
+                  })
+                }
+              />
+            </Suspense>
+          </ErrorBoundary>
+        </div>
+      </div>
     );
 
   return (
@@ -3172,7 +3199,7 @@ function AccountWorkspace({
                 <button
                   type="button"
                   className="min-h-11 rounded-control border border-border-subtle px-4 font-ui text-sm text-text-secondary transition-colors hover:text-text-primary sm:rounded-pill"
-                  onClick={() => authClient.signOut()}
+                  onClick={() => void signOutByUser()}
                 >
                   Sign out
                 </button>
