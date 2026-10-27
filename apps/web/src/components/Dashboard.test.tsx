@@ -656,7 +656,19 @@ describe('Dashboard class library states', () => {
     vi.mocked(api.listClasses).mockResolvedValue(page([]));
     vi.mocked(api.listConnections).mockResolvedValue([spotifyConnection()]);
     vi.mocked(api.listPlaylists).mockResolvedValue([playlist]);
-    vi.mocked(api.listPlaylistTracks).mockRejectedValueOnce(new Error('provider unavailable'));
+    vi.mocked(api.listPlaylistTracks)
+      .mockRejectedValueOnce(new Error('provider unavailable'))
+      .mockResolvedValueOnce([
+        {
+          provider: 'spotify',
+          providerTrackId: 'track-1',
+          providerUri: null,
+          title: 'Recovered Track',
+          artist: 'DJ Test',
+          durationMs: 180000,
+          albumArtUrl: null,
+        },
+      ]);
 
     renderDashboard();
     fireEvent.click(await screen.findByRole('button', { name: 'Music' }));
@@ -669,6 +681,14 @@ describe('Dashboard class library states', () => {
     expect(start.disabled).toBe(true);
     expect(api.createClass).not.toHaveBeenCalled();
     expect(api.listPlaylistTracks).toHaveBeenCalledTimes(1);
+    expect(screen.queryByText('No tracks found in this playlist.')).toBeNull();
+
+    fireEvent.click(screen.getByRole('button', { name: 'Try again' }));
+    expect(await screen.findByText('Recovered Track')).toBeTruthy();
+    expect(api.createClass).not.toHaveBeenCalled();
+    expect(api.listPlaylistTracks).toHaveBeenCalledTimes(2);
+    expect(screen.getByRole('button', { name: 'Music' }).getAttribute('aria-current')).toBe('page');
+    expect(screen.queryByRole('region', { name: 'Class builder' })).toBeNull();
   });
 
   it('disables class creation when a saved playlist contains no tracks', async () => {
@@ -730,6 +750,59 @@ describe('Dashboard class library states', () => {
 
     await waitFor(() => expect(api.createClass).toHaveBeenCalledTimes(1));
     expect(api.listPlaylistTracks).toHaveBeenCalledTimes(1);
+  });
+
+  it('navigates to the class builder after creating a class from a saved playlist', async () => {
+    const playlist = {
+      provider: 'spotify' as const,
+      playlistId: 'pl-warmup',
+      name: 'Warmup Ride',
+      ownerName: 'Steven',
+      trackCount: 1,
+      coverImageUrl: null,
+    };
+    const created = makeClass('Warmup Ride');
+    vi.mocked(api.listClasses).mockResolvedValue(page([]));
+    vi.mocked(api.listConnections).mockResolvedValue([spotifyConnection()]);
+    vi.mocked(api.listPlaylists).mockResolvedValue([playlist]);
+    vi.mocked(api.listPlaylistTracks).mockResolvedValue([
+      {
+        provider: 'spotify',
+        providerTrackId: 'track-1',
+        providerUri: 'spotify:track:track-1',
+        title: 'Climb Track',
+        artist: 'DJ Test',
+        durationMs: 180000,
+        albumArtUrl: null,
+      },
+    ]);
+    vi.mocked(api.createClass).mockResolvedValue(
+      created as Awaited<ReturnType<typeof api.createClass>>,
+    );
+    vi.mocked(api.importTrack).mockResolvedValue({ id: 'imported-track' } as Awaited<
+      ReturnType<typeof api.importTrack>
+    >);
+    vi.mocked(api.listClassTracks).mockResolvedValue([]);
+    vi.mocked(api.getRunPayload).mockRejectedValue(new Error('no payload'));
+
+    renderDashboard();
+    fireEvent.click(await screen.findByRole('button', { name: 'Music' }));
+    expect(screen.getByRole('button', { name: 'Music' }).getAttribute('aria-current')).toBe('page');
+    await openSavedPlaylist('Spotify', 'Warmup Ride');
+    fireEvent.click(await screen.findByRole('button', { name: 'Start class from Warmup Ride' }));
+
+    const header = await screen.findByRole('region', { name: 'Class builder' });
+    expect(within(header).getByRole('heading', { name: 'Warmup Ride' })).toBeTruthy();
+    expect(within(header).getByRole('button', { name: 'Back to Classes' })).toBeTruthy();
+    expect(screen.getByRole('button', { name: 'Classes' }).getAttribute('aria-current')).toBe(
+      'page',
+    );
+    expect(screen.getByRole('button', { name: 'Music' }).getAttribute('aria-current')).toBeNull();
+    expect(screen.queryByRole('dialog', { name: 'Browse Spotify playlists' })).toBeNull();
+    expect(screen.queryByRole('heading', { name: 'Your library' })).toBeNull();
+    expect(document.title).toBe('Warmup Ride - Ritmo Studio');
+    expect(api.createClass).toHaveBeenCalledTimes(1);
+    expect(api.createClass).toHaveBeenCalledWith({ title: 'Warmup Ride', template: 'cycle' });
   });
 
   it('reports partial imports and retries failures against the same class', async () => {
