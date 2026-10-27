@@ -51,6 +51,7 @@ import {
   removeClassTag,
   uploadClassCover,
   getClass,
+  markClassOpened,
   listConnections,
   listLikes,
   listPlaylists,
@@ -102,7 +103,7 @@ import {
   type ClassOrdering,
 } from '../lib/class-ordering.js';
 import { summarizeQueue } from '../lib/live-readiness.js';
-import { nextEmptyPlanBlock } from '../lib/class-scaffold.js';
+import { nextEmptyPlanBlock, type ScaffoldDiscipline } from '../lib/class-scaffold.js';
 import { errMessage } from '../lib/errors.js';
 import { errorReference } from '../lib/error-reference.js';
 import { classDetailReducer, initialClassDetailState } from '../lib/class-detail-state.js';
@@ -278,10 +279,15 @@ export function Dashboard({ userId, userName }: { userId: string; userName: stri
   const [retryingImport, setRetryingImport] = useState(false);
 
   const [createDialogMode, setCreateDialogMode] = useState<CreateClassMode | null>(null);
+  const [createDiscipline, setCreateDiscipline] = useState<ScaffoldDiscipline | null>(null);
   const createDialogOpen = createDialogMode != null;
-  const focusClassCreator = useCallback((mode: CreateClassMode = 'scaffold') => {
-    setCreateDialogMode(mode);
-  }, []);
+  const focusClassCreator = useCallback(
+    (mode: CreateClassMode = 'scaffold', discipline: ScaffoldDiscipline | null = null) => {
+      setCreateDiscipline(discipline);
+      setCreateDialogMode(mode);
+    },
+    [],
+  );
 
   // Merge a page's tags into the known-tags set (only an unfiltered page widens
   // it; a filtered page only re-adds the active tag, which is harmless).
@@ -467,13 +473,34 @@ export function Dashboard({ userId, userName }: { userId: string; userName: stri
     if (owner) void loadDetail(owner.classId, { silent: true, owner, origin: 'live-return' });
   }, [selected, loadDetail]);
 
-  const enterLive = useCallback((payload: RunPayload, resumeBuilder = true) => {
-    suspendedWorkspace.current = resumeBuilder ? detailWorkspace.current : null;
-    detailWorkspace.current = null;
-    setRefreshWarning(null);
-    pendingLiveRequest.current = null;
-    setLive(payload);
+  // Open and Live start share one clock. The write does not bump updatedAt.
+  const noteClassOpened = useCallback((classId: string) => {
+    const at = Date.now();
+    setClasses((prev) => prev.map((c) => (c.id === classId ? { ...c, lastOpenedAt: at } : c)));
+    void Promise.resolve()
+      .then(() => markClassOpened(classId))
+      .then((updated) => {
+        if (updated?.lastOpenedAt == null) return;
+        setClasses((prev) =>
+          prev.map((c) => (c.id === classId ? { ...c, lastOpenedAt: updated.lastOpenedAt } : c)),
+        );
+      })
+      .catch(() => {
+        /* The optimistic stamp stands until the next list load. */
+      });
   }, []);
+
+  const enterLive = useCallback(
+    (payload: RunPayload, resumeBuilder = true) => {
+      noteClassOpened(payload.class.id);
+      suspendedWorkspace.current = resumeBuilder ? detailWorkspace.current : null;
+      detailWorkspace.current = null;
+      setRefreshWarning(null);
+      pendingLiveRequest.current = null;
+      setLive(payload);
+    },
+    [noteClassOpened],
+  );
 
   useLayoutEffect(() => {
     if (!restoreRefreshFocus.current) return;
@@ -491,13 +518,14 @@ export function Dashboard({ userId, userName }: { userId: string; userName: stri
 
   const openClass = useCallback(
     async (cls: ClassWithAccess) => {
+      noteClassOpened(cls.id);
       liveRequestId.current += 1;
       detailWorkspace.current = { classId: cls.id, session: {} };
       setRefreshWarning(null);
       setSelected(cls);
       await loadDetail(cls.id);
     },
-    [loadDetail],
+    [loadDetail, noteClassOpened],
   );
 
   // Leave the full-focus builder for the Classes library. Bump the live and
@@ -891,7 +919,11 @@ export function Dashboard({ userId, userName }: { userId: string; userName: stri
         {createDialogOpen && (
           <CreateClassDialog
             mode={createDialogMode ?? 'scaffold'}
-            onClose={() => setCreateDialogMode(null)}
+            discipline={createDiscipline}
+            onClose={() => {
+              setCreateDialogMode(null);
+              setCreateDiscipline(null);
+            }}
             onError={setError}
             onCreated={async (cls) => {
               if (cls.scaffoldRecipeId == null) setNewEmptyClassId(cls.id);
@@ -1102,6 +1134,8 @@ export function Dashboard({ userId, userName }: { userId: string; userName: stri
               }}
               onLoadMore={loadMoreClasses}
               onStartClass={focusClassCreator}
+              onStartTemplate={(template) => focusClassCreator('scaffold', template)}
+              onImportPlaylist={() => setDestination('music')}
             />
           )
         ) : destination === 'music' ? (

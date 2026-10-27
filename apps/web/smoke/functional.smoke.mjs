@@ -117,7 +117,8 @@ try {
 
   // ── Class lifecycle: create + open + add a track ────────────────────────
   await section('class:create', async () => {
-    await page.getByRole('button', { name: 'Start a class' }).click();
+    await page.getByRole('button', { name: 'Create', exact: true }).click();
+    await page.getByRole('button', { name: 'From a template' }).click();
     const t = page.getByLabel('Class title');
     await t.fill('Functional Smoke A');
     await page.getByRole('button', { name: 'Cycle', exact: true }).click();
@@ -178,7 +179,10 @@ try {
     await dlg.getByRole('button', { name: 'Connect', exact: true }).first().click();
     // Connected status renders the ✓ glyph and label as separate nodes; the row's
     // Disconnect button is the unambiguous "now connected" signal.
-    await dlg.getByRole('button', { name: 'Disconnect', exact: true }).first().waitFor({ timeout: 10000 });
+    await dlg
+      .getByRole('button', { name: 'Disconnect', exact: true })
+      .first()
+      .waitFor({ timeout: 10000 });
     await dlg.getByRole('button', { name: 'Close connections dialog' }).click();
     await dlg.waitFor({ state: 'detached', timeout: 5000 });
   });

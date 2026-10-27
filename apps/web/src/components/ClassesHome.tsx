@@ -1,33 +1,22 @@
 import type { CreateClassMode } from './CreateClassDialog.js';
-import { useEffect, useMemo, useState } from 'react';
+import { useEffect, useId, useMemo, useRef, useState, type ReactNode } from 'react';
 import type { ClassListItem } from '@ritmofit/shared';
 import { getClassShelfPayload, listClassPlanBlocks, listClassTracks } from '../lib/api.js';
-import {
-  CLASS_ORDERING_OPTIONS,
-  orderClassesBy,
-  orderingSummary,
-  readStoredOrdering,
-  storeOrdering,
-  type ClassDetailState,
-  type ClassOrdering,
-} from '../lib/class-ordering.js';
+import type { ClassDetailState } from '../lib/class-ordering.js';
 import { creationNextStep, type CreationPlanContext } from '../lib/creation-next-step.js';
 import { formatDuration, formatTemplateLabel } from '../lib/class-summary.js';
 import { errorReference } from '../lib/error-reference.js';
+import { libraryView, organizeClasses, type ListStatus } from '../lib/library-state.js';
 import {
-  CLASS_SORT_OPTIONS,
-  DEFAULT_CLASS_SORT,
-  libraryView,
-  organizeClasses,
-  type ClassSortKey,
-  type ListStatus,
-} from '../lib/library-state.js';
-import { ClassPulse } from './ClassPulse.js';
-import { LibraryOrganizeControls, TagFilter } from './LibraryOrganize.js';
+  coverGradientClass,
+  jumpBackInClasses,
+  LIBRARY_TEMPLATES,
+  readinessMark,
+  recentClasses,
+  type LibraryTemplate,
+} from '../lib/library-shell.js';
 import { RecoveryState, StatusLabel } from './SharedState.js';
 
-/** Search, sort, and tags stay off until the loaded library needs them. */
-export const ORGANIZE_THRESHOLD = 8;
 const DETAIL_CONCURRENCY = 2;
 
 export function ClassesHome({
@@ -46,6 +35,8 @@ export function ClassesHome({
   onRetry,
   onLoadMore,
   onStartClass,
+  onStartTemplate,
+  onImportPlaylist,
 }: {
   classes: ClassListItem[];
   status: ListStatus;
@@ -62,6 +53,8 @@ export function ClassesHome({
   onRetry: () => void;
   onLoadMore: () => void;
   onStartClass: (mode?: CreateClassMode) => void;
+  onStartTemplate: (template: LibraryTemplate) => void;
+  onImportPlaylist: () => void;
 }) {
   const view = libraryView(status, classes.length);
 
@@ -124,103 +117,64 @@ export function ClassesHome({
     );
   }
 
-  if (view === 'empty' && activeTag) {
-    return (
-      <section className="mx-auto min-w-0 w-full max-w-3xl rounded-card border border-border-subtle bg-bg-raised p-5 sm:p-6">
-        <StatusLabel kind="empty" label={`No classes tagged #${activeTag}`} />
-        <h2 className="mt-3 font-display text-2xl font-semibold text-text-primary">
-          This filter has no classes yet.
-        </h2>
-        <p className="mt-2 font-ui text-sm leading-6 text-text-secondary">
-          Clear the filter to return to your loaded classes. Nothing was removed.
-        </p>
-        <button
-          type="button"
-          onClick={onClearTag}
-          className="mt-4 min-h-11 rounded-control rf-btn-primary px-4 font-ui text-sm font-semibold text-text-on-accent sm:rounded-pill"
-        >
-          Clear #{activeTag} filter
-        </button>
-      </section>
-    );
-  }
-
-  if (view === 'empty') {
-    return (
-      <section className="mx-auto min-w-0 w-full max-w-3xl">
-        <p className="rf-eyebrow">Classes</p>
-        <h2 className="mt-2 text-balance font-display text-3xl font-bold tracking-[-0.03em] text-text-primary sm:text-4xl">
-          Pick a discipline. Ritmo lays out the class. You bring the music.
-        </h2>
-        <div className="mt-6 flex flex-col gap-2 sm:flex-row sm:items-center">
-          <button
-            type="button"
-            onClick={() => onStartClass()}
-            className="min-h-11 rounded-control rf-btn-primary px-4 font-ui text-sm font-semibold text-text-on-accent rf-focus-ring sm:rounded-pill"
-          >
-            Start a class
-          </button>
-          <button
-            type="button"
-            onClick={() => onStartClass('empty')}
-            className="min-h-11 rounded-control px-3 font-ui text-sm text-text-tertiary hover:text-text-secondary rf-focus-ring"
-          >
-            Start empty
-          </button>
-        </div>
-      </section>
-    );
-  }
-
   return (
-    <ClassesHomeList
+    <LibraryShell
       classes={classes}
-      knownTags={knownTags}
       activeTag={activeTag}
+      knownTags={knownTags}
       hasMore={hasMore}
       loadingMore={loadingMore}
       onOpen={onOpen}
       onPreview={onPreview}
       onDuplicate={onDuplicate}
       onSelectTag={onSelectTag}
+      onClearTag={onClearTag}
       onLoadMore={onLoadMore}
       onStartClass={onStartClass}
+      onStartTemplate={onStartTemplate}
+      onImportPlaylist={onImportPlaylist}
     />
   );
 }
 
-function ClassesHomeList({
+function LibraryShell({
   classes,
-  knownTags,
   activeTag,
+  knownTags,
   hasMore,
   loadingMore,
   onOpen,
   onPreview,
   onDuplicate,
   onSelectTag,
+  onClearTag,
   onLoadMore,
   onStartClass,
+  onStartTemplate,
+  onImportPlaylist,
 }: {
   classes: ClassListItem[];
-  knownTags: string[];
   activeTag: string | null;
+  knownTags: string[];
   hasMore: boolean;
   loadingMore: boolean;
   onOpen: (cls: ClassListItem) => void;
   onPreview: (cls: ClassListItem) => void;
   onDuplicate: (cls: ClassListItem) => Promise<void>;
   onSelectTag: (tag: string | null) => void;
+  onClearTag: () => void;
   onLoadMore: () => void;
   onStartClass: (mode?: CreateClassMode) => void;
+  onStartTemplate: (template: LibraryTemplate) => void;
+  onImportPlaylist: () => void;
 }) {
-  const showOrganize = classes.length > ORGANIZE_THRESHOLD;
+  const searchId = useId();
+  const recentsRef = useRef<HTMLElement>(null);
   const [query, setQuery] = useState('');
-  const [sort, setSort] = useState<ClassSortKey>(DEFAULT_CLASS_SORT);
+  const [discipline, setDiscipline] = useState<'all' | LibraryTemplate>('all');
   const [details, setDetails] = useState<Record<string, ClassDetailState>>({});
   const [plans, setPlans] = useState<Record<string, CreationPlanContext | null>>({});
   const [retryRevision, setRetryRevision] = useState(0);
-  const [ordering, setOrdering] = useState<ClassOrdering>(readStoredOrdering);
 
   const candidateKey = classes.map((cls) => cls.id).join('|');
 
@@ -275,157 +229,363 @@ function ClassesHomeList({
     };
   }, [candidateKey, retryRevision]);
 
-  const searched = useMemo(
-    () => organizeClasses(classes, { query, sort: 'recently_updated' }),
-    [classes, query],
-  );
-  const usingManualSort = showOrganize && sort !== 'recently_updated';
   const visible = useMemo(() => {
-    const stepFor = (item: ClassListItem) =>
-      creationNextStep(item, details[item.id], plans[item.id]);
-    if (usingManualSort) {
-      return organizeClasses(searched, { query: '', sort });
-    }
-    return orderClassesBy(ordering, searched, stepFor);
-  }, [details, plans, ordering, searched, sort, usingManualSort]);
+    const byDiscipline =
+      discipline === 'all' || activeTag
+        ? classes
+        : classes.filter((cls) => cls.template === discipline);
+    const matched = organizeClasses(byDiscipline, { query, sort: 'recently_updated' });
+    return recentClasses(matched);
+  }, [activeTag, classes, discipline, query]);
 
-  const trimmedQuery = query.trim();
-  const narrowed = trimmedQuery.length > 0 && visible.length !== classes.length;
+  const jumpBack = useMemo(() => jumpBackInClasses(classes), [classes]);
+  const tagChips = [...new Set(activeTag ? [activeTag, ...knownTags] : knownTags)];
 
-  const chooseOrdering = (next: ClassOrdering) => {
-    setOrdering(next);
-    storeOrdering(next);
+  const chooseDiscipline = (next: 'all' | LibraryTemplate) => {
+    setDiscipline(next);
+    if (activeTag) onSelectTag(null);
+  };
+
+  const showAll = () => {
+    const heading = recentsRef.current?.querySelector('h2');
+    recentsRef.current?.scrollIntoView({ block: 'start' });
+    if (heading instanceof HTMLElement) heading.focus();
   };
 
   return (
-    <section aria-labelledby="classes-home-heading" className="mx-auto min-w-0 w-full max-w-3xl">
-      <p className="rf-eyebrow">Classes</p>
-      <div className="mt-2 flex flex-col gap-3 sm:flex-row sm:items-end sm:justify-between">
-        <div className="min-w-0">
+    <div
+      data-library-shell=""
+      className="flex flex-col gap-8 lg:grid lg:grid-cols-[minmax(17.5rem,22rem)_minmax(0,1fr)] lg:items-start"
+    >
+      <div className="contents lg:flex lg:min-w-0 lg:flex-col lg:gap-6">
+        <header className="sticky top-0 z-20 order-1 flex items-center justify-between gap-3 bg-bg-base py-2 lg:order-none">
+          <h2 className="font-display text-xl font-semibold text-text-primary">Your Classes</h2>
+          <CreateMenu onStartClass={onStartClass} onImportPlaylist={onImportPlaylist} />
+        </header>
+
+        <section
+          ref={recentsRef}
+          aria-labelledby="class-recents-heading"
+          className="order-3 min-w-0 lg:order-none"
+        >
+          <div role="group" aria-label="Filter classes" className="flex flex-wrap gap-2">
+            <FilterChip
+              pressed={!activeTag && discipline === 'all'}
+              onClick={() => chooseDiscipline('all')}
+            >
+              All
+            </FilterChip>
+            <FilterChip
+              pressed={!activeTag && discipline === 'cycle'}
+              onClick={() => chooseDiscipline('cycle')}
+            >
+              Cycle
+            </FilterChip>
+            <FilterChip
+              pressed={!activeTag && discipline === 'sculpt'}
+              onClick={() => chooseDiscipline('sculpt')}
+            >
+              Pilates
+            </FilterChip>
+            {tagChips.map((tag) => (
+              <FilterChip
+                key={tag}
+                pressed={activeTag === tag}
+                onClick={() => {
+                  setDiscipline('all');
+                  onSelectTag(tag);
+                }}
+              >
+                #{tag}
+              </FilterChip>
+            ))}
+          </div>
+
+          <div className="mt-4">
+            <label htmlFor={searchId} className="font-ui text-xs font-semibold text-text-secondary">
+              Search classes
+            </label>
+            <input
+              id={searchId}
+              type="text"
+              role="searchbox"
+              value={query}
+              onChange={(event) => setQuery(event.target.value)}
+              placeholder="Search by name"
+              className="mt-1.5 min-h-11 w-full rounded-control border border-border bg-bg-raised px-3 font-ui text-sm text-text-primary rf-focus-ring"
+            />
+          </div>
+
           <h2
-            id="classes-home-heading"
-            className="text-balance font-display text-3xl font-bold tracking-[-0.03em] text-text-primary sm:text-4xl"
+            id="class-recents-heading"
+            tabIndex={-1}
+            className="mt-6 font-display text-lg font-semibold text-text-primary focus:outline-none"
           >
-            Pick up where the energy left off.
+            Recents
           </h2>
-          <p className="mt-2 max-w-prose font-ui text-sm leading-6 text-text-secondary">
-            {usingManualSort
-              ? `Sorted by ${
-                  CLASS_SORT_OPTIONS.find((option) => option.value === sort)?.label ?? sort
-                }.`
-              : orderingSummary(ordering)}
-          </p>
-        </div>
-        <div className="flex shrink-0 flex-col gap-2 sm:flex-row sm:items-center">
-          <button
-            type="button"
-            onClick={() => onStartClass()}
-            className="min-h-11 rounded-control px-4 font-ui text-sm font-semibold text-text-secondary hover:text-text-primary rf-focus-ring sm:rounded-pill"
-          >
-            Start a class
-          </button>
-          <button
-            type="button"
-            onClick={() => onStartClass('empty')}
-            className="min-h-11 rounded-control px-3 font-ui text-sm text-text-tertiary hover:text-text-secondary rf-focus-ring"
-          >
-            Start empty
-          </button>
-        </div>
+
+          {classes.length === 0 && !activeTag ? (
+            <p className="mt-3 font-ui text-sm text-text-secondary">There are no classes yet.</p>
+          ) : classes.length === 0 && activeTag ? (
+            <div className="mt-3">
+              <p className="font-ui text-sm text-text-secondary">No classes tagged #{activeTag}.</p>
+              <button
+                type="button"
+                onClick={onClearTag}
+                className="mt-3 min-h-11 rounded-control border border-interactive px-3 font-ui text-sm font-semibold text-interactive rf-focus-ring"
+              >
+                Clear #{activeTag} filter
+              </button>
+            </div>
+          ) : visible.length === 0 ? (
+            <div className="mt-3">
+              <p className="font-ui text-sm text-text-secondary">No classes match this filter.</p>
+              <button
+                type="button"
+                onClick={() => {
+                  setQuery('');
+                  setDiscipline('all');
+                  if (activeTag) onClearTag();
+                }}
+                className="mt-3 min-h-11 rounded-control border border-interactive px-3 font-ui text-sm font-semibold text-interactive rf-focus-ring"
+              >
+                Show all classes
+              </button>
+            </div>
+          ) : (
+            <ol className="mt-2 divide-y divide-border-subtle">
+              {visible.map((cls) => (
+                <ClassRow
+                  key={cls.id}
+                  cls={cls}
+                  detail={details[cls.id]}
+                  plan={plans[cls.id]}
+                  onOpen={onOpen}
+                  onPreview={onPreview}
+                  onDuplicate={onDuplicate}
+                  onRetryDetails={() => setRetryRevision((revision) => revision + 1)}
+                />
+              ))}
+            </ol>
+          )}
+
+          {hasMore && (
+            <div className="mt-4">
+              <button
+                type="button"
+                className="min-h-11 rounded-control border border-interactive px-4 font-ui text-sm text-interactive disabled:opacity-40 rf-focus-ring"
+                onClick={onLoadMore}
+                disabled={loadingMore}
+              >
+                {loadingMore ? 'Loading…' : 'Load more classes'}
+              </button>
+            </div>
+          )}
+        </section>
       </div>
 
-      {!usingManualSort && (
-        <div role="group" aria-label="Order classes by" className="mt-4 flex flex-wrap gap-2">
-          {CLASS_ORDERING_OPTIONS.map((option) => {
-            const active = option.value === ordering;
-            return (
-              <button
-                key={option.value}
-                type="button"
-                aria-pressed={active}
-                onClick={() => chooseOrdering(option.value)}
-                className={`min-h-11 rounded-control border px-4 font-ui text-sm font-semibold rf-focus-ring sm:rounded-pill ${
-                  active
-                    ? 'border-interactive bg-interactive/15 text-text-primary'
-                    : 'border-border-subtle text-text-secondary hover:border-interactive/45 hover:text-text-primary'
-                }`}
-              >
-                {option.label}
-              </button>
-            );
-          })}
-        </div>
-      )}
-
-      {showOrganize && (
-        <div className="mt-4 flex flex-col gap-3">
-          <TagFilter knownTags={knownTags} activeTag={activeTag} onSelectTag={onSelectTag} />
-          <LibraryOrganizeControls
-            query={query}
-            sort={sort}
-            onQueryChange={setQuery}
-            onSortChange={setSort}
-          />
-          {narrowed && (
-            <p className="font-data text-xs text-text-tertiary">
-              {visible.length} of {classes.length} loaded
-            </p>
-          )}
-        </div>
-      )}
-
-      {visible.length === 0 ? (
-        <div className="mt-6 flex flex-col items-start gap-2">
-          <p className="font-ui text-sm text-text-tertiary">
-            No loaded classes match “<span className="text-text-secondary">{trimmedQuery}</span>”.
-          </p>
-          <button
-            type="button"
-            className="min-h-11 rounded-control border border-interactive px-3 font-ui text-sm text-interactive sm:min-h-8 sm:rounded-pill"
-            onClick={() => setQuery('')}
-          >
-            Show all classes
-          </button>
-        </div>
-      ) : (
-        <ol className="mt-6 divide-y divide-border-subtle border-y border-border-subtle">
-          {visible.map((cls, index) => (
-            <ClassHomeRow
-              key={cls.id}
-              cls={cls}
-              detail={details[cls.id]}
-              plan={plans[cls.id]}
-              isTop={index === 0}
-              onOpen={onOpen}
-              onPreview={onPreview}
-              onDuplicate={onDuplicate}
-              onRetryDetails={() => setRetryRevision((revision) => revision + 1)}
-            />
+      <section aria-labelledby="template-heading" className="order-2 min-w-0 lg:order-none">
+        <h2
+          id="template-heading"
+          tabIndex={-1}
+          className="font-display text-2xl font-semibold tracking-[-0.02em] text-text-primary focus:outline-none"
+        >
+          Start from a template
+        </h2>
+        <div role="group" aria-label="Class templates" className="mt-4 grid grid-cols-2 gap-3">
+          {LIBRARY_TEMPLATES.map((tile) => (
+            <button
+              key={tile.template}
+              type="button"
+              aria-label={`Start from the ${tile.label} template`}
+              onClick={() => onStartTemplate(tile.template)}
+              className="flex min-h-24 flex-col items-start justify-between rounded-card border border-border-subtle bg-bg-raised p-4 text-left rf-focus-ring hover:border-border"
+            >
+              <span className="font-display text-xl font-semibold text-text-primary">
+                {tile.label}
+              </span>
+              <span className="mt-2 font-ui text-sm text-text-secondary">{tile.detail}</span>
+            </button>
           ))}
-        </ol>
-      )}
-
-      {hasMore && (
-        <div className="mt-4 flex justify-start">
-          <button
-            type="button"
-            className="min-h-11 rounded-control border border-interactive px-4 font-ui text-sm text-interactive disabled:opacity-40 sm:rounded-pill"
-            onClick={onLoadMore}
-            disabled={loadingMore}
-          >
-            {loadingMore ? 'Loading…' : 'Load more classes'}
-          </button>
         </div>
-      )}
-    </section>
+
+        {jumpBack.length > 0 && (
+          <section aria-labelledby="jump-back-heading" className="mt-8">
+            <div className="flex items-end justify-between gap-3">
+              <h2
+                id="jump-back-heading"
+                className="font-display text-2xl font-semibold tracking-[-0.02em] text-text-primary"
+              >
+                Jump back in
+              </h2>
+              <button
+                type="button"
+                onClick={showAll}
+                className="min-h-11 shrink-0 rounded-control px-2 font-ui text-sm font-semibold text-interactive rf-focus-ring"
+              >
+                Show all
+              </button>
+            </div>
+            <ul className="mt-4 grid gap-3 sm:grid-cols-2">
+              {jumpBack.map((cls) => (
+                <li key={cls.id}>
+                  <button
+                    type="button"
+                    aria-label={`Jump back in to ${cls.title}`}
+                    onClick={() => onOpen(cls)}
+                    className="flex min-h-11 w-full items-center gap-3 rounded-card border border-border-subtle bg-bg-raised p-3 text-left rf-focus-ring"
+                  >
+                    <ClassCover cls={cls} />
+                    <span className="min-w-0">
+                      <span className="block truncate font-display text-base font-semibold text-text-primary">
+                        {cls.title}
+                      </span>
+                      <span className="block truncate font-data text-xs text-text-tertiary">
+                        {classMeta(cls)}
+                      </span>
+                    </span>
+                  </button>
+                </li>
+              ))}
+            </ul>
+          </section>
+        )}
+      </section>
+    </div>
   );
 }
 
-function ClassHomeRow({
+function CreateMenu({
+  onStartClass,
+  onImportPlaylist,
+}: {
+  onStartClass: (mode?: CreateClassMode) => void;
+  onImportPlaylist: () => void;
+}) {
+  const [open, setOpen] = useState(false);
+  const menuRef = useRef<HTMLDivElement>(null);
+  const menuId = useId();
+
+  useEffect(() => {
+    if (!open) return;
+    const onPointer = (event: MouseEvent) => {
+      if (!menuRef.current?.contains(event.target as Node)) setOpen(false);
+    };
+    const onKey = (event: KeyboardEvent) => {
+      if (event.key === 'Escape') setOpen(false);
+    };
+    document.addEventListener('mousedown', onPointer);
+    document.addEventListener('keydown', onKey);
+    return () => {
+      document.removeEventListener('mousedown', onPointer);
+      document.removeEventListener('keydown', onKey);
+    };
+  }, [open]);
+
+  const choose = (action: () => void) => {
+    setOpen(false);
+    action();
+  };
+
+  return (
+    <div ref={menuRef} className="relative">
+      <button
+        type="button"
+        aria-expanded={open}
+        aria-controls={menuId}
+        onClick={() => setOpen((current) => !current)}
+        className="inline-flex min-h-11 items-center gap-1 rounded-pill rf-btn-primary px-4 font-ui text-sm font-semibold text-text-on-accent rf-focus-ring"
+      >
+        <span aria-hidden="true">+</span>
+        Create
+      </button>
+      {open && (
+        <div
+          id={menuId}
+          role="group"
+          aria-label="Create a class"
+          className="absolute right-0 z-30 mt-2 flex w-56 flex-col rounded-card border border-border-subtle bg-bg-raised p-1 shadow-lifted"
+        >
+          <MenuButton onClick={() => choose(() => onStartClass('empty'))}>New class</MenuButton>
+          <MenuButton onClick={() => choose(() => onStartClass('scaffold'))}>
+            From a template
+          </MenuButton>
+          <MenuButton onClick={() => choose(onImportPlaylist)}>Import a playlist</MenuButton>
+        </div>
+      )}
+    </div>
+  );
+}
+
+function MenuButton({ children, onClick }: { children: string; onClick: () => void }) {
+  return (
+    <button
+      type="button"
+      onClick={onClick}
+      className="min-h-11 rounded-control px-3 text-left font-ui text-sm text-text-primary hover:bg-bg-sunken rf-focus-ring"
+    >
+      {children}
+    </button>
+  );
+}
+
+function FilterChip({
+  pressed,
+  onClick,
+  children,
+}: {
+  pressed: boolean;
+  onClick: () => void;
+  children: ReactNode;
+}) {
+  return (
+    <button
+      type="button"
+      aria-pressed={pressed}
+      onClick={onClick}
+      className={`min-h-11 rounded-pill border px-3 font-ui text-sm font-semibold rf-focus-ring ${
+        pressed
+          ? 'border-interactive bg-interactive/15 text-text-primary'
+          : 'border-border-subtle text-text-secondary hover:border-interactive/45 hover:text-text-primary'
+      }`}
+    >
+      {children}
+    </button>
+  );
+}
+
+function classMeta(
+  cls: Pick<ClassListItem, 'template' | 'trackCount' | 'totalDurationMs'>,
+): string {
+  const type = formatTemplateLabel(cls.template) ?? 'Class';
+  const tracks = `${cls.trackCount} ${cls.trackCount === 1 ? 'track' : 'tracks'}`;
+  return `${type} · ${tracks} · ${formatDuration(cls.totalDurationMs)}`;
+}
+
+function ClassCover({ cls }: { cls: Pick<ClassListItem, 'coverImageUrl' | 'template'> }) {
+  if (cls.coverImageUrl) {
+    return (
+      <img
+        src={cls.coverImageUrl}
+        alt=""
+        className="h-10 w-10 shrink-0 rounded-control object-cover"
+      />
+    );
+  }
+  return (
+    <span
+      aria-hidden="true"
+      data-cover="type-gradient"
+      data-template={cls.template ?? 'none'}
+      className={`h-10 w-10 shrink-0 rounded-control ${coverGradientClass(cls.template)}`}
+    />
+  );
+}
+
+function ClassRow({
   cls,
   detail,
   plan,
-  isTop,
   onOpen,
   onPreview,
   onDuplicate,
@@ -434,128 +594,133 @@ function ClassHomeRow({
   cls: ClassListItem;
   detail: ClassDetailState | undefined;
   plan: CreationPlanContext | null | undefined;
-  isTop: boolean;
   onOpen: (cls: ClassListItem) => void;
   onPreview: (cls: ClassListItem) => void;
   onDuplicate: (cls: ClassListItem) => Promise<void>;
   onRetryDetails: () => void;
 }) {
-  const [menuOpen, setMenuOpen] = useState(false);
   const step = creationNextStep(cls, detail, plan);
+  const mark = readinessMark(step);
+  const metaId = `${cls.id}-meta`;
+  const readinessId = `${cls.id}-readiness`;
   const payload = detail?.status === 'ready' ? detail.payload : null;
-  const template = formatTemplateLabel(cls.template);
-  const tracksLabel = `${cls.trackCount} ${cls.trackCount === 1 ? 'track' : 'tracks'}`;
-  const meta = [
-    template,
-    tracksLabel,
-    cls.totalDurationMs > 0 ? formatDuration(cls.totalDurationMs) : null,
-  ]
-    .filter(Boolean)
-    .join(' · ');
-  const statusKind =
-    detail?.status === 'ready'
-      ? step.teachable
-        ? 'recovered'
-        : 'empty'
-      : detail?.status === 'error'
-        ? 'unavailable'
-        : 'loading';
-  const showAction = isTop || step.eyebrow === 'Fill the plan';
 
   return (
-    <li
-      className={`grid grid-cols-[minmax(0,1fr)_auto] items-center gap-x-3 gap-y-2 py-4 ${
-        showAction
-          ? 'md:grid-cols-[minmax(0,1fr)_7.5rem_auto_auto_auto]'
-          : 'md:grid-cols-[minmax(0,1fr)_7.5rem_auto_auto]'
-      }`}
-    >
-      <div className="min-w-0">
+    <li className="py-1">
+      <div className="flex items-center gap-2">
         <button
           type="button"
+          aria-label={cls.title}
+          aria-describedby={`${metaId} ${readinessId}`}
           onClick={() => onOpen(cls)}
-          className="block max-w-full truncate text-left font-display text-lg font-semibold text-text-primary rf-focus-ring"
+          className="flex min-h-11 min-w-0 flex-1 items-center gap-3 rounded-control py-1 text-left rf-focus-ring"
         >
-          {cls.title}
+          <ClassCover cls={cls} />
+          <span className="min-w-0">
+            <span className="block truncate font-display text-base font-semibold text-text-primary">
+              {cls.title}
+            </span>
+            <span id={metaId} className="block truncate font-data text-xs text-text-tertiary">
+              {classMeta(cls)}
+            </span>
+          </span>
         </button>
-        <p className="mt-0.5 font-data text-xs text-text-tertiary">{meta}</p>
-      </div>
-
-      <span className="hidden justify-self-end md:block">
-        {payload ? (
-          <ClassPulse payload={payload} variant="sparkline" />
-        ) : (
-          <span aria-hidden className="block h-11 w-28 rounded-control bg-bg-sunken" />
-        )}
-      </span>
-
-      <StatusLabel kind={statusKind} label={step.detail} />
-
-      {showAction && (
-        <button
-          type="button"
-          onClick={() => onOpen(cls)}
-          aria-label={`${step.action} — ${cls.title}`}
-          className="col-span-2 min-h-11 justify-self-start rounded-control rf-btn-primary px-4 font-ui text-sm font-semibold text-text-on-accent rf-focus-ring sm:rounded-pill md:col-span-1"
+        <span
+          id={readinessId}
+          className="inline-flex shrink-0 items-center gap-1.5 font-ui text-xs text-text-secondary"
         >
-          {step.action}
-        </button>
-      )}
-
-      <div className="relative justify-self-start md:justify-self-end">
-        <button
-          type="button"
-          aria-expanded={menuOpen}
-          aria-label={`More actions — ${cls.title}`}
-          onClick={() => setMenuOpen((open) => !open)}
-          className="flex min-h-11 min-w-11 items-center justify-center rounded-control font-ui text-lg text-text-tertiary hover:text-text-primary rf-focus-ring"
-        >
-          ⋯
-        </button>
-        {menuOpen && (
-          <div className="absolute right-0 z-10 mt-1 min-w-44 rounded-control border border-border-subtle bg-bg-raised p-1 shadow-lifted">
-            {payload && (
-              <button
-                type="button"
-                onClick={() => {
-                  setMenuOpen(false);
-                  onPreview(cls);
-                }}
-                aria-label={`Rehearsal view — ${cls.title}`}
-                className="flex min-h-11 w-full items-center rounded-control px-3 text-left font-ui text-sm text-text-secondary hover:bg-bg-sunken hover:text-text-primary"
-              >
-                Rehearsal view
-              </button>
-            )}
-            {cls.accessLevel === 'owner' && (
-              <button
-                type="button"
-                onClick={() => {
-                  setMenuOpen(false);
-                  void onDuplicate(cls);
-                }}
-                aria-label={`Duplicate — ${cls.title}`}
-                className="flex min-h-11 w-full items-center rounded-control px-3 text-left font-ui text-sm text-text-secondary hover:bg-bg-sunken hover:text-text-primary"
-              >
-                Duplicate
-              </button>
-            )}
-            {detail?.status === 'error' && (
-              <button
-                type="button"
-                onClick={() => {
-                  setMenuOpen(false);
-                  onRetryDetails();
-                }}
-                aria-label={`Retry details — ${cls.title}`}
-                className="flex min-h-11 w-full items-center rounded-control px-3 text-left font-ui text-sm text-text-secondary hover:bg-bg-sunken hover:text-text-primary"
-              >
-                Retry details
-              </button>
-            )}
-          </div>
-        )}
+          {mark.dot ? (
+            <span
+              aria-hidden="true"
+              data-readiness-dot=""
+              className="h-2 w-2 shrink-0 rounded-full bg-brand"
+            />
+          ) : null}
+          {mark.label}
+        </span>
+        <RowMenu
+          cls={cls}
+          canPreview={payload != null}
+          failed={detail?.status === 'error'}
+          onPreview={onPreview}
+          onDuplicate={onDuplicate}
+          onRetryDetails={onRetryDetails}
+        />
       </div>
     </li>
+  );
+}
+
+function RowMenu({
+  cls,
+  canPreview,
+  failed,
+  onPreview,
+  onDuplicate,
+  onRetryDetails,
+}: {
+  cls: ClassListItem;
+  canPreview: boolean;
+  failed: boolean;
+  onPreview: (cls: ClassListItem) => void;
+  onDuplicate: (cls: ClassListItem) => Promise<void>;
+  onRetryDetails: () => void;
+}) {
+  const [open, setOpen] = useState(false);
+  return (
+    <div className="relative">
+      <button
+        type="button"
+        aria-expanded={open}
+        aria-label={`More actions — ${cls.title}`}
+        onClick={() => setOpen((current) => !current)}
+        className="flex min-h-11 min-w-11 items-center justify-center rounded-control font-ui text-lg text-text-tertiary hover:text-text-primary rf-focus-ring"
+      >
+        ⋯
+      </button>
+      {open && (
+        <div className="absolute right-0 z-10 mt-1 min-w-44 rounded-control border border-border-subtle bg-bg-raised p-1 shadow-lifted">
+          {canPreview && (
+            <button
+              type="button"
+              onClick={() => {
+                setOpen(false);
+                onPreview(cls);
+              }}
+              aria-label={`Rehearsal view — ${cls.title}`}
+              className="flex min-h-11 w-full items-center rounded-control px-3 text-left font-ui text-sm text-text-secondary hover:bg-bg-sunken hover:text-text-primary"
+            >
+              Rehearsal view
+            </button>
+          )}
+          {cls.accessLevel === 'owner' && (
+            <button
+              type="button"
+              onClick={() => {
+                setOpen(false);
+                void onDuplicate(cls);
+              }}
+              aria-label={`Duplicate — ${cls.title}`}
+              className="flex min-h-11 w-full items-center rounded-control px-3 text-left font-ui text-sm text-text-secondary hover:bg-bg-sunken hover:text-text-primary"
+            >
+              Duplicate
+            </button>
+          )}
+          {failed && (
+            <button
+              type="button"
+              onClick={() => {
+                setOpen(false);
+                onRetryDetails();
+              }}
+              aria-label={`Retry details — ${cls.title}`}
+              className="flex min-h-11 w-full items-center rounded-control px-3 text-left font-ui text-sm text-text-secondary hover:bg-bg-sunken hover:text-text-primary"
+            >
+              Retry details
+            </button>
+          )}
+        </div>
+      )}
+    </div>
   );
 }
