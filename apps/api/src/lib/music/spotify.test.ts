@@ -8,6 +8,8 @@ import {
   SpotifyForbiddenError,
   SpotifyDevelopmentModeError,
   SpotifyPlaylistAccessDeniedError,
+  ProviderError,
+  ProviderQuotaExceededError,
   type FetchLike,
 } from '@ritmofit/music';
 
@@ -833,5 +835,162 @@ describe('SpotifyProvider transient-retry wiring', () => {
     const results = await provider.search('rick');
     expect(results).toHaveLength(1);
     expect(searchCalls).toBe(2);
+  });
+});
+
+const QUOTA_BODY = JSON.stringify({
+  error: { status: 429, message: 'Too many requests', reason: 'QUOTA_EXCEEDED' },
+});
+
+/** Every non-token request answers with `status` and `body`; counts those requests. */
+function scriptedApi(status: number, body: string, headers: Record<string, string> = {}) {
+  let apiCalls = 0;
+  const fetchImpl: FetchLike = async (url) => {
+    if (url === TOKEN_URL) {
+      return {
+        ok: true,
+        status: 200,
+        json: async () => ({ access_token: 'tok', expires_in: 3600 }),
+        text: async () => '',
+      };
+    }
+    apiCalls += 1;
+    return {
+      ok: status >= 200 && status < 300,
+      status,
+      json: async () => JSON.parse(body) as unknown,
+      text: async () => body,
+      headers: { get: (n: string) => headers[n.toLowerCase()] ?? null },
+    };
+  };
+  return { fetchImpl, calls: () => apiCalls };
+}
+
+describe('Spotify 429 handling', () => {
+  const noSleep = { sleep: async () => {} };
+
+  it('search: QUOTA_EXCEEDED makes one request and raises the typed quota error', async () => {
+    const api = scriptedApi(429, QUOTA_BODY);
+    const provider = createSpotifyProvider({
+      clientId: 'cid',
+      clientSecret: 'secret',
+      fetchImpl: api.fetchImpl,
+      apiBase: API_BASE,
+      tokenUrl: TOKEN_URL,
+      retry: noSleep,
+    });
+    const err = await provider.search('rick').catch((e: unknown) => e);
+    expect(err).toBeInstanceOf(ProviderQuotaExceededError);
+    expect(err).toBeInstanceOf(ProviderError);
+    expect(api.calls()).toBe(1);
+  });
+
+  it('search: a plain 429 retries with backoff, then fails as an outage', async () => {
+    const api = scriptedApi(429, '{"error":{"status":429,"message":"rate limited"}}');
+    const sleep = vi.fn(async () => {});
+    const provider = createSpotifyProvider({
+      clientId: 'cid',
+      clientSecret: 'secret',
+      fetchImpl: api.fetchImpl,
+      apiBase: API_BASE,
+      tokenUrl: TOKEN_URL,
+      retry: { sleep },
+    });
+    const err = await provider.search('rick').catch((e: unknown) => e);
+    expect(err).toBeInstanceOf(ProviderError);
+    expect(err).not.toBeInstanceOf(ProviderQuotaExceededError);
+    expect(api.calls()).toBe(3);
+    expect(sleep).toHaveBeenCalledTimes(2);
+  });
+
+  it('search: Retry-After 120 fails fast and never sleeps', async () => {
+    const api = scriptedApi(429, '{}', { 'retry-after': '120' });
+    const sleep = vi.fn(async () => {});
+    const provider = createSpotifyProvider({
+      clientId: 'cid',
+      clientSecret: 'secret',
+      fetchImpl: api.fetchImpl,
+      apiBase: API_BASE,
+      tokenUrl: TOKEN_URL,
+      retry: { sleep },
+    });
+    await expect(provider.search('rick')).rejects.toBeInstanceOf(ProviderError);
+    expect(api.calls()).toBe(1);
+    expect(sleep).not.toHaveBeenCalled();
+  });
+
+  it('/me/tracks retries a plain 429 once', async () => {
+    const api = scriptedApi(429, '{}');
+    await expect(
+      fetchSpotifySavedTracks({
+        accessToken: 'user-tok',
+        fetchImpl: api.fetchImpl,
+        apiBase: API_BASE,
+        retry: noSleep,
+      }),
+    ).rejects.toThrow('Spotify API 429 for /me/tracks');
+    expect(api.calls()).toBe(2);
+  });
+
+  it('/me/playlists retries a plain 429 once', async () => {
+    const api = scriptedApi(429, '{}');
+    await expect(
+      fetchSpotifySavedPlaylists({
+        accessToken: 'user-tok',
+        fetchImpl: api.fetchImpl,
+        apiBase: API_BASE,
+        retry: noSleep,
+      }),
+    ).rejects.toThrow('Spotify API 429 for /me/playlists');
+    expect(api.calls()).toBe(2);
+  });
+
+  it('/me/tracks and /me/playlists raise the quota error without retrying', async () => {
+    const tracks = scriptedApi(429, QUOTA_BODY);
+    await expect(
+      fetchSpotifySavedTracks({
+        accessToken: 'user-tok',
+        fetchImpl: tracks.fetchImpl,
+        apiBase: API_BASE,
+        retry: noSleep,
+      }),
+    ).rejects.toBeInstanceOf(ProviderQuotaExceededError);
+    expect(tracks.calls()).toBe(1);
+
+    const playlists = scriptedApi(429, QUOTA_BODY);
+    await expect(
+      fetchSpotifySavedPlaylists({
+        accessToken: 'user-tok',
+        fetchImpl: playlists.fetchImpl,
+        apiBase: API_BASE,
+        retry: noSleep,
+      }),
+    ).rejects.toBeInstanceOf(ProviderQuotaExceededError);
+    expect(playlists.calls()).toBe(1);
+  });
+
+  it('playlist items: QUOTA_EXCEEDED raises the quota error', async () => {
+    const api = scriptedApi(429, QUOTA_BODY);
+    await expect(
+      fetchSpotifyPlaylistTracks({
+        accessToken: 'user-tok',
+        playlistId: 'pl-1',
+        fetchImpl: api.fetchImpl,
+        apiBase: API_BASE,
+      }),
+    ).rejects.toBeInstanceOf(ProviderQuotaExceededError);
+    expect(api.calls()).toBe(1);
+  });
+
+  it('playlist items: a 404 (a private playlist the user does not own) is access denied', async () => {
+    const api = scriptedApi(404, '{"error":{"status":404,"message":"Resource not found"}}');
+    await expect(
+      fetchSpotifyPlaylistTracks({
+        accessToken: 'user-tok',
+        playlistId: 'pl-1',
+        fetchImpl: api.fetchImpl,
+        apiBase: API_BASE,
+      }),
+    ).rejects.toBeInstanceOf(SpotifyPlaylistAccessDeniedError);
   });
 });

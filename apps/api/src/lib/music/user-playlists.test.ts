@@ -244,7 +244,7 @@ describe('user playlist token helper', () => {
     ).rejects.toMatchObject({
       status: 403,
       code: 'PROVIDER_FORBIDDEN',
-      message: 'Spotify only allows opening playlists you own or collaborate on.',
+      message: 'Spotify only lets Ritmo read playlists you own or collaborate on.',
     } satisfies Partial<HttpError>);
     expect(refreshSpotifyToken).not.toHaveBeenCalled();
     expect(fetchSpotifyPlaylistTracks).toHaveBeenCalledTimes(1);
@@ -316,7 +316,7 @@ describe('user playlist token helper', () => {
     ).rejects.toMatchObject({
       status: 403,
       code: 'PROVIDER_FORBIDDEN',
-      message: 'Spotify only allows opening playlists you own or collaborate on.',
+      message: 'Spotify only lets Ritmo read playlists you own or collaborate on.',
     } satisfies Partial<HttpError>);
     expect(refreshSpotifyToken).toHaveBeenCalledTimes(1);
     expect(fetchSpotifyPlaylistTracks).toHaveBeenCalledTimes(2);

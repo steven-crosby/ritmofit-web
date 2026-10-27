@@ -17,6 +17,29 @@ export class ProviderError extends Error {
   }
 }
 
+/**
+ * The provider's request quota for this app is spent (Spotify 429 with
+ * `error.reason: "QUOTA_EXCEEDED"`). Retrying only spends more of the same quota,
+ * so callers surface it instead of retrying.
+ */
+export class ProviderQuotaExceededError extends ProviderError {
+  constructor(provider: string) {
+    super(provider, `${provider} quota exceeded (429 QUOTA_EXCEEDED).`);
+    this.name = 'ProviderQuotaExceededError';
+  }
+}
+
+/** True when a provider error body carries Spotify's quota reason. */
+export function isQuotaExceededBody(body: string): boolean {
+  if (!body) return false;
+  try {
+    const parsed = JSON.parse(body) as { error?: { reason?: unknown } } | null;
+    return parsed?.error?.reason === 'QUOTA_EXCEEDED';
+  } catch {
+    return false;
+  }
+}
+
 /** Read a Response body as JSON, raising `ProviderError` on a non-JSON body. */
 export async function readJson(
   res: { json(): Promise<unknown> },

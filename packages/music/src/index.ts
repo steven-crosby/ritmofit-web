@@ -14,7 +14,13 @@ export type {
 } from './provider.js';
 export { providerTrackIdAliases } from './identity.js';
 export { parsePlaylistUrl, type ParsedPlaylistUrl } from './playlist-url.js';
-export { ProviderError, PlaylistOverLimitError, abortError, isAbortError } from './errors.js';
+export {
+  ProviderError,
+  ProviderQuotaExceededError,
+  PlaylistOverLimitError,
+  abortError,
+  isAbortError,
+} from './errors.js';
 export {
   createSoundCloudProvider,
   fetchSoundCloudLikes,
