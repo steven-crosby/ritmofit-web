@@ -13,6 +13,29 @@ detail). Current focus and `main` vs production live in the "Now" block of
 
 ## Deploy and session log (newest first)
 
+> **Deploy 2026-10-27 — #629 on main `65d4deb`.** Steven said go at 8:06 AM MT.
+> Production deploy at 2026-10-27T14:11:12Z (8:11 AM MT) through
+> `scripts/deploy.sh 65d4deb4aba90f26c6706a099351709680d11aee` from a clean
+> detached worktree. Since `4e0b150`, `origin/main` adds only the #631 docs
+> (`HISTORY.md`, `DEVELOPMENT_PLAN.md`, and
+> `handoffs/2026-10-27-staged-deploy.md`). Against production tree `04ec72f`,
+> the code diff is exactly [#629](https://github.com/steven-crosby/ritmofit-web/pull/629)
+> (`7ab9bbb`): `LiveMode.tsx`, `LiveMode.test.tsx`, and
+> `apple-music-adapter.ts` plus its test. No migration. The script reported
+> none to apply. None was applied. No production data was edited.
+>
+> New Worker `94e7003b-af7f-4d56-84e1-3288f0c3a813` (message `65d4deb`);
+> rollback `05a49728-aa41-4113-ab52-948a62a091cc` (`04ec72f`). SPA
+> `assets/index-B1FRgRjm.js` (was `assets/index-1IADUpWL.js`); CSS
+> `assets/index-DGcMUSRx.css` unchanged. Propagation 3/3 on the first three
+> cache-busted fetches. `/` 200, `/api/v1/health` 200 with `database: true`
+> and the six security headers; `/classes`, `/explore`, `/teams` 401.
+> `wrangler deployments status` shows this Worker at 100%. Tail for five
+> minutes: five events, all outcome ok, no exceptions and no 5xx (health 200
+> twice, classes 401 once, `GET /api/auth/get-session` 200 twice), all on
+> this Worker. #629 is now in production and still awaits Steven's iPhone
+> Apple Music check. This docs record is not in the deployed tree.
+
 > **Staged deploy 2026-10-27 — main `4e0b150` minus #629.** Owner approved
 > Option B. Three production publishes through `scripts/deploy.sh` from local
 > branch `cursor/staged-deploy-4e0b150-2f76`. That branch was not pushed and
