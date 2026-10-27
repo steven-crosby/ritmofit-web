@@ -28,6 +28,8 @@ import { getAppleMusicConfig } from '../api.js';
 import {
   configureMusicKit,
   loadMusicKit,
+  probeSafariModernFairPlayAccess,
+  safariModernAccessWord,
   selectSafariModernFairPlay,
   type MusicKitGlobal,
   type MusicKitInstance,
@@ -59,6 +61,19 @@ export const appleMusicAuthorizationLostMessage = (): string =>
 /** MusicKit refused to play an authorized, cued song (often a lapsed subscription or region). */
 export const appleMusicPlayRejectedMessage = (title: string): string =>
   `Apple Music would not play "${title}". Check that your Apple Music subscription is active, then retry.`;
+
+/**
+ * Authorized media-element failure. `modernAccess` is `"ok"` or a DOMException
+ * name from the one audio-only FairPlay probe, when that probe ran.
+ */
+export function appleMusicPlaybackFailedMessage(
+  title: string,
+  modernAccess: string | null,
+): string {
+  const sentence = `Apple Music playback failed for "${title}".`;
+  if (!modernAccess) return sentence;
+  return `${sentence} modern-access: ${modernAccess}.`;
+}
 
 const msToSeconds = (ms: number): number => ms / 1000;
 
@@ -137,7 +152,7 @@ export class AppleMusicAdapter implements PlaybackAdapter {
       message:
         this.instance && !this.instance.isAuthorized
           ? appleMusicAuthorizationLostMessage()
-          : `Apple Music playback failed for "${this.trackTitle}".`,
+          : appleMusicPlaybackFailedMessage(this.trackTitle, safariModernAccessWord()),
     });
   };
 
@@ -249,6 +264,14 @@ export class AppleMusicAdapter implements PlaybackAdapter {
     transportOwners.set(instance, this);
     try {
       try {
+        // Before play(), once per page, and only when WebKitMediaKeys exists.
+        // Absent that API the probe returns null and must not yield: a caller
+        // that destroys during play() has to find MusicKit's play still pending.
+        const accessProbe = probeSafariModernFairPlayAccess();
+        if (accessProbe) {
+          await accessProbe;
+          if (this.destroyed) throw new Error('Apple Music play was cancelled.');
+        }
         await instance.play();
       } catch (cause) {
         if (this.destroyed) throw cause;
