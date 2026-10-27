@@ -37,13 +37,17 @@ export function selectSafariModernFairPlay(
   webKitMediaKeys: unknown = typeof window === 'undefined'
     ? undefined
     : (window as Window & { WebKitMediaKeys?: unknown }).WebKitMediaKeys,
-  storage: FairPlayStorage | null = typeof localStorage === 'undefined' ? null : localStorage,
+  storage?: FairPlayStorage | null,
 ): void {
-  if (!webKitMediaKeys || !storage) return;
+  // Chrome has no WebKitMediaKeys. Leave storage alone there: reading
+  // `localStorage` can throw, and that must not run before this check.
+  if (!webKitMediaKeys) return;
   try {
-    storage.setItem(MUSICKIT_SAFARI_MODERN_EME_KEY, '1');
+    const target = storage === undefined ? localStorage : storage;
+    if (!target) return;
+    target.setItem(MUSICKIT_SAFARI_MODERN_EME_KEY, '1');
   } catch {
-    // Private mode can reject storage. MusicKit then stays on legacy FairPlay.
+    // A blocked getter or a rejected write stays on legacy FairPlay.
   }
 }
 

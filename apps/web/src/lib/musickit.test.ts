@@ -91,6 +91,26 @@ describe('Safari modern FairPlay', () => {
     expect(storage.setItem).toHaveBeenCalledWith(MUSICKIT_SAFARI_MODERN_EME_KEY, '1');
   });
 
+  it('does not throw when reading localStorage throws', () => {
+    const original = Object.getOwnPropertyDescriptor(window, 'localStorage');
+    let reads = 0;
+    Object.defineProperty(window, 'localStorage', {
+      configurable: true,
+      get() {
+        reads += 1;
+        throw new DOMException('The operation is insecure.', 'SecurityError');
+      },
+    });
+    try {
+      expect(() => selectSafariModernFairPlay(undefined)).not.toThrow();
+      expect(reads).toBe(0);
+      expect(() => selectSafariModernFairPlay({})).not.toThrow();
+      expect(reads).toBe(1);
+    } finally {
+      if (original) Object.defineProperty(window, 'localStorage', original);
+    }
+  });
+
   it('ignores a storage write that Safari private mode rejects', () => {
     expect(() =>
       selectSafariModernFairPlay(
