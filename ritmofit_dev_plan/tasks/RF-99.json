@@ -30,6 +30,12 @@
       "ref": "agent-prompts/daily/start-session.md",
       "summary": "Walked four scenarios (ordinary task, owner-gated task, second agent mid-task, abandoned draft) through the revised start/close prompts, handoff rules and CI steps; one residual race (two agents before either opens a draft PR) accepted and documented. Manual review, not automated prompt testing.",
       "checkedOn": "2026-10-27"
+    },
+    {
+      "kind": "pr",
+      "ref": "https://github.com/steven-crosby/ritmofit-web/pull/643",
+      "summary": "Work PR, opened as a draft to claim the task. Owner-gated (needs-owner). The ci.yml commit waits for the workflow token scope.",
+      "checkedOn": "2026-10-27"
     }
   ],
   "resolution": null,
