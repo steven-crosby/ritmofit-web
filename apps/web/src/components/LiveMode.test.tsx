@@ -21,6 +21,7 @@ import {
   lastAtOrBefore,
   liveSectionAt,
   TEACHING_PHONE_WIDTH_PX,
+  teachingCountdownContentPx,
   teachingHoldAt,
   teachingUpcomingColumnPx,
   upcomingTeachingCues,
@@ -218,8 +219,9 @@ describe('LiveMode preflight', () => {
     expect(within(list).getByText('No connected provider can play this')).toBeTruthy();
     expect(screen.getByText('Blocked')).toBeTruthy();
     expect(
-      screen.getByRole('heading', { name: '1 track checked · 0 passed · 1 needs attention' }),
+      screen.getByRole('heading', { name: '1 track needs a fix before starting with music.' }),
     ).toBeTruthy();
+    expect(screen.getByText('1 track checked · 0 passed · 1 needs attention')).toBeTruthy();
     expect(screen.getByText('1 track needs a fix before starting with music.')).toBeTruthy();
     expect(
       screen.getByText(
@@ -251,9 +253,8 @@ describe('LiveMode preflight', () => {
     const list = await screen.findByRole('list', { name: 'Track playback check' });
     expect(within(list).getByText('Selected: SoundCloud')).toBeTruthy();
     expect(screen.getByText('Track checks passed')).toBeTruthy();
-    expect(
-      screen.getByRole('heading', { name: '1 track checked · 1 passed · 0 need attention' }),
-    ).toBeTruthy();
+    expect(screen.getByRole('heading', { name: 'Start class' })).toBeTruthy();
+    expect(screen.getByText('1 track checked · 1 passed · 0 need attention')).toBeTruthy();
     expect(
       screen.getByText(
         'Provider links and durations checked for 1 track. Playback availability and audible output are unverified.',
@@ -308,7 +309,8 @@ describe('LiveMode preflight', () => {
     expect(
       await screen.findByText(/Could not check your provider connections: network down/),
     ).toBeTruthy();
-    expect(screen.getByRole('heading', { name: 'Runnable with warnings' })).toBeTruthy();
+    expect(screen.getByRole('heading', { name: 'Retry the connection check' })).toBeTruthy();
+    expect(screen.getByText('Runnable with warnings')).toBeTruthy();
     expect(screen.getByRole('button', { name: 'Run without music' })).toBeTruthy();
 
     expect(screen.getByText(/has not marked any provider disconnected/)).toBeTruthy();
@@ -1792,9 +1794,10 @@ describe('LiveMode sparse-data fallbacks', () => {
       tracks: [{ ...activeTrack, displayBpm: null }],
     } satisfies RunPayload;
     await renderLive(noBpm);
-    expect(screen.getByText('Tempo missing')).toBeTruthy();
-    expect(screen.getByText('Pulse off')).toBeTruthy();
-    expect(screen.queryByText('No BPM set')).toBeNull();
+    expect(screen.getByText('No BPM set')).toBeTruthy();
+    expect(screen.getByText('Live shows no beat')).toBeTruthy();
+    expect(screen.queryByText('Pulse off')).toBeNull();
+    expect(screen.queryByText('Tempo missing')).toBeNull();
   });
 
   it('uses an affirmative teaching state instead of making missing cue data the hero', async () => {
@@ -2389,6 +2392,7 @@ describe('Live browser authorization gate', () => {
       />,
     );
     await screen.findByText('Selected: Apple Music');
+    expect(screen.getByRole('heading', { name: 'Check Apple Music to start' })).toBeTruthy();
     const start = screen.getByRole('button', { name: 'Start class' }) as HTMLButtonElement;
     expect(start.disabled).toBe(true);
     fireEvent.click(screen.getByRole('button', { name: 'Check Apple Music authorization' }));
@@ -2438,6 +2442,7 @@ it('requires an explicit Spotify activation tap before starting a mixed-provider
     />,
   );
   await screen.findByText('Selected: Spotify');
+  expect(screen.getByRole('heading', { name: 'Check Spotify to start' })).toBeTruthy();
   const start = screen.getByRole('button', { name: 'Start class' }) as HTMLButtonElement;
   expect(start.disabled).toBe(true);
   fireEvent.click(screen.getByRole('button', { name: 'Prepare Spotify playback' }));
@@ -2492,7 +2497,18 @@ function seekTo(ms: number, totalMs: number) {
 /** Used font size from the inline clamp or rem the element actually ships. */
 function usedFontPx(node: HTMLElement, viewportPx: number): number {
   const raw = node.getAttribute('style') ?? '';
-  const fontSize = /font-size:\s*([^;]+)/i.exec(raw)?.[1]?.trim() || node.style.fontSize;
+  // jsdom drops `cqi` from the CSSOM, so the element also carries the formula.
+  const fontSize =
+    node.dataset.countdownSize ||
+    /font-size:\s*([^;]+)/i.exec(raw)?.[1]?.trim() ||
+    node.style.fontSize;
+  const cqi = /^clamp\(([0-9.]+)rem,\s*([0-9.]+)cqi,\s*([0-9.]+)rem\)$/.exec(fontSize);
+  if (cqi) {
+    const min = Number(cqi[1]) * 16;
+    const max = Number(cqi[3]) * 16;
+    const preferred = (Number(cqi[2]) / 100) * teachingCountdownContentPx(viewportPx);
+    return Math.min(max, Math.max(min, preferred));
+  }
   const clamp = /^clamp\(([0-9.]+)rem,\s*([0-9.]+)vw,\s*([0-9.]+)rem\)$/.exec(fontSize);
   if (clamp) {
     const min = Number(clamp[1]) * 16;
@@ -2557,7 +2573,17 @@ describe('Cue-by-Cue teaching reading', () => {
     const focal = document.querySelector('[data-live-region="focal"]') as HTMLElement;
     expect(heroName()?.textContent).toBe('Left Leg Lead');
     expect(countdown()?.textContent).toBe('15s');
-    expect(countdown()?.style.fontSize).toBe('6.5rem');
+    expect(countdown()?.textContent?.endsWith('s')).toBe(true);
+    expect(countdown()?.dataset.countdownSize).toBe('clamp(2.75rem, 18cqi, 6.5rem)');
+    expect(countdown()?.className).toContain('whitespace-nowrap');
+    const nextCue = within(focal).getByText('Right Leg Lead');
+    expect(nextCue.className).toContain('break-words');
+    expect(nextCue.className).not.toContain('truncate');
+    for (const viewport of [320, 390]) {
+      const fontPx = usedFontPx(countdown()!, viewport);
+      const fitted = fontPx * '14.8s'.length * 0.62;
+      expect(fitted).toBeLessThanOrEqual(teachingCountdownContentPx(viewport));
+    }
     expect(scale()?.dataset.scaleMs).toBe('15000');
     expect(playhead()?.dataset.filledMs).toBe('0');
     expect(playhead()?.style.width).toBe('0%');

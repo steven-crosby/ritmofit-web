@@ -102,4 +102,46 @@ describe('SourceList shared consumer grammar', () => {
     expect(screen.getByRole('status').textContent).toContain('1 selected');
     expect(screen.getByRole('status').textContent).toContain('4:03 total');
   });
+
+  it('keeps a 20px checkbox in a 44px hit area and a neutral selected row', () => {
+    render(
+      <SourceList
+        tracks={[track]}
+        action={{
+          kind: 'selection',
+          selectedKeys: new Set([sourceCandidateKey(track)]),
+          selectedTracks: [track],
+          onToggle: vi.fn(),
+          tray: {
+            title: 'Climb set',
+            template: 'cycle',
+            templateControl: <span>Cycle</span>,
+            primaryLabel: 'Start class',
+            primaryBusyLabel: 'Starting…',
+            primaryBusy: false,
+            onPrimary: vi.fn(),
+          },
+        }}
+      />,
+    );
+
+    const checkbox = screen.getByRole('checkbox', {
+      name: `${track.title} by ${track.artist} selected; toggle selection`,
+    });
+    expect(checkbox.className).toContain('h-5');
+    expect(checkbox.className).toContain('w-5');
+    expect(checkbox.className).toContain('accent-interactive');
+    expect(checkbox.className).not.toContain('min-h-11');
+    const hit = checkbox.closest('label');
+    expect(hit?.className).toContain('h-11');
+    expect(hit?.className).toContain('w-11');
+    expect(hit?.className).toContain('rf-focus-ring');
+
+    const row = checkbox.closest('li');
+    expect(row?.className).toContain('bg-bg-raised');
+    expect(row?.className).toContain('border-border-strong');
+    expect(row?.className).not.toContain('bg-interactive');
+    expect(row?.className).not.toContain('border-interactive');
+    expect(screen.getByText(track.title).className).toContain('font-semibold');
+  });
 });

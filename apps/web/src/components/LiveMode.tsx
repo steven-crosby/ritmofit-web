@@ -110,11 +110,33 @@ export function teachingUpcomingColumnPx(viewportPx: number): number | null {
 }
 
 /**
- * Glanceable hold. Fixed rems so the used size stays larger than Track left
- * (1.5rem), the Next-cue gap (2.25rem), and the beat count (1.75rem) at 390,
- * 1024, 1280, and 1440.
+ * Glanceable hold. The cap stays larger than Track left (1.5rem), the Next-cue
+ * gap (2.25rem), and the beat count (1.75rem). On a narrow teaching column the
+ * size follows the card (`cqi`) so the seconds unit stays inside 320–390px.
+ * Timing text is unchanged.
  */
 export const TEACHING_COUNTDOWN_FONT_REM = 6.5;
+/** Floor so the hold remains a larger clock than the next-cue gap (2.25rem). */
+export const TEACHING_COUNTDOWN_MIN_REM = 2.75;
+/** Share of the countdown's own content box. 18cqi fits `14.8s` inside 256px. */
+export const TEACHING_COUNTDOWN_CQI = 18;
+
+/**
+ * Content width of the focal countdown at `viewportPx`: page padding, the
+ * side-by-side split from 1024px, then the focal card padding.
+ */
+export function teachingCountdownContentPx(viewportPx: number): number {
+  const sideBySide = viewportPx >= TEACHING_SIDE_BY_SIDE_MIN_PX;
+  const pagePad = viewportPx >= 1024 ? 32 : viewportPx >= 640 ? 24 : 16;
+  const cardPad = viewportPx >= 640 ? 32 : 16;
+  const gap = sideBySide ? 24 : 0;
+  const columns = sideBySide ? 2 : 1;
+  return (viewportPx - pagePad * 2 - gap) / columns - cardPad * 2;
+}
+
+export function teachingCountdownFont(): string {
+  return `clamp(${TEACHING_COUNTDOWN_MIN_REM}rem, ${TEACHING_COUNTDOWN_CQI}cqi, ${TEACHING_COUNTDOWN_FONT_REM}rem)`;
+}
 /** Next-cue gap. It stays a different clock from the hold. */
 export const TEACHING_NEXT_GAP_FONT_REM = 2.25;
 /** Beat count stays on the cue, under the hold countdown. */
@@ -968,6 +990,15 @@ export function LiveMode({
               }}
               onStart={startClass}
               browserAuthorizationReady={browserAuthorizationReady}
+              authorizationLead={
+                requiresApple && requiresSpotify
+                  ? 'Check Apple Music and Spotify to start'
+                  : requiresApple
+                    ? 'Check Apple Music to start'
+                    : requiresSpotify
+                      ? 'Check Spotify to start'
+                      : undefined
+              }
               browserAuthorization={
                 <>
                   {requiresSpotify && <SpotifyActivationAction flow={spotifyActivation} />}
@@ -1420,8 +1451,8 @@ function FocalVitals({ entry, playing }: { entry: RunPayloadTrackEntry; playing:
         </div>
       ) : (
         <p className="flex flex-col gap-0.5 text-right">
-          <span className="font-data text-2xl font-semibold text-state-caution">Tempo missing</span>
-          <span className="font-ui text-xs text-text-tertiary">Pulse off</span>
+          <span className="font-data text-2xl font-semibold text-state-caution">No BPM set</span>
+          <span className="font-ui text-xs text-text-tertiary">Live shows no beat</span>
         </p>
       )}
     </div>
@@ -1535,7 +1566,7 @@ function CueByCue({
       : '—'
     : null;
   const pulse = Boolean(playing && hold?.cue.bpm != null);
-  const countdownFont = `${TEACHING_COUNTDOWN_FONT_REM}rem`;
+  const countdownFont = teachingCountdownFont();
   const nextGapFont = `${TEACHING_NEXT_GAP_FONT_REM}rem`;
   const beatFont = `${TEACHING_BEAT_FONT_REM}rem`;
   return (
@@ -1577,7 +1608,8 @@ function CueByCue({
               </p>
               <p
                 data-teaching="countdown"
-                className="relative mt-2 font-data font-bold leading-none tracking-[-0.04em] text-text-primary"
+                className="relative mt-2 w-full min-w-0 max-w-full whitespace-nowrap font-data font-bold leading-none tracking-[-0.04em] text-text-primary [container-type:inline-size]"
+                data-countdown-size={countdownFont}
                 style={{ fontSize: countdownFont }}
               >
                 {countdownLabel}
@@ -1680,14 +1712,14 @@ function CueByCue({
         </div>
         {/* What is coming, in the hero card rather than across the room in the
             rail. The current cue clamps to two lines so a long cue cannot push
-            Next below the teaching card at a short viewport; the assertive
-            announcement and Full List keep the full string. The flex-1 cue block
-            still centres short cues. */}
-        <div className="relative mt-4 flex min-w-0 shrink-0 items-baseline gap-3 border-t border-interactive/15 pt-3 sm:mt-6 sm:pt-4 [@media(max-height:480px)]:mt-1 [@media(max-height:480px)]:pt-1">
+            Next below the teaching card at a short viewport; the next-cue name
+            wraps instead of truncating. The assertive announcement and Full List
+            keep the full string. The flex-1 cue block still centres short cues. */}
+        <div className="relative mt-4 flex min-w-0 shrink-0 items-start gap-3 border-t border-interactive/15 pt-3 sm:mt-6 sm:pt-4 [@media(max-height:480px)]:mt-1 [@media(max-height:480px)]:pt-1">
           <p className="shrink-0 font-data text-[11px] uppercase tracking-[0.22em] text-text-tertiary">
             Next
           </p>
-          <p className="min-w-0 flex-1 truncate font-display text-[clamp(1.25rem,2.5vw,1.875rem)] font-semibold text-text-secondary">
+          <p className="min-w-0 flex-1 break-words font-display text-[clamp(1.25rem,2.5vw,1.875rem)] font-semibold text-text-secondary">
             {nextEvent ? nextEvent.text : 'End of track'}
           </p>
           {nextEvent && (

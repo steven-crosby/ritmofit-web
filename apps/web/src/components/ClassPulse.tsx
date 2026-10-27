@@ -68,6 +68,7 @@ export function ClassPulseView({
   sections = [],
   compact = false,
   variant = 'card',
+  derivationNotes = true,
   className = '',
 }: {
   model: ClassPulseModel;
@@ -77,6 +78,11 @@ export function ClassPulseView({
   sections?: RunPayload['sections'];
   compact?: boolean;
   variant?: 'card' | 'sparkline';
+  /**
+   * Public examples already name themselves. Hide the repeated "where this
+   * shape came from" lines there. A provisional shape still says so.
+   */
+  derivationNotes?: boolean;
   className?: string;
 }) {
   const unscoredPatternId = `class-pulse-unscored-${useId().replaceAll(':', '')}`;
@@ -148,11 +154,13 @@ export function ClassPulseView({
             ◇ auto-shaped
           </span>
         ) : (
-          <span className="font-data text-[10px] font-semibold uppercase tracking-wide text-text-tertiary">
-            {/* Not "your": this view also renders on the signed-out marketing
-                page over a synthetic class nobody reading it authored. */}
-            {model.coverage.scoredCount > 0 ? 'from track efforts' : 'no effort scored yet'}
-          </span>
+          derivationNotes && (
+            <span className="font-data text-[10px] font-semibold uppercase tracking-wide text-text-tertiary">
+              {/* Not "your": this view also renders on the signed-out marketing
+                  page over a synthetic class nobody reading it authored. */}
+              {model.coverage.scoredCount > 0 ? 'from track efforts' : 'no effort scored yet'}
+            </span>
+          )
         )}
       </div>
       {/* What the picture is, in one line. The chart used to arrive unlabeled
@@ -204,7 +212,9 @@ export function ClassPulseView({
 
       {!compact && model.segments.length > 0 && <PulseLegend model={model} />}
 
-      <p className="mt-2 font-ui text-xs text-text-tertiary">{coverage}</p>
+      {(derivationNotes || model.provisional) && (
+        <p className="mt-2 font-ui text-xs text-text-tertiary">{coverage}</p>
+      )}
     </section>
   );
 }

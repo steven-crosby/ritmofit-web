@@ -10,9 +10,8 @@
  *
  * **Redundant encoding.** Zone number, bar count and word all carry the value, so
  * it survives greyscale and colour-blindness (accessibility non-negotiable #1).
- * Below ~320px the word drops out of the segments — canon explicitly allows
- * "number + bars on compact rows" — and the textual summary underneath carries the
- * selected zone in words instead, so nothing is lost, it just moves.
+ * Phone width wraps the five zones onto two columns so each word stays complete.
+ * The textual summary underneath still names the selected zone.
  *
  * **Semantics.** Toggle buttons with `aria-pressed`, per canon, rather than radio
  * inputs. Radios would give arrow-key navigation for free, so that is implemented
@@ -74,11 +73,8 @@ export function IntensitySegmentedControl({
   };
 
   return (
-    // A container, not a viewport breakpoint: what decides whether the words fit
-    // is the inspector's width, and the inspector is narrow at 1440px too.
-    // min-w-0 on the group and each flex-1 zone lets the five segments shrink
-    // below content width so a 390px inspector does not overflow (~10px was
-    // the independently observed SPC-20 failure).
+    // Two columns, not five squeezed cells: the inspector is ~280px on desktop
+    // too, and a single row truncated the zone words on a phone.
     <div className="rf-zone-control">
       <div
         ref={groupRef}
@@ -86,7 +82,7 @@ export function IntensitySegmentedControl({
         aria-label={ariaLabel}
         aria-describedby={summaryId}
         onKeyDown={onKeyDown}
-        className="flex min-w-0 items-stretch overflow-hidden rounded-control border border-border bg-bg-base"
+        className="grid min-w-0 grid-cols-2 gap-1"
       >
         {intensityValues.map((v) => {
           const selected = value === v;
@@ -99,7 +95,7 @@ export function IntensitySegmentedControl({
               tabIndex={selected ? 0 : -1}
               disabled={disabled}
               onClick={() => onChange(v)}
-              className={`rf-focus-ring flex min-h-11 min-w-0 flex-1 items-center justify-center gap-1 border-b-[3px] px-1.5 font-ui text-xs transition-colors disabled:opacity-40 ${
+              className={`rf-focus-ring flex min-h-11 min-w-0 items-center justify-center gap-1 rounded-control border border-border border-b-[3px] px-2 font-ui text-xs transition-colors disabled:opacity-40 ${
                 selected
                   ? 'border-b-interactive bg-bg-raised font-semibold text-text-primary'
                   : 'border-b-transparent text-text-secondary hover:bg-bg-raised/50 hover:text-text-primary'
@@ -111,7 +107,7 @@ export function IntensitySegmentedControl({
                 Z{INTENSITY_BARS[v]}
               </span>
               <ZoneBars bars={INTENSITY_BARS[v]} />
-              <span className="rf-zone-word truncate" aria-hidden>
+              <span className="rf-zone-word whitespace-nowrap" aria-hidden>
                 {INTENSITY_LABEL[v]}
               </span>
               {/* The word always reaches assistive tech, even at the width where

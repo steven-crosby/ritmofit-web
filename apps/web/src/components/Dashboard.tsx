@@ -1857,7 +1857,7 @@ function MusicWorkspace({
                 key={provider}
                 className={`min-w-0 rounded-control border p-2 ${
                   selected
-                    ? 'border-interactive/50 bg-interactive/10'
+                    ? 'border-border-strong bg-bg-overlay'
                     : 'border-border-subtle bg-bg-base'
                 }`}
               >
@@ -1871,7 +1871,11 @@ function MusicWorkspace({
                   }}
                   className="flex min-h-11 w-full min-w-0 items-center justify-between gap-2 rounded-control px-1 text-left rf-focus-ring"
                 >
-                  <span className="shrink-0 font-ui text-sm font-semibold text-text-primary">
+                  <span
+                    className={`shrink-0 font-ui text-sm text-text-primary ${
+                      selected ? 'font-semibold' : 'font-medium'
+                    }`}
+                  >
                     {providerLabel(provider)}
                   </span>
                   <ConnectionStateMark
@@ -2627,7 +2631,7 @@ function AccountWorkspace({
       <aside className="min-w-0 border-b border-border-subtle pb-4 xl:sticky xl:top-6 xl:border-r xl:border-b-0 xl:pr-4 xl:pb-0">
         <p className="rf-eyebrow">Account</p>
         <nav className="mt-3 grid max-w-full grid-cols-2 gap-2 xl:flex xl:flex-col">
-          {['Profile', 'Preferences', 'Music connections', 'Security'].map((item) => (
+          {['Profile', 'Music connections', 'Security'].map((item) => (
             <a
               key={item}
               href={`#account-${item.toLowerCase().replace(/\s+/g, '-')}`}
@@ -2705,7 +2709,10 @@ function AccountWorkspace({
           </div>
         )}
 
-        <section id="account-profile" className="min-w-0 border-b border-border-subtle p-5 sm:p-6">
+        <section
+          id="account-profile"
+          className="rf-anchor-offset min-w-0 border-b border-border-subtle p-5 sm:p-6"
+        >
           <div className="flex items-start justify-between gap-3">
             <div>
               <p className="font-ui text-xs uppercase tracking-wide text-text-tertiary">Profile</p>
@@ -2806,21 +2813,9 @@ function AccountWorkspace({
           </form>
         </section>
 
-        <section id="account-preferences" className="border-b border-border-subtle p-5 sm:p-6">
-          <p className="font-ui text-xs uppercase tracking-wide text-text-tertiary">Preferences</p>
-          <h3 className="mt-2 font-display text-xl font-semibold text-text-primary">
-            Workspace defaults
-          </h3>
-          <div className="mt-4 grid gap-px overflow-hidden rounded-card border border-border-subtle bg-border-subtle sm:grid-cols-3">
-            <ReadinessTile label="Default templates" value="Cycle / Pilates / HIIT" />
-            <ReadinessTile label="Playback" value="Manual preview" />
-            <ReadinessTile label="Workspace" value="Solo-first" />
-          </div>
-        </section>
-
         <section
           id="account-music-connections"
-          className="min-w-0 border-b border-border-subtle p-5 sm:p-6"
+          className="rf-anchor-offset min-w-0 border-b border-border-subtle p-5 sm:p-6"
         >
           <div className="flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
             <div>
@@ -2885,7 +2880,7 @@ function AccountWorkspace({
           </div>
         </section>
 
-        <section id="account-security" className="p-5 sm:p-6">
+        <section id="account-security" className="rf-anchor-offset p-5 sm:p-6">
           <p className="font-ui text-xs uppercase tracking-wide text-text-tertiary">Security</p>
           <p className="mt-2 font-ui text-sm leading-6 text-text-secondary">
             Email, password, and social sign-in remain with the active sign-in provider. Sign in
@@ -5692,13 +5687,9 @@ function TrackInspector({
               >
                 Save
               </button>
-              <button
-                className="ml-auto min-h-11 rounded-control border border-state-danger/50 px-4 font-ui text-sm text-state-danger disabled:opacity-40 sm:rounded-pill"
-                onClick={remove}
-                disabled={busy}
-              >
+              <DestructiveControl className="ml-auto" onClick={() => void remove()} disabled={busy}>
                 Remove track
-              </button>
+              </DestructiveControl>
             </div>
           </div>
 

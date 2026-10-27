@@ -887,13 +887,16 @@ describe('scaffold block management', () => {
       .mockResolvedValueOnce([{ ...second, position: 0 }]);
     vi.mocked(api.deleteClassPlanBlock).mockResolvedValue();
     renderScaffold('cycle_45_v1');
-    fireEvent.click(
-      await screen.findByRole('button', { name: 'Delete Block 1 · Arrive on the bike' }),
-    );
+    const deleteBlock = await screen.findByRole('button', {
+      name: 'Delete Block 1 · Arrive on the bike',
+    });
+    expect(deleteBlock.querySelector('svg')).toBeTruthy();
+    expect(deleteBlock.textContent).toContain('Delete block');
+    fireEvent.click(deleteBlock);
     const group = screen.getByRole('group', { name: 'Delete Block 1 · Arrive on the bike' });
-    expect(document.activeElement).toBe(
-      within(group).getByRole('button', { name: 'Delete block' }),
-    );
+    const confirmDelete = within(group).getByRole('button', { name: 'Delete block' });
+    expect(confirmDelete.querySelector('svg')).toBeTruthy();
+    expect(document.activeElement).toBe(confirmDelete);
     fireEvent.click(within(group).getByRole('button', { name: 'Delete block' }));
     expect(api.deleteClassPlanBlock).toHaveBeenCalledWith(block.id);
     const edit = await screen.findByRole('button', { name: 'Edit Block 1 · Build the base' });

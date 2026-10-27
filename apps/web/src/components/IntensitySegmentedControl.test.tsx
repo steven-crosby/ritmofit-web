@@ -29,9 +29,8 @@ describe('IntensitySegmentedControl', () => {
   });
 
   it('states the selection in words as a textual summary', () => {
-    // The visible zone word drops out of the segments in a narrow inspector, so
-    // the summary is what keeps the selection readable — and it is wired to the
-    // group via aria-describedby rather than just sitting nearby.
+    // The summary names the pick beside the control and is wired to the group
+    // via aria-describedby rather than just sitting nearby.
     const { container } = render(
       <IntensitySegmentedControl value="hard" onChange={() => {}} ariaLabel="i" />,
     );
@@ -108,19 +107,22 @@ describe('IntensitySegmentedControl', () => {
     }
   });
 
-  it('lets flex children shrink so five zones cannot overflow a 390px inspector', () => {
-    // Default `min-width: auto` on flex items kept each zone at its content
-    // width (~88px × 5 ≈ 440px) and overflowed the inspector by ~10px at 390.
+  it('wraps zones so each label stays complete and at least 44px tall', () => {
     const { container } = render(
       <IntensitySegmentedControl value="mod" onChange={() => {}} ariaLabel="i" />,
     );
     expect(container.querySelector('.rf-zone-control')).toBeTruthy();
     const group = container.querySelector('[role="group"]');
-    expect(group?.className).toContain('min-w-0');
+    expect(group?.className).toContain('grid-cols-2');
+    expect(group?.className).not.toContain('overflow-hidden');
     for (const button of screen.getAllByRole('button')) {
-      expect(button.className).toContain('min-w-0');
-      expect(button.className).toContain('flex-1');
+      expect(button.className).toContain('min-h-11');
+      expect(button.className).not.toContain('truncate');
+      const word = button.querySelector('.rf-zone-word');
+      expect(word?.className).not.toContain('truncate');
+      expect(word?.textContent?.length).toBeGreaterThan(1);
     }
+    expect(screen.getByText('All Out', { selector: '.rf-zone-word' })).toBeTruthy();
   });
 
   it('never uses the copper primary as a selection fill', () => {

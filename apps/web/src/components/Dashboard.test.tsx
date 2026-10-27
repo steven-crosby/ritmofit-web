@@ -1081,6 +1081,13 @@ describe('Dashboard class library states', () => {
       await screen.findByRole('heading', { name: 'Browse music, then shape it into class.' }),
     ).toBeTruthy();
     expect(screen.getByRole('button', { name: 'Music' }).getAttribute('aria-current')).toBe('page');
+    const soundcloud = screen.getByRole('button', { name: 'Browse SoundCloud catalog' });
+    expect(soundcloud.getAttribute('aria-pressed')).toBe('true');
+    const source = soundcloud.closest('article');
+    expect(source?.className).toContain('border-border-strong');
+    expect(source?.className).toContain('bg-bg-overlay');
+    expect(source?.className).not.toContain('bg-interactive');
+    expect(source?.className).not.toContain('border-interactive');
 
     fireEvent.click(screen.getByRole('button', { name: 'Live' }));
     expect(
@@ -1090,6 +1097,14 @@ describe('Dashboard class library states', () => {
     fireEvent.click(screen.getByRole('button', { name: 'Account' }));
     expect(await screen.findByText('Personal workspace')).toBeTruthy();
     expect(screen.getByRole('heading', { name: 'Provider accounts' })).toBeTruthy();
+    expect(screen.queryByText('Workspace defaults')).toBeNull();
+    expect(screen.queryByRole('link', { name: 'Preferences' })).toBeNull();
+    expect(document.getElementById('account-preferences')).toBeNull();
+    expect(document.getElementById('account-music-connections')?.className).toContain(
+      'rf-anchor-offset',
+    );
+    expect(document.getElementById('account-profile')?.className).toContain('rf-anchor-offset');
+    expect(document.getElementById('account-security')?.className).toContain('rf-anchor-offset');
   });
 
   it('returns from a selected class to the run-of-show shelf through Classes', async () => {
@@ -3479,7 +3494,10 @@ describe('Dashboard track focus management', () => {
     expect(firstRow).not.toBeNull();
     fireEvent.click(firstRow as HTMLElement);
 
-    fireEvent.click(await screen.findByRole('button', { name: 'Remove track' }));
+    const removeTrack = await screen.findByRole('button', { name: 'Remove track' });
+    expect(removeTrack.querySelector('svg')).toBeTruthy();
+    expect(removeTrack.textContent).toContain('Remove track');
+    fireEvent.click(removeTrack);
 
     // Removing the first track lands focus on the track that slides into its slot
     // (the second), not on <body>.
