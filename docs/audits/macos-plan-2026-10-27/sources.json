@@ -1,0 +1,22 @@
+{
+  "retrieved_on": "2026-10-27",
+  "repository_revision": "65d4deb4aba90f26c6706a099351709680d11aee",
+  "sources": [
+    {
+      "url": "https://raw.githubusercontent.com/electron/electron/main/docs/tutorial/security.md",
+      "sha256": "9bec21b1e4e451fb710685d09e0cdfd1770df02ffd44ad6afebf976f4cbac50a",
+      "retrieved_filename": "electron-security.md"
+    },
+    {
+      "url": "https://raw.githubusercontent.com/electron/electron/main/docs/api/structures/web-preferences.md",
+      "sha256": "4a3ed4dad794b4d7edb8d451fa33d172da4e8e56370f3c39ec714aafece827a0",
+      "retrieved_filename": "electron-web-preferences.md"
+    },
+    {
+      "url": "https://raw.githubusercontent.com/electron/electron/main/docs/faq.md",
+      "sha256": "9fd87987b50d7c6e4b09d76e5b3e94829c4ce5da5287940d149d08594d70e5eb",
+      "retrieved_filename": "electron-faq.md"
+    }
+  ],
+  "note": "Hashes refer to documentation copies read during the review; third-party bodies are not vendored. Remote main URLs may change."
+}

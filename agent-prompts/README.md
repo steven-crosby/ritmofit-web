@@ -40,6 +40,7 @@ owner decisions in the session that performs them (`ritmofit_dev_plan/deployment
 |---|---|---|---|
 | [`daily/start-session.md`](daily/start-session.md) | Orientation: git, PRs, handoffs, unrecorded merges, trackers, production evidence, one recommended action | yes | chat baseline + plan |
 | [`daily/close-session.md`](daily/close-session.md) | Wrap: git/PR/branch hygiene, optional gates and deploy reconcile, handoff, docs sync | yes | PR merged or handed off + handoff file |
+| [`macos-desktop-kickoff.md`](macos-desktop-kickoff.md) | Review the macOS plan, then implement the bounded M0 feasibility harness and record real-device gates | yes; physical Mac preferred | prototype PR, evidence matrix, decision and handoff |
 | [`orchestrate-parallel-round.md`](orchestrate-parallel-round.md) | Run 3–4 concurrent lane-agents across sibling checkouts: map → partition → briefs → plan gate → CI gate → merge train → cleanup | yes (orchestrator) | merged lane PRs + round handoff |
 | [`templates/handoff.md`](templates/handoff.md) | Handoff file template | — | — |
 | [`templates/lane-brief.md`](templates/lane-brief.md) | Lane brief template (copied untracked per lane) | — | — |
