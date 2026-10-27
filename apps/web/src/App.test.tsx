@@ -147,6 +147,20 @@ describe('App session loss', () => {
     expect(screen.getByRole('heading', { name: /find the class inside the music/i })).toBeTruthy();
   });
 
+  it('lands an explicit Sign out on marketing even while Live is running', async () => {
+    sessionState.data = signedIn;
+    const view = render(<App />);
+    act(() => setLiveActive(true));
+
+    await signOutByUser();
+    sessionState.data = null;
+    view.rerender(<App />);
+
+    expect(screen.queryByTestId('dashboard')).toBeNull();
+    expect(screen.queryByText('Your session ended. Sign in to continue.')).toBeNull();
+    expect(screen.getByRole('heading', { name: /find the class inside the music/i })).toBeTruthy();
+  });
+
   it('lands an explicit Sign out on the marketing page', async () => {
     sessionState.data = signedIn;
     const view = render(<App />);

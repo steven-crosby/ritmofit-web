@@ -36,6 +36,9 @@ describe('musicChipBadge', () => {
     expect(musicLibraryFailure([null, { code: 'SPOTIFY_DEVELOPMENT_MODE' }])).toBe(
       'spotify-allowlist',
     );
+    expect(
+      musicLibraryFailure([{ code: 'PROVIDER_UNAVAILABLE' }, { code: 'SPOTIFY_DEVELOPMENT_MODE' }]),
+    ).toBe('spotify-allowlist');
     expect(musicLibraryFailure([{ code: 'PROVIDER_UNAVAILABLE' }])).toBe('unavailable');
     expect(musicLibraryFailure([undefined])).toBe('none');
   });

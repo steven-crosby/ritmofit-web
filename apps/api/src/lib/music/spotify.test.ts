@@ -356,6 +356,20 @@ describe('fetchSpotifySavedTracks', () => {
     ).rejects.toBeInstanceOf(SpotifyDevelopmentModeError);
   });
 
+  it('treats an unreadable /me/tracks 403 body as a provider error', async () => {
+    const fetchImpl: FetchLike = async () => ({
+      ok: false,
+      status: 403,
+      json: async () => ({}),
+      text: async () => {
+        throw new Error('body already consumed');
+      },
+    });
+    await expect(
+      fetchSpotifySavedTracks({ accessToken: 'steven', fetchImpl, apiBase: API_BASE }),
+    ).rejects.toThrow('Spotify API 403 for /me/tracks');
+  });
+
   it('keeps a /me/tracks 403 that is not an allowlist denial as a provider error', async () => {
     const fetchImpl: FetchLike = async () => ({
       ok: false,
@@ -457,6 +471,20 @@ describe('fetchSpotifySavedPlaylists', () => {
     await expect(
       fetchSpotifySavedPlaylists({ accessToken: 'steven', fetchImpl, apiBase: API_BASE }),
     ).rejects.toBeInstanceOf(SpotifyDevelopmentModeError);
+  });
+
+  it('treats an unreadable /me/playlists 403 body as a missing scope, not an allowlist block', async () => {
+    const fetchImpl: FetchLike = async () => ({
+      ok: false,
+      status: 403,
+      json: async () => ({}),
+      text: async () => {
+        throw new Error('body already consumed');
+      },
+    });
+    await expect(
+      fetchSpotifySavedPlaylists({ accessToken: 'steven', fetchImpl, apiBase: API_BASE }),
+    ).rejects.toBeInstanceOf(SpotifyForbiddenError);
   });
 
   it('throws SpotifyForbiddenError on a 403 — a valid token missing the playlist scope', async () => {

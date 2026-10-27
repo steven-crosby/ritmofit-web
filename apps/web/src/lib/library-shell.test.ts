@@ -5,6 +5,7 @@ import {
   isQaClassTitle,
   jumpBackInClasses,
   readinessLabel,
+  readinessMark,
   recentClasses,
 } from './library-shell.js';
 
@@ -54,20 +55,42 @@ describe('jumpBackInClasses', () => {
 });
 
 describe('readinessLabel', () => {
-  it('names the tempo gap in words', () => {
-    expect(
-      readinessLabel({
-        eyebrow: 'Refine before teaching',
-        action: 'Add the missing tempo',
-        teachable: false,
-      }),
-    ).toBe('Needs tempo');
+  const step = (eyebrow: string, action: string, teachable = false) => ({
+    eyebrow,
+    action,
+    teachable,
   });
 
-  it('says Ready when the class can be taught', () => {
-    expect(
-      readinessLabel({ eyebrow: 'Ready to teach', action: 'Open class', teachable: true }),
-    ).toBe('Ready');
+  it('names each library gap, and dots every label except Ready and Checking', () => {
+    expect(readinessMark(step('Reading class', 'Add the first track'))).toEqual({
+      label: 'Checking',
+      dot: false,
+    });
+    expect(readinessMark(step('Details unavailable', 'Add the first track', true))).toEqual({
+      label: 'Unavailable',
+      dot: true,
+    });
+    expect(readinessMark(step('Ready to teach', 'Open class', true))).toEqual({
+      label: 'Ready',
+      dot: false,
+    });
+    expect(readinessLabel(step('Ready to teach', 'Open class'))).toBe('Needs work');
+
+    const gaps: Array<[string, string]> = [
+      ['Add the missing tempo', 'Needs tempo'],
+      ['Set track durations', 'Needs duration'],
+      ['Add cues and moves', 'Needs cues'],
+      ['Score the effort arc', 'Needs effort'],
+      ['Add the first track', 'Needs music'],
+      ['Link music to tracks', 'Needs music'],
+      ['Add music to the plan', 'Needs music'],
+      ['Put songs in the plan', 'Needs music'],
+      ['Fix overflowing blocks', 'Over time'],
+      ['Finish refinements', 'Needs work'],
+    ];
+    for (const [action, label] of gaps) {
+      expect(readinessMark(step('Refine before teaching', action))).toEqual({ label, dot: true });
+    }
   });
 });
 
