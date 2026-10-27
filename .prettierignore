@@ -3,6 +3,8 @@ node_modules
 dist
 build
 pnpm-lock.yaml
+# e2e smoke scratch: local D1, Playwright results, screenshots
+e2e/.state/
 
 # Generated artifacts — owned by their generators, not Prettier. Formatting these
 # would fight the OpenAPI/Drizzle generators (e.g. the openapi.json drift gate).
