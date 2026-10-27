@@ -3154,6 +3154,35 @@ describe('Cue-by-Cue teaching reading', () => {
     expect(TEACHING_PHONE_WIDTH_PX).toBe(430);
   });
 
+  it('leads the 390px first screen with the hero name, countdown, and hold bar together', async () => {
+    const longCue =
+      'Stand up, add two full turns of resistance, and drive through the heels until the chorus drops';
+    await renderLive({
+      ...leftLeg,
+      tracks: [
+        {
+          ...leftLeg.tracks[0]!,
+          cues: [{ ...leftLeg.tracks[0]!.cues[0]!, text: longCue }, leftLeg.tracks[0]!.cues[1]!],
+        },
+      ],
+    } as RunPayload);
+    const focal = document.querySelector('[data-live-region="focal"]') as HTMLElement;
+    const layout = document.querySelector('[data-teaching-layout="cue"]') as HTMLElement;
+    // Phone stacks the regions: hero card, then upcoming, then the timers and rail.
+    expect(layout.className).toMatch(/(^| )flex-col( |$)/);
+    expect(layout.firstElementChild).toBe(focal);
+    // Nothing sits between the name, the countdown, and the bar, and a long cue
+    // clamps to two lines so it cannot push the countdown or bar off the first screen.
+    const name = heroName()!;
+    expect(name.textContent).toBe(longCue);
+    expect(name.className).toContain('line-clamp-2');
+    expect(name.className).toContain('text-[clamp(2.75rem,7vw,5.5rem)]');
+    expect(name.nextElementSibling).toBe(countdown());
+    expect(countdown()!.nextElementSibling).toBe(scale());
+    expect(name.previousElementSibling?.textContent).toBe('Current cue');
+    expect(scale()!.className).toContain('w-full');
+  });
+
   it('keeps cue effort words and leaves coaching sentences off the hero', async () => {
     await renderLive(leftLeg);
     const focal = document.querySelector('[data-live-region="focal"]') as HTMLElement;
