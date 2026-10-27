@@ -48,7 +48,12 @@ Pick one before deep reads; every mode still ends with **one** recommended next 
    commit → pull-request lookup; a squash subject may omit `(#N)`), and surface merged code that no
    history entry or handoff mentions — that is how `main` silently gets ahead of production. A
    commit with no associated PR is a direct push: report it, do not fix it.
-6. **Breadcrumbs and status** — read `INBOX.md` (surface open `- [ ]` lines with their likely
+6. **Tasks, breadcrumbs and status** — run `pnpm tasks:check`, read the generated
+   `ritmofit_dev_plan/tasks.md` board and relevant `tasks/RF-*.json` records. The repository is
+   canonical; an external board is only a view. Reconcile task state with live PRs and dated
+   handoffs; neither a task status nor a copied approval grants execution authority. Surface
+   missing plans and acceptance evidence instead of inferring them. Do not edit during orientation.
+   Then read `INBOX.md` (surface open `- [ ]` lines with their likely
    home; route nothing now), then the current-focus block of
    `ritmofit_dev_plan/DEVELOPMENT_PLAN.md`, and the newest `ritmofit_dev_plan/HISTORY.md` entry when
    deployment state or recent work matters — not the whole file. Read
@@ -93,6 +98,7 @@ impact" items into one short aside unless something is dirty, risky, or decision
 - **Handoffs:** open handoffs and their next actions, stale ones, or "none open".
 - **Unrecorded merges:** merged-but-unrecorded code on `main` (with PR numbers), or "none".
 - **Production:** when checked — match / ahead / unknown, with Worker version and SPA entry hash.
+- **Tasks:** relevant RF IDs, blockers, acceptance and next action; task validation pass/fail.
 - **Trackers:** current focus, unresolved blockers, strongest candidate for next work.
 - **Breadcrumbs:** open `INBOX.md` items with likely homes, or "inbox empty".
 - **Cross-surface:** web/iOS contract or design impact, or none.

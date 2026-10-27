@@ -1,0 +1,35 @@
+{
+  "schemaVersion": 1,
+  "id": "RF-78",
+  "title": "Suppress the MusicKit dialog and name the FairPlay refusal",
+  "kind": "task",
+  "status": "done",
+  "priority": "untriaged",
+  "parent": "RF-29",
+  "dependsOn": [],
+  "acceptance": [
+    "Historical scope: Suppress the MusicKit dialog and name the FairPlay refusal. Review original evidence before relying on broader product acceptance."
+  ],
+  "nextAction": null,
+  "blocker": null,
+  "evidence": [
+    {
+      "kind": "source",
+      "ref": "https://github.com/steven-crosby/ritmofit-web/blob/f35d5d5992035c3895b948b3dc90e96ea6eaffa1/ritmofit_dev_plan/tasks.md#L34",
+      "summary": "Original board entry; historical assertion, not independently verified product behavior.",
+      "checkedOn": null
+    },
+    {
+      "kind": "pr",
+      "ref": "https://github.com/steven-crosby/ritmofit-web/pull/634",
+      "summary": "GitHub state MERGED; mergedAt 2026-10-27T15:56:19Z. This checks PR state only.",
+      "checkedOn": "2026-10-27"
+    }
+  ],
+  "resolution": "Recorded complete on the imported board; product behavior was not re-tested during task migration.",
+  "followUps": [],
+  "imported": {
+    "status": "Done",
+    "title": "^RF-29 Suppress the MusicKit dialog and name the FairPlay refusal [#634](https://github.com/steven-crosby/ritmofit-web/pull/634)"
+  }
+}

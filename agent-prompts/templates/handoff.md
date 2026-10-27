@@ -17,6 +17,11 @@ status: open # open = something is in flight or a next action is owed; closed = 
 
 - What landed (PRs merged, commits, docs records). Link PRs; no narration.
 
+## Tasks
+
+- Relevant RF IDs and links to canonical task records. Keep mutable status, acceptance and the next
+  action in the records; this handoff adds session restart context and dated observations.
+
 ## In flight
 
 - Anything started and not finished: branch, PR, what remains, how to resume.

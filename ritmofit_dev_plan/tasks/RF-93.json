@@ -1,0 +1,26 @@
+{
+  "schemaVersion": 1,
+  "id": "RF-93",
+  "title": "Triage latent migration rebuild finding A-7",
+  "kind": "plan",
+  "status": "review",
+  "priority": "P1",
+  "parent": null,
+  "dependsOn": [],
+  "acceptance": [
+    "Agree packet 4 guard scope against current tooling.",
+    "A populated-fixture guard must detect destructive rebuilds and pass safe migrations; do not rewrite applied migrations."
+  ],
+  "nextAction": "Review packet 4 and seek approval for a local guard. No historical or production data-loss claim.",
+  "blocker": null,
+  "evidence": [
+    {
+      "kind": "document",
+      "ref": "docs/audits/codex-code-audit-2026-10-27-4e0b150/NEXT_SESSION.md",
+      "summary": "P1 latent finding; the audit does not claim an active production incident.",
+      "checkedOn": null
+    }
+  ],
+  "resolution": null,
+  "followUps": []
+}

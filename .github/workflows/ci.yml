@@ -1,7 +1,7 @@
 name: CI
 
 # Quality gate for the pnpm monorepo: typecheck + lint + unit tests. Deploys stay
-# manual by design (see CLAUDE.md) — this workflow never deploys, it only blocks
+# manual by design (see AGENTS.md) — this workflow never deploys, it only blocks
 # regressions on PRs and pushes to main.
 on:
   push:
@@ -36,6 +36,12 @@ jobs:
       # reference docs are excluded in .prettierignore.
       - name: Format check
         run: pnpm format:check
+
+      - name: Repository task system tests
+        run: pnpm tasks:test
+
+      - name: Repository task records and board drift
+        run: pnpm tasks:check
 
       - name: Typecheck
         run: pnpm -r typecheck

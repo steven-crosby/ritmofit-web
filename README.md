@@ -18,6 +18,20 @@ authoritative Hono/Cloudflare Workers + D1 backend (`apps/api`), plus shared con
 (`packages/shared`) and music-provider adapters (`packages/music`). In production a
 single Worker serves both the SPA and the API from one origin.
 
+## Tasks and session continuity
+
+The [RF board](ritmofit_dev_plan/tasks.md) is generated from canonical JSON records in
+[`ritmofit_dev_plan/tasks/`](ritmofit_dev_plan/tasks/README.md). Any editor or agent can use them;
+no external task service is required. Task status never grants commit, merge or deploy permission.
+
+```bash
+pnpm tasks list
+pnpm tasks show RF-29
+pnpm tasks create "Describe an observable outcome"
+pnpm tasks:render
+pnpm tasks:check
+```
+
 ## Prerequisites
 
 - Node 22.13 or newer
@@ -65,6 +79,8 @@ The CI-equivalent gates (also documented in [`AGENTS.md`](AGENTS.md)):
 
 ```bash
 pnpm format:check
+pnpm tasks:test
+pnpm tasks:check
 pnpm -r typecheck
 pnpm lint
 (cd ritmofit_design_system && npm run verify)

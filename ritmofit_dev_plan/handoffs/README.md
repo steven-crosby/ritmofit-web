@@ -18,6 +18,11 @@ Not to be confused with [`../class-template-handoff.md`](../class-template-hando
 product spec, or `NEXT_SESSION.md` files inside `docs/audits/` runs, which are evidence for that
 run and superseded by handoffs here.
 
+Current actionable state lives in [`../tasks/`](../tasks/README.md), with the generated
+[`RF board`](../tasks.md) as its view. Handoffs link RF IDs and add session restart context and dated
+observations. Reconcile old handoff next actions with canonical records and live sources; do not
+copy mutable task statuses into new handoffs or infer approval from a task label.
+
 ## Rules
 
 1. **One author.** Only the session that wrote a handoff edits it. Lanes never edit each other's
