@@ -1,0 +1,36 @@
+{
+  "schemaVersion": 1,
+  "id": "RF-23",
+  "title": "Health check touches D1 and an authed smoke uses a gitignored token",
+  "kind": "verification",
+  "status": "review",
+  "priority": "untriaged",
+  "parent": null,
+  "dependsOn": [],
+  "acceptance": [
+    "Confirm #591 health and authenticated-smoke implementation against the current runbook.",
+    "Record actual health/smoke observations with their environment and evidence limits; keep tokens out of git and output."
+  ],
+  "nextAction": "Reconcile the merged implementation with its outstanding review/verification; current public probes returned 403 and do not certify production health.",
+  "blocker": null,
+  "evidence": [
+    {
+      "kind": "source",
+      "ref": "https://github.com/steven-crosby/ritmofit-web/blob/f35d5d5992035c3895b948b3dc90e96ea6eaffa1/ritmofit_dev_plan/tasks.md#L12",
+      "summary": "Original board entry; historical assertion, not independently verified product behavior.",
+      "checkedOn": null
+    },
+    {
+      "kind": "pr",
+      "ref": "https://github.com/steven-crosby/ritmofit-web/pull/591",
+      "summary": "GitHub state MERGED; mergedAt 2026-10-26T04:24:31Z. This checks PR state only.",
+      "checkedOn": "2026-10-27"
+    }
+  ],
+  "resolution": null,
+  "followUps": [],
+  "imported": {
+    "status": "For Review",
+    "title": "[#591](https://github.com/steven-crosby/ritmofit-web/pull/591) Health check touches D1 and an authed smoke uses a gitignored token"
+  }
+}

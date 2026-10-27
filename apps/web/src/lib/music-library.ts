@@ -20,10 +20,18 @@ export type MusicChipBadgeKind =
   | 'checking'
   | 'catalog-only';
 
-export type MusicLibraryFailure = 'none' | 'unavailable' | 'spotify-allowlist';
+export type MusicLibraryFailure = 'none' | 'unavailable' | 'spotify-allowlist' | 'provider-quota';
 
 /** API code for a Spotify Development Mode allowlist refusal. Not a reconnect. */
 export const SPOTIFY_ALLOWLIST_CODE = 'SPOTIFY_DEVELOPMENT_MODE';
+
+/** API code for a spent provider quota. Waiting fixes it; retrying now does not. */
+export const PROVIDER_QUOTA_CODE = 'PROVIDER_QUOTA_EXCEEDED';
+
+/** Failures whose API sentence already says why and what to do, so the UI shows it as-is. */
+export function libraryFailureExplainsItself(code: string | undefined): boolean {
+  return code === SPOTIFY_ALLOWLIST_CODE || code === PROVIDER_QUOTA_CODE;
+}
 
 /**
  * Reconnect is the only chip word that is an action. Status words stay on the
@@ -40,6 +48,7 @@ export function musicLibraryFailure(
   const present = errors.filter((error): error is { code?: string } => error != null);
   if (present.length === 0) return 'none';
   if (present.some((error) => error.code === SPOTIFY_ALLOWLIST_CODE)) return 'spotify-allowlist';
+  if (present.some((error) => error.code === PROVIDER_QUOTA_CODE)) return 'provider-quota';
   return 'unavailable';
 }
 
@@ -116,6 +125,9 @@ export function musicChipBadge(input: {
   // and it is not a reconnect action.
   if (input.libraryFailure === 'spotify-allowlist') {
     return { kind: 'unverified', label: 'Not allowlisted' };
+  }
+  if (input.libraryFailure === 'provider-quota') {
+    return { kind: 'unverified', label: 'Limit reached' };
   }
   // A failed status read, or a library read that did not succeed, must not wear
   // a Connected badge. Spotify can be linked and still return no library.

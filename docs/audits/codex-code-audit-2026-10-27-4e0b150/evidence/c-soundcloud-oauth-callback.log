@@ -1,0 +1,18 @@
+Lane C follow-up — existing SoundCloud/Spotify OAuth callback suite.
+Worktree /tmp/wt-c @ 4e0b150. No live token endpoint (MOCK_PROVIDERS / missing creds).
+
+# cd /tmp/wt-c/apps/api && pnpm exec vitest run --config vitest.integration.config.ts test/provider-callback.integration.test.ts --reporter=verbose
+# exit 0. Test Files 1 passed; Tests 8 passed; Duration 1.88s
+
+rejects an undecryptable state cookie as state_invalid                         pass
+returns access_denied when the provider reports a consent error                pass
+returns state_mismatch when the query state does not match the cookie          pass
+returns state_mismatch when the cookie provider differs from the path provider pass
+returns state_expired when the cookie has passed its TTL                       pass
+returns unsupported_provider for a provider with no redirect-OAuth callback    pass
+returns connect_failed when the SoundCloud token exchange cannot complete      pass
+returns connect_failed when the Spotify token exchange cannot complete         pass
+
+stderr (no tokens, codes, or secrets): 
+[provider-connect:soundcloud] HttpError: SoundCloud is not configured.
+[provider-connect:spotify] HttpError: Spotify is not configured.

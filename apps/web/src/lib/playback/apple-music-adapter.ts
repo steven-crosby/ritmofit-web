@@ -28,6 +28,8 @@ import { getAppleMusicConfig } from '../api.js';
 import {
   configureMusicKit,
   loadMusicKit,
+  probeSafariModernFairPlayAccess,
+  safariModernAccessWord,
   selectSafariModernFairPlay,
   type MusicKitGlobal,
   type MusicKitInstance,
@@ -51,6 +53,27 @@ const DEFAULT_PREPARE_TIMEOUT_MS = 20_000;
  * error path (which also lets the coordinator tear the orphaned adapter down).
  */
 const DEFAULT_AUTHORIZE_TIMEOUT_MS = 60_000;
+
+/** This browser lost its Apple Music authorization (signed out, revoked, or expired). */
+export const appleMusicAuthorizationLostMessage = (): string =>
+  'Apple Music is no longer authorized in this browser. Open Manage music connection to reconnect, then retry.';
+
+/** MusicKit refused to play an authorized, cued song (often a lapsed subscription or region). */
+export const appleMusicPlayRejectedMessage = (title: string): string =>
+  `Apple Music would not play "${title}". Check that your Apple Music subscription is active, then retry.`;
+
+/**
+ * Authorized media-element failure. `modernAccess` is `"ok"` or a DOMException
+ * name from the one audio-only FairPlay probe, when that probe ran.
+ */
+export function appleMusicPlaybackFailedMessage(
+  title: string,
+  modernAccess: string | null,
+): string {
+  const sentence = `Apple Music playback failed for "${title}".`;
+  if (!modernAccess) return sentence;
+  return `${sentence} modern-access: ${modernAccess}.`;
+}
 
 const msToSeconds = (ms: number): number => ms / 1000;
 
@@ -125,7 +148,12 @@ export class AppleMusicAdapter implements PlaybackAdapter {
     if (state === 'ended') this.events.onFinish?.();
   };
   private readonly onPlaybackError = (): void => {
-    this.events.onError?.({ message: `Apple Music playback failed for "${this.trackTitle}".` });
+    this.events.onError?.({
+      message:
+        this.instance && !this.instance.isAuthorized
+          ? appleMusicAuthorizationLostMessage()
+          : appleMusicPlaybackFailedMessage(this.trackTitle, safariModernAccessWord()),
+    });
   };
 
   constructor(
@@ -235,7 +263,27 @@ export class AppleMusicAdapter implements PlaybackAdapter {
     pendingPlays.add(instance);
     transportOwners.set(instance, this);
     try {
-      await instance.play();
+      try {
+        // Before play(), once per page, on iOS Safari or legacy WebKitMediaKeys.
+        // Other browsers get null and must not yield: a caller that destroys
+        // during play() has to find MusicKit's play still pending.
+        const accessProbe = probeSafariModernFairPlayAccess();
+        if (accessProbe) {
+          await accessProbe;
+          if (this.destroyed) throw new Error('Apple Music play was cancelled.');
+        }
+        await instance.play();
+      } catch (cause) {
+        if (this.destroyed) throw cause;
+        // MusicKit rejects with codes such as UNAUTHORIZED or CONTENT_RESTRICTED;
+        // the instructor gets a sentence and an action instead of the raw code.
+        throw new Error(
+          instance.isAuthorized
+            ? appleMusicPlayRejectedMessage(this.trackTitle)
+            : appleMusicAuthorizationLostMessage(),
+          { cause },
+        );
+      }
       if (this.destroyed) throw new Error('Apple Music play was cancelled.');
       this.started = true;
     } finally {

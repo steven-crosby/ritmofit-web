@@ -1,0 +1,26 @@
+{
+  "schemaVersion": 1,
+  "id": "RF-90",
+  "title": "Triage Builder timing and lost-update findings B-3, B-2, B-1",
+  "kind": "plan",
+  "status": "review",
+  "priority": "P1",
+  "parent": null,
+  "dependsOn": [],
+  "acceptance": [
+    "Reconfirm all three findings on current main and agree packet 1 scope before implementation.",
+    "Proposed fix preserves 10313, 12750, 241500 ms on text-only saves and 65000 ms after a free-placement drag; deliberate time edits still snap."
+  ],
+  "nextAction": "Review audit packet 1 and seek owner implementation approval.",
+  "blocker": null,
+  "evidence": [
+    {
+      "kind": "document",
+      "ref": "docs/audits/codex-code-audit-2026-10-27-4e0b150/NEXT_SESSION.md",
+      "summary": "Audit packet 1 records three P1 findings. Migration did not rerun reproductions.",
+      "checkedOn": null
+    }
+  ],
+  "resolution": null,
+  "followUps": []
+}

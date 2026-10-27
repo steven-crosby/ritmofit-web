@@ -18,6 +18,20 @@ authoritative Hono/Cloudflare Workers + D1 backend (`apps/api`), plus shared con
 (`packages/shared`) and music-provider adapters (`packages/music`). In production a
 single Worker serves both the SPA and the API from one origin.
 
+## Tasks and session continuity
+
+The [RF board](ritmofit_dev_plan/tasks.md) is generated from canonical JSON records in
+[`ritmofit_dev_plan/tasks/`](ritmofit_dev_plan/tasks/README.md). Any editor or agent can use them;
+no external task service is required. Task status never grants commit, merge or deploy permission.
+
+```bash
+pnpm tasks list
+pnpm tasks show RF-29
+pnpm tasks create "Describe an observable outcome"
+pnpm tasks:render
+pnpm tasks:check
+```
+
 ## Prerequisites
 
 - Node 22.13 or newer
@@ -65,6 +79,8 @@ The CI-equivalent gates (also documented in [`AGENTS.md`](AGENTS.md)):
 
 ```bash
 pnpm format:check
+pnpm tasks:test
+pnpm tasks:check
 pnpm -r typecheck
 pnpm lint
 (cd ritmofit_design_system && npm run verify)
@@ -75,6 +91,24 @@ pnpm --filter @ritmofit/api openapi && git diff --exit-code apps/api/openapi/ope
 pnpm --filter @ritmofit/api contract-parity
 pnpm audit:ci
 ```
+
+### End-to-end smoke (local only)
+
+`pnpm e2e` builds the SPA, boots the Worker on `http://localhost:8798` against a fresh local D1
+in `e2e/.state/` with mock providers, and drives the signed-in core loop in Playwright at 1440 and
+390 wide: sign up, create an empty Cycle class, add two mock tracks, write cues, Run live without
+music, play, End Class. Every destination is checked for sideways overflow and for WCAG 2.2 AA
+violations with axe. It takes about 30 seconds. It is not part of `pnpm test` or CI.
+
+```bash
+pnpm --filter @ritmofit/e2e exec playwright install chromium   # once per machine
+pnpm e2e
+E2E_CHANNEL=chrome pnpm e2e   # use the installed Google Chrome instead
+```
+
+It never reads your `apps/api/.dev.vars` or your local D1. Failure screenshots and traces land in
+`e2e/.state/test-results/`, and per-page screenshots in `e2e/.state/shots/`. Port 8798 must be
+free; set `E2E_PORT` to move it.
 
 ## Build
 

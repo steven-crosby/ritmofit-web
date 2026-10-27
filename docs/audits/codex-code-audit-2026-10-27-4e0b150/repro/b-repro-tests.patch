@@ -1,0 +1,702 @@
+diff --git a/apps/web/src/components/b-anchor-precision.repro.test.tsx b/apps/web/src/components/b-anchor-precision.repro.test.tsx
+new file mode 100644
+index 0000000..bb113b7
+--- /dev/null
++++ b/apps/web/src/components/b-anchor-precision.repro.test.tsx
+@@ -0,0 +1,121 @@
++// @vitest-environment jsdom
++/**
++ * Reviewer B audit repro (2026-10-27, SHA 4e0b150). Not product code.
++ *
++ * B-3: The cue / placed-move inline editors seed the anchor field with
++ * `formatClockFromMs` (whole-second rounding) and always send `anchorMs`
++ * back on Save, re-snapped when "Snap to beat" is on (the default whenever a
++ * tempo is known). Editing only the text / intensity therefore rewrites an
++ * untouched sub-second anchor — at 128 BPM a beat-snapped cue moves a whole
++ * beat earlier.
++ *
++ * Each test asserts the CORRECT behaviour (anchor unchanged) and is expected to
++ * FAIL at HEAD; the failure is the evidence.
++ */
++import { afterEach, describe, expect, it, vi } from 'vitest';
++import { act, cleanup, fireEvent, render, screen, waitFor, within } from '@testing-library/react';
++import { CuesSection, MovesSection } from './ChoreographyEditor.js';
++import { SegmentBand } from './SegmentBand.js';
++import * as api from '../lib/api.js';
++
++vi.mock('../lib/api.js');
++
++afterEach(() => {
++  cleanup();
++  vi.clearAllMocks();
++});
++
++function editRow() {
++  return within(
++    screen.getAllByRole('listitem').find((li) => within(li).queryByRole('button', { name: 'Save' }))!,
++  );
++}
++
++describe('Reviewer B repro: untouched anchors drift on edit', () => {
++  it('B-3a: a text-only cue edit keeps a beat-snapped anchor (128 BPM, snap on by default)', async () => {
++    // Beat 22 at 128 BPM from a 0 downbeat = 22 * 468.75 = 10312.5 → stored 10313.
++    vi.mocked(api.listCues).mockResolvedValue([
++      {
++        id: 'cue-1',
++        text: 'Climb',
++        anchorMs: 10313,
++        beat: 3,
++        bar: 6,
++        color: null,
++        durationMs: null,
++        bpm: null,
++        intensity: null,
++        note: null,
++        position: 0,
++      } as never,
++    ]);
++    vi.mocked(api.updateCue).mockResolvedValue({} as never);
++    render(<CuesSection classTrackId="ct-1" durationMs={240000} bpm={128} beatAnchorMs={0} />);
++
++    fireEvent.click(await screen.findByRole('button', { name: 'Edit cue Climb' }));
++    const row = editRow();
++    console.info(
++      '[B-3a] edit field seeded with:',
++      (row.getByLabelText('Cue time (m:ss)') as HTMLInputElement).value,
++    );
++    fireEvent.change(row.getByLabelText('Move name'), { target: { value: 'Climb, sit tall' } });
++    await act(async () => {
++      fireEvent.click(row.getByRole('button', { name: 'Save' }));
++    });
++    await waitFor(() => expect(api.updateCue).toHaveBeenCalledTimes(1));
++    const sent = vi.mocked(api.updateCue).mock.calls[0]![1].anchorMs;
++    console.info('[B-3a] stored anchorMs 10313 → PATCH anchorMs', sent);
++    expect(sent).toBe(10313);
++  });
++
++  it('B-3b: an intensity-only placed-move edit keeps a sub-second anchor (no tempo)', async () => {
++    vi.mocked(api.listPlacedMoves).mockResolvedValue([
++      {
++        id: 'pm-1',
++        nameOverride: 'Sprint',
++        moveId: null,
++        userMoveId: null,
++        anchorMs: 12750,
++        intensity: null,
++      } as never,
++    ]);
++    vi.mocked(api.listMoves).mockResolvedValue([]);
++    vi.mocked(api.listUserMoves).mockResolvedValue([]);
++    vi.mocked(api.updatePlacedMove).mockResolvedValue({} as never);
++    render(<MovesSection classTrackId="ct-1" durationMs={240000} />);
++
++    fireEvent.click(await screen.findByRole('button', { name: 'Edit move Sprint' }));
++    await act(async () => {
++      fireEvent.click(editRow().getByRole('button', { name: 'Save' }));
++    });
++    await waitFor(() => expect(api.updatePlacedMove).toHaveBeenCalledTimes(1));
++    const sent = vi.mocked(api.updatePlacedMove).mock.calls[0]![1].anchorMs;
++    console.info('[B-3b] stored anchorMs 12750 → PATCH anchorMs', sent);
++    expect(sent).toBe(12750);
++  });
++
++  it('B-3c: a type-only segment edit keeps a sub-second section start', async () => {
++    vi.mocked(api.listSections).mockResolvedValue([
++      { id: 'sec-1', classId: 'c-1', type: 'climb', startOffsetMs: 241500 } as never,
++    ]);
++    vi.mocked(api.updateSection).mockResolvedValue({} as never);
++    render(
++      <SegmentBand
++        classId="c-1"
++        totalDurationMs={1800000}
++        canEdit
++        trackStartsMs={[0, 241500]}
++        onChanged={() => {}}
++      />,
++    );
++    fireEvent.click(await screen.findByRole('button', { name: /^Edit .* segment$/ }));
++    fireEvent.change(screen.getByLabelText('Segment type'), { target: { value: 'sprint' } });
++    await act(async () => {
++      fireEvent.click(screen.getByRole('button', { name: 'Save' }));
++    });
++    await waitFor(() => expect(api.updateSection).toHaveBeenCalledTimes(1));
++    const sent = vi.mocked(api.updateSection).mock.calls[0]![1].startOffsetMs;
++    console.info('[B-3c] stored startOffsetMs 241500 → PATCH startOffsetMs', sent);
++    expect(sent).toBe(241500);
++  });
++});
+diff --git a/apps/web/src/components/b-builder-lost-update.repro.test.tsx b/apps/web/src/components/b-builder-lost-update.repro.test.tsx
+new file mode 100644
+index 0000000..9660dce
+--- /dev/null
++++ b/apps/web/src/components/b-builder-lost-update.repro.test.tsx
+@@ -0,0 +1,273 @@
++// @vitest-environment jsdom
++/**
++ * Reviewer B audit repro (2026-10-27, SHA 4e0b150). Not product code.
++ *
++ * Both tests assert the CORRECT behaviour and are expected to FAIL at HEAD;
++ * each failure message is the evidence.
++ *
++ * B-1: The track inspector snapshots its typed fields at mount. A timeline drag
++ *      of the same track's start (free mode) refreshes the class, but the
++ *      inspector keeps the old "Start at" text; a later Save (e.g. of notes)
++ *      re-sends the stale startOffsetMs and silently reverts the drag.
++ * B-2: CuesSection loads its rows once per mount. A timeline marker drag
++ *      re-times a cue and refreshes the class payload, but the inspector's cue
++ *      list keeps the old anchor; editing that cue's text re-sends the stale
++ *      anchorMs and silently reverts the drag.
++ */
++import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
++import { act, cleanup, fireEvent, render, screen, waitFor, within } from '@testing-library/react';
++import type { ClassListItem, ClassTrack, Cue, RunPayload } from '@ritmofit/shared';
++import { Dashboard } from './Dashboard.js';
++import * as api from '../lib/api.js';
++
++vi.mock('../lib/api.js');
++vi.mock('../lib/auth-client.js', () => ({ authClient: { signOut: vi.fn() } }));
++vi.mock('virtual:pwa-register/react', () => ({
++  useRegisterSW: () => ({
++    needRefresh: [false, vi.fn()],
++    offlineReady: [false, vi.fn()],
++    updateServiceWorker: vi.fn(),
++  }),
++}));
++
++const CLASS_ID = '00000000-0000-4000-8000-000000000001';
++const CT = '00000000-0000-4000-8000-0000000000c1';
++const CUE_ID = '00000000-0000-4000-8000-0000000000e1';
++
++type State = { startOffsetMs: number; notes: string | null; cueAnchorMs: number; cueText: string };
++let state: State;
++
++function cls(): ClassListItem {
++  return {
++    id: CLASS_ID,
++    ownerUserId: 'me',
++    title: 'Free ride',
++    description: null,
++    template: 'cycle',
++    status: 'draft',
++    visibility: 'private',
++    timelineMode: 'free',
++    targetDurationMs: null,
++    scaffoldRecipeId: null,
++    createdAt: 1,
++    updatedAt: 1,
++    lastOpenedAt: null,
++    featuredCategory: null,
++    coverImageUrl: null,
++    tags: [],
++    accessLevel: 'owner',
++    trackCount: 1,
++    totalDurationMs: 600000,
++    albumArtUrls: [],
++  } as unknown as ClassListItem;
++}
++
++function classTrack(): ClassTrack {
++  return {
++    id: CT,
++    classId: CLASS_ID,
++    trackId: 'track-0',
++    position: 0,
++    intensity: 'mod',
++    displayBpmOverride: null,
++    displayRpm: null,
++    holdCount: null,
++    durationMsOverride: null,
++    clipStartMs: 0,
++    clipEndMs: null,
++    beatAnchorMs: null,
++    startOffsetMs: state.startOffsetMs,
++    notes: state.notes,
++    createdAt: 0,
++    updatedAt: 0,
++  } as unknown as ClassTrack;
++}
++
++function cue(): Cue {
++  return {
++    id: CUE_ID,
++    classTrackId: CT,
++    position: 0,
++    anchorMs: state.cueAnchorMs,
++    beat: null,
++    bar: null,
++    text: state.cueText,
++    durationMs: null,
++    bpm: null,
++    intensity: null,
++    note: null,
++    color: null,
++    createdAt: 0,
++    updatedAt: 0,
++  } as unknown as Cue;
++}
++
++function payload(): RunPayload {
++  return {
++    schemaVersion: 1,
++    class: {
++      id: CLASS_ID,
++      title: 'Free ride',
++      template: 'cycle',
++      targetDurationMs: null,
++      totalDurationMs: 600000,
++      timelineMode: 'free',
++    },
++    sections: [],
++    tracks: [
++      {
++        classTrackId: CT,
++        position: 0,
++        startOffsetMs: state.startOffsetMs,
++        // No tempo, so keyboard steps are a plain 1s (5s with Shift) and no snapping.
++        displayBpm: null,
++        displayRpm: null,
++        holdCount: null,
++        intensity: 'mod',
++        notes: state.notes,
++        clipStartMs: 0,
++        beatAnchorMs: 0,
++        providerRefs: [],
++        track: {
++          id: 'track-0',
++          title: 'Anchor Song',
++          artist: 'Artist',
++          durationMs: 240000,
++          baseDurationMs: 240000,
++          albumArtUrl: null,
++          displayBpm: null,
++        },
++        cues: [
++          {
++            id: CUE_ID,
++            anchorMs: state.cueAnchorMs,
++            beat: null,
++            bar: null,
++            text: state.cueText,
++            color: null,
++            durationMs: null,
++            bpm: null,
++            intensity: null,
++            note: null,
++          },
++        ],
++        moves: [],
++      },
++    ],
++  } as unknown as RunPayload;
++}
++
++beforeEach(() => {
++  state = { startOffsetMs: 60000, notes: null, cueAnchorMs: 10000, cueText: 'Climb' };
++  vi.mocked(api.listClasses).mockResolvedValue({ items: [cls()], nextCursor: null });
++  vi.mocked(api.listClassTracks).mockImplementation(async () => [classTrack()]);
++  vi.mocked(api.getRunPayload).mockImplementation(async () => payload());
++  vi.mocked(api.listClassPlanBlocks).mockResolvedValue([]);
++  vi.mocked(api.listConnections).mockResolvedValue([]);
++  vi.mocked(api.listCues).mockImplementation(async () => [cue()]);
++  vi.mocked(api.listPlacedMoves).mockResolvedValue([]);
++  vi.mocked(api.listMoves).mockResolvedValue([]);
++  vi.mocked(api.listUserMoves).mockResolvedValue([]);
++  vi.mocked(api.listSections).mockResolvedValue([]);
++  vi.mocked(api.markClassOpened).mockResolvedValue(undefined as never);
++  // The fake server applies every PATCH it receives, like the real one.
++  vi.mocked(api.updateClassTrack).mockImplementation(async (_id, body) => {
++    if (body.startOffsetMs !== undefined) state.startOffsetMs = body.startOffsetMs;
++    if (body.notes !== undefined) state.notes = body.notes;
++    return classTrack();
++  });
++  vi.mocked(api.updateCue).mockImplementation(async (_id, body) => {
++    if (body.anchorMs !== undefined) state.cueAnchorMs = body.anchorMs;
++    if (body.text !== undefined) state.cueText = body.text;
++    return cue();
++  });
++});
++
++afterEach(() => {
++  cleanup();
++  vi.clearAllMocks();
++  window.sessionStorage?.clear();
++});
++
++async function openInspectorWithTimeline() {
++  render(<Dashboard userId="me" userName="Tester" />);
++  fireEvent.click(await screen.findByRole('button', { name: /^Free ride/ }));
++  await screen.findByRole('heading', { name: 'Free ride' });
++  fireEvent.click(document.querySelector<HTMLElement>(`[data-track-select-id="${CT}"]`)!);
++  const inspector = within(
++    await screen.findByRole('region', { name: 'Track inspector for Anchor Song' }),
++  );
++  fireEvent.click(screen.getByRole('button', { name: 'Show timeline' }));
++  return inspector;
++}
++
++describe('Reviewer B repro: builder lost updates against the timeline', () => {
++  it('B-1: saving inspector notes keeps a start the timeline just moved', async () => {
++    const inspector = await openInspectorWithTimeline();
++    fireEvent.click(inspector.getByText('Advanced timing and placement'));
++    expect((inspector.getByLabelText(/^Start at/) as HTMLInputElement).value).toBe('1:00');
++
++    // Move track 1 from 1:00 to 1:05 on the timeline (Shift+→ = 5s), then commit.
++    const handle = screen.getByRole('slider', { name: /^Track 1 start at/ });
++    fireEvent.keyDown(handle, { key: 'ArrowRight', shiftKey: true });
++    await act(async () => {
++      fireEvent.keyDown(handle, { key: 'Enter' });
++    });
++    await waitFor(() =>
++      expect(api.updateClassTrack).toHaveBeenCalledWith(CT, { startOffsetMs: 65000 }),
++    );
++    await waitFor(() => expect(api.getRunPayload).toHaveBeenCalledTimes(2));
++    expect(state.startOffsetMs).toBe(65000);
++
++    // Observation 1: the inspector still shows the pre-drag value.
++    const startAtShown = (inspector.getByLabelText(/^Start at/) as HTMLInputElement).value;
++
++    // Now an unrelated edit: notes, then Save.
++    fireEvent.change(inspector.getByLabelText('Creator notes'), { target: { value: 'Push' } });
++    fireEvent.click(inspector.getByRole('button', { name: 'Save' }));
++    await inspector.findByText('Saved.');
++
++    const last = vi.mocked(api.updateClassTrack).mock.calls.at(-1)![1];
++    // Evidence printed on failure.
++    console.info('[B-1] inspector Start at after drag:', startAtShown);
++    console.info('[B-1] notes Save PATCH startOffsetMs:', last.startOffsetMs);
++    console.info('[B-1] server startOffsetMs after notes Save:', state.startOffsetMs);
++    expect(state.startOffsetMs).toBe(65000);
++  });
++
++  it('B-2: editing a cue text keeps an anchor the timeline marker just moved', async () => {
++    const inspector = await openInspectorWithTimeline();
++    await inspector.findByRole('button', { name: 'Edit cue Climb' });
++
++    // Re-time the cue marker from 0:10 to 0:11 (no tempo → 1s step), commit.
++    const marker = screen.getByRole('slider', { name: /^cue at .*Climb/ });
++    fireEvent.keyDown(marker, { key: 'ArrowRight' });
++    await act(async () => {
++      fireEvent.keyDown(marker, { key: 'Enter' });
++    });
++    await waitFor(() => expect(api.updateCue).toHaveBeenCalledWith(CUE_ID, { anchorMs: 11000 }));
++    await waitFor(() => expect(api.getRunPayload).toHaveBeenCalledTimes(2));
++    expect(state.cueAnchorMs).toBe(11000);
++
++    // Edit only the cue text in the inspector and save.
++    fireEvent.click(inspector.getByRole('button', { name: 'Edit cue Climb' }));
++    // The inline edit row is the first list item holding a Save button.
++    const row = within(
++      inspector
++        .getAllByRole('listitem')
++        .find((li) => within(li).queryByRole('button', { name: 'Save' }))!,
++    );
++    const anchorShown = (row.getByLabelText('Cue time (m:ss)') as HTMLInputElement).value;
++    fireEvent.change(row.getByLabelText('Move name'), { target: { value: 'Climb hard' } });
++    await act(async () => {
++      fireEvent.click(row.getByRole('button', { name: 'Save' }));
++    });
++    await waitFor(() => expect(api.updateCue).toHaveBeenCalledTimes(2));
++
++    const last = vi.mocked(api.updateCue).mock.calls.at(-1)![1];
++    console.info('[B-2] inspector cue time field after marker drag:', anchorShown);
++    console.info('[B-2] text-only Save PATCH anchorMs:', last.anchorMs);
++    console.info('[B-2] server cue anchorMs after text Save:', state.cueAnchorMs);
++    expect(state.cueAnchorMs).toBe(11000);
++  });
++});
+diff --git a/apps/web/src/components/b-draft-loss.repro.test.tsx b/apps/web/src/components/b-draft-loss.repro.test.tsx
+new file mode 100644
+index 0000000..e781e74
+--- /dev/null
++++ b/apps/web/src/components/b-draft-loss.repro.test.tsx
+@@ -0,0 +1,193 @@
++// @vitest-environment jsdom
++/**
++ * Reviewer B audit repro (2026-10-27, SHA 4e0b150). Not product code.
++ *
++ * B-4: Unsaved inspector typing ("Unsaved typing — press Save or Enter to
++ * keep it.") is held only in TrackInspector state. Leaving the builder by
++ * Back to Classes, a top-nav destination, or Run live → Exit unmounts it with
++ * no save, no prompt, and no draft restore. The tests assert what happens at
++ * HEAD (they PASS when the draft is silently lost) so the evidence is the
++ * green run plus the logged values.
++ */
++import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
++import { cleanup, fireEvent, render, screen, within } from '@testing-library/react';
++import type { ClassListItem, ClassTrack, RunPayload } from '@ritmofit/shared';
++import { Dashboard } from './Dashboard.js';
++import * as api from '../lib/api.js';
++
++vi.mock('../lib/api.js');
++vi.mock('../lib/auth-client.js', () => ({ authClient: { signOut: vi.fn() } }));
++vi.mock('virtual:pwa-register/react', () => ({
++  useRegisterSW: () => ({
++    needRefresh: [false, vi.fn()],
++    offlineReady: [false, vi.fn()],
++    updateServiceWorker: vi.fn(),
++  }),
++}));
++
++const CLASS_ID = '00000000-0000-4000-8000-000000000001';
++const CT = '00000000-0000-4000-8000-0000000000c1';
++
++const ride = {
++  id: CLASS_ID,
++  ownerUserId: 'me',
++  title: 'Draft ride',
++  description: null,
++  template: 'cycle',
++  status: 'draft',
++  visibility: 'private',
++  timelineMode: 'sequential',
++  targetDurationMs: null,
++  scaffoldRecipeId: null,
++  createdAt: 1,
++  updatedAt: 1,
++  lastOpenedAt: null,
++  featuredCategory: null,
++  coverImageUrl: null,
++  tags: [],
++  accessLevel: 'owner',
++  trackCount: 1,
++  totalDurationMs: 240000,
++  albumArtUrls: [],
++} as unknown as ClassListItem;
++
++const classTrack = {
++  id: CT,
++  classId: CLASS_ID,
++  trackId: 'track-0',
++  position: 0,
++  intensity: 'mod',
++  displayBpmOverride: null,
++  displayRpm: null,
++  holdCount: null,
++  durationMsOverride: null,
++  clipStartMs: 0,
++  clipEndMs: null,
++  beatAnchorMs: null,
++  startOffsetMs: null,
++  notes: null,
++  createdAt: 0,
++  updatedAt: 0,
++} as unknown as ClassTrack;
++
++const payload = {
++  schemaVersion: 1,
++  class: {
++    id: CLASS_ID,
++    title: 'Draft ride',
++    template: 'cycle',
++    targetDurationMs: null,
++    totalDurationMs: 240000,
++    timelineMode: 'sequential',
++  },
++  sections: [],
++  tracks: [
++    {
++      classTrackId: CT,
++      position: 0,
++      startOffsetMs: 0,
++      displayBpm: 128,
++      displayRpm: null,
++      holdCount: null,
++      intensity: 'mod',
++      notes: null,
++      clipStartMs: 0,
++      beatAnchorMs: 0,
++      providerRefs: [],
++      track: {
++        id: 'track-0',
++        title: 'Draft Song',
++        artist: 'Artist',
++        durationMs: 240000,
++        baseDurationMs: 240000,
++        albumArtUrl: null,
++        displayBpm: 128,
++      },
++      cues: [],
++      moves: [],
++    },
++  ],
++} as unknown as RunPayload;
++
++beforeEach(() => {
++  vi.mocked(api.listClasses).mockResolvedValue({ items: [ride], nextCursor: null });
++  vi.mocked(api.listClassTracks).mockResolvedValue([classTrack]);
++  vi.mocked(api.getRunPayload).mockResolvedValue(payload);
++  vi.mocked(api.listClassPlanBlocks).mockResolvedValue([]);
++  vi.mocked(api.listConnections).mockResolvedValue([]);
++  vi.mocked(api.listCues).mockResolvedValue([]);
++  vi.mocked(api.listPlacedMoves).mockResolvedValue([]);
++  vi.mocked(api.listMoves).mockResolvedValue([]);
++  vi.mocked(api.listUserMoves).mockResolvedValue([]);
++  vi.mocked(api.markClassOpened).mockResolvedValue(undefined as never);
++});
++
++afterEach(() => {
++  cleanup();
++  vi.clearAllMocks();
++  window.sessionStorage?.clear();
++});
++
++async function typeUnsavedNotes() {
++  render(<Dashboard userId="me" userName="Tester" />);
++  fireEvent.click(await screen.findByRole('button', { name: /^Draft ride/ }));
++  await screen.findByRole('heading', { name: 'Draft ride' });
++  fireEvent.click(document.querySelector<HTMLElement>(`[data-track-select-id="${CT}"]`)!);
++  const inspector = within(
++    await screen.findByRole('region', { name: 'Track inspector for Draft Song' }),
++  );
++  fireEvent.change(inspector.getByLabelText('Creator notes'), {
++    target: { value: 'Seated climb, out of the saddle on the chorus' },
++  });
++  expect(inspector.getByText(/Unsaved typing/)).toBeTruthy();
++}
++
++async function reopenInspectorNotes(): Promise<string> {
++  const back = screen.queryByRole('button', { name: 'Back to Classes' });
++  if (!back) fireEvent.click(await screen.findByRole('button', { name: /^Draft ride/ }));
++  await screen.findByRole('heading', { name: 'Draft ride' });
++  fireEvent.click(document.querySelector<HTMLElement>(`[data-track-select-id="${CT}"]`)!);
++  const inspector = within(
++    await screen.findByRole('region', { name: 'Track inspector for Draft Song' }),
++  );
++  return (inspector.getByLabelText('Creator notes') as HTMLTextAreaElement).value;
++}
++
++describe('Reviewer B repro: unsaved inspector typing is dropped on leave', () => {
++  it('B-4a: Back to Classes', async () => {
++    await typeUnsavedNotes();
++    fireEvent.click(screen.getByRole('button', { name: 'Back to Classes' }));
++    const notes = await reopenInspectorNotes();
++    console.info('[B-4a] notes after Back + reopen:', JSON.stringify(notes));
++    expect(notes).toBe('');
++    expect(api.updateClassTrack).not.toHaveBeenCalled();
++  });
++
++  it('B-4b: top-nav Account then Classes', async () => {
++    vi.mocked(api.getMe).mockReturnValue(new Promise(() => {}));
++    await typeUnsavedNotes();
++    fireEvent.click(screen.getByRole('button', { name: 'Account' }));
++    fireEvent.click(screen.getByRole('button', { name: 'Classes' }));
++    const notes = await reopenInspectorNotes();
++    console.info('[B-4b] notes after nav away + back:', JSON.stringify(notes));
++    expect(notes).toBe('');
++    expect(api.updateClassTrack).not.toHaveBeenCalled();
++  });
++
++  it('B-4c: Run live → Exit returns to the builder without the draft', async () => {
++    await typeUnsavedNotes();
++    fireEvent.click(screen.getByRole('button', { name: /Run live/ }));
++    fireEvent.click(await screen.findByRole('button', { name: 'Exit' }));
++    await screen.findByRole('heading', { name: 'Draft ride' });
++    const inspectorOpen = screen.queryByRole('region', { name: 'Track inspector for Draft Song' });
++    const notes = await reopenInspectorNotes();
++    console.info(
++      '[B-4c] inspector still open after Exit:',
++      inspectorOpen != null,
++      '| notes after reselect:',
++      JSON.stringify(notes),
++    );
++    expect(notes).toBe('');
++    expect(api.updateClassTrack).not.toHaveBeenCalled();
++  });
++});
+diff --git a/apps/web/src/components/b-tag-filter-race.repro.test.tsx b/apps/web/src/components/b-tag-filter-race.repro.test.tsx
+new file mode 100644
+index 0000000..6226b8b
+--- /dev/null
++++ b/apps/web/src/components/b-tag-filter-race.repro.test.tsx
+@@ -0,0 +1,91 @@
++// @vitest-environment jsdom
++/**
++ * Reviewer B audit repro (2026-10-27, SHA 4e0b150). Not product code.
++ *
++ * B-6: `refreshClasses` has no request generation. Two quick tag-filter clicks
++ * whose responses land out of order leave the newer chip pressed while the
++ * list shows the older filter's classes. Asserts the CORRECT behaviour and is
++ * expected to FAIL at HEAD.
++ */
++import { afterEach, expect, it, vi } from 'vitest';
++import { act, cleanup, fireEvent, render, screen } from '@testing-library/react';
++import type { ClassListItem } from '@ritmofit/shared';
++import { Dashboard } from './Dashboard.js';
++import * as api from '../lib/api.js';
++import type { ClassListPage } from '../lib/api.js';
++
++vi.mock('../lib/api.js');
++vi.mock('../lib/auth-client.js', () => ({ authClient: { signOut: vi.fn() } }));
++vi.mock('virtual:pwa-register/react', () => ({
++  useRegisterSW: () => ({
++    needRefresh: [false, vi.fn()],
++    offlineReady: [false, vi.fn()],
++    updateServiceWorker: vi.fn(),
++  }),
++}));
++
++afterEach(() => {
++  cleanup();
++  vi.clearAllMocks();
++  window.sessionStorage?.clear();
++});
++
++function deferred<T>() {
++  let resolve!: (v: T) => void;
++  const promise = new Promise<T>((r) => (resolve = r));
++  return { promise, resolve };
++}
++
++function cls(n: number, title: string, tags: string[]): ClassListItem {
++  return {
++    id: `00000000-0000-4000-8000-00000000000${n}`,
++    ownerUserId: 'me',
++    title,
++    description: null,
++    template: 'cycle',
++    status: 'draft',
++    visibility: 'private',
++    timelineMode: 'sequential',
++    targetDurationMs: null,
++    scaffoldRecipeId: null,
++    createdAt: n,
++    updatedAt: n,
++    lastOpenedAt: null,
++    featuredCategory: null,
++    coverImageUrl: null,
++    tags,
++    accessLevel: 'owner',
++    trackCount: 0,
++    totalDurationMs: 0,
++    albumArtUrls: [],
++  } as unknown as ClassListItem;
++}
++
++it('B-6: the class list matches the pressed tag after out-of-order responses', async () => {
++  const hiitRide = cls(1, 'Hiit ride', ['hiit']);
++  const yogaRide = cls(2, 'Yoga ride', ['yoga']);
++  const hiit = deferred<ClassListPage>();
++  const yoga = deferred<ClassListPage>();
++  vi.mocked(api.listClasses).mockImplementation(async (_l, _c, tag) => {
++    if (tag === 'hiit') return hiit.promise;
++    if (tag === 'yoga') return yoga.promise;
++    return { items: [hiitRide, yogaRide], nextCursor: null };
++  });
++  render(<Dashboard userId="me" userName="Tester" />);
++
++  fireEvent.click(await screen.findByRole('button', { name: '#hiit' }));
++  fireEvent.click(screen.getByRole('button', { name: '#yoga' }));
++  await act(async () => {
++    yoga.resolve({ items: [yogaRide], nextCursor: null });
++    await yoga.promise;
++  });
++  await act(async () => {
++    hiit.resolve({ items: [hiitRide], nextCursor: null });
++    await hiit.promise;
++  });
++
++  const pressed = screen.getByRole('button', { name: '#yoga' }).getAttribute('aria-pressed');
++  const shown = ['Hiit ride', 'Yoga ride'].filter((t) => screen.queryAllByText(t).length > 0);
++  console.info('[B-6] #yoga pressed:', pressed, '| classes shown:', shown.join(', '));
++  expect(shown).toEqual(['Yoga ride']);
++});

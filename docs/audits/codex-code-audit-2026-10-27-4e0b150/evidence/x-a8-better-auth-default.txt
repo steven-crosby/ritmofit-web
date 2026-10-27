@@ -1,0 +1,16 @@
+Better Auth installed in /tmp/wt-x (pnpm): 1.6.25
+package: apps/api/node_modules/better-auth → .pnpm/better-auth@1.6.25_…/node_modules/better-auth
+
+Sessions are deleted on password reset only when the option is truthy.
+Unset is not a hidden true default.
+
+dist/api/routes/password.mjs:172
+  if (ctx.context.options.emailAndPassword?.revokeSessionsOnPasswordReset)
+    await ctx.context.internalAdapter.deleteUserSessions(userId);
+
+Same guard:
+  dist/plugins/phone-number/routes.mjs:457
+  dist/plugins/email-otp/routes.mjs:594
+
+Ritmo config apps/api/src/lib/auth.ts:141-160 sets emailAndPassword.enabled and
+sendResetPassword and does not set revokeSessionsOnPasswordReset.

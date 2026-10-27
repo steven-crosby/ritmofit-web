@@ -275,7 +275,7 @@ function mapConnectedPlaylistReadError(
     throw new HttpError(
       403,
       'PROVIDER_FORBIDDEN',
-      `${adapter.label} only allows opening playlists you own or collaborate on.`,
+      `${adapter.label} only lets Ritmo read playlists you own or collaborate on.`,
     );
   }
   if (opts.unauthorizedAsReauth && adapter.isUnauthorized(err)) {

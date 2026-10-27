@@ -2,6 +2,7 @@ import { describe, expect, it } from 'vitest';
 import {
   defaultLibraryKind,
   filterLibrary,
+  libraryFailureExplainsItself,
   musicChipBadge,
   musicChipOffersReconnect,
   musicConnectionNotice,
@@ -40,6 +41,21 @@ describe('musicChipBadge', () => {
     ).toBe('spotify-allowlist');
     expect(musicLibraryFailure([{ code: 'PROVIDER_UNAVAILABLE' }])).toBe('unavailable');
     expect(musicLibraryFailure([undefined])).toBe('none');
+  });
+
+  it('names a spent Spotify quota as Limit reached and shows its API sentence', () => {
+    expect(musicLibraryFailure([{ code: 'PROVIDER_QUOTA_EXCEEDED' }, null])).toBe('provider-quota');
+    const badge = musicChipBadge({
+      fetchStatus: 'ready',
+      connectionState: 'connected',
+      libraryFailure: 'provider-quota',
+    });
+    expect(badge).toEqual({ kind: 'unverified', label: 'Limit reached' });
+    expect(musicChipOffersReconnect(badge.kind)).toBe(false);
+    expect(libraryFailureExplainsItself('PROVIDER_QUOTA_EXCEEDED')).toBe(true);
+    expect(libraryFailureExplainsItself('SPOTIFY_DEVELOPMENT_MODE')).toBe(true);
+    expect(libraryFailureExplainsItself('PROVIDER_UNAVAILABLE')).toBe(false);
+    expect(libraryFailureExplainsItself(undefined)).toBe(false);
   });
 
   it('uses Reconnect for an expired session and Catalog only when nothing is linked', () => {

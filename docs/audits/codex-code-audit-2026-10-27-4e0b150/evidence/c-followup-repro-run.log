@@ -1,0 +1,34 @@
+Lane C follow-up repros. Worktree /tmp/wt-c @ 4e0b15096995c125b3941bf374a6a580e2ff52f8.
+Vitest 3.2.6. No provider network. Dev-email fallback text from the integration
+runner was omitted from this log.
+
+# 1. API unit (default vitest.config.ts) — exit 0
+# cd /tmp/wt-c/apps/api && pnpm exec vitest run src/lib/c-resolution-repro.test.ts --reporter=verbose
+# Test Files 1 passed; Tests 13 passed; Duration 842ms
+C-21 Levels (Instrumental) same key as Levels                         pass
+C-21 Levels (Live) same key                                           pass
+C-21 Levels (Acoustic) same key                                       pass
+C-21 Levels [Karaoke Version] same key                                pass
+C-21 Levels - Acoustic Version same key                               pass
+C-21 Levels - Live Edit same key                                      pass
+C-21 Levels - Club Mix same key                                       pass
+C-21 auto-attaches instrumental variant via resolveTrackProvider      pass
+C-21 auto-attaches the first of several same-key results              pass
+C-21 mixed-script titles collapse to ASCII residue                    pass
+C-21 unbounded feat/ft strip edits inside words                       pass
+C-22 findSameSongMatch accepts a recording 3.5s shorter               pass
+C-23 URN and legacy numeric id are distinct alias strings             pass
+
+# 2. Web unit (vite vitest, node + jsdom pragma) — exit 0
+# cd /tmp/wt-c/apps/web && pnpm exec vitest run src/lib/playback/c-resolution-repro.test.ts src/lib/c-ordered-import-repro.test.ts --reporter=verbose
+# Test Files 2 passed; Tests 4 passed; Duration 1.22s
+C-22 runtime fails when the merged SoundCloud ref ends 3.5s early     pass
+C-24 fresh URL-import session duplicates every song on retry          pass
+C-24 control: persisted storageKey replays and adds nothing           pass
+C-25 429 on one library import returns error:null and drops that song pass
+
+# 3. API integration (vitest.integration.config.ts, local Miniflare D1) — exit 0
+# cd /tmp/wt-c/apps/api && pnpm exec vitest run --config vitest.integration.config.ts test/c-library-import-repro.integration.test.ts --reporter=verbose
+# Test Files 1 passed; Tests 2 passed; Duration 1.95s
+C-26 concurrent importTrackFromCandidate: one ok, one 409; sequential retry created:false   pass
+C-23 attachProviderId stores a URN beside a legacy numeric id; later URN import prefers the new row   pass

@@ -1,0 +1,496 @@
+diff --git a/apps/api/src/lib/music/c-provider-repro.test.ts b/apps/api/src/lib/music/c-provider-repro.test.ts
+new file mode 100644
+index 0000000..d5c929e
+--- /dev/null
++++ b/apps/api/src/lib/music/c-provider-repro.test.ts
+@@ -0,0 +1,110 @@
++/**
++ * Reviewer C audit repros (synthetic fetch only; never reaches a provider).
++ * Asserts CURRENT behaviour at 4e0b150: green = reproduced.
++ */
++import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
++import { mintSpotifyPlaybackToken } from './spotify-playback-token.js';
++import { fetchUserLikes } from './user-likes.js';
++import { HttpError } from '../errors.js';
++import type { Db } from '../db.js';
++import type { Env } from '../types.js';
++
++vi.mock('../crypto.js', () => ({
++  encryptSecret: vi.fn(async (s: string) => `enc:${s}`),
++  decryptSecret: vi.fn(async (s: string) => s.replace('enc:', '')),
++}));
++
++const updates: unknown[] = [];
++function dbWith(row: Record<string, unknown>): Db {
++  return {
++    select: () => ({ from: () => ({ where: () => ({ get: async () => row }) }) }),
++    update: () => ({
++      set: (v: unknown) => {
++        updates.push(v);
++        return { where: async () => ({}) };
++      },
++    }),
++  } as unknown as Db;
++}
++
++const env = {
++  MOCK_PROVIDERS: 'false',
++  SPOTIFY_CLIENT_ID: 'id',
++  SPOTIFY_CLIENT_SECRET: 'secret',
++  SOUNDCLOUD_CLIENT_ID: 'id',
++  SOUNDCLOUD_CLIENT_SECRET: 'secret',
++  ENCRYPTION_KEY: 'k'.repeat(32),
++} as unknown as Env;
++
++const expiredConn = (provider: string) => ({
++  id: 'c1',
++  userId: 'u1',
++  provider,
++  accessTokenEncrypted: 'enc:old-access',
++  refreshTokenEncrypted: 'enc:live-refresh',
++  scope: 'user-library-read streaming',
++  expiresAt: Date.now() - 5_000,
++});
++
++const calls: string[] = [];
++beforeEach(() => {
++  updates.length = 0;
++  calls.length = 0;
++});
++afterEach(() => vi.unstubAllGlobals());
++
++function stubTokenEndpoint(status: number, body = '{"error":"server_error"}') {
++  vi.stubGlobal(
++    'fetch',
++    vi.fn(async (input: string) => {
++      calls.push(String(input));
++      return new Response(body, { status, headers: { 'content-type': 'application/json' } });
++    }),
++  );
++}
++
++describe('C-2 transient token-endpoint failure is reported as a dead grant', () => {
++  for (const status of [500, 502, 503, 429]) {
++    it(`Spotify playback token: ${status} from accounts.spotify.com -> 409 REAUTH_REQUIRED`, async () => {
++      stubTokenEndpoint(status);
++      const err = await mintSpotifyPlaybackToken(dbWith(expiredConn('spotify')), env, 'u1').catch(
++        (e: unknown) => e,
++      );
++      expect(err).toBeInstanceOf(HttpError);
++      expect((err as HttpError).status).toBe(409);
++      expect((err as HttpError).code).toBe('REAUTH_REQUIRED');
++      expect(calls).toEqual(['https://accounts.spotify.com/api/token']); // one try, no retry
++    });
++  }
++
++  it('network failure (fetch throws) -> 409 REAUTH_REQUIRED', async () => {
++    vi.stubGlobal(
++      'fetch',
++      vi.fn(async () => {
++        throw new TypeError('network connection lost');
++      }),
++    );
++    const err = await mintSpotifyPlaybackToken(dbWith(expiredConn('spotify')), env, 'u1').catch(
++      (e: unknown) => e,
++    );
++    expect((err as HttpError).code).toBe('REAUTH_REQUIRED');
++  });
++
++  it('SoundCloud likes: 503 from the token endpoint -> 409 REAUTH_REQUIRED', async () => {
++    stubTokenEndpoint(503);
++    const err = await fetchUserLikes(dbWith(expiredConn('soundcloud')), env, 'u1', 'soundcloud')
++      .then(() => null)
++      .catch((e: unknown) => e);
++    expect((err as HttpError).status).toBe(409);
++    expect((err as HttpError).code).toBe('REAUTH_REQUIRED');
++    expect(updates).toHaveLength(0); // nothing persisted: the grant was never actually dead
++  });
++
++  it('control: a real invalid_grant (400) is the only case that should map to reauth', async () => {
++    stubTokenEndpoint(400, '{"error":"invalid_grant"}');
++    const err = await mintSpotifyPlaybackToken(dbWith(expiredConn('spotify')), env, 'u1').catch(
++      (e: unknown) => e,
++    );
++    expect((err as HttpError).code).toBe('REAUTH_REQUIRED');
++  });
++});
+diff --git a/apps/web/src/lib/playback/c-provider-repro.test.ts b/apps/web/src/lib/playback/c-provider-repro.test.ts
+new file mode 100644
+index 0000000..f1f0c54
+--- /dev/null
++++ b/apps/web/src/lib/playback/c-provider-repro.test.ts
+@@ -0,0 +1,296 @@
++/**
++ * Reviewer C audit repros (synthetic SDK fakes only; no provider network).
++ * Each test asserts the CURRENT (defective) behaviour at 4e0b150 so a green run
++ * means "reproduced".
++ */
++import { afterEach, describe, expect, it, vi } from 'vitest';
++import type { RunPayload, RunPayloadTrackEntry } from '@ritmofit/shared';
++import { preflightPayload, selectProvider } from './coordinator.js';
++import { providerCapabilityTruth } from '../providers.js';
++import { SpotifyAdapter, spotifyTrackUri } from './spotify-adapter.js';
++import { RuntimePlaybackCoordinator, type CoordinatorStatus } from './runtime.js';
++import {
++  getSpotifyPlayback,
++  resetSpotifyPlayback,
++  type SpotifyNamespace,
++  type SpotifyPlayer,
++  type SpotifyPlayerState,
++} from '../spotify-playback.js';
++
++const NOW = 1_800_000_000_000;
++
++function entry(overrides: Partial<RunPayloadTrackEntry> = {}): RunPayloadTrackEntry {
++  return {
++    classTrackId: 'ct-1',
++    position: 0,
++    displayBpm: null,
++    displayRpm: null,
++    holdCount: null,
++    intensity: 'mod',
++    startOffsetMs: 0,
++    clipStartMs: 0,
++    beatAnchorMs: 0,
++    notes: null,
++    track: {
++      id: 't-1',
++      title: 'Relinked Song',
++      artist: 'Artist',
++      durationMs: 180_000,
++      baseDurationMs: 180_000,
++      albumArtUrl: null,
++    },
++    providerRefs: [
++      { provider: 'spotify', providerTrackId: 'ORIGINAL', providerUri: 'spotify:track:ORIGINAL' },
++    ] as RunPayloadTrackEntry['providerRefs'],
++    cues: [],
++    moves: [],
++    ...overrides,
++  };
++}
++
++function payload(tracks: RunPayloadTrackEntry[]): RunPayload {
++  return {
++    class: { totalDurationMs: 180_000 },
++    tracks,
++  } as unknown as RunPayload;
++}
++
++type Listener = (p: unknown) => void;
++class FakePlayer {
++  listeners = new Map<string, Listener[]>();
++  state: SpotifyPlayerState | null = null;
++  connect() {
++    return Promise.resolve(true);
++  }
++  activateElement() {
++    return Promise.resolve();
++  }
++  disconnect() {}
++  getCurrentState() {
++    return Promise.resolve(this.state);
++  }
++  pause() {
++    return Promise.resolve();
++  }
++  resume() {
++    return Promise.resolve();
++  }
++  seek() {
++    return Promise.resolve();
++  }
++  addListener(event: string, cb: Listener) {
++    this.listeners.set(event, [...(this.listeners.get(event) ?? []), cb]);
++  }
++  removeListener(event: string, cb?: Listener) {
++    this.listeners.set(event, cb ? (this.listeners.get(event) ?? []).filter((l) => l !== cb) : []);
++  }
++  emit(event: string, payload: unknown) {
++    for (const l of this.listeners.get(event) ?? []) l(payload);
++  }
++}
++
++describe('C-1 Spotify playback gated on the ~1h ACCESS-token expiry', () => {
++  // Shape the API returns from GET /providers/connections: `expiresAt` is the
++  // stored access-token expiry (provider-connections.ts toConnectionView), while
++  // the refresh token (server-only) can still mint a fresh one on demand.
++  const staleAccessToken = {
++    provider: 'spotify' as const,
++    expiresAt: NOW - 1, // access token lapsed 1 ms ago; grant is still alive
++    scope: 'user-library-read streaming user-read-email user-read-private',
++  };
++
++  it('marks a Spotify-only track unplayable as "no_connected_provider"', () => {
++    const selection = selectProvider(entry(), [staleAccessToken], {
++      now: NOW,
++      availableProviders: ['soundcloud', 'apple_music', 'spotify'],
++    });
++    expect(selection).toEqual({ status: 'unplayable', reason: 'no_connected_provider' });
++  });
++
++  it('fails Live preflight for the whole class', () => {
++    const result = preflightPayload(payload([entry()]), [staleAccessToken], {
++      now: NOW,
++      availableProviders: ['soundcloud', 'apple_music', 'spotify'],
++    });
++    expect(result.ok).toBe(false);
++  });
++
++  it('labels playback "Reconnect for playback" although no reconnect is needed', () => {
++    const truth = providerCapabilityTruth('spotify', staleAccessToken, NOW);
++    expect(truth.connectionState).toBe('expired');
++    expect(truth.playback).toEqual({ state: 'action-required', label: 'Reconnect for playback' });
++  });
++});
++
++describe('C-3 Spotify track relinking reads as a dead device', () => {
++  it('getTransport rejects when the SDK plays the relinked uri', async () => {
++    const player = new FakePlayer();
++    const adapter = new SpotifyAdapter(
++      {},
++      {
++        getPlayback: async () => ({
++          player: player as unknown as SpotifyPlayer,
++          deviceId: 'dev-1',
++        }),
++        startTrack: async () => {},
++      },
++    );
++    await adapter.prepare(entry(), { startMs: 0, endMs: 180_000 });
++    await adapter.play();
++    // Spotify relinked the requested track to the market's instance.
++    player.state = {
++      paused: false,
++      position: 5_000,
++      duration: 180_000,
++      track_window: {
++        current_track: {
++          id: 'RELINKED',
++          uri: 'spotify:track:RELINKED',
++          // Real WebPlaybackTrack objects also carry linked_from: { uri: 'spotify:track:ORIGINAL' }
++        } as never,
++      },
++    };
++    await expect(adapter.getTransport()).rejects.toThrow(
++      'Spotify Web Playback SDK is no longer playing the class track.',
++    );
++  });
++
++  it('the music-led runtime turns that into an adapter error that halts the class', async () => {
++    vi.useFakeTimers();
++    const player = new FakePlayer();
++    const statuses: CoordinatorStatus[] = [];
++    const coordinator = new RuntimePlaybackCoordinator(
++      payload([entry()]),
++      [{ provider: 'spotify', expiresAt: NOW + 3_600_000, scope: 'streaming' }],
++      {
++        now: NOW,
++        availableProviders: ['spotify'],
++        adapters: {
++          spotify: (events) =>
++            new SpotifyAdapter(events, {
++              getPlayback: async () => ({
++                player: player as unknown as SpotifyPlayer,
++                deviceId: 'dev-1',
++              }),
++              startTrack: async () => {
++                player.state = {
++                  paused: false,
++                  position: 1_000,
++                  duration: 180_000,
++                  track_window: {
++                    current_track: { id: 'RELINKED', uri: 'spotify:track:RELINKED' },
++                  },
++                };
++              },
++            }),
++        },
++        onStatus: (s) => statuses.push(s),
++        onPosition: () => {},
++      },
++    );
++    await coordinator.start(0);
++    await vi.advanceTimersByTimeAsync(300);
++    const last = statuses.at(-1);
++    expect(last?.kind).toBe('error');
++    expect(last && last.kind === 'error' ? last.error.message : '').toBe(
++      'Spotify Web Playback SDK is no longer playing the class track.',
++    );
++    coordinator.destroy();
++    vi.useRealTimers();
++  });
++});
++
++describe('C-3b one transient null Spotify state fails the class at once (no stall budget)', () => {
++  it('a single null getCurrentState -> error within one 250 ms sample', async () => {
++    vi.useFakeTimers();
++    const player = new FakePlayer();
++    const statuses: CoordinatorStatus[] = [];
++    const playing = (position: number): SpotifyPlayerState => ({
++      paused: false,
++      position,
++      duration: 180_000,
++      track_window: { current_track: { id: 'ORIGINAL', uri: 'spotify:track:ORIGINAL' } },
++    });
++    const coordinator = new RuntimePlaybackCoordinator(
++      payload([entry()]),
++      [{ provider: 'spotify', expiresAt: NOW + 3_600_000, scope: 'streaming' }],
++      {
++        now: NOW,
++        availableProviders: ['spotify'],
++        adapters: {
++          spotify: (events) =>
++            new SpotifyAdapter(events, {
++              getPlayback: async () => ({
++                player: player as unknown as SpotifyPlayer,
++                deviceId: 'dev-1',
++              }),
++              startTrack: async () => {
++                player.state = playing(1_000);
++              },
++            }),
++        },
++        onStatus: (s) => statuses.push(s),
++        onPosition: () => {},
++      },
++    );
++    await coordinator.start(0);
++    await vi.advanceTimersByTimeAsync(260);
++    player.state = playing(1_300);
++    await vi.advanceTimersByTimeAsync(260);
++    expect(statuses.at(-1)?.kind).toBe('playing');
++    player.state = null; // e.g. SDK briefly reconnecting
++    await vi.advanceTimersByTimeAsync(260);
++    const last = statuses.at(-1);
++    expect(last?.kind).toBe('error');
++    expect(last && last.kind === 'error' ? last.error.message : '').toBe(
++      'Spotify Web Playback SDK device is no longer active.',
++    );
++    coordinator.destroy();
++    vi.useRealTimers();
++  });
++});
++
++describe('C-4 Spotify page-singleton device is never rebuilt after it goes offline', () => {
++  afterEach(() => resetSpotifyPlayback());
++
++  it('keeps serving the first device_id after not_ready + a new ready', async () => {
++    let created: FakePlayer | null = null;
++    const sdk: SpotifyNamespace = {
++      Player: class {
++        constructor() {
++          created = new FakePlayer();
++          return created as never;
++        }
++      } as never,
++    };
++    const first = getSpotifyPlayback({
++      loadSdk: async () => sdk,
++      getToken: async () => ({ accessToken: 'tok', expiresInMs: 1 }),
++    });
++    await Promise.resolve();
++    await Promise.resolve();
++    created!.emit('ready', { device_id: 'device-A' });
++    expect((await first).deviceId).toBe('device-A');
++
++    // Network drop: the SDK reports the device offline, then re-registers.
++    created!.emit('not_ready', { device_id: 'device-A' });
++    created!.emit('ready', { device_id: 'device-B' });
++
++    const later = await getSpotifyPlayback();
++    expect(later.deviceId).toBe('device-A'); // stale id used by PUT /me/player/play
++    // Nobody listens to not_ready at all.
++    expect(created!.listeners.get('not_ready') ?? []).toHaveLength(0);
++  });
++});
++
++describe('C-6 (REJECTED upstream: episodes never import) uri builder fallback', () => {
++  it('turns a non-track uri into spotify:track:<id> (only reachable via manual/legacy refs)', () => {
++    expect(
++      spotifyTrackUri({
++        provider: 'spotify',
++        providerTrackId: 'EPISODE123',
++        providerUri: 'spotify:episode:EPISODE123',
++      } as never),
++    ).toBe('spotify:track:EPISODE123');
++  });
++});
+diff --git a/packages/music/src/c-provider-repro.test.ts b/packages/music/src/c-provider-repro.test.ts
+new file mode 100644
+index 0000000..ea63361
+--- /dev/null
++++ b/packages/music/src/c-provider-repro.test.ts
+@@ -0,0 +1,72 @@
++/**
++ * Reviewer C audit repros for the provider adapters (synthetic fetch only).
++ * Asserts CURRENT behaviour at 4e0b150: green = reproduced.
++ */
++import { describe, expect, it } from 'vitest';
++import { fetchSpotifyPlaylistTracks } from './spotify.js';
++import { fetchWithRetry } from './retry.js';
++import type { FetchLike } from './provider.js';
++
++type Res = Awaited<ReturnType<FetchLike>>;
++function json(status: number, body: unknown, headers: Record<string, string> = {}): Res {
++  const text = JSON.stringify(body);
++  return {
++    ok: status >= 200 && status < 300,
++    status,
++    headers: { get: (k: string) => headers[k.toLowerCase()] ?? null },
++    text: async () => text,
++    json: async () => JSON.parse(text) as unknown,
++  } as Res;
++}
++
++describe('C-6 (REJECTED) Spotify playlist items: podcast episodes', () => {
++  it('drops an episode item (no artists -> fails the shared contract)', async () => {
++    const fetchImpl: FetchLike = async () =>
++      json(200, {
++        total: 2,
++        items: [
++          {
++            item: {
++              type: 'track',
++              id: 'TRACK1',
++              uri: 'spotify:track:TRACK1',
++              name: 'Song',
++              duration_ms: 200_000,
++              artists: [{ name: 'A' }],
++            },
++          },
++          {
++            item: {
++              type: 'episode',
++              id: 'EP1',
++              uri: 'spotify:episode:EP1',
++              name: 'Podcast episode',
++              duration_ms: 3_600_000,
++            },
++          },
++        ],
++      });
++    const out = await fetchSpotifyPlaylistTracks({
++      accessToken: 't',
++      playlistId: 'p',
++      fetchImpl,
++    });
++    expect(out.map((t) => t.providerUri)).toEqual(['spotify:track:TRACK1']);
++  });
++});
++
++describe('C-9 Retry-After that crosses the preview deadline surfaces as a timeout', () => {
++  it('throws AbortError instead of returning the 429 to the caller', async () => {
++    let now = 0;
++    const fetchImpl: FetchLike = async () =>
++      json(429, { error: { status: 429 } }, { 'retry-after': '3' });
++    const err = await fetchWithRetry(fetchImpl, 'https://api.spotify.com/v1/x', undefined, {
++      now: () => now,
++      sleep: async (ms) => {
++        now += ms;
++      },
++      deadlineAt: 2_000,
++    }).catch((e: unknown) => e);
++    expect((err as Error).name).toBe('AbortError');
++  });
++});

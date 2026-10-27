@@ -1,0 +1,56 @@
+$ node scripts/check-theme-classes.mjs --selftest
+✓ rejects bg-bg-surface              historical regression
+✓ rejects border-border-default      historical regression
+✓ rejects bg-border-default          historical regression
+✓ accepts  bg-bg-base                 corrected form
+✓ accepts  border-border              corrected form
+✓ accepts  bg-border                  corrected form
+✓ accepts  bg-bg-base                 derived from colors.bg
+✓ rejects bg-bg-base-nope            unknown key under bg
+✓ accepts  bg-text-primary            derived from colors.text
+✓ rejects bg-text-primary-nope       unknown key under text
+✓ accepts  bg-brand                   derived from colors.brand
+✓ rejects bg-brand-nope              unknown key under brand
+✓ accepts  bg-interactive             derived from colors.interactive
+✓ rejects bg-interactive-nope        unknown key under interactive
+✓ accepts  bg-peak                    derived from colors.peak
+✓ rejects bg-peak-nope               unknown key under peak
+✓ accepts  bg-move                    derived from colors.move
+✓ rejects bg-move-nope               unknown key under move
+✓ accepts  bg-intensity-none          derived from colors.intensity
+✓ rejects bg-intensity-none-nope     unknown key under intensity
+✓ accepts  bg-state-positive          derived from colors.state
+✓ rejects bg-state-positive-nope     unknown key under state
+✓ accepts  bg-border-subtle           derived from colors.border
+✓ rejects bg-border-subtle-nope      unknown key under border
+✓ accepts  bg-segment-warmup          derived from colors.segment
+✓ rejects bg-segment-warmup-nope     unknown key under segment
+✓ accepts  shadow-card                boxShadow key
+✓ accepts  shadow-lifted              boxShadow key
+✓ accepts  shadow-peak-glow           boxShadow key
+✓ accepts  shadow-peak-bloom          boxShadow key
+✓ accepts  border-sheet               borderRadius key
+✓ accepts  border-panel               borderRadius key
+✓ accepts  border-card                borderRadius key
+✓ accepts  border-input               borderRadius key
+✓ accepts  border-control             borderRadius key
+✓ accepts  border-pill                borderRadius key
+✓ accepts  text-display-xl            fontSize key
+✓ accepts  text-display-lg            fontSize key
+✓ accepts  text-caption               fontSize key
+✓ accepts  bg-heat                    backgroundImage key
+✓ accepts  bg-bloom-heat              backgroundImage key
+✓ accepts  text-sm                    out of scope / valid
+✓ accepts  border-2                   out of scope / valid
+✓ accepts  shadow-lg                  out of scope / valid
+✓ accepts  bg-[#ff0000]               out of scope / valid
+✓ accepts  bg-bg-base/50              out of scope / valid
+
+✓ self-test passed on 46 cases (36 valid colour names)
+✓ opacity proves rejects missing /10 rule (historical output)
+✓ opacity proves rejects zero-alpha generated declarations
+✓ opacity proves rejects baked hex that bypasses tokens
+✓ opacity proves fails against raw var() colours (failing-before)
+✓ opacity proves passes against the live config (passing-after)
+
+✓ opacity self-test passed on 5 cases

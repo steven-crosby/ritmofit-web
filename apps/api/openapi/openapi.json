@@ -630,6 +630,9 @@
           "422": {
             "description": "Playlist has more than 100 songs"
           },
+          "429": {
+            "description": "PROVIDER_QUOTA_EXCEEDED — Spotify's usage limit for Ritmo is used up. Try again later. Not retried. No writes."
+          },
           "504": {
             "description": "PROVIDER_TIMEOUT — the playlist took too long to load. Try again. No writes."
           }
@@ -1708,6 +1711,9 @@
               }
             }
           },
+          "429": {
+            "description": "PROVIDER_QUOTA_EXCEEDED — Spotify's usage limit for Ritmo is used up. Try again later. Not retried. No writes."
+          },
           "501": {
             "description": "Provider not yet integrated"
           },
@@ -1755,6 +1761,9 @@
           "409": {
             "description": "Not connected / reconnect required"
           },
+          "429": {
+            "description": "PROVIDER_QUOTA_EXCEEDED — Spotify's usage limit for Ritmo is used up. Try again later. Not retried. No writes."
+          },
           "501": {
             "description": "Provider not yet integrated"
           },
@@ -1801,6 +1810,9 @@
           },
           "409": {
             "description": "Not connected / reconnect required"
+          },
+          "429": {
+            "description": "PROVIDER_QUOTA_EXCEEDED — Spotify's usage limit for Ritmo is used up. Try again later. Not retried. No writes."
           },
           "501": {
             "description": "Provider saved playlists not integrated"
@@ -1853,6 +1865,9 @@
           },
           "409": {
             "description": "Not connected / reconnect required"
+          },
+          "429": {
+            "description": "PROVIDER_QUOTA_EXCEEDED — Spotify's usage limit for Ritmo is used up. Try again later. Not retried. No writes."
           },
           "501": {
             "description": "Provider saved playlists not integrated"
@@ -1915,6 +1930,9 @@
           },
           "422": {
             "description": "Playlist has too many distinct tracks to import at once"
+          },
+          "429": {
+            "description": "PROVIDER_QUOTA_EXCEEDED — Spotify's usage limit for Ritmo is used up. Try again later. Not retried. No writes."
           },
           "501": {
             "description": "Provider saved playlists not integrated"

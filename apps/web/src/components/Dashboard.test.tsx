@@ -2123,6 +2123,25 @@ describe('Music tab library', () => {
     expect(screen.getByRole('button', { name: 'Manage connections' })).toBeTruthy();
   });
 
+  it('says the Spotify limit is used up instead of Unavailable', async () => {
+    const quota = Object.assign(
+      new Error("Spotify's usage limit for Ritmo is used up. Try again later."),
+      { code: 'PROVIDER_QUOTA_EXCEEDED' },
+    );
+    vi.mocked(api.listClasses).mockResolvedValue(page([]));
+    vi.mocked(api.listConnections).mockResolvedValue([spotifyConnection()]);
+    vi.mocked(api.listPlaylists).mockRejectedValue(quota);
+    vi.mocked(api.listLikes).mockRejectedValue(quota);
+
+    renderDashboard();
+    fireEvent.click(await screen.findByRole('button', { name: 'Music' }));
+    fireEvent.click(await screen.findByRole('button', { name: 'Spotify, Limit reached' }));
+    expect(api.connectProvider).not.toHaveBeenCalled();
+    expect(await screen.findByText(/usage limit for Ritmo is used up/)).toBeTruthy();
+    expect(screen.queryByText('Playlists unavailable')).toBeNull();
+    expect(screen.queryByRole('button', { name: 'Spotify, Unavailable' })).toBeNull();
+  });
+
   it('starts SoundCloud OAuth from the Reconnect control', async () => {
     vi.mocked(api.listClasses).mockResolvedValue(page([]));
     vi.mocked(api.listConnections).mockResolvedValue([

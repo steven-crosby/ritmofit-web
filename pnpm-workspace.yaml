@@ -1,6 +1,7 @@
 packages:
   - 'packages/*'
   - 'apps/*'
+  - 'e2e'
 # esbuild (Vite) and workerd (wrangler dev) need their postinstall to fetch
 # platform binaries. sharp is pulled in transitively but unused.
 allowBuilds:
@@ -49,15 +50,17 @@ auditConfig:
     - GHSA-g7r4-m6w7-qqqr # esbuild low — Windows dev-server file read (<0.28.1)
     - GHSA-fx2h-pf6j-xcff # vite high — server.fs.deny bypass on Windows alt paths (<=6.4.2; via vitest)
     - GHSA-v6wh-96g9-6wx3 # vite moderate — launch-editor NTLMv2 disclosure on Windows (<=6.4.2; via vitest)
+# 1.7.14 shipped 2026-10-26 (GHSA-q84f-53jg-9ppm). pnpm's release-age
+# gate would otherwise refuse the bump; the 1.6.17 excludes are gone with that pin.
 minimumReleaseAgeExclude:
-  - '@better-auth/core@1.6.17'
-  - '@better-auth/drizzle-adapter@1.6.17'
-  - '@better-auth/kysely-adapter@1.6.17'
-  - '@better-auth/memory-adapter@1.6.17'
-  - '@better-auth/mongo-adapter@1.6.17'
-  - '@better-auth/prisma-adapter@1.6.17'
-  - '@better-auth/telemetry@1.6.17'
-  - better-auth@1.6.17
+  - '@better-auth/core@1.7.14'
+  - '@better-auth/drizzle-adapter@1.7.14'
+  - '@better-auth/kysely-adapter@1.7.14'
+  - '@better-auth/memory-adapter@1.7.14'
+  - '@better-auth/mongo-adapter@1.7.14'
+  - '@better-auth/prisma-adapter@1.7.14'
+  - '@better-auth/telemetry@1.7.14'
+  - better-auth@1.7.14
 onlyBuiltDependencies:
   - esbuild
   - workerd

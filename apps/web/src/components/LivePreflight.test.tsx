@@ -194,11 +194,30 @@ describe('actionable preflight results', () => {
     expect(screen.queryByText(/prompter-only/i)).toBeNull();
   });
 
+  it('states an all-pass class once: one status line, one Start class, no repeated passed', () => {
+    const two: PreflightResult = {
+      ok: true,
+      tracks: [ready.tracks[0]!, { ...ready.tracks[0]!, classTrackId: 'second', position: 1 }],
+      unplayable: [],
+    };
+    renderPreflight(two);
+    expect(screen.getByRole('heading', { name: '2 of 2 tracks ready' })).toBeTruthy();
+    expect(document.body.textContent?.match(/passed/gi) ?? []).toHaveLength(0);
+    expect(screen.getAllByText('Start class')).toHaveLength(1);
+    expect(screen.getByRole('button', { name: 'Start class' }).className).toContain(
+      'rf-btn-primary',
+    );
+    expect(screen.getByRole('button', { name: 'Run without music' })).toBeTruthy();
+    const details = screen.getByText('Track details').closest('details');
+    expect(details?.open).toBe(false);
+    expect(details?.querySelectorAll('li')).toHaveLength(2);
+  });
+
   it('keeps all-pass results inspectable without an empty needs-attention card', () => {
     renderPreflight(ready);
-    expect(screen.getByRole('heading', { name: 'Start class' })).toBeTruthy();
-    expect(screen.getByText('1 track checked · 1 passed · 0 need attention')).toBeTruthy();
-    expect(screen.getByText('1 track passed checks').closest('details')).not.toBeNull();
+    expect(screen.getByRole('heading', { name: '1 of 1 track ready' })).toBeTruthy();
+    expect(screen.queryByText(/tracks? checked/)).toBeNull();
+    expect(screen.getByText('Track details').closest('details')).not.toBeNull();
     expect(screen.queryByText('Needs attention before music can start')).toBeNull();
     expect(screen.queryByText('No tracks in this group.')).toBeNull();
   });

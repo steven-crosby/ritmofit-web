@@ -1,0 +1,8 @@
+[B-6] #yoga pressed: true | classes shown: Hiit ride
+   × B-6: the class list matches the pressed tag after out-of-order responses 222ms
+⎯⎯⎯⎯⎯⎯⎯ Failed Tests 1 ⎯⎯⎯⎯⎯⎯⎯
+AssertionError: expected [ 'Hiit ride' ] to deeply equal [ 'Yoga ride' ]
+     89|   console.info('[B-6] #yoga pressed:', pressed, '| classes shown:', sh…
+ Test Files  1 failed (1)
+      Tests  1 failed (1)
+exit=1

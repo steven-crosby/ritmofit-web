@@ -1,0 +1,54 @@
+# Reviewer C grep evidence @ 4e0b150 (leads only; see lane file for traces)
+
+$ rg -n "resetSpotifyPlayback|not_ready|\.disconnect\(" apps/web/src --glob "!*.test.*"
+apps/web/src/lib/spotify-playback.ts:39:  | 'not_ready'
+apps/web/src/lib/spotify-playback.ts:56:  addListener(event: 'ready' | 'not_ready', cb: (payload: { device_id: string }) => void): void;
+apps/web/src/lib/spotify-playback.ts:205:export function resetSpotifyPlayback(): void {
+apps/web/src/components/LiveMode.tsx:955:    return () => observer.disconnect();
+
+$ rg -n "unauthorize" apps/web/src packages (MusicKit sign-out/disconnect)
+apps/web/src/lib/playback/apple-music-adapter.test.ts:197:  it('signals onAwaitingAuthorization before prompting an unauthorized browser', async () => {
+(exit 0 — no production caller)
+
+$ rg -n "signOut" apps/web/src --glob "!*.test.*"
+apps/web/src/lib/api.ts:98:    // signOut goes through Better Auth (not this wrapper), so there's no recursion.
+apps/web/src/lib/api.ts:99:    if (res.status === 401) void authClient.signOut();
+apps/web/src/lib/api.ts:335:  if (res.status === 401) void authClient.signOut();
+apps/web/src/lib/session-guard.ts:42:export function signOutByUser() {
+apps/web/src/lib/session-guard.ts:44:  return authClient.signOut();
+apps/web/src/components/Dashboard.tsx:73:import { setLiveActive, signOutByUser } from '../lib/session-guard.js';
+apps/web/src/components/Dashboard.tsx:3260:                  onClick={() => void signOutByUser()}
+
+$ rg -n "expiresAt" apps/api/src/routes/provider-connections.ts (connection view exposes ACCESS-token expiry)
+160:    expiresAt: row.expiresAt,
+176:    expiresAt: number | null;
+190:        expiresAt: fields.expiresAt,
+243:        expiresAt: Date.now() + 3600_000,
+329:      expiresAt: tokens.expiresInSec ? Date.now() + tokens.expiresInSec * 1000 : null,
+404:      expiresAt: null,
+
+$ rg -n "catch \{" -A2 apps/api/src/lib/music/{spotify-playback-token,user-likes,user-playlists}.ts
+apps/api/src/lib/music/user-playlists.ts:429:  } catch {
+apps/api/src/lib/music/user-playlists.ts-430-    throw new HttpError(409, 'REAUTH_REQUIRED', reauth);
+apps/api/src/lib/music/user-playlists.ts-431-  }
+--
+apps/api/src/lib/music/spotify-playback-token.ts:97:  } catch {
+apps/api/src/lib/music/spotify-playback-token.ts-98-    throw new HttpError(409, 'REAUTH_REQUIRED', 'Reconnect your Spotify account.');
+apps/api/src/lib/music/spotify-playback-token.ts-99-  }
+--
+apps/api/src/lib/music/user-likes.ts:176:  } catch {
+apps/api/src/lib/music/user-likes.ts-177-    // A failed refresh means the grant is dead — surface a reconnect, not detail.
+apps/api/src/lib/music/user-likes.ts-178-    throw new HttpError(409, 'REAUTH_REQUIRED', `Reconnect your ${adapter.label} account.`);
+
+$ rg -n "treats an expired connection as not connected" -A10 apps/web/src/lib/playback/coordinator.test.ts
+118:  it('treats an expired connection as not connected', () => {
+119-    const entry = makeEntry({ providers: ['spotify'] });
+120-    const selection = selectProvider(
+121-      entry,
+122-      [{ provider: 'spotify', expiresAt: NOW - 1, scope: 'user-library-read streaming' }],
+123-      {
+124-        now: NOW,
+125-      },
+126-    );
+127-    expect(selection).toEqual({ status: 'unplayable', reason: 'no_connected_provider' });
+128-  });

@@ -1,0 +1,31 @@
+# Existing provider/playback suites at 4e0b150 (targeted, not full gate)
+$ apps/web vitest run playback/* spotify-playback musickit providers use-spotify-activation
+ ✓ src/lib/playback/soundcloud-adapter.test.ts (24 tests) 240ms
+ ✓ src/lib/use-spotify-activation.test.tsx (3 tests) 168ms
+
+ Test Files  11 passed (11)
+      Tests  262 passed (262)
+   Start at  14:25:23
+   Duration  2.40s (transform 619ms, setup 0ms, collect 1.95s, tests 591ms, environment 1.75s, prepare 737ms)
+
+exit=0
+$ apps/api vitest run src/lib/music
+ ✓ src/lib/music/import-playlist.test.ts (8 tests) 4ms
+ ✓ src/lib/music/playlist-preview.test.ts (4 tests) 8ms
+
+ Test Files  15 passed (15)
+      Tests  269 passed (269)
+   Start at  14:25:26
+   Duration  2.25s (transform 534ms, setup 0ms, collect 3.90s, tests 184ms, environment 3ms, prepare 756ms)
+
+exit=0
+$ packages/music vitest run
+ ✓ src/identity.test.ts (4 tests) 2ms
+ ✓ src/c-provider-repro.test.ts (2 tests) 5ms
+
+ Test Files  4 passed (4)
+      Tests  32 passed (32)
+   Start at  14:25:29
+   Duration  398ms (transform 206ms, setup 0ms, collect 403ms, tests 18ms, environment 0ms, prepare 216ms)
+
+exit=0

@@ -109,7 +109,8 @@ export default {
       },
       // Brand-front display tier (03-typography). text-display-xl/-lg carry their
       // line-height, weight, and tracking from the scale so a hero heading is one
-      // token-driven utility. Smaller scale steps stay on Tailwind's defaults.
+      // token-driven utility. `text-caption` is the 11px floor for meta and units.
+      // Other scale steps stay on Tailwind's defaults.
       fontSize: {
         // Scale tokens are unitless numbers, so calc() applies the unit (CSS won't
         // concatenate a suffix onto var()).
@@ -127,6 +128,14 @@ export default {
             lineHeight: 'calc(var(--rf-typography-scale-display-lg-line) * 1px)',
             fontWeight: 'var(--rf-typography-scale-display-lg-weight)',
             letterSpacing: 'calc(var(--rf-typography-scale-display-lg-tracking) * 1em)',
+          },
+        ],
+        caption: [
+          'calc(var(--rf-typography-scale-caption-size) * 1px)',
+          {
+            lineHeight: 'calc(var(--rf-typography-scale-caption-line) * 1px)',
+            fontWeight: 'var(--rf-typography-scale-caption-weight)',
+            letterSpacing: 'calc(var(--rf-typography-scale-caption-tracking) * 1em)',
           },
         ],
       },

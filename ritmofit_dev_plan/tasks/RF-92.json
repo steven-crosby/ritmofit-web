@@ -1,0 +1,26 @@
+{
+  "schemaVersion": 1,
+  "id": "RF-92",
+  "title": "Triage Spotify expiry finding C-1 and retry classification C-2",
+  "kind": "plan",
+  "status": "blocked",
+  "priority": "P1",
+  "parent": null,
+  "dependsOn": [],
+  "acceptance": [
+    "Reconfirm expired-grant and retry/reconnect classification on current main when Spotify work resumes.",
+    "Agree packet 3 and an actual browser/audio acceptance procedure before implementing provider changes."
+  ],
+  "nextAction": "Ask Steven to reopen Spotify work when prioritizing this finding.",
+  "blocker": "Spotify work remains tabled by the owner.",
+  "evidence": [
+    {
+      "kind": "document",
+      "ref": "docs/audits/codex-code-audit-2026-10-27-4e0b150/NEXT_SESSION.md",
+      "summary": "Audit packet 3 remains actionable but current product focus explicitly tables Spotify.",
+      "checkedOn": null
+    }
+  ],
+  "resolution": null,
+  "followUps": []
+}

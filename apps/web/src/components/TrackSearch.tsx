@@ -41,6 +41,7 @@ import {
   ApiError,
 } from '../lib/api.js';
 import { errMessage } from '../lib/errors.js';
+import { PROVIDER_QUOTA_CODE } from '../lib/music-library.js';
 import {
   PLAYLIST_LINK_PLACEHOLDER,
   playlistProviderFromUrl,
@@ -169,8 +170,10 @@ export function browseAnnouncement(input: {
  * matching preserves the same treatment for plain `Error` values and older clients.
  * These strings are the source of truth in the backend; see
  * `apps/api/src/lib/music/user-playlists.ts`:
- *   - 403 PROVIDER_FORBIDDEN → "<Provider> only allows opening playlists you own or
+ *   - 403 PROVIDER_FORBIDDEN → "<Provider> only lets Ritmo read playlists you own or
  *     collaborate on."                                    → 'forbidden' (retry can't help)
+ *   - 429 PROVIDER_QUOTA_EXCEEDED → "Spotify's usage limit for Ritmo is used up. Try
+ *     again later."                                       → 'limit' (retry now can't help)
  *   - 409 REAUTH_REQUIRED    → "Reconnect your <Provider> account."    ┐
  *   - 409 NOT_CONNECTED      → "Connect your <Provider> account first." ┘ → 'reauth'
  *   - anything else (e.g. 503 "<Provider> is not configured.")         → 'generic'
@@ -187,8 +190,9 @@ export function classifyProviderLibraryError(message: string, code?: string): 'r
 export function classifyPlaylistDrillInError(
   message: string,
   code?: string,
-): 'forbidden' | 'reauth' | 'generic' {
+): 'forbidden' | 'limit' | 'reauth' | 'generic' {
   if (code === 'PROVIDER_FORBIDDEN') return 'forbidden';
+  if (code === PROVIDER_QUOTA_CODE) return 'limit';
   if (/own or collaborate on/i.test(message)) return 'forbidden';
   return classifyProviderLibraryError(message, code);
 }
@@ -433,12 +437,13 @@ export function TrackSearch({
       } catch (e) {
         if (id === reqId.current) {
           const message = (e as Error).message;
-          const code = mode === 'likes' && e instanceof ApiError ? e.code : undefined;
+          const apiCode = e instanceof ApiError ? e.code : undefined;
+          const code = mode === 'likes' ? apiCode : undefined;
           const reauth =
             mode === 'likes' && classifyProviderLibraryError(message, code) === 'reauth';
           setResults(null);
           setError(
-            reauth
+            reauth || apiCode === PROVIDER_QUOTA_CODE
               ? errMessage(e)
               : mode === 'likes'
                 ? `Couldn’t load your ${providerLabel(provider)} likes.`
@@ -487,7 +492,9 @@ export function TrackSearch({
         const reauth = classifyProviderLibraryError(message, code) === 'reauth';
         setSavedPlaylists(null);
         setError(
-          reauth ? errMessage(e) : `Couldn’t load your ${providerLabel(provider)} playlists.`,
+          reauth || code === PROVIDER_QUOTA_CODE
+            ? errMessage(e)
+            : `Couldn’t load your ${providerLabel(provider)} playlists.`,
         );
         setLibraryErrorCode(code);
         if (reauth) {
@@ -821,14 +828,7 @@ export function TrackSearch({
           <span aria-hidden className="pt-0.5">
             ⊘
           </span>
-          <span className="flex min-w-0 flex-col gap-0.5">
-            <span>{message}</span>
-            {kind === 'forbidden' && (
-              <span className="text-text-tertiary">
-                Open one of your own playlists, or add it under Import Playlist URL instead.
-              </span>
-            )}
-          </span>
+          <span className="min-w-0">{message}</span>
         </span>
       </div>
     );

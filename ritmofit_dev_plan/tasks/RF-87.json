@@ -1,0 +1,28 @@
+{
+  "schemaVersion": 1,
+  "id": "RF-87",
+  "title": "Verify open-tab update recovery across a deployment",
+  "kind": "verification",
+  "status": "backlog",
+  "priority": "P2",
+  "parent": null,
+  "dependsOn": [
+    "RF-11"
+  ],
+  "acceptance": [
+    "At an owner-authorized future deployment, an already-open tab receives the update prompt, can reload after a page crash, and loads the new asset.",
+    "Record old/new asset identifiers and observed recovery; preserve Live safety behavior."
+  ],
+  "nextAction": "Arrange an attended check during a separately authorized deployment; do not deploy just to close this task.",
+  "blocker": null,
+  "evidence": [
+    {
+      "kind": "document",
+      "ref": "ritmofit_dev_plan/tasks/RF-11.json",
+      "summary": "RF-11 explicitly carried a deferred open-tab proof.",
+      "checkedOn": null
+    }
+  ],
+  "resolution": null,
+  "followUps": []
+}
