@@ -12,12 +12,19 @@ interface LoginProps {
   onBack?: () => void;
   /** Called after a successful email sign-up, before App flips to the dashboard. */
   onSignedUp?: () => void;
+  /** Replaces the sign-in description, e.g. to say the session ended. */
+  statusNotice?: string;
 }
 
 type LoginMode = 'signin' | 'signup' | 'forgot';
 type AppleAvailability = 'checking' | 'available' | 'unavailable' | 'unverified';
 
-export function Login({ initialMode = 'signin', onBack, onSignedUp }: LoginProps = {}) {
+export function Login({
+  initialMode = 'signin',
+  onBack,
+  onSignedUp,
+  statusNotice,
+}: LoginProps = {}) {
   const [mode, setMode] = useState<LoginMode>(initialMode);
   const [name, setName] = useState('');
   const [email, setEmail] = useState('');
@@ -200,7 +207,13 @@ export function Login({ initialMode = 'signin', onBack, onSignedUp }: LoginProps
             >
               {title}
             </h1>
-            <p className="mt-2 font-ui text-sm leading-6 text-text-secondary">{description}</p>
+            {statusNotice && mode === 'signin' ? (
+              <p role="status" className="mt-2 font-ui text-sm leading-6 text-text-primary">
+                {statusNotice}
+              </p>
+            ) : (
+              <p className="mt-2 font-ui text-sm leading-6 text-text-secondary">{description}</p>
+            )}
           </header>
 
           <form onSubmit={submit} className="flex flex-col gap-4" aria-busy={busy}>

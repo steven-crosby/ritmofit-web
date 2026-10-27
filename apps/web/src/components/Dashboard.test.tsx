@@ -13,6 +13,7 @@ import type {
 import { Dashboard } from './Dashboard.js';
 import * as api from '../lib/api.js';
 import { rememberConnectionReturn } from '../lib/connection-return.js';
+import { isLiveActive } from '../lib/session-guard.js';
 import type { ClassListPage } from '../lib/api.js';
 import {
   hasDismissedOnboardingVideo,
@@ -1529,18 +1530,8 @@ describe('Dashboard class library states', () => {
     expect(screen.queryByRole('button', { name: /^Retry readiness/ })).toBeNull();
   });
 
-  it('restores focus to the dashboard heading when Live Mode is exited', async () => {
-    vi.mocked(api.listClasses).mockResolvedValue(
-      page([
-        {
-          ...makeClass('Ready ride', 'owner', 'me'),
-          trackCount: 3,
-          totalDurationMs: 1800000,
-        },
-      ]),
-    );
-    vi.mocked(api.listConnections).mockResolvedValue([]);
-    vi.mocked(api.getRunPayload).mockResolvedValue({
+  function readyRidePayload(): RunPayload {
+    return {
       schemaVersion: 1,
       class: {
         id: '00000000-0000-4000-8000-000000000101',
@@ -1576,8 +1567,25 @@ describe('Dashboard class library states', () => {
         },
       ],
       sections: [],
-    } satisfies RunPayload);
+    };
+  }
 
+  function mockReadyRide() {
+    vi.mocked(api.listClasses).mockResolvedValue(
+      page([
+        {
+          ...makeClass('Ready ride', 'owner', 'me'),
+          trackCount: 3,
+          totalDurationMs: 1800000,
+        },
+      ]),
+    );
+    vi.mocked(api.listConnections).mockResolvedValue([]);
+    vi.mocked(api.getRunPayload).mockResolvedValue(readyRidePayload());
+  }
+
+  it('restores focus to the dashboard heading when Live Mode is exited', async () => {
+    mockReadyRide();
     renderDashboard();
 
     fireEvent.click(await screen.findByRole('button', { name: 'Live' }));
@@ -1586,6 +1594,28 @@ describe('Dashboard class library states', () => {
 
     const heading = await screen.findByRole('heading', { name: 'Ritmo Studio' });
     expect(document.activeElement).toBe(heading);
+  });
+
+  it('flags Live for the session guard and keeps Live mounted when the session is lost', async () => {
+    mockReadyRide();
+    const view = renderDashboard();
+    expect(isLiveActive()).toBe(false);
+
+    fireEvent.click(await screen.findByRole('button', { name: 'Live' }));
+    fireEvent.click(await screen.findByRole('button', { name: /^Preflight / }));
+    const exit = await screen.findByRole('button', { name: 'Exit' });
+    expect(isLiveActive()).toBe(true);
+    expect(screen.queryByText('Signed out. Finish the class, then sign in.')).toBeNull();
+
+    view.rerender(<Dashboard userId="me" userName="Tester" sessionLost />);
+    expect(
+      screen.getByText('Signed out. Finish the class, then sign in.').getAttribute('role'),
+    ).toBe('status');
+    expect(screen.getByRole('button', { name: 'Exit' })).toBe(exit);
+
+    fireEvent.click(exit);
+    await screen.findByRole('heading', { name: 'Ritmo Studio' });
+    expect(isLiveActive()).toBe(false);
   });
 
   it('browses a connected source from the Music workspace sidebar', async () => {
