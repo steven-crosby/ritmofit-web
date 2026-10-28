@@ -1,0 +1,28 @@
+{
+  "schemaVersion": 1,
+  "id": "RF-106",
+  "title": "Audit repro scripts and docs in the 2026-10-28 audit package are portable and clean up after themselves",
+  "kind": "task",
+  "status": "backlog",
+  "priority": "P3",
+  "parent": null,
+  "dependsOn": [],
+  "acceptance": [
+    "repro/d1-tooling-deploy-badsha.sh resolves its worktree argument to an absolute path before changing directory, so a relative path works.",
+    "repro/d1-tooling-deploy-selfcheck-mutation.sh removes scripts/deploy.sh.mut and its temp dir on any exit (trap), so an interrupted run leaves the worktree clean.",
+    "repro/lead-cm02-unbound-eme-chromium.cjs uses an ephemeral port and closes the browser and server in a finally block.",
+    "The audit package's lane briefs, lane files, verification.md and e2e-env-patch.diff use repo-relative or placeholder paths instead of /home/user, /tmp/claude-0 and /opt/pw-browsers container paths, per AGENTS.md's portability rule."
+  ],
+  "nextAction": "One docs PR editing files under docs/audits/claude-code-audit-2026-10-28-4c344e2/ only; rerun each changed repro once in a disposable worktree.",
+  "blocker": null,
+  "evidence": [
+    {
+      "kind": "pr",
+      "ref": "https://github.com/steven-crosby/ritmofit-web/pull/644",
+      "summary": "Final review of #644 on a32bdd7: four non-significant findings in archived repro scripts and docs (relative-path cp, no cleanup trap, fixed port, hardcoded container paths). Logged 2026-10-28 under the significance rule.",
+      "checkedOn": "2026-10-28"
+    }
+  ],
+  "resolution": null,
+  "followUps": []
+}
