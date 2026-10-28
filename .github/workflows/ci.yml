@@ -40,18 +40,11 @@ jobs:
         run: pnpm install --frozen-lockfile
 
       # Agents may merge on green, so owner-gated paths (migrations, auth, provider/playback,
-      # CI/deploy, agent rules) fail here until the owner adds `owner-approved`. Its own tests
-      # run first — a checker nobody has watched fail is not a gate. Runs early to fail fast.
+      # CI/deploy, agent rules) fail the job until the owner adds `owner-approved`. Its own
+      # tests run first — a checker nobody has watched fail is not a gate. The gate itself
+      # runs last, so every other check still reports for the owner's review.
       - name: Owner gate self-test
         run: pnpm owner-gate:test
-
-      - name: Owner gate (owner-gated paths need owner-approved)
-        if: github.event_name == 'pull_request'
-        env:
-          GH_TOKEN: ${{ github.token }}
-          OWNER_GATE_LABELS: ${{ toJSON(github.event.pull_request.labels.*.name) }}
-          PR_NUMBER: ${{ github.event.pull_request.number }}
-        run: gh pr diff "$PR_NUMBER" --repo "$GITHUB_REPOSITORY" --name-only | node scripts/owner-gate.mjs
 
       # Product changes (apps/, packages/, e2e/) must change an RF record that cites this PR, so
       # every merge is traceable and a task reaches Done inside its own work PR.
@@ -161,3 +154,12 @@ jobs:
       # are documented in REVIEW.md. Any NEW advisory fails the build.
       - name: Dependency audit (prod)
         run: pnpm audit:ci
+
+      # Last on purpose: an owner-gated PR still shows every other check's result.
+      - name: Owner gate (owner-gated paths need owner-approved)
+        if: ${{ !cancelled() && github.event_name == 'pull_request' }}
+        env:
+          GH_TOKEN: ${{ github.token }}
+          OWNER_GATE_LABELS: ${{ toJSON(github.event.pull_request.labels.*.name) }}
+          PR_NUMBER: ${{ github.event.pull_request.number }}
+        run: gh pr diff "$PR_NUMBER" --repo "$GITHUB_REPOSITORY" --name-only | node scripts/owner-gate.mjs
