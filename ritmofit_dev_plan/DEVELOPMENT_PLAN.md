@@ -14,12 +14,16 @@
 
 <!-- Codex, 2026-10-27: Reconciled failed iPhone acceptance and routed actionable state to RF records. -->
 <!-- Claude Code, 2026-10-28: Recorded the owner reopening Spotify and split audit intake sources. -->
+<!-- Claude Code, 2026-10-28: Round 20261028a close: RF-107 and RF-90 merged, not deployed. -->
 
 **Current actionable state:** [RF board](./tasks.md), backed by canonical [task records](./tasks/README.md).
 [RF-29](./tasks/RF-29.json) remains blocked: the latest recorded iPhone Safari Apple Music attempt
-failed with the bare banner and a `0:00` clock. The next owner retry waits for RF-107 to merge and
-deploy; see RF-29's next action, which supersedes the retry in the
-[dated handoff](./handoffs/2026-10-27-iphone-fairplay.md). [RF-80](./tasks/RF-80.json) is blocked on
+failed with the bare banner and a `0:00` clock. RF-107 merged on 2026-10-28 as
+[#649](https://github.com/steven-crosby/ritmofit-web/pull/649) (`9166826`) and is **not deployed**;
+the next owner retry waits for that deploy. See RF-29's next action, which supersedes the retry in
+the [dated handoff](./handoffs/2026-10-27-iphone-fairplay.md). RF-90 (Builder saves keep stored
+times) merged the same day as [#650](https://github.com/steven-crosby/ritmofit-web/pull/650)
+(`492e181`), also not deployed. [RF-80](./tasks/RF-80.json) is blocked on
 recovering its original plan into git; preflight implementation is not approved.
 [RF-90–94 audit intake](./tasks.md) captures proposed remediation, not implementation authority.
 The 2026-10-28 audit intake adds RF-107–117: RF-107–114 and RF-117 come from the Claude audit, and

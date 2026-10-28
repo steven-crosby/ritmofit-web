@@ -12,7 +12,7 @@ owner's queue: any agent may execute a Ready task. Publishing follows AGENTS.md 
 Evidence marked **recorded** is a carried-forward claim, not fresh verification.
 A checked PR proves its GitHub state, not product acceptance or production behavior.
 
-118 tasks. backlog: 24 · ready: 0 · in_progress: 0 · blocked: 2 · review: 7 · done: 85 · cancelled: 0.
+119 tasks. backlog: 24 · ready: 1 · in_progress: 0 · blocked: 2 · review: 7 · done: 85 · cancelled: 0.
 
 ## In progress
 
@@ -43,7 +43,7 @@ A checked PR proves its GitHub state, not product acceptance or production behav
 
 | Task | Priority / kind | Relationships | Next action / resolution | Evidence |
 | --- | --- | --- | --- | --- |
-| — | — | — | — | — |
+| [RF-100](tasks/RF-100.json) Label changes rerun only the PR gates, not the full CI job | P3 / task | needs RF-98 | Owner set Ready on 2026-10-28. Design a gate-only path for labeled/unlabeled events (separate job or workflow) that keeps the required check name meaningful, so a label edit re-evaluates only the owner gate. Owner-gated: the change edits .github/workflows/ci.yml. | checked 2026-10-27; checked 2026-10-28 |
 
 ## Backlog
 
@@ -51,10 +51,9 @@ A checked PR proves its GitHub state, not product acceptance or production behav
 | --- | --- | --- | --- | --- |
 | [RF-92](tasks/RF-92.json) Triage Spotify expiry finding C-1 and retry classification C-2 | P1 / plan | — | Spotify reopened by the owner on 2026-10-28. Await owner Ready; Apple work comes first until the Apple Music subscription ends around 2026-11-27. Resume risk: the Spotify developer app rejects the connected account ("The user is not registered for this application"), so Web API calls return 403. | recorded; checked 2026-10-28 |
 | [RF-87](tasks/RF-87.json) Verify open-tab update recovery across a deployment | P2 / verification | needs RF-11 | Arrange an attended check during a separately authorized deployment; do not deploy just to close this task. | recorded |
-| [RF-108](tasks/RF-108.json) Scrubbing or pausing Live during a track start keeps music playing | P2 / task | needs RF-107 | Parked from the owner's Ready queue on 2026-10-28 because RF-107 is not Done yet (Ready requires prerequisites Done). The owner re-promotes it to Ready when RF-107's PR merges. Then: Lane A's second PR, a bounded settle wait in apps/web/src/lib/playback/. The Spotify adapter half is in scope now that Spotify is reopened (owner, 2026-10-28). Owner-gated; device check owed. | recorded; checked 2026-10-28 |
+| [RF-108](tasks/RF-108.json) Scrubbing or pausing Live during a track start keeps music playing | P2 / task | needs RF-107 | Parked from the owner's Ready queue on 2026-10-28 because RF-107 is not Done yet (Ready requires prerequisites Done). The owner re-promotes it to Ready when RF-107's PR merges. Then: Lane A's second PR, a bounded settle wait in apps/web/src/lib/playback/. The Spotify adapter half is in scope now that Spotify is reopened (owner, 2026-10-28). Owner-gated; device check owed. RF-107 merged as #649 (9166826); this work rebases over its apple-music-adapter.ts change. Fold in RF-121's held-error attempt token when reworking that file. | recorded; checked 2026-10-28 |
 | [RF-115](tasks/RF-115.json) Import attaches the recording the instructor asked for | P2 / task | — | Await owner Ready. C-23 and C-26 may ride along if they stay in attachProviderId and importTrackFromCandidate. Do not mix with RF-92. Split out of RF-94 at intake. Owner-gated paths: the PR needs owner-approved. | recorded |
 | [RF-116](tasks/RF-116.json) A password reset signs out old sessions, and Disconnect drops provider logins | P2 / task | — | Await owner Ready. Split out of RF-94 at intake. Owner-gated paths: the PR needs owner-approved. | recorded |
-| [RF-100](tasks/RF-100.json) Label changes rerun only the PR gates, not the full CI job | P3 / task | needs RF-98 | Owner decides whether this is worth doing; then design a gate-only path (separate job or workflow on labeled/unlabeled) that keeps the required check name meaningful. | checked 2026-10-27 |
 | [RF-101](tasks/RF-101.json) Owner-gate route authz call sites and CI-config files | P3 / task | needs RF-98 | Owner decides whether to gate route and CI-config files, given every merge already needs per-PR permission. | checked 2026-10-27; recorded |
 | [RF-102](tasks/RF-102.json) Owner approval binds only to a commit the owner actually saw | P3 / task | needs RF-98 | Owner decides whether to harden further (for example, bind to the reviewed SHA named in the approval) given per-PR merge permission is the backstop. | checked 2026-10-27 |
 | [RF-103](tasks/RF-103.json) Task claims stay visible from claim to merge | P3 / task | needs RF-98 | Design a claim signal that survives the draft-to-ready transition (for example, any open PR whose head changes the task record) and update start-session and delegate-task. | checked 2026-10-27 |
@@ -69,8 +68,9 @@ A checked PR proves its GitHub state, not product acceptance or production behav
 | [RF-114](tasks/RF-114.json) Parallel library loads never show Reconnect for a healthy provider | P3 / task | — | Investigate SoundCloud refresh-token reuse before any code. Files if confirmed: apps/api/src/lib/music/ token refresh. Owner-gated paths: the PR needs owner-approved. | recorded |
 | [RF-117](tasks/RF-117.json) Disposition the 2026-10-28 audit items that are not fix packets | P3 / plan | — | Owner reviews the proposed dispositions; this record authorizes no implementation. | recorded |
 | [RF-118](tasks/RF-118.json) The 2026-10-28 audit intake records route every disposition and keep historical notes intact | P3 / task | — | One docs-only PR editing RF-92, RF-117 (or a new record for AUD-017) and DEVELOPMENT_PLAN.md; run pnpm tasks:render and pnpm tasks:check. | checked 2026-10-28 |
-| [RF-119](tasks/RF-119.json) Track inspector re-seeds untouched clip start and downbeat when the stored value changes | P3 / task | — | Confirm whether any surface besides the inspector can change clipStartMs or beatAnchorMs while the inspector is open; if one can, apply RF-90's seed-and-omit pattern (Dashboard.tsx TrackInspector, startAtFieldValue / startAtSeed) to those two fields with a fail-first test. If none can, cancel with that finding. | checked 2026-10-28 |
+| [RF-119](tasks/RF-119.json) Track inspector re-seeds untouched clip start and downbeat when the stored value changes | P3 / task | — | Confirm whether any surface besides the inspector can change clipStartMs or beatAnchorMs while the inspector is open; if one can, apply RF-90's value-based re-seed-and-omit rule (Dashboard.tsx TrackInspector, startAtFieldValue / startAtStoredMs, with the value-based rule from #650) to those two fields with a fail-first test. If none can, cancel with that finding. | checked 2026-10-28 |
 | [RF-120](tasks/RF-120.json) Builder time fields: one untouched-field rule and cheaper choreography sync | P3 / task | — | One web PR. Start with a fail-first test for the near-end validation case, then extract the shared helper and reduce the double reload. Keep RF-90's regression tests green. RF-119 covers the remaining inspector fields separately. | checked 2026-10-28 |
+| [RF-121](tasks/RF-121.json) Apple Music held-error and probe state are hardened after RF-107 | P3 / task | — | Do with or just before RF-108, which reworks apple-music-adapter.ts. Owner-gated (playback code). | checked 2026-10-28 |
 | [RF-73](tasks/RF-73.json) Classes buttons fail WCAG 2.5.3 label in name | untriaged / task | — | Reproduce affected controls, propose the smallest label-in-name correction, then seek implementation approval. | recorded |
 | [RF-74](tasks/RF-74.json) Spotify playlist dialog offers Try again where retry cannot help | untriaged / task | — | Review the error/action mapping. Spotify reopened by the owner on 2026-10-28; Apple work comes first until about 2026-11-27. Resume risk: the Spotify developer app rejects the connected account ("The user is not registered for this application"), so Web API calls return 403. | recorded; checked 2026-10-28 |
 
