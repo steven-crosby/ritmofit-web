@@ -492,3 +492,23 @@ describe('MovesSection — untouched anchors survive an edit', () => {
     expect(vi.mocked(api.updatePlacedMove).mock.calls[0]![1].anchorMs).toBe(10781);
   });
 });
+
+describe('MovesSection — reload when the run payload changes (RF-90, B-2)', () => {
+  it('reloads its placements when syncKey changes, not on the first key', async () => {
+    mockEmptyLibrary();
+    vi.mocked(api.listPlacedMoves).mockResolvedValue([
+      { ...placedMove('pm-1', 'Sprint'), anchorMs: 10000 },
+    ]);
+    const { rerender } = render(<MovesSection classTrackId="ct-1" durationMs={240000} />);
+    await screen.findByRole('button', { name: 'Edit move Sprint' });
+    rerender(<MovesSection classTrackId="ct-1" durationMs={240000} syncKey="a" />);
+    expect(api.listPlacedMoves).toHaveBeenCalledTimes(1);
+
+    vi.mocked(api.listPlacedMoves).mockResolvedValue([
+      { ...placedMove('pm-1', 'Sprint'), anchorMs: 11000 },
+    ]);
+    rerender(<MovesSection classTrackId="ct-1" durationMs={240000} syncKey="b" />);
+    await waitFor(() => expect(api.listPlacedMoves).toHaveBeenCalledTimes(2));
+    expect(await screen.findByText('0:11')).toBeTruthy();
+  });
+});

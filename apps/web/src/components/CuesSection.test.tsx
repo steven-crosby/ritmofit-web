@@ -621,3 +621,18 @@ describe('CuesSection — untouched anchors survive an edit', () => {
     expect(vi.mocked(api.updateCue).mock.calls[0]![1].anchorMs).toBe(10781);
   });
 });
+
+describe('CuesSection — reload when the run payload changes (RF-90, B-2)', () => {
+  it('reloads its cues when syncKey changes, not on the first key', async () => {
+    vi.mocked(api.listCues).mockResolvedValue([cue('cue-1', 'Climb', { anchorMs: 10000 })]);
+    const { rerender } = render(<CuesSection classTrackId="ct-1" durationMs={240000} />);
+    await screen.findByRole('button', { name: 'Edit cue Climb' });
+    rerender(<CuesSection classTrackId="ct-1" durationMs={240000} syncKey="a" />);
+    expect(api.listCues).toHaveBeenCalledTimes(1);
+
+    vi.mocked(api.listCues).mockResolvedValue([cue('cue-1', 'Climb', { anchorMs: 11000 })]);
+    rerender(<CuesSection classTrackId="ct-1" durationMs={240000} syncKey="b" />);
+    await waitFor(() => expect(api.listCues).toHaveBeenCalledTimes(2));
+    expect(await screen.findByText('0:11')).toBeTruthy();
+  });
+});

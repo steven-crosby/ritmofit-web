@@ -10,7 +10,14 @@
  */
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import { act, cleanup, fireEvent, render, screen, waitFor, within } from '@testing-library/react';
-import type { ClassListItem, ClassTrack, Cue, RunPayload } from '@ritmofit/shared';
+import type {
+  ClassListItem,
+  ClassTrack,
+  Cue,
+  RunPayload,
+  UpdateClassTrack,
+  UpdateCue,
+} from '@ritmofit/shared';
 import { Dashboard } from './Dashboard.js';
 import * as api from '../lib/api.js';
 
@@ -165,12 +172,14 @@ beforeEach(() => {
   vi.mocked(api.listSections).mockResolvedValue([]);
   vi.mocked(api.markClassOpened).mockResolvedValue(undefined as never);
   // The fake server applies every PATCH it receives, like the real one.
-  vi.mocked(api.updateClassTrack).mockImplementation(async (_id, body) => {
-    if (body.startOffsetMs !== undefined) state.startOffsetMs = body.startOffsetMs;
-    if (body.notes !== undefined) state.notes = body.notes;
-    return classTrack();
-  });
-  vi.mocked(api.updateCue).mockImplementation(async (_id, body) => {
+  vi.mocked(api.updateClassTrack).mockImplementation(
+    async (_id: string, body: UpdateClassTrack) => {
+      if (body.startOffsetMs != null) state.startOffsetMs = body.startOffsetMs;
+      if (body.notes !== undefined) state.notes = body.notes;
+      return classTrack();
+    },
+  );
+  vi.mocked(api.updateCue).mockImplementation(async (_id: string, body: UpdateCue) => {
     if (body.anchorMs !== undefined) state.cueAnchorMs = body.anchorMs;
     if (body.text !== undefined) state.cueText = body.text;
     return cue();

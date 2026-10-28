@@ -4687,6 +4687,8 @@ function ClassWorkspace({
               title={selectedEntry?.track.title ?? 'Track'}
               durationMs={selectedEntry?.track.durationMs ?? null}
               baseDurationMs={selectedEntry?.track.baseDurationMs ?? null}
+              cueSyncKey={selectedEntry ? JSON.stringify(selectedEntry.cues) : undefined}
+              moveSyncKey={selectedEntry ? JSON.stringify(selectedEntry.moves) : undefined}
               displayBpm={selectedEntry?.displayBpm ?? null}
               template={cls.template}
               canEdit={canEdit}
@@ -5564,6 +5566,11 @@ function LeanTrackRow({ track }: { track: ClassTrack }) {
   );
 }
 
+/** The inspector's "Start at" text for a stored start: blank means 0:00. */
+function startAtFieldValue(startOffsetMs: number | null): string {
+  return startOffsetMs ? formatDurationInput(startOffsetMs) : '';
+}
+
 /** Preserve stored precision on unrelated saves; typed anchors use the m:ss contract. */
 function parseInspectorAnchor(value: string, storedMs: number | null): number | null {
   const displayed = storedMs ? formatDurationInput(storedMs) : '';
@@ -5596,6 +5603,8 @@ function TrackInspector({
   onChoreographyChanged,
   onRemoved,
   onOpenSongsByMove,
+  cueSyncKey,
+  moveSyncKey,
 }: {
   track: ClassTrack;
   title: string;
@@ -5618,6 +5627,12 @@ function TrackInspector({
   onRemoved: () => void;
   /** Open the Songs-by-Move dialog from the Moves section. */
   onOpenSongsByMove: () => void;
+  /**
+   * This track's cues / moves as the run payload last saw them. A change (a
+   * timeline marker drag) reloads the inspector's lists (RF-90, Codex B-2).
+   */
+  cueSyncKey?: string;
+  moveSyncKey?: string;
 }) {
   const containerRef = useRef<HTMLElement>(null);
   useLayoutEffect(() => {
@@ -5641,9 +5656,10 @@ function TrackInspector({
     track.beatAnchorMs ? formatDurationInput(track.beatAnchorMs) : '',
   );
   // Free-placement start on the class timeline (m:ss). Blank = 0:00.
-  const [startAt, setStartAt] = useState(
-    track.startOffsetMs ? formatDurationInput(track.startOffsetMs) : '',
-  );
+  const [startAt, setStartAt] = useState(() => startAtFieldValue(track.startOffsetMs));
+  // The stored start the field was last seeded from. A timeline drag changes
+  // `track.startOffsetMs` underneath this keyed-by-id inspector (RF-90, Codex B-1).
+  const [startAtSeed, setStartAtSeed] = useState(() => startAtFieldValue(track.startOffsetMs));
   const [notes, setNotes] = useState(track.notes ?? '');
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -5695,6 +5711,19 @@ function TrackInspector({
     notes,
   });
   const [savedDraft, setSavedDraft] = useState(draft);
+  // Re-seed an untouched Start at when the stored start moves (adjusting state
+  // during render, so the field never shows the stale value). A typed value is
+  // the instructor's and is kept. The saved snapshot moves with it, so the
+  // re-seed does not read as an unsaved edit.
+  const nextStartAtSeed = startAtFieldValue(track.startOffsetMs);
+  if (nextStartAtSeed !== startAtSeed) {
+    setStartAtSeed(nextStartAtSeed);
+    if (startAt === startAtSeed) setStartAt(nextStartAtSeed);
+    const saved = JSON.parse(savedDraft) as { startAt?: string };
+    if (saved.startAt === startAtSeed) {
+      setSavedDraft(JSON.stringify({ ...saved, startAt: nextStartAtSeed }));
+    }
+  }
   const [justSaved, setJustSaved] = useState(false);
   const saveButtonRef = useRef<HTMLButtonElement>(null);
   const saveStatusRef = useRef<HTMLParagraphElement>(null);
@@ -5834,9 +5863,11 @@ function TrackInspector({
       );
       return;
     }
-    // Free-placement start (only sent in free mode; the server rejects it otherwise).
+    // Free-placement start: sent only in free mode (the server rejects it
+    // otherwise) and only when the instructor edited the field, so a notes save
+    // cannot revert a timeline drag (RF-90, Codex B-1).
     let startOffsetMs: number | undefined;
-    if (canPlaceFreely) {
+    if (canPlaceFreely && startAt !== startAtSeed) {
       const parsed = parseInspectorAnchor(startAt, track.startOffsetMs);
       if (parsed == null) {
         rejectField(
@@ -6245,6 +6276,7 @@ function TrackInspector({
                   : null
               }
               onChanged={onChoreographyChanged}
+              syncKey={cueSyncKey}
             />
             <MovesSection
               classTrackId={track.id}
@@ -6259,6 +6291,7 @@ function TrackInspector({
               }
               onChanged={onChoreographyChanged}
               onOpenSongsByMove={onOpenSongsByMove}
+              syncKey={moveSyncKey}
             />
           </Suspense>
         </>

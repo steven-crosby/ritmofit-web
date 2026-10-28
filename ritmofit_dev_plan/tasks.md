@@ -12,13 +12,13 @@ owner's queue: any agent may execute a Ready task. Publishing follows AGENTS.md 
 Evidence marked **recorded** is a carried-forward claim, not fresh verification.
 A checked PR proves its GitHub state, not product acceptance or production behavior.
 
-116 tasks. backlog: 22 · ready: 1 · in_progress: 1 · blocked: 2 · review: 7 · done: 83 · cancelled: 0.
+117 tasks. backlog: 23 · ready: 1 · in_progress: 0 · blocked: 2 · review: 7 · done: 84 · cancelled: 0.
 
 ## In progress
 
 | Task | Priority / kind | Relationships | Next action / resolution | Evidence |
 | --- | --- | --- | --- | --- |
-| [RF-90](tasks/RF-90.json) Builder saves keep stored cue, move and section times (B-3, B-2, B-1) | P1 / task | — | Draft PR on fix/rf-90-builder-save-times: ported regression tests are committed red; next commit adds the fix in ChoreographyEditor, SegmentBand and the Dashboard track inspector, plus the packages/shared classes.ts comment, then the full gate. | recorded; checked 2026-10-28 |
+| — | — | — | — | — |
 
 ## Blocked / waiting
 
@@ -69,6 +69,7 @@ A checked PR proves its GitHub state, not product acceptance or production behav
 | [RF-114](tasks/RF-114.json) Parallel library loads never show Reconnect for a healthy provider | P3 / task | — | Investigate SoundCloud refresh-token reuse before any code. Files if confirmed: apps/api/src/lib/music/ token refresh. Owner-gated paths: the PR needs owner-approved. | recorded |
 | [RF-117](tasks/RF-117.json) Disposition the 2026-10-28 audit items that are not fix packets | P3 / plan | — | Owner reviews the proposed dispositions; this record authorizes no implementation. | recorded |
 | [RF-118](tasks/RF-118.json) The 2026-10-28 audit intake records route every disposition and keep historical notes intact | P3 / task | — | One docs-only PR editing RF-92, RF-117 (or a new record for AUD-017) and DEVELOPMENT_PLAN.md; run pnpm tasks:render and pnpm tasks:check. | checked 2026-10-28 |
+| [RF-119](tasks/RF-119.json) Track inspector re-seeds untouched clip start and downbeat when the stored value changes | P3 / task | — | Confirm whether any surface besides the inspector can change clipStartMs or beatAnchorMs while the inspector is open; if one can, apply RF-90's seed-and-omit pattern (Dashboard.tsx TrackInspector, startAtFieldValue / startAtSeed) to those two fields with a fail-first test. If none can, cancel with that finding. | checked 2026-10-28 |
 | [RF-73](tasks/RF-73.json) Classes buttons fail WCAG 2.5.3 label in name | untriaged / task | — | Reproduce affected controls, propose the smallest label-in-name correction, then seek implementation approval. | recorded |
 | [RF-74](tasks/RF-74.json) Spotify playlist dialog offers Try again where retry cannot help | untriaged / task | — | Review the error/action mapping. Spotify reopened by the owner on 2026-10-28; Apple work comes first until about 2026-11-27. Resume risk: the Spotify developer app rejects the connected account ("The user is not registered for this application"), so Web API calls return 403. | recorded; checked 2026-10-28 |
 
@@ -76,6 +77,7 @@ A checked PR proves its GitHub state, not product acceptance or production behav
 
 | Task | Priority / kind | Relationships | Next action / resolution | Evidence |
 | --- | --- | --- | --- | --- |
+| [RF-90](tasks/RF-90.json) Builder saves keep stored cue, move and section times (B-3, B-2, B-1) | P1 / task | follow-ups RF-119 | Builder saves keep stored cue, move and section times: B-1, B-2 and B-3 are fixed in the web client, with the Codex repros ported as regression tests. The stale classes.ts patch comment is corrected. No API, schema or migration change. The clip-start/downbeat stale-seed shape is routed to RF-119. | recorded; checked 2026-10-28 |
 | [RF-98](tasks/RF-98.json) Delegated PRs merge on a thorough required CI gate with owner-gated exceptions | P1 / task | needs RF-97 | Standing delegation grant (revised by the owner on 2026-10-27 to ask before each final review and merge), owner gate and e2e smoke are in the required CI job. On GitHub Linux every check passed (first full pass: run 40610775187 on bfc2622; the final head's run is on #643), including the Playwright smoke at 1440 and 390 with a 10-screenshot artifact; the owner gate, run last, correctly failed this owner-gated PR pending owner-approved. Merging #643 publishes this; deployment is not involved. | checked 2026-10-27 |
 | [RF-99](tasks/RF-99.json) Session prompts, handoffs and the RF board agree for delegated CI/CD | P1 / documentation | needs RF-97 | Ready is the owner's queue, draft PRs claim tasks, the final state lands in the work PR, handoffs are restart notes, and merges count as recorded when an RF record cites them. RF-trace runs in the required job and passed on GitHub Linux (run 40610775187). Its first live pass on a product PR will come from the first product PR after merge. | checked 2026-10-27 |
 | [RF-88](tasks/RF-88.json) Review deploy guard regression coverage PR #596 | P2 / task | follow-ups RF-110 | Reviewed against current main on 2026-10-27: the self-check assertions are meaningful (ran under macOS bash 3.2; no temp files or worktrees left). Typecheck failed on current dependencies because the test redeclared ImportMeta.url; that block was removed in c906cf4. Squash-merged as d76fbd3. Tests and self-check only; deploy behavior unchanged. Amended 2026-10-28: the Claude audit (AUD-004) showed one self-check block cannot fail, so "meaningful" is wrong for that block; the fix is tracked in RF-110. | recorded; checked 2026-10-27 |
