@@ -1,0 +1,21 @@
+# ci.yml run: commands (normalized) vs scripts/deploy.sh run_gates() @4c344e2
+## in ci.yml, absent from deploy.sh run_gates:
+gh pr edit "$PR_NUMBER" --repo "$GITHUB_REPOSITORY" --remove-label owner-approved
+node "$RUNNER_TEMP/rf-trace.mjs" < "$RUNNER_TEMP/pr-files.txt"
+npm run verify
+pnpm --filter @ritmofit/e2e e2e
+pnpm --filter @ritmofit/e2e exec playwright install --with-deps chromium
+pnpm --filter @ritmofit/web theme-classes --selftest
+pnpm install --frozen-lockfile
+pnpm owner-gate:test
+pnpm rf-trace:test
+pnpm tasks:check
+pnpm tasks:test
+## in deploy.sh run_gates, absent from ci.yml single-line runs:
+(cd ritmofit_design_system && npm run verify)
+git diff --exit-code apps/api/openapi/openapi.json
+pnpm --filter @ritmofit/api openapi
+(ci.yml's openapi + git diff is a multi-line run block; it is present in both.)
+## runbook claim:
+The script runs the CI-equivalent gates (the same list as `.github/workflows/ci.yml`, including one
+web build), then builds the SPA again, then deploys. `pnpm --filter @ritmofit/api run deploy` is

@@ -1,0 +1,12 @@
+apps/api/test/password-reset.integration.test.ts
+apps/api/test/helpers.ts
+apps/api/test/apply-migrations.ts
+apps/api/src/lib/auth/index.ts
+apps/api/src/lib/authz/class.ts
+apps/api/src/middleware/session.ts
+apps/api/src/routes/provider/callback.ts
+apps/api/test/authz/nested.integration.test.ts
+.cursor/install.sh
+apps/api/Migrations/0099_case_variant.sql
+apps/api/src/DB/schema.ts
+agents.md

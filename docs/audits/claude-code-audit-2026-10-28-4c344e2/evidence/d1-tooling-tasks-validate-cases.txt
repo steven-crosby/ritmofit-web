@@ -1,0 +1,10 @@
+REJECT	dependsOn cycle	RF-1: dependsOn cycle; RF-1: completion cycle
+REJECT	parent cycle	RF-1: parent cycle; RF-1: completion cycle
+REJECT	child depends on parent (completion deadlock)	RF-1: completion cycle
+REJECT	missing dependency	RF-1: unknown reference RF-9
+REJECT	done with open child	RF-1: child RF-2 is still open
+REJECT	ready with cancelled dependency	RF-2: dependency RF-1 is not done
+ACCEPT	pr evidence whose ref is not a PR URL
+ACCEPT	checkedOn in the future
+REJECT	invalid calendar date	RF-1: invalid evidence entry
+create after RF-105 exists -> RF-106 ; after RF-105 is deleted -> RF-105

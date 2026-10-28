@@ -1,0 +1,8 @@
+PASS	product=true	unrelated already-done record gains a pr cite
+PASS	product=true	task set to blocked (counts as final)
+FAIL	product=true	record cites PR as kind=test only
+FAIL	product=true	record cites a different PR
+FAIL	product=true	record deleted in the PR
+FAIL	product=true	in_progress record
+PASS	product=false	design-system tokens only (ships CSS to web)
+PASS	product=false	lockfile / workspace overrides only (ships deps)
