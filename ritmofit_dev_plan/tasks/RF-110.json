@@ -1,0 +1,33 @@
+{
+  "schemaVersion": 1,
+  "id": "RF-110",
+  "title": "deploy.sh --self-check fails when its git-guard or worktree assertions break",
+  "kind": "task",
+  "status": "backlog",
+  "priority": "P3",
+  "parent": null,
+  "dependsOn": [],
+  "acceptance": [
+    "Every assertion in the self-check block (deploy.sh around lines 602-649 at 4c344e2) can fail: bare assertions get || exit 1, or the block moves into a function with checked returns.",
+    "The three mutants from repro/d1-tooling-deploy-selfcheck-mutation.sh, including deploying sha~1, fail both the self-check and the deploy-script.test.ts wrapper; the unmutated script passes.",
+    "deployment-runbook.md no longer says run_gates runs the same list as CI (AUD-020); it names what the deploy gate skips."
+  ],
+  "nextAction": "Await owner Ready. Files: scripts/deploy.sh, apps/api/src/lib/deploy-script.test.ts, ritmofit_dev_plan/deployment-runbook.md. Owner-gated paths: the PR needs owner-approved.",
+  "blocker": null,
+  "evidence": [
+    {
+      "kind": "document",
+      "ref": "docs/audits/claude-code-audit-2026-10-28-4c344e2/remediation-plan.md",
+      "summary": "Proposed as packet 4 of the 2026-10-28 Claude audit at 4c344e2. Audit-only proposal; not reverified at intake.",
+      "checkedOn": null
+    },
+    {
+      "kind": "document",
+      "ref": "docs/audits/claude-code-audit-2026-10-28-4c344e2/findings.md",
+      "summary": "AUD-004 (P3, confirmed by mutation): one self-check block cannot fail, so the RF-88 resolution that the assertions are meaningful is wrong for that block. AUD-020 rides along. Repro and evidence files are listed in the audit package.",
+      "checkedOn": null
+    }
+  ],
+  "resolution": null,
+  "followUps": []
+}

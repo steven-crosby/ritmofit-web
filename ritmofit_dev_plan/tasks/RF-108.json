@@ -1,0 +1,34 @@
+{
+  "schemaVersion": 1,
+  "id": "RF-108",
+  "title": "Scrubbing or pausing Live during a track start keeps music playing",
+  "kind": "task",
+  "status": "backlog",
+  "priority": "P2",
+  "parent": null,
+  "dependsOn": [],
+  "acceptance": [
+    "A seek, skip, or pause then resume during an in-flight Apple or Spotify start ends playing or buffering at the new position (lane repro CM-01 passes).",
+    "Each singleton adapter exposes a settle signal (for example whenIdle()); runtime.enterTrack awaits it, bounded to about 3 s, and re-checks the epoch before prepare.",
+    "A never-settling previous call ends in a bounded, clearly worded error; existing runtime supersession tests still pass, and one new runtime test uses a real adapter with a lease.",
+    "Owner device check: audible scrub, pause and resume on iPhone Safari (Apple) and desktop Chrome."
+  ],
+  "nextAction": "Await owner Ready. Files: apps/web/src/lib/playback/ (runtime, adapters). Better after RF-107 so device checks can share a session. Owner-gated paths: the PR needs owner-approved.",
+  "blocker": null,
+  "evidence": [
+    {
+      "kind": "document",
+      "ref": "docs/audits/claude-code-audit-2026-10-28-4c344e2/remediation-plan.md",
+      "summary": "Proposed as packet 2 of the 2026-10-28 Claude audit at 4c344e2. Audit-only proposal; not reverified at intake.",
+      "checkedOn": null
+    },
+    {
+      "kind": "document",
+      "ref": "docs/audits/claude-code-audit-2026-10-28-4c344e2/findings.md",
+      "summary": "AUD-001 (P2, confirmed with real adapters and runtime, fake SDKs): a Live seek, skip or pause then resume during a provider start puts the class in error and stops the clock. Repro and evidence files are listed in the audit package.",
+      "checkedOn": null
+    }
+  ],
+  "resolution": null,
+  "followUps": []
+}

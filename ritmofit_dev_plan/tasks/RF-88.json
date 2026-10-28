@@ -24,8 +24,16 @@
       "ref": "https://github.com/steven-crosby/ritmofit-web/pull/596",
       "summary": "Required CI passed on final head ab87320 (run 40600667157); merged with --match-head-commit as d76fbd3. Proves the merge and CI, not a deploy.",
       "checkedOn": "2026-10-27"
+    },
+    {
+      "kind": "document",
+      "ref": "docs/audits/claude-code-audit-2026-10-28-4c344e2/findings.md",
+      "summary": "AUD-004: the resolution \"self-check assertions are meaningful\" is wrong for one block; a mutant that deploys sha~1 passes. Correction tracked in RF-110; the merge record of #596 stands.",
+      "checkedOn": "2026-10-28"
     }
   ],
   "resolution": "Reviewed against current main on 2026-10-27: the self-check assertions are meaningful (ran under macOS bash 3.2; no temp files or worktrees left). Typecheck failed on current dependencies because the test redeclared ImportMeta.url; that block was removed in c906cf4. Squash-merged as d76fbd3. Tests and self-check only; deploy behavior unchanged.",
-  "followUps": []
+  "followUps": [
+    "RF-110"
+  ]
 }

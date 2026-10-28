@@ -1,0 +1,33 @@
+{
+  "schemaVersion": 1,
+  "id": "RF-114",
+  "title": "Parallel library loads never show Reconnect for a healthy provider",
+  "kind": "task",
+  "status": "backlog",
+  "priority": "P3",
+  "parent": null,
+  "dependsOn": [],
+  "acceptance": [
+    "First: SoundCloud's refresh-token reuse semantics are checked against its docs or a test account and recorded; if refresh tokens are reusable, this task is cancelled or downgraded with that evidence.",
+    "Otherwise: the token refresh is a conditional update keyed on the old refresh token; the loser re-reads the row and uses the winner's access token.",
+    "The CM-03 repro yields two successes and one provider refresh."
+  ],
+  "nextAction": "Investigate SoundCloud refresh-token reuse before any code. Files if confirmed: apps/api/src/lib/music/ token refresh. Owner-gated paths: the PR needs owner-approved.",
+  "blocker": null,
+  "evidence": [
+    {
+      "kind": "document",
+      "ref": "docs/audits/claude-code-audit-2026-10-28-4c344e2/remediation-plan.md",
+      "summary": "Proposed as packet 8 of the 2026-10-28 Claude audit at 4c344e2. Audit-only proposal; not reverified at intake.",
+      "checkedOn": null
+    },
+    {
+      "kind": "document",
+      "ref": "docs/audits/claude-code-audit-2026-10-28-4c344e2/findings.md",
+      "summary": "AUD-010 (P3, confirmed logic; promotes Codex C-16): parallel likes and playlists loads refresh one token twice inside the 60 s skew window. Repro and evidence files are listed in the audit package.",
+      "checkedOn": null
+    }
+  ],
+  "resolution": null,
+  "followUps": []
+}

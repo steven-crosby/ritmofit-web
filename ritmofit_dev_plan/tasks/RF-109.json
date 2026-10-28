@@ -1,0 +1,34 @@
+{
+  "schemaVersion": 1,
+  "id": "RF-109",
+  "title": "Worker logs carry no query parameters, tokens or emails on D1 failure",
+  "kind": "task",
+  "status": "backlog",
+  "priority": "P3",
+  "parent": null,
+  "dependsOn": [],
+  "acceptance": [
+    "A safeErrorSummary(err) helper logs only the name and cause message for errors carrying query/params; app.onError and describeOAuthConnectFailure use it.",
+    "Better Auth uses onAPIError: { throw: true } so the sanitized Hono handler owns logging, covering better-call's SERVER_ERROR line.",
+    "Repro d2-quality-q01-reset-token-log reports tokenInLog=false for message and stack while the status stays 5xx; the unit repro shows no ciphertext sentinel; auth integration tests stay green.",
+    "Hashed verification identifiers are optional and, if adopted, ship with a note that links already sent stop working."
+  ],
+  "nextAction": "Await owner Ready. Files: apps/api/src/index.ts, lib/auth.ts, provider routes. Owner-gated paths: the PR needs owner-approved.",
+  "blocker": null,
+  "evidence": [
+    {
+      "kind": "document",
+      "ref": "docs/audits/claude-code-audit-2026-10-28-4c344e2/remediation-plan.md",
+      "summary": "Proposed as packet 3 of the 2026-10-28 Claude audit at 4c344e2. Audit-only proposal; not reverified at intake.",
+      "checkedOn": null
+    },
+    {
+      "kind": "document",
+      "ref": "docs/audits/claude-code-audit-2026-10-28-4c344e2/findings.md",
+      "summary": "AUD-003 (P3, confirmed on the mounted Worker): a D1 failure logs every bound value, including a live reset token, emails, password hashes and provider-token ciphertext. Repro and evidence files are listed in the audit package.",
+      "checkedOn": null
+    }
+  ],
+  "resolution": null,
+  "followUps": []
+}

@@ -20,6 +20,8 @@ failed with the bare banner and a `0:00` clock. The next owner retry is in the
 [dated handoff](./handoffs/2026-10-27-iphone-fairplay.md). [RF-80](./tasks/RF-80.json) is blocked on
 recovering its original plan into git; preflight implementation is not approved.
 [RF-90–94 audit intake](./tasks.md) captures proposed remediation, not implementation authority.
+The 2026-10-28 Claude audit intake adds RF-107–117; [RF-107](./tasks/RF-107.json) (FairPlay probe
+bug) now gates a meaningful RF-29 retry.
 
 **Baseline checked by Codex, 2026-10-27:** main `f35d5d5` contains two docs-only commits after deployed
 `535e61a`. The Worker API reports `24cdedc9-8103-417c-a502-23b0846c0967` at 100%, message `535e61a`.

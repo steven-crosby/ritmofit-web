@@ -1,0 +1,33 @@
+{
+  "schemaVersion": 1,
+  "id": "RF-116",
+  "title": "A password reset signs out old sessions, and Disconnect drops provider logins",
+  "kind": "task",
+  "status": "backlog",
+  "priority": "P2",
+  "parent": null,
+  "dependsOn": [],
+  "acceptance": [
+    "A cookie issued before a password reset gets 401 afterwards, and a new sign-in works (A-8).",
+    "Explicit Sign out and Disconnect call the provider SDK disconnect or unauthorize (C-7, those actions only).",
+    "A 401 during Live still leaves Live mounted; providers are not torn down on that 401 (owner decision recorded in the audit, 17a91a9)."
+  ],
+  "nextAction": "Await owner Ready. Split out of RF-94 at intake. Owner-gated paths: the PR needs owner-approved.",
+  "blocker": null,
+  "evidence": [
+    {
+      "kind": "document",
+      "ref": "docs/audits/codex-code-audit-2026-10-27-4e0b150/NEXT_SESSION.md",
+      "summary": "Packet 6 of the 2026-10-27 Codex audit (A-8 P2, C-7). The 2026-10-28 Claude audit found A-8 still reproduces after better-auth 1.7.14.",
+      "checkedOn": null
+    },
+    {
+      "kind": "document",
+      "ref": "docs/audits/codex-code-audit-2026-10-27-4e0b150/findings.md",
+      "summary": "Ranked findings and challenge status from the 2026-10-27 Codex audit at 4e0b150.",
+      "checkedOn": null
+    }
+  ],
+  "resolution": null,
+  "followUps": []
+}

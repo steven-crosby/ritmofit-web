@@ -6,13 +6,15 @@
   "status": "blocked",
   "priority": "P1",
   "parent": null,
-  "dependsOn": [],
+  "dependsOn": [
+    "RF-107"
+  ],
   "acceptance": [
     "On the identified production bundle, Steven hears Apple Music in iPhone Safari Live, then verifies pause, resume, seek, and track advance.",
     "Record device/browser, bundle and Worker, audible outcome, and any exact failure. UI or SDK success alone does not pass."
   ],
-  "nextAction": "Leave Live, use Reload now, confirm assets/index-CClNobxY.js, and retry Break Stuff once per the current handoff. Do not implement or deploy another probe from this task.",
-  "blocker": "Latest recorded iPhone Safari attempt failed; waiting for a fresh owner device check of the loaded bundle.",
+  "nextAction": "Wait for RF-107 to merge and deploy, then do the owner iPhone Safari retry on the deployed bundle and record modern-access: <word>. A missing modern-access: word on the current bundle is explained by AUD-002, not only a stale bundle. Do not implement or deploy from this task.",
+  "blocker": "The next iPhone check cannot yield its modern-access: diagnostic until the FairPlay probe bug (AUD-002) is fixed in RF-107 and deployed; a fresh owner device check is still needed after that.",
   "evidence": [
     {
       "kind": "source",
@@ -25,6 +27,12 @@
       "ref": "ritmofit_dev_plan/handoffs/2026-10-27-iphone-fairplay.md",
       "summary": "Failure and owner retry boundary; not a fresh device verification in this migration.",
       "checkedOn": null
+    },
+    {
+      "kind": "document",
+      "ref": "docs/audits/claude-code-audit-2026-10-28-4c344e2/findings.md",
+      "summary": "AUD-002: the probe calls requestMediaKeySystemAccess unbound, so the previous next action rested on a false premise. Confirmed in real Chromium by the audit; not on iPhone.",
+      "checkedOn": "2026-10-28"
     }
   ],
   "resolution": null,
