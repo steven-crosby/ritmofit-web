@@ -6,12 +6,12 @@ Every run used a disposable worktree, `$SCRATCH/wt-a-api`, detached at 4c344e2, 
 `pnpm install --frozen-lockfile`. All runs hit local Miniflare D1 only: no production, no remote
 D1, no third-party APIs.
 
-- Repro (canonical): `repro/a-api-probes.integration.test.ts`. It has 6 tests. Each one asserts
+- Repro (canonical): `repro/a-api-probes.integration.test.ts`. It has 7 tests. Each one asserts
   the current defective behaviour, so a green run means the defect still reproduces.
 - Evidence: `evidence/a-api-probes-run.log`. Verification tokens are stripped.
 - Command (cwd `apps/api` of the worktree, after copying the repro into `test/`):
   `pnpm exec vitest run --config vitest.integration.config.ts test/a-api-probes.integration.test.ts`.
-  Result: 6/6 pass.
+  Result: 7/7 pass.
 
 ## Summary
 
@@ -22,6 +22,7 @@ D1, no third-party APIs.
 | A-03 | P3 | Confirmed | OpenAPI registry drift beyond A-11. `GET /classes/{id}/shares` is declared `Share[]` but returns `ShareView`. `POST /tracks/{id}/bpm-lookup` is declared `Track` but adds `bpmApplied`. Both component schemas set `additionalProperties:false`. `/health` is missing too, and the public OAuth callback inherits the global session requirement. |
 | A-04 | P3 (dormant cross-user) | Confirmed | Some values pass input validation and then fail output validation. An empty `displayName` on one publisher makes `GET /explore` 422 for every user. A non-URL `image` set through Better Auth's `/update-user` makes every `/api/v1` call of that user 422. |
 | A-05 | P3 (extends D-1) | Confirmed. Duplicate of d2-quality Q-02. | The legacy unpaginated `GET /classes` (no `limit`/`cursor`, documented as the iOS path) returns 500 once a library has more than 100 classes: `lib/authz.ts:288` `inArray` over all class ids. |
+| A-07 | P3 | Confirmed (lead from lane B) | `PATCH /tracks/:id` can grow a library duration so a free-mode placement overlaps the next track; the class-track route refuses the identical growth. |
 | A-06 | P3 | Confirmed | Unauthenticated sign-up is an account-existence oracle. A registered email gets 422 `USER_ALREADY_EXISTS_USE_ANOTHER_EMAIL`. An unknown email gets 403 `BETA_INVITE_REQUIRED`. This defeats the "no enumeration" property that the password-reset route and its test protect. |
 
 **Known-item status after the better-auth 1.7.14 upgrade (#637).** I re-ran the prior lane's repro
@@ -112,7 +113,7 @@ Depth: **Traced** = input → validation → gate → persistence → output rea
   - Output parses that throw `ZodError` include:
     - `lib/run-payload.ts:279` (`runPayloadSchema.parse`)
     - every `serialize*` in `lib/serialize.ts`, for example `serializeUser:208-217`, which
-      `requireSession` calls on every request (`middleware/auth.ts:25`)
+      `requireSession` calls on every request (`middleware/auth.ts:22`)
     - `routes/explore.ts:240`
 - **Trigger used:** the library track duration is unbounded. `createTrackSchema` /
   `updateTrackSchema` use `z.int().positive()` with no max (`packages/shared/src/entities/tracks.ts:18,30-41`).
@@ -175,11 +176,11 @@ Depth: **Traced** = input → validation → gate → persistence → output rea
 - **Confidence:** high. **Status:** confirmed.
 - **Refs:**
   - `updateUserProfileSchema` lets `displayName` be `""` (`packages/shared/src/entities/identity.ts:14-27`).
-  - `routes/explore.ts:244` uses `r.ownerName ?? '…'`, so an empty string is kept, and then
+  - `routes/explore.ts:67` uses `r.ownerName ?? '…'`, so an empty string is kept, and then
     `exploreClassSchema.ownerName` (`z.string().min(1)`, `classes.ts:210-213`) fails the whole
     page parse.
   - Better Auth's `/update-user` stores any string as `image`, but `userSchema.imageUrl` is
-    `z.url()`. `serializeUser` runs in `requireSession` (`middleware/auth.ts:25`).
+    `z.url()`. `serializeUser` runs in `requireSession` (`middleware/auth.ts:22`).
 - **Observed (test A-04):**
   - Publisher: `PATCH /auth/me {"displayName":""}` returns 200, then `POST /classes {visibility:'public'}`
     returns 201. Another user's `GET /explore` then returns `422 VALIDATION_ERROR`.
@@ -231,12 +232,20 @@ Depth: **Traced** = input → validation → gate → persistence → output rea
     verification sends stop adding a timing difference.
 - **Known:** new. A-3 is the authenticated variant. **Owner-gated:** yes (`lib/auth.ts`).
 
+### A-07 — Library duration PATCH bypasses the free-mode no-overlap invariant (lead from lane B)
+- **Category:** data integrity / timeline invariant. **Severity:** P3 — reachable only by a hand-written or iOS request (the SPA has no `PATCH /tracks` caller); owner-only on own data; in a dormant edit-share a collaborator's own track could do it to the owner's class. **Status:** confirmed.
+- **Refs:** `apps/api/src/routes/tracks.ts:98-156` guards only clip-start/cue/move reachability (`collapsedPlacement`, `unreachableCue`, `unreachableMove`) — no `wouldOverlap`. Contrast `routes/class-tracks.ts:516-532`, which rejects the same growth via `durationMsOverride`. `lib/run-payload.ts:180-189` free mode emits authored offsets with no overlap check.
+- **Observed (test A-07):** free class, two 180 s tracks back-to-back. `PATCH /class-tracks/:id {durationMsOverride:240000}` → 422 (overlap); `PATCH /tracks/:trackId {durationMs:240000}` → 200; run-payload then has track0 end 240000 > track1 start 180000.
+- **Impact:** the free timeline carries overlapping windows; what Live shows vs plays when two windows overlap is lane B/C territory (not verified here; would need a browser).
+- **Remediation:** in the PATCH /tracks guard add a `NOT EXISTS` over free-mode classes where any inherited placement's new end exceeds the next placement's start (or reject duration changes on tracks placed in free classes without override); also bound `durationMs` by `MAX_DURATION_MS` (A-02).
+- **Fix check:** test A-07 library PATCH → 422. **Known:** new (lane-B lead). **Owner-gated:** no (`routes/tracks.ts`). **Browser:** only to characterise Live behaviour.
+
 ## 3. Rejected leads (do not re-file)
 
 - **Cue re-parenting via PATCH.** `updateCueSchema` / `updateClassTrackMoveSchema` carry no
   `classTrackId`, and Zod strips unknown keys.
 - **Cover deletion of another class's R2 object.** `coverImageUrl` cannot be set by create or
-  PATCH (`classes.ts:89-91` comment, `.pick`). `classCoverObjectKey` only accepts Worker-minted
+  PATCH (`packages/shared/src/entities/classes.ts:94` comment + `.pick`). `classCoverObjectKey` only accepts Worker-minted
   paths.
 - **Ordered import with a foreign or colliding placement id.** The PK UNIQUE failure maps to 409
   and the batch rolls back. The receipt is bound to class + hash and is reachable only after edit
@@ -250,9 +259,6 @@ Depth: **Traced** = input → validation → gate → persistence → output rea
   the team UUID. Not filed separately.
 - **`POST /classes/:id/opened` by view/public users stamps the owner's `lastOpenedAt`.**
   Intentional and locked by #625 (`class-opened.integration.test.ts`).
-- **Library duration change can make free-mode placements overlap.** No `wouldOverlap` on
-  `PATCH /tracks`. There is no SPA caller and the change is owner-only. Folded into A-02's
-  remediation (bound the duration).
 - **Better Auth 1.7 rate-limit self-prune deleting our limiter rows.** It prunes at
   `now − 3600 s`. Our windows are ≤ 60 s.
 - **Better Auth 1.7 `incrementOne` on D1.** Exercised by the existing auth rate-limit

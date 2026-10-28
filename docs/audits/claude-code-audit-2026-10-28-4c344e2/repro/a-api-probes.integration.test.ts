@@ -220,4 +220,44 @@ describe('a-api probes', () => {
     console.log('[A-06] sign-up unknown email   ->', unknown.status, ub?.code);
     expect(known.status).not.toBe(unknown.status);
   });
+
+  it('A-07: PATCH /tracks durationMs grows a free-mode placement into its neighbour with no overlap check', async () => {
+    const u = await signUpUser();
+    const api = authed(u.cookie);
+    const cls = await json(
+      await api('/api/v1/classes', {
+        method: 'POST',
+        body: JSON.stringify({ title: 'Free', template: 'cycle', timelineMode: 'free' }),
+      }),
+    );
+    const add = async () =>
+      json(
+        await api(`/api/v1/classes/${cls.id}/tracks`, {
+          method: 'POST',
+          body: JSON.stringify({ track: { title: 'Song', artist: 'Artist', durationMs: 180_000 } }),
+        }),
+      );
+    const a = await add();
+    await add();
+    // The class-track route refuses the same growth via durationMsOverride (wouldOverlap).
+    const viaOverride = await api(`/api/v1/class-tracks/${a.id}`, {
+      method: 'PATCH',
+      body: JSON.stringify({ durationMsOverride: 240_000 }),
+    });
+    const viaLibrary = await api(`/api/v1/tracks/${a.trackId}`, {
+      method: 'PATCH',
+      body: JSON.stringify({ durationMs: 240_000 }),
+    });
+    const rp = await json(await api(`/api/v1/classes/${cls.id}/run-payload`));
+    const [t0, t1] = rp.tracks;
+    const end0 = t0.startOffsetMs + t0.track.durationMs;
+    console.log(
+      '[A-07] override PATCH ->', viaOverride.status,
+      '| library PATCH ->', viaLibrary.status,
+      '| track0 end =', end0, 'track1 start =', t1.startOffsetMs,
+    );
+    expect(viaOverride.status).toBe(422);
+    expect(viaLibrary.status).toBe(200);
+    expect(end0).toBeGreaterThan(t1.startOffsetMs);
+  });
 });
