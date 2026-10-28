@@ -63,9 +63,9 @@ from verified sources and state what orientation evidence is missing.
     separate claims; do not imply either occurred merely because implementation passed.
   - **For review:** a scoped plan/result awaits review; record the concrete review action.
   - **Blocked:** record the missing input/condition, who or what unblocks it and the restart action.
-  - **Backlog / back to Ready:** work is deliberately parked and no longer actively executing.
-    Follow the Ready rule in `AGENTS.md` › "Working Agreement": a task the owner had put in Ready, scope unchanged, goes
-    back to Ready; any other parked task goes to Backlog. Never promote a task on your own. Do not leave an idle session's task
+  - **Backlog:** work is deliberately parked and no longer actively executing. Park it in Backlog,
+    never Ready (`AGENTS.md` › "Working Agreement": only the owner moves a task into Ready). If it
+    came from the owner's Ready queue, say so in its next action so the owner can re-promote it. Do not leave an idle session's task
     In progress; retain that state only when a named session is actually continuing it.
   - **Cancelled:** explain the approved reject/supersede/duplicate disposition and link the replacement.
 - [ ] Give remaining acceptance or verification a follow-up RF ID when outside the completed task's

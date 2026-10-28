@@ -78,6 +78,12 @@
       "ref": "https://github.com/steven-crosby/ritmofit-web/pull/643",
       "summary": "Final review #6 (medium, significance rule): fixed start-session's 'status never grants execution' and named who may finish an approved PR whose agent has stopped; non-significant items added to RF-101 and RF-105.",
       "checkedOn": "2026-10-27"
+    },
+    {
+      "kind": "pr",
+      "ref": "https://github.com/steven-crosby/ritmofit-web/pull/643",
+      "summary": "Final review #7 (medium): fixed two authority contradictions: only the owner moves a task into Ready (agents may only move tasks out, parking to Backlog with a note), and a Lane never merges even an approved PR. Also fixed delegate-task's gated-PR wait, start-session's 'take' wording and the handoff line; latent items logged on RF-102 and RF-105.",
+      "checkedOn": "2026-10-27"
     }
   ],
   "resolution": "Ready is the owner's queue, draft PRs claim tasks, the final state lands in the work PR, handoffs are restart notes, and merges count as recorded when an RF record cites them. RF-trace runs in the required job and passed on GitHub Linux (run 40610775187). Its first live pass on a product PR will come from the first product PR after merge.",

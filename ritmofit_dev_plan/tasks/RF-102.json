@@ -11,7 +11,8 @@
   ],
   "acceptance": [
     "A push that races the owner's label cannot leave the owner-approval status on a commit the owner never saw.",
-    "Re-running an earlier labeled run after the owner removed owner-approved cannot turn the required check green."
+    "Re-running an earlier labeled run after the owner removed owner-approved cannot turn the required check green.",
+    "The gate evaluates only the newest owner-approval status on the head."
   ],
   "nextAction": "Owner decides whether to harden further (for example, bind to the reviewed SHA named in the approval) given per-PR merge permission is the backstop.",
   "blocker": null,
@@ -20,6 +21,12 @@
       "kind": "pr",
       "ref": "https://github.com/steven-crosby/ritmofit-web/pull/643",
       "summary": "Final review #4 of #643 (finding 6): the status lands on head.sha at label time, so a racing push can be bound; a rerun of an old labeled run reuses its payload. Non-blocking under the significance rule; logged 2026-10-27.",
+      "checkedOn": "2026-10-27"
+    },
+    {
+      "kind": "pr",
+      "ref": "https://github.com/steven-crosby/ritmofit-web/pull/643",
+      "summary": "Final review #7 of #643: the gate counts any historical owner-approval success on the head rather than the newest status for that context, so a later failure status could not revoke approval. Latent; logged 2026-10-27.",
       "checkedOn": "2026-10-27"
     }
   ],

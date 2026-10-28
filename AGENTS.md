@@ -122,11 +122,11 @@ its stated scope, including any RF task the agent creates for it: plan, then exe
 waiting. Stop and ask only when the work must grow beyond the brief or the brief leaves a product
 decision open.
 
-**Ready is the owner's queue.** Only the owner promotes a task to Ready, directly or by explicitly
-asking an agent to; an agent never promotes a task on its own. Tasks an agent creates start in
-Backlog. An agent parking a task the owner had put in Ready, with its scope unchanged, returns it to
-Ready: that restores the owner's choice and is not a promotion. Any other parked task goes to
-Backlog.
+**Ready is the owner's queue.** Only the owner moves a task into Ready, directly or by explicitly
+asking an agent to; an agent never sets Ready on its own, so every Ready task is the owner's choice.
+Agents may move a task out of Ready: by starting it, or by parking it in Backlog with a next action
+noting it came from the owner's Ready queue, so the owner can re-promote it. Tasks an agent creates
+start in Backlog.
 
 Follow "Session Workflow" below for orientation, wrap-up, and handoffs. Do not discard,
 overwrite, stash, or silently include existing worktree changes. Prefer small vertical slices: shared
@@ -151,7 +151,8 @@ outcomes plainly — including what was skipped, substituted, or failed.
 
 Every session — any tool, local or cloud — runs `agent-prompts/daily/start-session.md` →
 plan (owner confirms substantial work) → execute on a branch + PR → `agent-prompts/daily/close-session.md`.
-The durable output is `main` plus a handoff file; chat and tool memory are scratch.
+The durable output is `main` (RF records included), plus a handoff only when a successor needs restart
+context; chat and tool memory are scratch.
 
 - **Roles.** _Solo_: one session owns its PRs and, once each is green and the owner gives that PR's
   merge permission, runs the final review and squash-merges it under "Delegation And Merge Policy"
@@ -211,8 +212,9 @@ files whose items are done or routed.
 Then the agent **asks**: "PR #N is green on `<sha>` — may I run the final review and squash-merge?"
 In a live session it asks in chat. A background agent comments that question on the PR, adds the
 `ready-to-merge` label and stops. Permission is the owner saying so in a session, or the owner
-adding `owner-approved` to the PR. Once a PR has that permission, any session may finish it: run the
-final review below and merge, even though another session opened it. Agents never apply `owner-approved` on their own judgment; the one
+adding `owner-approved` to the PR. Once a PR has that permission, any Solo or Orchestrator session
+may finish it: run the final review below and merge, even though another session opened it. A Lane
+session never merges, even an approved PR. Agents never apply `owner-approved` on their own judgment; the one
 exception is the owner explicitly telling the agent in a session to apply it, which the agent records
 as a PR comment before applying it.
 
@@ -261,8 +263,9 @@ the gate to get a PR through.
 **Never granted:** deploys, remote D1 migrations, secrets, production data, repository settings or
 rulesets, applying `owner-approved` except on the owner's explicit in-session instruction, merging
 any PR without that PR's permission, force-pushing another session's branch, merging another
-session's PR except in the orchestrator's merge train, when relaying a subagent's ask, or when
-finishing a PR that already has the owner's permission, and branch deletion. Those keep their separate explicit permission.
+session's PR except in the orchestrator's merge train, when relaying a subagent's ask, or when a
+Solo or Orchestrator session finishes a PR that already has the owner's permission (a Lane never
+merges), and branch deletion. Those keep their separate explicit permission.
 
 **What CI proves:** the required job runs format, task, owner-gate and RF-trace checks, typecheck, lint,
 design-system verify, theme classes, unit and D1 integration tests, the web build with bundle budget,

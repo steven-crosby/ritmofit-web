@@ -73,7 +73,8 @@ Pick one before deep reads; every mode still ends with **one** recommended next 
      not a reason to install packages during orientation or fall back to an external board.
    - **Selection:** link the RF task for the objective and inspect its scope, acceptance,
      prerequisites, blocker, next action and evidence. With no objective, the **Ready** column is the
-     owner's queue: propose its highest-priority task that no open PR already claims. Reconcile live PRs and dated handoffs.
+     owner's queue: take its highest-priority task that no open PR already claims (a Ready task is
+     already the owner's confirmation; report which one you took). Reconcile live PRs and dated handoffs.
      Existing In progress work needs a deliberate resume/ownership reconciliation, not a second
      concurrent claim; an open draft PR whose head moves the task to In progress is a claim. If no
      task exists, propose creating one after approval; it starts in Backlog. Who may set Ready is
