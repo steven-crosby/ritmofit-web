@@ -65,7 +65,7 @@ until its claimed behavior is actually verified. Never date a copied claim as fr
 | State | Meaning / exit condition |
 | --- | --- |
 | Backlog | Captured; scope, priority or approval may still be missing. |
-| Ready | The owner's queue. Scope and acceptance are clear and prerequisites Done; the owner (or an agent at the owner's explicit request) set it, so any agent may execute it. An agent never promotes its own task. |
+| Ready | The owner's queue. Scope and acceptance are clear and prerequisites Done; any agent may execute it. Who may set Ready is defined once in `AGENTS.md` › "Working Agreement". |
 | In progress | A session is executing it, claimed by an open draft PR. State the session/branch and restart action. |
 | Blocked | Waiting for a device check, document, account, decision or other condition; state who/what unblocks it. |
 | For review | A plan, change or bounded result awaits review. This is not approval. |
@@ -82,7 +82,9 @@ product acceptance task open. Reopen a task by clearing its resolution and suppl
 **Status is not authorization.** Task records never replace Steven's permissions for commit, push,
 PR, merge, release, deploy, send, delete, or production access. The standing grant in `AGENTS.md` ›
 "Delegation And Merge Policy" is where commit, push and PR come from; merging also needs the owner's permission for that PR. Ready is the only status that
-grants anything (execution of that scope); a Ready label an agent set for itself grants nothing. Record the boundary in the next action.
+grants anything (execution of that scope); a delegate brief or a direct ask from the owner also
+authorizes the scope it names, including a task created for it. A Ready status an agent set on its
+own grants nothing. Record the boundary in the next action.
 
 ## Authority, sync and concurrent work
 
@@ -99,7 +101,8 @@ grants anything (execution of that scope); a Ready label an agent set for itself
   dependent work. Neither case makes an external view authoritative.
 - After scope approval, select/create the task, confirm prerequisites, and record In progress with
   the session/branch and restart action, then render, validate and open a draft PR as the visible
-  claim. Add its URL as `pr` evidence. New tasks start in Backlog; only the owner sets Ready.
+  claim. Add its URL as `pr` evidence. New tasks start in Backlog; Ready follows the rule in
+  `AGENTS.md` › "Working Agreement".
 - [Close-session](../../agent-prompts/daily/close-session.md) reconciles acceptance and remaining work,
   finishes evidence/handoff/docs edits and authorized retirements, then renders and validates the
   final records before any publication. A later file edit repeats final validation. The final state

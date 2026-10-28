@@ -66,6 +66,12 @@
       "ref": "https://github.com/steven-crosby/ritmofit-web/pull/643",
       "summary": "Final review #4 fixes: close-session Ready, deletion and gated-permission contradictions; CLAUDE.md limited to Claude mechanics; void step no longer blocks CI on failure; the policy defines a significant finding (code correctness or authority contradiction) and runs the final review at medium effort. Findings 6-9 logged as RF-101..RF-104.",
       "checkedOn": "2026-10-27"
+    },
+    {
+      "kind": "pr",
+      "ref": "https://github.com/steven-crosby/ritmofit-web/pull/643",
+      "summary": "Final review #5 (medium, significance rule): three authority contradictions fixed: one canonical Ready rule in AGENTS.md referenced by start/close-session and the tasks README; Never-granted list matches the merge train and subagent relay; brief wording no longer tells agents to set Ready. Non-significant items logged as RF-105.",
+      "checkedOn": "2026-10-27"
     }
   ],
   "resolution": "Ready is the owner's queue, draft PRs claim tasks, the final state lands in the work PR, handoffs are restart notes, and merges count as recorded when an RF record cites them. RF-trace runs in the required job and passed on GitHub Linux (run 40610775187). Its first live pass on a product PR will come from the first product PR after merge.",

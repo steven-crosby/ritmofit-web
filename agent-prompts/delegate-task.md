@@ -14,7 +14,7 @@
 
 ```text
 Task: <one observable outcome, e.g. "Live Mode shows the next cue's time on phone widths">
-RF: <RF-N (set it to Ready), or "create one">
+RF: <RF-N you put in Ready, or "create one">
 Done when: <1–3 checks a reviewer can see — test, screenshot, behavior>
 Out of scope: <anything the agent must not touch or decide>
 Questions: <"ask me" | "make a sensible call and flag it in the PR">

@@ -1,0 +1,29 @@
+{
+  "schemaVersion": 1,
+  "id": "RF-105",
+  "title": "CI gate steps stay robust and fast under failures and reopen",
+  "kind": "task",
+  "status": "backlog",
+  "priority": "P3",
+  "parent": null,
+  "dependsOn": [
+    "RF-98"
+  ],
+  "acceptance": [
+    "Reopening a PR with an unchanged head does not leave a green required check while owner-approved has just been removed.",
+    "A failing self-test or Install step yields a clear gate message instead of 'Cannot find module' from the final gate steps.",
+    "Playwright's browser download is cached across runs; the symlink-safe CLI guard has one tested implementation where the CI copy constraint allows."
+  ],
+  "nextAction": "Pick the cheapest fixes first (reopen handling, clear message when gate inputs are missing), then caching.",
+  "blocker": null,
+  "evidence": [
+    {
+      "kind": "pr",
+      "ref": "https://github.com/steven-crosby/ritmofit-web/pull/643",
+      "summary": "Final review #5 of #643: non-significant CI findings (reopen flip, early steps without !cancelled(), Playwright cache, duplicated guard). Logged 2026-10-27 under the significance rule.",
+      "checkedOn": "2026-10-27"
+    }
+  ],
+  "resolution": null,
+  "followUps": []
+}

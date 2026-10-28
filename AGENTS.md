@@ -118,10 +118,15 @@ owner confirmation. Substantial work includes features, architecture, schema/API
 design-system changes, infrastructure, deploys, and broad refactors. A useful plan names the goal, likely
 files, schema/migration/API impact, frontend impact, risks, open questions, and verification. A task the
 owner hands off (a delegate brief, a direct ask, or an RF task in **Ready**) is that confirmation for
-its stated scope: plan, then execute without waiting. Ready is the owner's queue: only the owner, or an
-agent at the owner's explicit request, moves a task to Ready. Tasks an agent creates start in Backlog,
-and an agent never promotes its own task. Stop and ask only when the work must grow
-beyond the brief or the brief leaves a product decision open.
+its stated scope, including any RF task the agent creates for it: plan, then execute without
+waiting. Stop and ask only when the work must grow beyond the brief or the brief leaves a product
+decision open.
+
+**Ready is the owner's queue.** Only the owner promotes a task to Ready, directly or by explicitly
+asking an agent to; an agent never promotes a task on its own. Tasks an agent creates start in
+Backlog. An agent parking a task the owner had put in Ready, with its scope unchanged, returns it to
+Ready: that restores the owner's choice and is not a promotion. Any other parked task goes to
+Backlog.
 
 Follow "Session Workflow" below for orientation, wrap-up, and handoffs. Do not discard,
 overwrite, stash, or silently include existing worktree changes. Prefer small vertical slices: shared
@@ -253,8 +258,10 @@ labeled run cancelled before it records the status leaves the approval uncounted
 the gate to get a PR through.
 
 **Never granted:** deploys, remote D1 migrations, secrets, production data, repository settings or
-rulesets, applying `owner-approved`, merging without that PR's permission, force-pushing or merging
-another session's branch, and branch deletion. Those keep their separate explicit permission.
+rulesets, applying `owner-approved` except on the owner's explicit in-session instruction, merging
+any PR without that PR's permission, force-pushing another session's branch, merging another
+session's PR except in the orchestrator's merge train or when relaying a subagent's ask, and branch
+deletion. Those keep their separate explicit permission.
 
 **What CI proves:** the required job runs format, task, owner-gate and RF-trace checks, typecheck, lint,
 design-system verify, theme classes, unit and D1 integration tests, the web build with bundle budget,

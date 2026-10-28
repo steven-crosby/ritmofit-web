@@ -76,8 +76,8 @@ Pick one before deep reads; every mode still ends with **one** recommended next 
      owner's queue: propose its highest-priority task that no open PR already claims. Reconcile live PRs and dated handoffs.
      Existing In progress work needs a deliberate resume/ownership reconciliation, not a second
      concurrent claim; an open draft PR whose head moves the task to In progress is a claim. If no
-     task exists, propose creating one after approval; it starts in Backlog, and only the owner
-     promotes it to Ready. Surface missing
+     task exists, propose creating one after approval; it starts in Backlog. Who may set Ready is
+     defined once in `AGENTS.md` › "Working Agreement". Surface missing
      plans and acceptance evidence instead of inventing them. Numbering is not priority, and a
      task status or copied approval never grants execution or publication authority.
    Do not edit during orientation.

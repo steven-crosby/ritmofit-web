@@ -63,9 +63,9 @@ from verified sources and state what orientation evidence is missing.
     separate claims; do not imply either occurred merely because implementation passed.
   - **For review:** a scoped plan/result awaits review; record the concrete review action.
   - **Blocked:** record the missing input/condition, who or what unblocks it and the restart action.
-  - **Backlog:** work is deliberately parked and no longer actively executing. Park it in Backlog,
-    never Ready, even if the owner had put it there: only the owner moves a task to Ready, the one
-    status that authorizes execution. Do not leave an idle session's task
+  - **Backlog / back to Ready:** work is deliberately parked and no longer actively executing.
+    Follow the Ready rule in `AGENTS.md` › "Working Agreement": a task the owner had put in Ready, scope unchanged, goes
+    back to Ready; any other parked task goes to Backlog. Never promote a task on your own. Do not leave an idle session's task
     In progress; retain that state only when a named session is actually continuing it.
   - **Cancelled:** explain the approved reject/supersede/duplicate disposition and link the replacement.
 - [ ] Give remaining acceptance or verification a follow-up RF ID when outside the completed task's
@@ -124,7 +124,8 @@ from verified sources and state what orientation evidence is missing.
   the PR, add `ready-to-merge` and stop. Owner-gated PRs also get `needs-owner` and the manual check
   left. Permission is the owner saying so in a session or adding `owner-approved`; an owner-gated PR
   needs the label itself, so a chat "yes" is enough only if the owner also tells you to apply it
-  (record that as a PR comment first). With permission, run the final review as `AGENTS.md` ›
+  (record that as a PR comment first). With permission (for an owner-gated PR, after the label's CI rerun is green on the same head), run
+  the final review as `AGENTS.md` ›
   "Delegation And Merge Policy" defines it. No significant findings: log the rest as RF tasks,
   squash-merge with `--match-head-commit <reviewed sha>` and remove `ready-to-merge`. Significant
   findings: do not merge; comment them, remove `ready-to-merge`, stop. Any later push voids the
