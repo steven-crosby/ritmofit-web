@@ -26,6 +26,17 @@ jobs:
     name: format · typecheck · lint · test · build · audit
     runs-on: ubuntu-latest
     steps:
+      # Approval covers the commits the owner saw, so a new push voids it. This runs first and
+      # needs no install, so a later failure cannot skip it. GITHUB_TOKEN edits do not trigger
+      # another run. Known gap: a label event that cancels this run before this step leaves the
+      # label in place; the owner's per-PR merge permission is the backstop.
+      - name: Void owner approval on new commits
+        if: github.event_name == 'pull_request' && github.event.action == 'synchronize' && contains(github.event.pull_request.labels.*.name, 'owner-approved')
+        env:
+          GH_TOKEN: ${{ github.token }}
+          PR_NUMBER: ${{ github.event.pull_request.number }}
+        run: gh pr edit "$PR_NUMBER" --repo "$GITHUB_REPOSITORY" --remove-label owner-approved
+
       - uses: actions/checkout@v4
 
       # pnpm/action-setup reads the version from the root package.json
@@ -50,15 +61,6 @@ jobs:
       - name: RF trace self-test
         run: pnpm rf-trace:test
 
-      # Approval covers the commits the owner saw. A new push voids it; GITHUB_TOKEN edits do
-      # not trigger another run.
-      - name: Void owner approval on new commits
-        if: github.event_name == 'pull_request' && github.event.action == 'synchronize' && contains(github.event.pull_request.labels.*.name, 'owner-approved')
-        env:
-          GH_TOKEN: ${{ github.token }}
-          PR_NUMBER: ${{ github.event.pull_request.number }}
-        run: gh pr edit "$PR_NUMBER" --repo "$GITHUB_REPOSITORY" --remove-label owner-approved
-
       # Changed files come from the PR files API, which lists a rename's old path too and handles
       # diffs too large for `gh pr diff`. The gates run main's copy of each checker when main
       # has one, so a PR cannot loosen the checker that judges it.
@@ -71,9 +73,16 @@ jobs:
         run: |
           set -euo pipefail
           gh api "repos/$GITHUB_REPOSITORY/pulls/$PR_NUMBER/files" --paginate \
-            --jq '.[] | .filename, (.previous_filename // empty)' | sort -u > "$RUNNER_TEMP/pr-files.txt"
-          test -s "$RUNNER_TEMP/pr-files.txt"
-          echo "$(wc -l < "$RUNNER_TEMP/pr-files.txt") changed paths (renames include the old path)"
+            --jq '.[] | [.filename, (.previous_filename // "")] | @tsv' > "$RUNNER_TEMP/pr-files.tsv"
+          # The files API stops at 3,000 files. Fail closed rather than gate a truncated list.
+          expected=$(gh api "repos/$GITHUB_REPOSITORY/pulls/$PR_NUMBER" --jq .changed_files)
+          listed=$(grep -c . "$RUNNER_TEMP/pr-files.tsv" || true)
+          if [ "$listed" -ne "$expected" ]; then
+            echo "PR has $expected changed files but the API listed $listed; refusing to gate a partial list."
+            exit 1
+          fi
+          tr '\t' '\n' < "$RUNNER_TEMP/pr-files.tsv" | grep . | sort -u > "$RUNNER_TEMP/pr-files.txt"
+          echo "$listed changed files, $(wc -l < "$RUNNER_TEMP/pr-files.txt") paths including renames' old paths"
           git fetch --no-tags --depth=1 origin "$BASE_REF"
           for checker in owner-gate rf-trace; do
             if git cat-file -e "FETCH_HEAD:scripts/$checker.mjs" 2>/dev/null; then

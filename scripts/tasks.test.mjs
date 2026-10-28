@@ -1,6 +1,8 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import { mkdtemp, mkdir, readFile, writeFile, rm } from 'node:fs/promises';
+import { spawnSync } from 'node:child_process';
+import { mkdtemp, mkdir, readFile, writeFile, rm, symlink } from 'node:fs/promises';
+import { fileURLToPath } from 'node:url';
 import os from 'node:os';
 import path from 'node:path';
 import { loadTasks, main, newTask, renderBoard, saveTask, validateTasks } from './tasks.mjs';
@@ -257,4 +259,15 @@ test('competing creators and updaters cannot overwrite each other silently', asy
   const tasks = await loadTasks(root);
   assert.equal(tasks.length, 2);
   assert.ok(['First writer', 'Second writer'].includes(tasks[0].title));
+});
+
+test('the CLI still runs when invoked through a symlinked path', async () => {
+  const dir = await mkdtemp(path.join(os.tmpdir(), 'rf-tasks-link-'));
+  const link = path.join(dir, 'tasks.mjs');
+  await symlink(fileURLToPath(new URL('./tasks.mjs', import.meta.url)), link);
+  // An unknown command must fail; a CLI that silently skipped main() would exit 0.
+  const result = spawnSync(process.execPath, [link, 'no-such-command'], { encoding: 'utf8' });
+  await rm(dir, { recursive: true });
+  assert.equal(result.status, 1, 'a skipped CLI would exit 0');
+  assert.match(result.stderr, /Usage: tasks/);
 });

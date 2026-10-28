@@ -42,7 +42,8 @@ leaves a product decision open; then ask **one** focused question, with your rec
    UI surface the smoke does not visit, capture before/after screenshots yourself. If the change
    could affect real provider playback, devices or production, say exactly which check remains.
 5. **Finish the PR.** Set the task's final state (usually Done, with test evidence) in this same
-   PR; CI's RF-trace step fails product changes without a record citing the PR. Fill every section
+   PR; CI's RF-trace step fails product changes until a record cites the PR as `pr` evidence and
+   has a final status (Done, For review, Blocked or Cancelled). Fill every section
    of `.github/pull_request_template.md`, even when passing the body on the command line, then mark
    the draft ready.
 6. **Close.** Run [`daily/close-session.md`](daily/close-session.md) (Solo). When the required check

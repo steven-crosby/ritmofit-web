@@ -48,6 +48,12 @@
       "ref": "https://github.com/steven-crosby/ritmofit-web/pull/643",
       "summary": "Final review findings fixed in #643: close-session no longer grants merging, owner-approved exception aligned, RF-trace moved last with !cancelled(), gated paths extended, CI voids owner-approved on push, gates use the PR files API and main's checker copies, and a symlink-safe CLI guard (the old guard silently skipped the gate). Label-rerun cost logged as RF-100.",
       "checkedOn": "2026-10-27"
+    },
+    {
+      "kind": "pr",
+      "ref": "https://github.com/steven-crosby/ritmofit-web/pull/643",
+      "summary": "Final review #2 fixes: RF-trace now requires exact pr evidence and a final status (In progress fails); approval voiding runs first; gates fail closed past the 3,000-file API limit; tasks.mjs had the same symlink fail-open guard (confirmed: check exited 0 silently) and is fixed with a test. AGENTS.md states the gate is a guardrail, not a security boundary. Route/CI-config gating logged as RF-101.",
+      "checkedOn": "2026-10-27"
     }
   ],
   "resolution": "Ready is the owner's queue, draft PRs claim tasks, the final state lands in the work PR, handoffs are restart notes, and merges count as recorded when an RF record cites them. RF-trace runs in the required job and passed on GitHub Linux (run 40610775187). Its first live pass on a product PR will come from the first product PR after merge.",

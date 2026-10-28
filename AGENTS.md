@@ -195,8 +195,9 @@ files whose items are done or routed.
 
 1. The required CI check is green on the **final PR head** and the branch is up to date with `main`
    (the ruleset enforces both).
-2. Product changes (`apps/`, `packages/`, `e2e/`) change an RF record that cites the PR, with the
-   task's final state set. CI's RF-trace step enforces this.
+2. Product changes (`apps/`, `packages/`, `e2e/`) change an RF record whose `pr` evidence cites the
+   PR and whose status is final (Done, For review, Blocked or Cancelled). CI's RF-trace step
+   enforces this, so a draft PR's RF-trace stays red until the task's final state is set.
 3. The PR body carries the evidence sections in `.github/pull_request_template.md`.
 
 Then the agent **asks**: "PR #N is green on `<sha>` — may I run the final review and squash-merge?"
@@ -229,6 +230,12 @@ open PR is the review, so a rejected PR never reaches `main`. The authoritative 
 - provider and playback code — CI uses mock providers and cannot prove real playback
 - CI, deploy scripts, Worker config, security headers, workspace overrides
 - agent rules (`AGENTS.md`, `CLAUDE.md`)
+
+**The owner gate is a guardrail, not a security boundary.** It catches an agent misjudging its own
+change. It cannot stop a deliberate bypass: every agent pushes as the owner's account, and a
+`pull_request` run uses the PR's own `ci.yml`, so a PR could edit the gate away. A label event that
+cancels a push run before the approval is voided can also leave a stale `owner-approved`. The real
+backstop is the owner's permission for every merge; agents never edit the gate to get a PR through.
 
 **Never granted:** deploys, remote D1 migrations, secrets, production data, repository settings or
 rulesets, applying `owner-approved`, merging without that PR's permission, force-pushing or merging

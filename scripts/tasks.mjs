@@ -1,3 +1,4 @@
+import { realpathSync } from 'node:fs';
 import { readFile, readdir, writeFile, rename, unlink } from 'node:fs/promises';
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
@@ -384,7 +385,16 @@ export async function main(args, root = repoRoot) {
   } else throw new Error('Usage: tasks <list|show|create|update|render|check>');
 }
 
-if (process.argv[1] && path.resolve(process.argv[1]) === fileURLToPath(import.meta.url)) {
+// Compare resolved paths: through a symlink (macOS /var -> /private/var) the plain comparison
+// fails, main() never runs, and `tasks check` would exit 0 without checking anything.
+const invokedDirectly = (() => {
+  try {
+    return realpathSync(process.argv[1] ?? '') === realpathSync(fileURLToPath(import.meta.url));
+  } catch {
+    return false;
+  }
+})();
+if (invokedDirectly) {
   main(process.argv.slice(2)).catch((error) => {
     console.error(error.message);
     process.exitCode = 1;

@@ -136,7 +136,8 @@ proposed scope, use it; do not ask again. Otherwise wait for the required scope 
    Record updates can use `pnpm tasks update RF-N patch.json` or direct JSON edits.
 4. Run `pnpm tasks:render` and `pnpm tasks:check`, commit, push the branch and open a **draft PR**
    (`gh pr create --draft`) as the visible claim. Add the PR URL to the record's evidence (kind
-   `pr`) in the next commit; the task's final state lands in this same PR at close. Then execute the
+   `pr`) in the next commit; the task's final state lands in this same PR at close. RF-trace stays
+   red on product changes until then; that is expected while the draft is in progress. Then execute the
    approved scope. Record material
    blockers and scope changes when they occur rather than waiting for close. These local transitions
    grant nothing beyond the standing grant in `AGENTS.md` › "Delegation And Merge Policy". Read-only-only sessions

@@ -2,9 +2,13 @@
 // RF trace for PRs (AGENTS.md › "Delegation And Merge Policy").
 //
 // A PR that changes product code (apps/, packages/, e2e/) must also change at least one
-// ritmofit_dev_plan/tasks/RF-*.json record that cites this PR's URL. That keeps every merged
-// product change traceable to a task, lets a task reach Done inside its own work PR, and lets
-// start-session treat a merge as recorded when an RF record cites it.
+// ritmofit_dev_plan/tasks/RF-*.json record that cites this PR as `pr` evidence and has left the
+// working states (Done, For review, Blocked or Cancelled). That keeps every merged product change
+// traceable to a task, makes the task's final state land inside its own work PR, and lets
+// start-session treat a merge as recorded when an RF record cites it. A draft PR whose task is
+// still In progress fails here by design until the work is finished.
+//
+// Self-contained on purpose: CI may run main's copy of this file from a temp directory.
 //
 // Usage (CI): PR_NUMBER=123 GITHUB_REPOSITORY=owner/repo node scripts/rf-trace.mjs < changed-files.txt
 // Run from the repo root of the PR checkout so the changed records can be read.
@@ -14,24 +18,32 @@ import { fileURLToPath } from 'node:url';
 
 const PRODUCT = /^(apps|packages|e2e)\//;
 const RECORD = /^ritmofit_dev_plan\/tasks\/RF-\d+\.json$/;
+export const FINAL_STATUSES = ['done', 'review', 'blocked', 'cancelled'];
 
 /**
  * paths: changed files. readRecord(path) returns the record text at the PR head, or null when the
- * file was deleted. Returns { product, cited: [paths], pass }.
+ * file was deleted. Returns { product, cited: [{ path, status }], final: [paths], pass }.
  */
 export function evaluate(paths, prUrl, readRecord) {
   const product = paths.some((p) => PRODUCT.test(p));
-  const cited = paths.filter((p) => RECORD.test(p) && citesPr(readRecord(p), prUrl));
-  return { product, cited, pass: !product || cited.length > 0 };
+  const cited = [];
+  for (const path of paths.filter((p) => RECORD.test(p))) {
+    const record = parse(readRecord(path));
+    const citesPr = record?.evidence?.some?.((e) => e?.kind === 'pr' && e?.ref === prUrl);
+    if (citesPr) cited.push({ path, status: String(record.status) });
+  }
+  const final = cited.filter((c) => FINAL_STATUSES.includes(c.status)).map((c) => c.path);
+  return { product, cited, final, pass: !product || final.length > 0 };
 }
 
-function citesPr(text, prUrl) {
-  if (text === null) return false;
-  // Exact URL only, so pull/12 never matches pull/123.
-  return new RegExp(`${escape(prUrl)}(?![0-9])`).test(text);
+function parse(text) {
+  if (text === null) return null;
+  try {
+    return JSON.parse(text);
+  } catch {
+    return null; // tasks:check reports invalid JSON; here it simply does not count.
+  }
 }
-
-const escape = (s) => s.replace(/[.*+?^${}()|[\]\\/]/g, '\\$&');
 
 function main() {
   const { PR_NUMBER, GITHUB_REPOSITORY } = process.env;
@@ -51,19 +63,27 @@ function main() {
   }
   const prUrl = `https://github.com/${GITHUB_REPOSITORY}/pull/${PR_NUMBER}`;
   const read = (p) => (existsSync(p) ? readFileSync(p, 'utf8') : null);
-  const { product, cited, pass } = evaluate(paths, prUrl, read);
+  const { product, cited, final, pass } = evaluate(paths, prUrl, read);
   if (!product) {
     console.log('rf-trace: no product paths changed; no RF record required.');
     return;
   }
   if (pass) {
-    console.log(`rf-trace: product change traced by ${cited.join(', ')}.`);
+    console.log(`rf-trace: product change traced by ${final.join(', ')}.`);
     return;
   }
-  console.error(
-    `rf-trace: FAIL. This PR changes apps/, packages/ or e2e/ but no changed RF record cites ` +
-      `${prUrl}. Add the PR to the task's evidence (kind "pr") in this PR.`,
-  );
+  if (cited.length > 0) {
+    const list = cited.map((c) => `${c.path} (${c.status})`).join(', ');
+    console.error(
+      `rf-trace: FAIL. ${list} cites this PR but is still in a working state. Set the task's ` +
+        `final state (${FINAL_STATUSES.join(', ')}) in this PR before it merges.`,
+    );
+  } else {
+    console.error(
+      `rf-trace: FAIL. This PR changes apps/, packages/ or e2e/ but no changed RF record cites ` +
+        `${prUrl} as "pr" evidence. Add it to the task's evidence in this PR.`,
+    );
+  }
   process.exit(1);
 }
 
