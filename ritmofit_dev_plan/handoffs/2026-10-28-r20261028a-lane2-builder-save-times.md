@@ -3,9 +3,9 @@ date: 2026-10-28
 tool: Claude Code (local)
 lane: lane-2-builder-save-times
 branch: fix/rf-90-builder-save-times
-head: 1ddf6d1
-base: dc8e72a
-prs: ['#650 (open, awaiting owner merge permission)']
+head: HEADSHA
+base: 9166826
+prs: ['#650 (open, review fixes pushed, needs fresh merge permission)']
 status: open
 ---
 
@@ -23,6 +23,14 @@ status: open
   reload when it changes.
 - The `updateClassTrackSchema` JSDoc in `packages/shared/src/entities/classes.ts` was corrected
   (comment only, approved by the orchestrator).
+- The orchestrator's final review at `4a173d2` found two correctness bugs, and it is not merged.
+  The fixes have red-first tests (`495df74`):
+  - **Start at:** the inspector now sends and keeps the field only while it holds unsaved typed
+    text. A successful save hands the field back to the stored start, so `01:05` and a
+    server-clamped start re-seed instead of reviving B-1.
+  - **Cue and move rows:** an edit row kept open across a save moves its seed to the saved clock,
+    so typing the pre-save value back is sent.
+  - **syncKey:** it now also reloads on undefined → defined.
 
 ## Tasks
 
@@ -30,10 +38,14 @@ status: open
 - [RF-119](../tasks/RF-119.json): new Backlog follow-up. The inspector's Clip start and Downbeat
   fields have the same seed-once shape that caused B-1, but nothing outside the inspector is known
   to move them, so this was not reproduced.
+- [RF-120](../tasks/RF-120.json): new Backlog task for the review's non-significant findings:
+  near-end rounded validation, the double reload, `JSON.stringify` on render, and one shared
+  untouched-field helper.
 
 ## In flight
 
-- #650 is open for the orchestrator's merge train. A Lane never merges.
+- #650 is open for the orchestrator's merge train. It needs a fresh merge permission on the new
+  head. A Lane never merges.
 
 ## Restart context
 

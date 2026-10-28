@@ -118,16 +118,16 @@ export function editedAnchorMs(
 
 /**
  * Reload a choreography list when the parent's run payload says it changed
- * underneath it (a timeline marker drag), not only when the track changes. The
- * first key (the payload arriving) is not a change: the mount load covers it.
+ * underneath it (a timeline marker drag), not only when the track changes. Any
+ * change counts, including the payload first arriving after mount (undefined to
+ * a key): the list may have loaded before a drag the payload already reflects.
  */
 function useReloadOnSync(syncKey: string | undefined, load: () => Promise<void>) {
   const synced = useRef(syncKey);
   useEffect(() => {
     if (synced.current === syncKey) return;
-    const previous = synced.current;
     synced.current = syncKey;
-    if (previous !== undefined) void load();
+    void load();
   }, [syncKey, load]);
 }
 
@@ -592,6 +592,7 @@ export function CuesSection({
     const savedId = editingId;
     const submittedRevision = editRevision.current;
     const submittedFocus = focusRevision.current;
+    const sentAnchorMs = editedAnchorMs(editAnchorClock, editAnchorSeed, anchorMs, maybeSnap);
     setBusy(true);
     setError(null);
     try {
@@ -599,7 +600,7 @@ export function CuesSection({
       // BPM, intensity, note, or color persists. An omitted field would leave
       // the old value. The anchor is the exception: it is sent only when edited.
       await updateCue(editingId, {
-        anchorMs: editedAnchorMs(editAnchorClock, editAnchorSeed, anchorMs, maybeSnap),
+        anchorMs: sentAnchorMs,
         text: editText.trim(),
         durationMs: editDuration.value,
         bpm: editBpm.value,
@@ -608,6 +609,9 @@ export function CuesSection({
         color: editColor,
       });
       if (!active.current) return;
+      // A row kept open by a newer edit now compares against the saved clock, so
+      // typing the pre-save value back is a change and is sent.
+      if (sentAnchorMs !== undefined) setEditAnchorSeed(formatClockFromMs(sentAnchorMs));
       const draftUnchanged = editRevision.current === submittedRevision;
       if (draftUnchanged) setEditingId(null);
       await load();
@@ -1215,6 +1219,7 @@ export function MovesSection({
     const savedId = editingId;
     const submittedRevision = editRevision.current;
     const submittedFocus = focusRevision.current;
+    const sentAnchorMs = editedAnchorMs(editAnchorClock, editAnchorSeed, anchorMs, maybeSnap);
     setBusy(true);
     setError(null);
     try {
@@ -1222,11 +1227,14 @@ export function MovesSection({
       // (the server re-checks the merged result).
       // The anchor is sent only when edited (see `editedAnchorMs`).
       await updatePlacedMove(editingId, {
-        anchorMs: editedAnchorMs(editAnchorClock, editAnchorSeed, anchorMs, maybeSnap),
+        anchorMs: sentAnchorMs,
         intensity: editIntensity === '' ? null : editIntensity,
         ...refFields(editPick, editCustom),
       });
       if (!active.current) return;
+      // A row kept open by a newer edit now compares against the saved clock, so
+      // typing the pre-save value back is a change and is sent.
+      if (sentAnchorMs !== undefined) setEditAnchorSeed(formatClockFromMs(sentAnchorMs));
       const draftUnchanged = editRevision.current === submittedRevision;
       if (draftUnchanged) setEditingId(null);
       await load();

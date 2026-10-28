@@ -5657,9 +5657,16 @@ function TrackInspector({
   );
   // Free-placement start on the class timeline (m:ss). Blank = 0:00.
   const [startAt, setStartAt] = useState(() => startAtFieldValue(track.startOffsetMs));
-  // The stored start the field was last seeded from. A timeline drag changes
+  // The stored start the inspector last saw, as field text. A timeline drag changes
   // `track.startOffsetMs` underneath this keyed-by-id inspector (RF-90, Codex B-1).
   const [startAtSeed, setStartAtSeed] = useState(() => startAtFieldValue(track.startOffsetMs));
+  // True while Start at holds text the instructor typed and has not saved. Only
+  // then is it sent, and only then does it survive a change to the stored start.
+  // Text, not equality with the seed, decides this: `01:05` and `1:05` are the
+  // same start, and a server-clamped save stores a different one.
+  const [startAtEdited, setStartAtEdited] = useState(false);
+  const startAtRef = useRef(startAt);
+  startAtRef.current = startAt;
   const [notes, setNotes] = useState(track.notes ?? '');
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -5711,17 +5718,19 @@ function TrackInspector({
     notes,
   });
   const [savedDraft, setSavedDraft] = useState(draft);
-  // Re-seed an untouched Start at when the stored start moves (adjusting state
-  // during render, so the field never shows the stale value). A typed value is
-  // the instructor's and is kept. The saved snapshot moves with it, so the
-  // re-seed does not read as an unsaved edit.
+  // Re-seed an unedited Start at with the canonical text when the stored start
+  // moves (adjusting state during render, so the field never shows the stale
+  // value). Unsaved typed text is the instructor's and is kept. The saved
+  // snapshot moves with the field, so the re-seed does not read as unsaved.
   const nextStartAtSeed = startAtFieldValue(track.startOffsetMs);
   if (nextStartAtSeed !== startAtSeed) {
     setStartAtSeed(nextStartAtSeed);
-    if (startAt === startAtSeed) setStartAt(nextStartAtSeed);
-    const saved = JSON.parse(savedDraft) as { startAt?: string };
-    if (saved.startAt === startAtSeed) {
-      setSavedDraft(JSON.stringify({ ...saved, startAt: nextStartAtSeed }));
+    if (!startAtEdited) {
+      setStartAt(nextStartAtSeed);
+      const saved = JSON.parse(savedDraft) as { startAt?: string };
+      if (saved.startAt === startAt) {
+        setSavedDraft(JSON.stringify({ ...saved, startAt: nextStartAtSeed }));
+      }
     }
   }
   const [justSaved, setJustSaved] = useState(false);
@@ -5867,7 +5876,7 @@ function TrackInspector({
     // otherwise) and only when the instructor edited the field, so a notes save
     // cannot revert a timeline drag (RF-90, Codex B-1).
     let startOffsetMs: number | undefined;
-    if (canPlaceFreely && startAt !== startAtSeed) {
+    if (canPlaceFreely && startAtEdited && startAt !== startAtSeed) {
       const parsed = parseInspectorAnchor(startAt, track.startOffsetMs);
       if (parsed == null) {
         rejectField(
@@ -5881,6 +5890,7 @@ function TrackInspector({
     // Save disables as soon as the request starts. Move focus to its nearby
     // status first, so a button-initiated save does not strand focus on <body>.
     if (document.activeElement === saveButtonRef.current) saveStatusRef.current?.focus();
+    const submittedStartAt = startAt;
     setBusy(true);
     clearError();
     try {
@@ -5899,6 +5909,10 @@ function TrackInspector({
         ...(startOffsetMs !== undefined ? { startOffsetMs } : {}),
         notes: notes.trim() === '' ? null : notes.trim(),
       });
+      // Saved text is no longer the instructor's draft, so the stored start
+      // (as the server kept it) re-seeds the field from here on. Text typed
+      // while the save was in flight stays an edit.
+      if (startAtRef.current === submittedStartAt) setStartAtEdited(false);
       setSavedDraft(draft);
       setJustSaved(true);
       onSaved();
@@ -6199,7 +6213,10 @@ function TrackInspector({
                       {...fieldProps('startAt', `startat-help-${track.id}`)}
                       className={timeFieldClass('startAt', 'w-32')}
                       value={startAt}
-                      onChange={(e) => setStartAt(e.target.value)}
+                      onChange={(e) => {
+                        setStartAt(e.target.value);
+                        setStartAtEdited(true);
+                      }}
                     />
                     <span
                       id={`startat-help-${track.id}`}

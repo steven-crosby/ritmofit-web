@@ -1,0 +1,28 @@
+{
+  "schemaVersion": 1,
+  "id": "RF-120",
+  "title": "Builder time fields: one untouched-field rule and cheaper choreography sync",
+  "kind": "task",
+  "status": "backlog",
+  "priority": "P3",
+  "parent": null,
+  "dependsOn": [],
+  "acceptance": [
+    "An untouched cue, move or section time near the track or class end no longer fails the rounded-clock 'past the end' validation on an unrelated save (for example a cue at 239600 ms in a 239800 ms track whose field shows 4:00).",
+    "An edit made inside the inspector reloads the cue or move list once, not twice (today it reloads after its own save and again when the syncKey changes).",
+    "The track inspector no longer serializes every cue and move with JSON.stringify on every render just to build the syncKey; it uses a cheap key, such as a payload revision or a memoized signature.",
+    "One helper in apps/web/src/lib/duration.ts owns the untouched-field rule, and ChoreographyEditor, SegmentBand and the track inspector use it instead of three separate copies."
+  ],
+  "nextAction": "One web PR. Start with a fail-first test for the near-end validation case, then extract the shared helper and reduce the double reload. Keep RF-90's regression tests green. RF-119 covers the remaining inspector fields separately.",
+  "blocker": null,
+  "evidence": [
+    {
+      "kind": "pr",
+      "ref": "https://github.com/steven-crosby/ritmofit-web/pull/650",
+      "summary": "Logged from the orchestrator's final review of #650 at 4a173d2 (2026-10-28), which found these as non-significant: near-end rounded validation (pre-existing), the double list reload, JSON.stringify of cues and moves on render, and three implementations of the untouched-field rule.",
+      "checkedOn": "2026-10-28"
+    }
+  ],
+  "resolution": null,
+  "followUps": []
+}

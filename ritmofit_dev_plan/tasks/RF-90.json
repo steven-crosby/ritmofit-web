@@ -36,12 +36,13 @@
     {
       "kind": "pr",
       "ref": "https://github.com/steven-crosby/ritmofit-web/pull/650",
-      "summary": "Fix PR: cue, move and section edits omit the time unless the field was edited; the track inspector re-seeds an untouched Start at and sends startOffsetMs only when edited; cue and move lists reload when the run payload changes. Not deployed.",
+      "summary": "Fix PR: cue, move and section edits omit the time unless the field was edited; the track inspector re-seeds an untouched Start at and sends startOffsetMs only when edited; cue and move lists reload when the run payload changes. Not deployed. Final review at 4a173d2 found two correctness bugs: a non-canonical or server-clamped typed start brought B-1 back, and a reverted clock was dropped when an edit row stayed open across a save. Both are fixed with fail-first tests, and syncKey now also reloads when the payload first arrives.",
       "checkedOn": "2026-10-28"
     }
   ],
-  "resolution": "Builder saves keep stored cue, move and section times: B-1, B-2 and B-3 are fixed in the web client, with the Codex repros ported as regression tests. The stale classes.ts patch comment is corrected. No API, schema or migration change. The clip-start/downbeat stale-seed shape is routed to RF-119.",
+  "resolution": "Builder saves keep stored cue, move and section times: B-1, B-2 and B-3 are fixed in the web client, with the Codex repros ported as regression tests. The stale classes.ts patch comment is corrected. No API, schema or migration change. The clip-start/downbeat stale-seed shape is routed to RF-119. The final review's non-significant findings are routed to RF-120.",
   "followUps": [
-    "RF-119"
+    "RF-119",
+    "RF-120"
   ]
 }
