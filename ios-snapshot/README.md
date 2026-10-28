@@ -28,11 +28,7 @@ the contract surface above.
 
 ## Provenance
 
-- Synced from `ritmofit-ios` `main` at commit `cd2993d` on 2026-06-26.
-- **Ahead of iOS `main` (2026-10-28):** `Core/Networking/APIDTOs.swift` is copied from
-  `ritmofit-ios` PR #50 (RF-1009) head `59accd2`, which adds `CreatedClass` for the
-  `POST /classes` 201 body. Merge this right before #50; then re-sync from iOS `main` and
-  replace this note with the new provenance commit.
+- Synced from `ritmofit-ios` `main` at commit `2e76519` on 2026-10-28.
 
 ## Refreshing
 
