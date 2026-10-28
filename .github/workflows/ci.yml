@@ -185,6 +185,8 @@ jobs:
       # Last on purpose: a PR that fails a gate still shows every other check's result.
       - name: RF trace (product PRs cite their RF record)
         if: ${{ !cancelled() && github.event_name == 'pull_request' }}
+        env:
+          PR_NUMBER: ${{ github.event.pull_request.number }}
         run: node "$RUNNER_TEMP/rf-trace.mjs" < "$RUNNER_TEMP/pr-files.txt"
 
       - name: Owner gate (owner-gated paths need owner-approved)
