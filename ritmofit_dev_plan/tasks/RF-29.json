@@ -32,7 +32,7 @@
       "kind": "document",
       "ref": "docs/audits/claude-code-audit-2026-10-28-4c344e2/findings.md",
       "summary": "AUD-002: the probe calls requestMediaKeySystemAccess unbound, so the previous next action rested on a false premise. Confirmed in real Chromium by the audit; not on iPhone.",
-      "checkedOn": "2026-10-28"
+      "checkedOn": null
     }
   ],
   "resolution": null,

@@ -24,7 +24,7 @@
       "kind": "document",
       "ref": "docs/audits/codex-code-audit-2026-10-27-4e0b150/NEXT_SESSION.md",
       "summary": "Packets 5 and 6 split out to RF-115 and RF-116 at the 2026-10-28 intake; the rest of the remainder (the Later table, D-11 with AUD-021) stays here.",
-      "checkedOn": "2026-10-28"
+      "checkedOn": null
     }
   ],
   "resolution": null,

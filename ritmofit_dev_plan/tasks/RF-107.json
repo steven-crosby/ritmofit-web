@@ -10,10 +10,9 @@
   "acceptance": [
     "navigator.requestMediaKeySystemAccess is called as a bound method; a unit test with a receiver-checked stub resolves ok after one call, and the same stub rejecting an unbound call fails the old code (regression lock).",
     "The probe has a short timeout (about 2 s) that resolves a distinct word such as timeout, and a never-settling stub does not delay play().",
-    "The probe runs after instance.play() is called, or is not awaited before it, so it cannot use up the iOS user gesture.",
-    "Owner device check: after deploy, the iPhone Safari failure shows modern-access: <word>, recorded on RF-29."
+    "The probe runs after instance.play() is called, or is not awaited before it, so it cannot use up the iOS user gesture."
   ],
-  "nextAction": "Lane A of the 2026-10-28 two-lane round, first PR: fix the existing probe in apps/web/src/lib/musickit.ts per acceptance. Owner-gated; device check follows deploy via RF-29.",
+  "nextAction": "Lane A of the 2026-10-28 two-lane round, first PR: fix the existing probe in apps/web/src/lib/musickit.ts per acceptance. Owner-gated. Closes Done once merged and deployed; the owner iPhone check that records modern-access: <word> belongs to RF-29, not this task.",
   "blocker": null,
   "evidence": [
     {

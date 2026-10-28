@@ -52,7 +52,7 @@
       "kind": "document",
       "ref": "docs/audits/claude-code-audit-2026-10-28-4c344e2/findings.md",
       "summary": "AUD-018: four existing paths the owner gate misses. AUD-019 notes matching is case-sensitive while macOS is not.",
-      "checkedOn": "2026-10-28"
+      "checkedOn": null
     }
   ],
   "resolution": null,

@@ -9,6 +9,7 @@
   "dependsOn": [],
   "acceptance": [
     "Re-read the Codex lane provider-music section 7 and re-run repro/c-followup-repro.patch before coding; C-21 to C-25 were not independently challenged.",
+    "The C-21 through C-25 repros pass under the new contract.",
     "Instrumental, karaoke and club mix do not auto-attach when an exact title exists; tests that lock in the old loose match are updated on purpose.",
     "A SoundCloud finish 3.5 s short of the stored duration advances, without hiding a real early stop past 4 s.",
     "A second URL submit after a lost response does not grow the class; a 429 returns a non-null error and a retry imports only the missing song."

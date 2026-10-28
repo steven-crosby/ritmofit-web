@@ -10,6 +10,7 @@
   "acceptance": [
     "Every assertion in the self-check block (deploy.sh around lines 602-649 at 4c344e2) can fail: bare assertions get || exit 1, or the block moves into a function with checked returns.",
     "The three mutants from repro/d1-tooling-deploy-selfcheck-mutation.sh, including deploying sha~1, fail both the self-check and the deploy-script.test.ts wrapper; the unmutated script passes.",
+    "The sha~1 mutant is a permanent negative test in deploy-script.test.ts.",
     "deployment-runbook.md no longer says run_gates runs the same list as CI (AUD-020); it names what the deploy gate skips."
   ],
   "nextAction": "Await owner Ready. Files: scripts/deploy.sh, apps/api/src/lib/deploy-script.test.ts, ritmofit_dev_plan/deployment-runbook.md. Owner-gated paths: the PR needs owner-approved.",

@@ -13,7 +13,7 @@
     "A never-settling previous call ends in a bounded, clearly worded error; existing runtime supersession tests still pass, and one new runtime test uses a real adapter with a lease.",
     "Owner device check: audible scrub, pause and resume on iPhone Safari (Apple) and desktop Chrome."
   ],
-  "nextAction": "Lane A of the 2026-10-28 two-lane round, second PR after RF-107: bounded settle wait in apps/web/src/lib/playback/. Owner-gated; device check owed.",
+  "nextAction": "Lane A of the 2026-10-28 two-lane round, second PR: start only after RF-107's PR merges (not in dependsOn, because the validator rejects a Ready task with an open dependency). Bounded settle wait in apps/web/src/lib/playback/. The Spotify adapter half is in scope now that Spotify is reopened (owner, 2026-10-28). Owner-gated; device check owed.",
   "blocker": null,
   "evidence": [
     {
@@ -32,6 +32,12 @@
       "kind": "observation",
       "ref": "https://github.com/steven-crosby/ritmofit-web/pull/646",
       "summary": "Owner set Ready in session on 2026-10-28.",
+      "checkedOn": "2026-10-28"
+    },
+    {
+      "kind": "observation",
+      "ref": "https://github.com/steven-crosby/ritmofit-web/pull/646",
+      "summary": "Owner decision in session on 2026-10-28: Spotify work is reopened (the family now has Spotify Family). The Apple Music subscription ends around 2026-11-27, so Apple hardening and Apple device checks come first in that window.",
       "checkedOn": "2026-10-28"
     }
   ],

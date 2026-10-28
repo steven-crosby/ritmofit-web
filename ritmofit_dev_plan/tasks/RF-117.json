@@ -3,12 +3,12 @@
   "id": "RF-117",
   "title": "Disposition the 2026-10-28 audit items that are not fix packets",
   "kind": "plan",
-  "status": "review",
+  "status": "backlog",
   "priority": "P3",
   "parent": null,
   "dependsOn": [],
   "acceptance": [
-    "AUD-006 (Live recovery Reconnect drops the class position) is parked with RF-92 until Spotify reopens; the minimal fix carries elapsedMs in the connection-return record.",
+    "AUD-006 (Live recovery Reconnect drops the class position) goes with RF-92 now that Spotify is reopened (owner, 2026-10-28); the minimal fix carries elapsedMs in the connection-return record.",
     "AUD-013 (sign-up tells registered from unknown emails) is accepted and documented for the beta, to revisit before an open launch.",
     "AUD-016 (malformed JSON is 500) gets a body-parse helper or an explicit defer; SyntaxError is not mapped globally.",
     "AUD-017 is folded into Codex A-11/D-8 OpenAPI drift; AUD-018 is added to RF-101; AUD-019 is informational; AUD-020 rides RF-110; AUD-021 is pruned with Codex D-11 under RF-94.",
@@ -20,7 +20,7 @@
     {
       "kind": "document",
       "ref": "docs/audits/claude-code-audit-2026-10-28-4c344e2/findings.md",
-      "summary": "Hardening table AUD-015 to AUD-021, AUD-006 and AUD-013, with the audit's recommended dispositions.",
+      "summary": "Hardening table AUD-016 to AUD-021, plus AUD-006 and AUD-013, with the audit's recommended dispositions. AUD-015 is carried by RF-112.",
       "checkedOn": null
     },
     {
