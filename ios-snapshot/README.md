@@ -28,7 +28,7 @@ the contract surface above.
 
 ## Provenance
 
-- Synced from `ritmofit-ios` `main` at commit `cd2993d` on 2026-06-26.
+- Synced from `ritmofit-ios` `main` at commit `2e76519` on 2026-10-28.
 
 ## Refreshing
 

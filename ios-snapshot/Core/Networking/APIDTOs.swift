@@ -79,3 +79,24 @@ nonisolated struct ClassDetail: Codable, Identifiable, Equatable {
     /// authorization contract ("Update class fields" requires EDIT).
     var canEdit: Bool { accessLevel == "edit" || accessLevel == "owner" }
 }
+
+/// `POST /api/v1/classes` 201 — the contract `Class` schema, which (unlike the
+/// `GET /classes/:id` body) carries no `accessLevel`. Decodes the fields `ClassDetail`
+/// needs; the rest of `Class` is ignored.
+nonisolated struct CreatedClass: Decodable, Equatable {
+    let id: String
+    let ownerUserId: String
+    let title: String
+    let description: String?
+    let template: String?
+    let status: String
+    let visibility: String
+    let targetDurationMs: Int?
+
+    /// The creator owns the class they just made.
+    var asOwnedDetail: ClassDetail {
+        ClassDetail(id: id, title: title, description: description, template: template,
+                    status: status, visibility: visibility, targetDurationMs: targetDurationMs,
+                    accessLevel: "owner")
+    }
+}
