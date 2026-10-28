@@ -12,13 +12,13 @@ owner's queue: any agent may execute a Ready task. Publishing follows AGENTS.md 
 Evidence marked **recorded** is a carried-forward claim, not fresh verification.
 A checked PR proves its GitHub state, not product acceptance or production behavior.
 
-116 tasks. backlog: 22 · ready: 2 · in_progress: 0 · blocked: 2 · review: 7 · done: 83 · cancelled: 0.
+116 tasks. backlog: 22 · ready: 1 · in_progress: 1 · blocked: 2 · review: 7 · done: 83 · cancelled: 0.
 
 ## In progress
 
 | Task | Priority / kind | Relationships | Next action / resolution | Evidence |
 | --- | --- | --- | --- | --- |
-| — | — | — | — | — |
+| [RF-107](tasks/RF-107.json) The iPhone FairPlay probe records modern-access: on a playback error | P1 / task | — | In progress: Lane 1 of round 20261028a on branch fix/rf-107-fairplay-probe (draft PR claims it). Restart: bind the probe call to navigator, add the ~2 s timeout word, start the probe after instance.play() is called, and let the playback-error banner wait for a pending probe. Owner-gated; the deploy and the owner iPhone check that records modern-access: &lt;word&gt; belong to RF-29. | recorded; checked 2026-10-28 |
 
 ## Blocked / waiting
 
@@ -44,7 +44,6 @@ A checked PR proves its GitHub state, not product acceptance or production behav
 | Task | Priority / kind | Relationships | Next action / resolution | Evidence |
 | --- | --- | --- | --- | --- |
 | [RF-90](tasks/RF-90.json) Builder saves keep stored cue, move and section times (B-3, B-2, B-1) | P1 / task | — | Lane B of the 2026-10-28 two-lane round: implement Codex packet 1 (B-1, B-2, B-3) in ChoreographyEditor, SegmentBand, the Dashboard track inspector and the classes.ts comment; port the two Codex repros as regression tests. Not owner-gated. | recorded; checked 2026-10-28 |
-| [RF-107](tasks/RF-107.json) The iPhone FairPlay probe records modern-access: on a playback error | P1 / task | — | Lane A of the 2026-10-28 two-lane round, first PR: fix the existing probe in apps/web/src/lib/musickit.ts per acceptance. Owner-gated. The work PR sets Done when it merges (agents do not deploy). The deploy and the owner iPhone check that records modern-access: &lt;word&gt; belong to RF-29. P1 because it gates P1 RF-29 inside the Apple Music window that ends around 2026-11-27. | recorded; checked 2026-10-28 |
 
 ## Backlog
 
