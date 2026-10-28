@@ -1,0 +1,8 @@
+baseline                                         exit=0  1x guard-ok | self-check passed
+M1 dirty-tree message no longer 'not empty'      exit=0  1x guard-ok | self-check passed
+M2 diverge message no longer 'not origin/main'   exit=0  1x guard-ok | self-check passed
+108:  git worktree add --detach "$wt" "$sha~1" >&2
+M3 worktree builds sha~1 instead of sha          exit=0  1x guard-ok | self-check passed
+CONTROL (dirty check removed) exit=1 :: dirty tree was accepted self-check FAIL: git guard and /tmp worktree self-check failed: 1 
+M3 under CI vitest wrapper:  Test Files  1 passed (1)
+M3 under CI vitest wrapper:       Tests  1 passed (1)

@@ -1,0 +1,20 @@
+01-format	0	11s	pnpm format:check
+02-owner-gate-test	0	1s	pnpm owner-gate:test
+03-rf-trace-test	0	2s	pnpm rf-trace:test
+04-tasks-test	0	1s	pnpm tasks:test
+05-tasks-check	0	1s	pnpm tasks:check
+06-typecheck	0	22s	pnpm -r typecheck
+07-lint	0	14s	pnpm lint
+08-ds-verify	0	0s	cd ritmofit_design_system && npm run verify
+09-theme-selftest	0	2s	pnpm --filter @ritmofit/web theme-classes --selftest
+10-theme	0	1s	pnpm --filter @ritmofit/web theme-classes
+11-test	0	119s	pnpm test
+12-integration	0	101s	pnpm --filter @ritmofit/api test:integration
+13-build	0	29s	pnpm --filter @ritmofit/web build
+14-pw-install	1	5s	pnpm --filter @ritmofit/e2e exec playwright install chromium
+15-e2e	1	23s	E2E_PORT=8798 pnpm --filter @ritmofit/e2e e2e
+16-openapi	0	2s	pnpm --filter @ritmofit/api openapi && git diff --exit-code apps/api/openapi/openapi.json
+17-parity	0	1s	pnpm --filter @ritmofit/api contract-parity
+18-audit	0	2s	pnpm audit:ci
+19-status	0	0s	git status --short
+DONE
