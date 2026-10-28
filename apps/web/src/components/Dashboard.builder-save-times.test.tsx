@@ -35,7 +35,14 @@ const CLASS_ID = '00000000-0000-4000-8000-000000000001';
 const CT = '00000000-0000-4000-8000-0000000000c1';
 const CUE_ID = '00000000-0000-4000-8000-0000000000e1';
 
-type State = { startOffsetMs: number; notes: string | null; cueAnchorMs: number; cueText: string };
+type State = {
+  startOffsetMs: number;
+  notes: string | null;
+  cueAnchorMs: number;
+  cueText: string;
+  /** When set, the fake server clamps a written start to this ceiling. */
+  maxStartMs?: number;
+};
 let state: State;
 
 function cls(): ClassListItem {
@@ -174,7 +181,9 @@ beforeEach(() => {
   // The fake server applies every PATCH it receives, like the real one.
   vi.mocked(api.updateClassTrack).mockImplementation(
     async (_id: string, body: UpdateClassTrack) => {
-      if (body.startOffsetMs != null) state.startOffsetMs = body.startOffsetMs;
+      if (body.startOffsetMs != null) {
+        state.startOffsetMs = Math.min(body.startOffsetMs, state.maxStartMs ?? Infinity);
+      }
       if (body.notes !== undefined) state.notes = body.notes;
       return classTrack();
     },
@@ -266,5 +275,70 @@ describe('Builder saves keep timeline edits (RF-90)', () => {
 
     expect(vi.mocked(api.updateCue).mock.calls.at(-1)![1].text).toBe('Climb hard');
     expect(state.cueAnchorMs).toBe(11000);
+  });
+
+  async function dragStartRight(steps: number) {
+    const handle = screen.getByRole('slider', { name: /^Track 1 start at/ });
+    for (let i = 0; i < steps; i += 1) {
+      fireEvent.keyDown(handle, { key: 'ArrowRight', shiftKey: true });
+    }
+    await act(async () => {
+      fireEvent.keyDown(handle, { key: 'Enter' });
+    });
+  }
+
+  async function saveInspector(inspector: ReturnType<typeof within>) {
+    const calls = vi.mocked(api.updateClassTrack).mock.calls.length;
+    fireEvent.click(inspector.getByRole('button', { name: 'Save' }));
+    await waitFor(() => expect(api.updateClassTrack).toHaveBeenCalledTimes(calls + 1));
+    await inspector.findByText('Saved.');
+    return vi.mocked(api.updateClassTrack).mock.calls.at(-1)![1];
+  }
+
+  it('B-1: a non-canonical typed start (01:05) does not revert a later drag', async () => {
+    const inspector = await openInspectorWithTimeline();
+    fireEvent.click(inspector.getByText('Advanced timing and placement'));
+    const startAt = () => inspector.getByLabelText(/^Start at/) as HTMLInputElement;
+
+    fireEvent.change(startAt(), { target: { value: '01:05' } });
+    expect((await saveInspector(inspector)).startOffsetMs).toBe(65000);
+    await waitFor(() => expect(startAt().value).toBe('1:05'));
+
+    // Timeline drag 1:05 → 1:20 (three Shift+→ steps of 5 s).
+    await dragStartRight(3);
+    await waitFor(() =>
+      expect(api.updateClassTrack).toHaveBeenLastCalledWith(CT, { startOffsetMs: 80000 }),
+    );
+    await waitFor(() => expect(startAt().value).toBe('1:20'));
+
+    fireEvent.change(inspector.getByLabelText('Creator notes'), { target: { value: 'Push' } });
+    expect(await saveInspector(inspector)).not.toHaveProperty('startOffsetMs');
+    expect(state.startOffsetMs).toBe(80000);
+  });
+
+  it('B-1: a start the server clamps re-seeds the field and is not re-sent', async () => {
+    state.maxStartMs = 70000;
+    const inspector = await openInspectorWithTimeline();
+    fireEvent.click(inspector.getByText('Advanced timing and placement'));
+    const startAt = () => inspector.getByLabelText(/^Start at/) as HTMLInputElement;
+
+    fireEvent.change(startAt(), { target: { value: '1:30' } });
+    expect((await saveInspector(inspector)).startOffsetMs).toBe(90000);
+    expect(state.startOffsetMs).toBe(70000);
+    await waitFor(() => expect(startAt().value).toBe('1:10'));
+
+    // A later drag back to 1:05, then a notes-only save, keeps the drag.
+    state.maxStartMs = undefined;
+    const handle = screen.getByRole('slider', { name: /^Track 1 start at/ });
+    fireEvent.keyDown(handle, { key: 'ArrowLeft', shiftKey: true });
+    await act(async () => {
+      fireEvent.keyDown(handle, { key: 'Enter' });
+    });
+    await waitFor(() => expect(state.startOffsetMs).toBe(65000));
+    await waitFor(() => expect(startAt().value).toBe('1:05'));
+
+    fireEvent.change(inspector.getByLabelText('Creator notes'), { target: { value: 'Push' } });
+    expect(await saveInspector(inspector)).not.toHaveProperty('startOffsetMs');
+    expect(state.startOffsetMs).toBe(65000);
   });
 });

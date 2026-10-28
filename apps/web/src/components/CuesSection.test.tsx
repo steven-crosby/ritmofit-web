@@ -623,16 +623,51 @@ describe('CuesSection — untouched anchors survive an edit', () => {
 });
 
 describe('CuesSection — reload when the run payload changes (RF-90, B-2)', () => {
-  it('reloads its cues when syncKey changes, not on the first key', async () => {
+  it('reloads its cues when syncKey changes, including the first key', async () => {
     vi.mocked(api.listCues).mockResolvedValue([cue('cue-1', 'Climb', { anchorMs: 10000 })]);
     const { rerender } = render(<CuesSection classTrackId="ct-1" durationMs={240000} />);
     await screen.findByRole('button', { name: 'Edit cue Climb' });
-    rerender(<CuesSection classTrackId="ct-1" durationMs={240000} syncKey="a" />);
     expect(api.listCues).toHaveBeenCalledTimes(1);
 
+    // The run payload arriving after mount (undefined → defined) is a change too.
     vi.mocked(api.listCues).mockResolvedValue([cue('cue-1', 'Climb', { anchorMs: 11000 })]);
-    rerender(<CuesSection classTrackId="ct-1" durationMs={240000} syncKey="b" />);
+    rerender(<CuesSection classTrackId="ct-1" durationMs={240000} syncKey="a" />);
     await waitFor(() => expect(api.listCues).toHaveBeenCalledTimes(2));
     expect(await screen.findByText('0:11')).toBeTruthy();
+
+    vi.mocked(api.listCues).mockResolvedValue([cue('cue-1', 'Climb', { anchorMs: 12000 })]);
+    rerender(<CuesSection classTrackId="ct-1" durationMs={240000} syncKey="b" />);
+    await waitFor(() => expect(api.listCues).toHaveBeenCalledTimes(3));
+    expect(await screen.findByText('0:12')).toBeTruthy();
+  });
+});
+
+describe('CuesSection — the seed follows a save that keeps the row open (RF-90)', () => {
+  it('sends a clock typed back to its pre-save value', async () => {
+    vi.mocked(api.listCues).mockResolvedValue([cue('cue-1', 'Climb', { anchorMs: 10000 })]);
+    let resolveFirst!: (value: never) => void;
+    vi.mocked(api.updateCue)
+      .mockReturnValueOnce(new Promise((resolve) => (resolveFirst = resolve)))
+      .mockResolvedValue({} as never);
+    render(<CuesSection classTrackId="ct-1" durationMs={240000} />);
+
+    fireEvent.click(await screen.findByRole('button', { name: 'Edit cue Climb' }));
+    const time = screen.getAllByLabelText('Cue time (m:ss)')[0] as HTMLInputElement;
+    const name = screen.getAllByLabelText('Move name')[0] as HTMLInputElement;
+    fireEvent.change(time, { target: { value: '0:20' } });
+    fireEvent.click(screen.getByRole('button', { name: 'Save' }));
+    // A newer edit while the save is in flight keeps the row open.
+    fireEvent.change(name, { target: { value: 'Climb, newer' } });
+    vi.mocked(api.listCues).mockResolvedValue([cue('cue-1', 'Climb', { anchorMs: 20000 })]);
+    await act(async () => resolveFirst({} as never));
+    expect(vi.mocked(api.updateCue).mock.calls[0]![1].anchorMs).toBe(20000);
+    expect(time.isConnected).toBe(true);
+
+    fireEvent.change(time, { target: { value: '0:10' } });
+    await act(async () => {
+      fireEvent.click(screen.getByRole('button', { name: 'Save' }));
+    });
+    await waitFor(() => expect(api.updateCue).toHaveBeenCalledTimes(2));
+    expect(vi.mocked(api.updateCue).mock.calls[1]![1].anchorMs).toBe(10000);
   });
 });
