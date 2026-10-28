@@ -248,7 +248,7 @@ For each authorized PR, sequentially:
    one PR at one head; never carry a batch approval across an update.
 7. With permission, run the final review as the policy defines it (including what counts as
    significant). No significant findings: squash-merge
-   with `--match-head-commit <reviewed sha>`. Findings: stop, comment them, and return the PR to its
+   with `--match-head-commit <reviewed sha>`. Significant findings: stop, comment them, and return the PR to its
    lane.
 
 The last green PR checks the combined merged tree, but still perform a post-merge sanity check on

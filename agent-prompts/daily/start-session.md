@@ -79,7 +79,8 @@ Pick one before deep reads; every mode still ends with **one** recommended next 
      task exists, propose creating one after approval; it starts in Backlog. Who may set Ready is
      defined once in `AGENTS.md` › "Working Agreement". Surface missing
      plans and acceptance evidence instead of inventing them. Numbering is not priority, and a
-     task status or copied approval never grants execution or publication authority.
+     copied approval never grants authority. The only status that grants execution is a Ready set
+     under `AGENTS.md` › "Working Agreement"; no status grants publication or merging.
    Do not edit during orientation.
    Then read `INBOX.md` (surface open `- [ ]` lines with their likely
    home; route nothing now), then the current-focus block of

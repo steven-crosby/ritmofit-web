@@ -211,7 +211,8 @@ files whose items are done or routed.
 Then the agent **asks**: "PR #N is green on `<sha>` — may I run the final review and squash-merge?"
 In a live session it asks in chat. A background agent comments that question on the PR, adds the
 `ready-to-merge` label and stops. Permission is the owner saying so in a session, or the owner
-adding `owner-approved` to the PR. Agents never apply `owner-approved` on their own judgment; the one
+adding `owner-approved` to the PR. Once a PR has that permission, any session may finish it: run the
+final review below and merge, even though another session opened it. Agents never apply `owner-approved` on their own judgment; the one
 exception is the owner explicitly telling the agent in a session to apply it, which the agent records
 as a PR comment before applying it.
 
@@ -260,8 +261,8 @@ the gate to get a PR through.
 **Never granted:** deploys, remote D1 migrations, secrets, production data, repository settings or
 rulesets, applying `owner-approved` except on the owner's explicit in-session instruction, merging
 any PR without that PR's permission, force-pushing another session's branch, merging another
-session's PR except in the orchestrator's merge train or when relaying a subagent's ask, and branch
-deletion. Those keep their separate explicit permission.
+session's PR except in the orchestrator's merge train, when relaying a subagent's ask, or when
+finishing a PR that already has the owner's permission, and branch deletion. Those keep their separate explicit permission.
 
 **What CI proves:** the required job runs format, task, owner-gate and RF-trace checks, typecheck, lint,
 design-system verify, theme classes, unit and D1 integration tests, the web build with bundle budget,
