@@ -210,12 +210,20 @@ adding `owner-approved` to the PR. Agents never apply `owner-approved` on their 
 exception is the owner explicitly telling the agent in a session to apply it, which the agent records
 as a PR comment before applying it.
 
-With permission, the agent runs its tool's code-review pass on the final PR diff (for example
-`/code-review` in Claude Code, `/review` in Codex, or Cursor's review) and then:
+With permission, the agent runs its tool's code-review pass on the final PR diff at a
+confidence-over-recall setting (for example `/code-review medium` in Claude Code, `/review` in
+Codex, or Cursor's review). A finding is **significant** only if it is:
 
-- **No significant findings** (correctness, security, data loss, missing authz): squash-merge with
+- (a) a correctness bug in executable code (app code, scripts, CI workflow), including security,
+  data loss and missing authz; or
+- (b) a contradiction about who grants permission, sets Ready, or merges.
+
+Everything else (wording, coverage gaps, design trade-offs, ideas) is logged as Backlog RF tasks
+cited in a PR comment, and does not block. Then:
+
+- **No significant findings:** log the rest, squash-merge with
   `gh pr merge <n> --squash --match-head-commit <reviewed sha>` and remove `ready-to-merge`.
-- **Findings:** do not merge. Comment them on the PR, remove `ready-to-merge`, and stop. A fix is a
+- **Significant findings:** do not merge. Comment them on the PR, remove `ready-to-merge`, and stop. A fix is a
   new push, so it needs green CI again and a fresh permission. Any push after permission voids it:
   approval counts only for the commit it was given on. When the owner adds `owner-approved`, CI
   records an `owner-approval` commit status on that exact head, and the gate requires both the label

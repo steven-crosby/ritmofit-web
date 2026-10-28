@@ -10,7 +10,7 @@
     "RF-98"
   ],
   "acceptance": [
-    "The owner gate covers files whose edits can remove authz or disable a CI check: route files with requireAccess call sites (apps/api/src/routes/*, lib/member-target.ts) and CI-config files (eslint config, .prettierignore, Playwright and vitest configs, e2e/serve.mjs, scripts/tasks.mjs, .nvmrc), or the owner records why a class stays ungated.",
+    "The owner gate covers files whose edits can remove authz or disable a CI check: route files with requireAccess call sites (apps/api/src/routes/*, lib/member-target.ts) and CI-config files (eslint config, .prettierignore, Playwright and vitest configs, e2e/serve.mjs, scripts/tasks.mjs, .nvmrc), or the owner records why a class stays ungated, plus provider/OAuth integration tests, apps/api/src/lib/deploy-script.test.ts, e2e/package.json and packages/shared/package.json.",
     "The added friction is weighed against the owner already approving every merge; the decision is recorded."
   ],
   "nextAction": "Owner decides whether to gate route and CI-config files, given every merge already needs per-PR permission.",
@@ -26,6 +26,12 @@
       "kind": "pr",
       "ref": "https://github.com/steven-crosby/ritmofit-web/pull/643",
       "summary": "Review #3 gated agent prompts, the task/handoff READMEs and the Live/provider UI components in #643. Route authz call sites and CI-config files remain ungated and are still this task's scope.",
+      "checkedOn": "2026-10-27"
+    },
+    {
+      "kind": "pr",
+      "ref": "https://github.com/steven-crosby/ritmofit-web/pull/643",
+      "summary": "Final review #4 of #643 (finding 8) added ungated test and package paths to this task's scope.",
       "checkedOn": "2026-10-27"
     }
   ],

@@ -60,6 +60,12 @@
       "ref": "https://github.com/steven-crosby/ritmofit-web/pull/643",
       "summary": "Final review #3 fixes (owner chose all 8): close-session parks in Backlog only; orchestrator merge train asks per PR at its head with a final review; owner-gated PRs are ready when all but the gate step pass; gate text, PR template and label descriptions match the policy; architecture.md no longer calls CI advisory; multi-PR work uses child RF records; approval is bound to the exact head via an owner-approval commit status (stale labels no longer pass; tested with a stubbed gh); agent prompts and Live/provider UI are owner-gated.",
       "checkedOn": "2026-10-27"
+    },
+    {
+      "kind": "pr",
+      "ref": "https://github.com/steven-crosby/ritmofit-web/pull/643",
+      "summary": "Final review #4 fixes: close-session Ready, deletion and gated-permission contradictions; CLAUDE.md limited to Claude mechanics; void step no longer blocks CI on failure; the policy defines a significant finding (code correctness or authority contradiction) and runs the final review at medium effort. Findings 6-9 logged as RF-101..RF-104.",
+      "checkedOn": "2026-10-27"
     }
   ],
   "resolution": "Ready is the owner's queue, draft PRs claim tasks, the final state lands in the work PR, handoffs are restart notes, and merges count as recorded when an RF record cites them. RF-trace runs in the required job and passed on GitHub Linux (run 40610775187). Its first live pass on a product PR will come from the first product PR after merge.",

@@ -6,8 +6,8 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 `AGENTS.md` (imported above) is the canonical guide that Cursor, Codex and Claude all share. It holds
 the rules, the session workflow, the commands and the full CI gate. On any conflict `AGENTS.md` wins.
-This file adds only the architecture map and the test commands that `AGENTS.md` leaves out. Put new
-durable rules in `AGENTS.md` so every tool sees them, not here.
+This file adds only the architecture map, the test commands, and Claude Code mechanics for rules
+that `AGENTS.md` defines. Put new durable rules in `AGENTS.md` so every tool sees them, not here.
 
 ## Running a subset of tests
 
@@ -92,11 +92,13 @@ Domain vocabulary (class, plan block, section, cue, placed move, clip window): s
 `ritmofit_dev_plan/glossary.md`. Locked decisions such as D20/D21/D22: `decisions.md`. Access model:
 `authorization.md`. API surface: `api.md`. Provider capabilities and policy: `music-providers.md`.
 
-## Delegating with Claude Code subagents
+## Claude Code mechanics for the delegation policy
 
-To run an owner brief from `agent-prompts/delegate-task.md`, spawn an `Agent` with
-`isolation: "worktree"` and pass the brief plus "Follow agent-prompts/delegate-task.md" verbatim.
-The worktree keeps it off any other session's uncommitted changes. Each subagent ends in its own PR.
-Subagents can't ask the owner directly, so each stops at green with a PR comment and the
-`ready-to-merge` label. Relay those asks to the owner; with permission, run `/code-review` on each PR's
-final diff and merge them one at a time (see the merge policy).
+The rules live in `AGENTS.md` › "Delegation And Merge Policy"; this is only how to carry them out
+in Claude Code.
+
+- **Delegating a brief:** spawn an `Agent` with `isolation: "worktree"` and pass the brief plus
+  "Follow agent-prompts/delegate-task.md". The worktree keeps it off other sessions' changes.
+- **Relaying merge asks:** a subagent cannot ask the owner, so it stops at the policy's PR comment
+  and `ready-to-merge` label. Bring each ask to the owner yourself.
+- **Final review:** `/code-review medium <PR number>`.

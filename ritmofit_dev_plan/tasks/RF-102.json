@@ -1,0 +1,28 @@
+{
+  "schemaVersion": 1,
+  "id": "RF-102",
+  "title": "Owner approval binds only to a commit the owner actually saw",
+  "kind": "task",
+  "status": "backlog",
+  "priority": "P3",
+  "parent": null,
+  "dependsOn": [
+    "RF-98"
+  ],
+  "acceptance": [
+    "A push that races the owner's label cannot leave the owner-approval status on a commit the owner never saw.",
+    "Re-running an earlier labeled run after the owner removed owner-approved cannot turn the required check green."
+  ],
+  "nextAction": "Owner decides whether to harden further (for example, bind to the reviewed SHA named in the approval) given per-PR merge permission is the backstop.",
+  "blocker": null,
+  "evidence": [
+    {
+      "kind": "pr",
+      "ref": "https://github.com/steven-crosby/ritmofit-web/pull/643",
+      "summary": "Final review #4 of #643 (finding 6): the status lands on head.sha at label time, so a racing push can be bound; a rerun of an old labeled run reuses its payload. Non-blocking under the significance rule; logged 2026-10-27.",
+      "checkedOn": "2026-10-27"
+    }
+  ],
+  "resolution": null,
+  "followUps": []
+}

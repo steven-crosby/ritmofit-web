@@ -50,6 +50,6 @@
       "checkedOn": "2026-10-27"
     }
   ],
-  "resolution": "Standing delegation grant (revised by the owner on 2026-10-27 to ask before each final review and merge), owner gate and e2e smoke are in the required CI job. On GitHub Linux (run 40610775187, bfc2622) every check passed, including the Playwright smoke at 1440 and 390 with a 10-screenshot artifact; the owner gate, run last, correctly failed this owner-gated PR pending owner-approved. Merging #643 publishes this; deployment is not involved.",
+  "resolution": "Standing delegation grant (revised by the owner on 2026-10-27 to ask before each final review and merge), owner gate and e2e smoke are in the required CI job. On GitHub Linux every check passed (first full pass: run 40610775187 on bfc2622; the final head's run is on #643), including the Playwright smoke at 1440 and 390 with a 10-screenshot artifact; the owner gate, run last, correctly failed this owner-gated PR pending owner-approved. Merging #643 publishes this; deployment is not involved.",
   "followUps": []
 }

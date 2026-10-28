@@ -44,8 +44,10 @@ jobs:
             -f context=owner-approval -f description="owner-approved was applied to this commit"
 
       # Hygiene: drop the label when new commits arrive so the PR shows it needs a fresh approval.
-      # GITHUB_TOKEN edits do not trigger another run.
+      # The commit binding above already makes a stale label count for nothing, so a failure here
+      # must not skip the real checks. GITHUB_TOKEN edits do not trigger another run.
       - name: Void owner approval on new commits
+        continue-on-error: true
         if: github.event_name == 'pull_request' && (github.event.action == 'synchronize' || github.event.action == 'reopened') && contains(github.event.pull_request.labels.*.name, 'owner-approved')
         env:
           GH_TOKEN: ${{ github.token }}

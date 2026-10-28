@@ -42,7 +42,8 @@ from verified sources and state what orientation evidence is missing.
   heads, reconcile the revision boundary before changing shared task state.
 - [ ] Identify the session's RF IDs, PRs and handoff, and the permissions already granted for
   commit, push, PR creation, merge, deploy and deletion. The standing grant covers commit, push and PR;
-  every merge also needs the owner's permission for that PR; deploy and deletion are never in it. None implies another. Task state, a green
+  it also covers retiring routed handoff files in a PR. Every merge needs the owner's permission
+  for that PR; deploys and branch deletion are never in it. None implies another. Task state, a green
   gate, this prompt and the Solo role do not grant a missing permission. Continue authorized local
   preparation; put any missing publication permission in an open publication/follow-up RF task's
   next action. A completed implementation task can stay Done with that follow-up link; do not add
@@ -63,8 +64,8 @@ from verified sources and state what orientation evidence is missing.
   - **For review:** a scoped plan/result awaits review; record the concrete review action.
   - **Blocked:** record the missing input/condition, who or what unblocks it and the restart action.
   - **Backlog:** work is deliberately parked and no longer actively executing. Park it in Backlog,
-    never Ready: only the owner moves a task to Ready, the one status that authorizes execution. A
-    task the owner had put in Ready may go back to Ready only if its scope did not change. Do not leave an idle session's task
+    never Ready, even if the owner had put it there: only the owner moves a task to Ready, the one
+    status that authorizes execution. Do not leave an idle session's task
     In progress; retain that state only when a named session is actually continuing it.
   - **Cancelled:** explain the approved reject/supersede/duplicate disposition and link the replacement.
 - [ ] Give remaining acceptance or verification a follow-up RF ID when outside the completed task's
@@ -121,10 +122,12 @@ from verified sources and state what orientation evidence is missing.
   the final owner-gate step), ask: "PR #N is green on `<sha>` — may I
   run the final review and squash-merge?" In a live session ask in chat; otherwise comment that on
   the PR, add `ready-to-merge` and stop. Owner-gated PRs also get `needs-owner` and the manual check
-  left. Permission is the owner saying so in a session or adding `owner-approved`. Apply that label
-  only when the owner explicitly tells you to in a session, and record it as a PR comment first. With permission, run your tool's code review on the final diff. No significant
-  findings: squash-merge with `--match-head-commit <reviewed sha>` and remove `ready-to-merge`.
-  Findings: do not merge; comment them, remove `ready-to-merge`, stop. Any later push voids the
+  left. Permission is the owner saying so in a session or adding `owner-approved`; an owner-gated PR
+  needs the label itself, so a chat "yes" is enough only if the owner also tells you to apply it
+  (record that as a PR comment first). With permission, run the final review as `AGENTS.md` ›
+  "Delegation And Merge Policy" defines it. No significant findings: log the rest as RF tasks,
+  squash-merge with `--match-head-commit <reviewed sha>` and remove `ready-to-merge`. Significant
+  findings: do not merge; comment them, remove `ready-to-merge`, stop. Any later push voids the
   permission (CI removes `owner-approved` automatically); ask again. Delete the branch only if deletion is also authorized; do not append
   `--delete-branch` automatically. Missing merge/deletion permission is an explicit next action.
 - **Lane:** leave its PR open for the orchestrator with RF records/handoff complete; report CI state.

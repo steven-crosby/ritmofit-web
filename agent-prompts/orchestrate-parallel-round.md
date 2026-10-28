@@ -246,7 +246,8 @@ For each authorized PR, sequentially:
 6. When it is ready (see the policy, including owner-gated PRs), ask the owner for this PR at this
    head: "PR #N is ready on `<sha>` — may I run the final review and squash-merge?" One approval covers
    one PR at one head; never carry a batch approval across an update.
-7. With permission, run the final code review on the PR's diff. No significant findings: squash-merge
+7. With permission, run the final review as the policy defines it (including what counts as
+   significant). No significant findings: squash-merge
    with `--match-head-commit <reviewed sha>`. Findings: stop, comment them, and return the PR to its
    lane.
 
