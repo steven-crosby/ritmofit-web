@@ -1,6 +1,6 @@
 // @vitest-environment jsdom
 import { afterEach, describe, expect, it, vi } from 'vitest';
-import { cleanup, fireEvent, render, screen, waitFor } from '@testing-library/react';
+import { act, cleanup, fireEvent, render, screen, waitFor } from '@testing-library/react';
 import type { ClassSection, SegmentType } from '@ritmofit/shared';
 import { SegmentBand } from './SegmentBand.js';
 import * as api from '../lib/api.js';
@@ -315,5 +315,47 @@ describe('SegmentBand failure copy', () => {
     expect(screen.queryByText('segment offline')).toBeNull();
     expect(screen.queryByText('Could not load segments.')).toBeNull();
     expect(screen.queryByRole('button', { name: 'Add segment' })).toBeNull();
+  });
+});
+
+// RF-90 / Codex B-3 (audit 4e0b150, repro b-anchor-precision). A section save
+// sends the start only when the instructor edited the start field.
+describe('SegmentBand — untouched section starts survive an edit', () => {
+  async function editOnlySection(edit: () => void) {
+    vi.mocked(api.listSections).mockResolvedValue([section(SPRINT_ID, 'climb', 241500)]);
+    vi.mocked(api.updateSection).mockResolvedValue(section(SPRINT_ID, 'sprint', 241500));
+    render(
+      <SegmentBand
+        classId={CLASS_ID}
+        totalDurationMs={1800000}
+        canEdit
+        trackStartsMs={[0, 241500]}
+        onChanged={() => {}}
+      />,
+    );
+    fireEvent.click(await screen.findByRole('button', { name: /^Edit .* segment$/ }));
+    edit();
+    await act(async () => {
+      fireEvent.click(screen.getByRole('button', { name: 'Save' }));
+    });
+    await waitFor(() => expect(api.updateSection).toHaveBeenCalledTimes(1));
+    return vi.mocked(api.updateSection).mock.calls[0]![1];
+  }
+
+  it('keeps a sub-second 241500 ms start on a type-only edit', async () => {
+    const body = await editOnlySection(() =>
+      fireEvent.change(screen.getByLabelText('Segment type'), { target: { value: 'sprint' } }),
+    );
+    expect(body.type).toBe('sprint');
+    expect(body.startOffsetMs ?? 241500).toBe(241500);
+  });
+
+  it('sends a deliberately edited section start', async () => {
+    const body = await editOnlySection(() =>
+      fireEvent.change(screen.getByLabelText('Segment start (m:ss)'), {
+        target: { value: '4:05' },
+      }),
+    );
+    expect(body.startOffsetMs).toBe(245000);
   });
 });

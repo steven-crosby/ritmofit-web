@@ -2817,9 +2817,13 @@ describe('Dashboard track focus management', () => {
         expect.objectContaining({
           clipStartMs: ms,
           beatAnchorMs: ms,
-          startOffsetMs: ms,
           notes: 'Only the notes changed.',
         }),
+      );
+      // RF-90 / B-1: an untouched free-placement start is not re-sent, so a
+      // concurrent timeline drag cannot be reverted by a notes save.
+      expect(vi.mocked(api.updateClassTrack).mock.calls[0]?.[1]).not.toHaveProperty(
+        'startOffsetMs',
       );
     },
   );

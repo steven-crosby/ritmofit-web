@@ -1,6 +1,6 @@
 // @vitest-environment jsdom
 import { afterEach, describe, expect, it, vi } from 'vitest';
-import { act, cleanup, fireEvent, render, screen, waitFor } from '@testing-library/react';
+import { act, cleanup, fireEvent, render, screen, waitFor, within } from '@testing-library/react';
 import { CuesSection } from './ChoreographyEditor.js';
 import * as api from '../lib/api.js';
 
@@ -573,5 +573,51 @@ describe('CuesSection — color draft ownership', () => {
     expect((screen.getByRole('textbox', { name: 'Move name' }) as HTMLInputElement).value).toBe(
       'First',
     );
+  });
+});
+
+// RF-90 / Codex B-3 (audit 4e0b150, repro b-anchor-precision). A save sends the
+// anchor only when the instructor edited the time field.
+describe('CuesSection — untouched anchors survive an edit', () => {
+  function editRow() {
+    const li = screen
+      .getAllByRole('listitem')
+      .find((item) => within(item).queryByRole('button', { name: 'Save' }));
+    return within(li!);
+  }
+
+  it('keeps a beat-snapped 10313 ms anchor on a text-only edit (128 BPM, snap on)', async () => {
+    // Beat 22 at 128 BPM from a 0 downbeat = 22 * 468.75 = 10312.5, stored as 10313.
+    vi.mocked(api.listCues).mockResolvedValue([cue('cue-1', 'Climb', { anchorMs: 10313 })]);
+    vi.mocked(api.updateCue).mockResolvedValue({} as never);
+    render(<CuesSection classTrackId="ct-1" durationMs={240000} bpm={128} beatAnchorMs={0} />);
+
+    fireEvent.click(await screen.findByRole('button', { name: 'Edit cue Climb' }));
+    const row = editRow();
+    fireEvent.change(row.getByLabelText('Move name'), { target: { value: 'Climb, sit tall' } });
+    await act(async () => {
+      fireEvent.click(row.getByRole('button', { name: 'Save' }));
+    });
+    await waitFor(() => expect(api.updateCue).toHaveBeenCalledTimes(1));
+    const body = vi.mocked(api.updateCue).mock.calls[0]![1];
+    expect(body.text).toBe('Climb, sit tall');
+    // Omitted, so the server keeps the stored 10313.
+    expect(body.anchorMs ?? 10313).toBe(10313);
+  });
+
+  it('still snaps a deliberately edited cue time (128 BPM, snap on)', async () => {
+    vi.mocked(api.listCues).mockResolvedValue([cue('cue-1', 'Climb', { anchorMs: 10313 })]);
+    vi.mocked(api.updateCue).mockResolvedValue({} as never);
+    render(<CuesSection classTrackId="ct-1" durationMs={240000} bpm={128} beatAnchorMs={0} />);
+
+    fireEvent.click(await screen.findByRole('button', { name: 'Edit cue Climb' }));
+    const row = editRow();
+    fireEvent.change(row.getByLabelText('Cue time (m:ss)'), { target: { value: '0:11' } });
+    await act(async () => {
+      fireEvent.click(row.getByRole('button', { name: 'Save' }));
+    });
+    await waitFor(() => expect(api.updateCue).toHaveBeenCalledTimes(1));
+    // 11000 ms snaps to beat 23: round(23 * 468.75) = 10781.
+    expect(vi.mocked(api.updateCue).mock.calls[0]![1].anchorMs).toBe(10781);
   });
 });

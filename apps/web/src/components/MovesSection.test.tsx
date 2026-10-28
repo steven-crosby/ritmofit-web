@@ -1,6 +1,6 @@
 // @vitest-environment jsdom
 import { afterEach, describe, expect, it, vi } from 'vitest';
-import { act, cleanup, fireEvent, render, screen, waitFor } from '@testing-library/react';
+import { act, cleanup, fireEvent, render, screen, waitFor, within } from '@testing-library/react';
 import { MovesSection } from './ChoreographyEditor.js';
 import * as api from '../lib/api.js';
 
@@ -443,5 +443,52 @@ describe('MovesSection — reusable move refresh and retry', () => {
       'ct-1',
       expect.objectContaining({ userMoveId: 'reusable' }),
     );
+  });
+});
+
+// RF-90 / Codex B-3 (audit 4e0b150, repro b-anchor-precision).
+describe('MovesSection — untouched anchors survive an edit', () => {
+  function editRow() {
+    const li = screen
+      .getAllByRole('listitem')
+      .find((item) => within(item).queryByRole('button', { name: 'Save' }));
+    return within(li!);
+  }
+
+  it('keeps a sub-second 12750 ms anchor on an unchanged save (no tempo)', async () => {
+    vi.mocked(api.listPlacedMoves).mockResolvedValue([
+      { ...placedMove('pm-1', 'Sprint'), anchorMs: 12750 },
+    ]);
+    vi.mocked(api.listMoves).mockResolvedValue([]);
+    vi.mocked(api.listUserMoves).mockResolvedValue([]);
+    vi.mocked(api.updatePlacedMove).mockResolvedValue({} as never);
+    render(<MovesSection classTrackId="ct-1" durationMs={240000} />);
+
+    fireEvent.click(await screen.findByRole('button', { name: 'Edit move Sprint' }));
+    await act(async () => {
+      fireEvent.click(editRow().getByRole('button', { name: 'Save' }));
+    });
+    await waitFor(() => expect(api.updatePlacedMove).toHaveBeenCalledTimes(1));
+    const body = vi.mocked(api.updatePlacedMove).mock.calls[0]![1];
+    expect(body.anchorMs ?? 12750).toBe(12750);
+  });
+
+  it('still snaps a deliberately edited move time (128 BPM, snap on)', async () => {
+    vi.mocked(api.listPlacedMoves).mockResolvedValue([
+      { ...placedMove('pm-1', 'Sprint'), anchorMs: 12750 },
+    ]);
+    vi.mocked(api.listMoves).mockResolvedValue([]);
+    vi.mocked(api.listUserMoves).mockResolvedValue([]);
+    vi.mocked(api.updatePlacedMove).mockResolvedValue({} as never);
+    render(<MovesSection classTrackId="ct-1" durationMs={240000} bpm={128} beatAnchorMs={0} />);
+
+    fireEvent.click(await screen.findByRole('button', { name: 'Edit move Sprint' }));
+    const row = editRow();
+    fireEvent.change(row.getByLabelText(/time \(m:ss\)/i), { target: { value: '0:11' } });
+    await act(async () => {
+      fireEvent.click(row.getByRole('button', { name: 'Save' }));
+    });
+    await waitFor(() => expect(api.updatePlacedMove).toHaveBeenCalledTimes(1));
+    expect(vi.mocked(api.updatePlacedMove).mock.calls[0]![1].anchorMs).toBe(10781);
   });
 });
