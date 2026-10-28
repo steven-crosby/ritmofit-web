@@ -341,4 +341,41 @@ describe('Builder saves keep timeline edits (RF-90)', () => {
     expect(await saveInspector(inspector)).not.toHaveProperty('startOffsetMs');
     expect(state.startOffsetMs).toBe(65000);
   });
+
+  it('B-1: a start typed away and back to the stored value is untouched for a later drag', async () => {
+    state.startOffsetMs = 200000;
+    const inspector = await openInspectorWithTimeline();
+    fireEvent.click(inspector.getByText('Advanced timing and placement'));
+    const startAt = () => inspector.getByLabelText(/^Start at/) as HTMLInputElement;
+    expect(startAt().value).toBe('3:20');
+
+    fireEvent.change(startAt(), { target: { value: '3:2' } });
+    fireEvent.change(startAt(), { target: { value: '3:20' } });
+
+    // Timeline drag 3:20 → 4:10 (ten Shift+→ steps of 5 s).
+    await dragStartRight(10);
+    await waitFor(() =>
+      expect(api.updateClassTrack).toHaveBeenLastCalledWith(CT, { startOffsetMs: 250000 }),
+    );
+    await waitFor(() => expect(startAt().value).toBe('4:10'));
+
+    fireEvent.change(inspector.getByLabelText('Creator notes'), { target: { value: 'Push' } });
+    expect(await saveInspector(inspector)).not.toHaveProperty('startOffsetMs');
+    expect(state.startOffsetMs).toBe(250000);
+  });
+
+  it('B-1: a save the server clamps to the unchanged start shows the stored text', async () => {
+    state.maxStartMs = 60000;
+    const inspector = await openInspectorWithTimeline();
+    fireEvent.click(inspector.getByText('Advanced timing and placement'));
+    const startAt = () => inspector.getByLabelText(/^Start at/) as HTMLInputElement;
+
+    fireEvent.change(startAt(), { target: { value: '1:30' } });
+    expect((await saveInspector(inspector)).startOffsetMs).toBe(90000);
+    expect(state.startOffsetMs).toBe(60000);
+    await waitFor(() => expect(startAt().value).toBe('1:00'));
+
+    fireEvent.change(inspector.getByLabelText('Creator notes'), { target: { value: 'Push' } });
+    expect(await saveInspector(inspector)).not.toHaveProperty('startOffsetMs');
+  });
 });
