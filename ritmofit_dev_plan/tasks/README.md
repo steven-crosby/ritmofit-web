@@ -81,7 +81,7 @@ product acceptance task open. Reopen a task by clearing its resolution and suppl
 
 **Status is not authorization.** Task records never replace Steven's permissions for commit, push,
 PR, merge, release, deploy, send, delete, or production access. The standing grant in `AGENTS.md` ›
-"Delegation And Merge Policy" is where commit, push, PR and non-owner-gated merge come from. Ready is the only status that
+"Delegation And Merge Policy" is where commit, push and PR come from; merging also needs the owner's permission for that PR. Ready is the only status that
 grants anything (execution of that scope); a Ready label an agent set for itself grants nothing. Record the boundary in the next action.
 
 ## Authority, sync and concurrent work

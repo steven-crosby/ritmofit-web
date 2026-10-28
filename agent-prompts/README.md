@@ -17,7 +17,7 @@ start-session ──► plan ──► owner confirms ──► execute ──�
 
 | Role | Start | Execute | Close | Merge authority |
 |---|---|---|---|---|
-| **Solo** — one session, one objective | `daily/start-session.md` | branch + PR | `daily/close-session.md` (Solo) | squash-merges its own finished PR under `AGENTS.md` › "Delegation And Merge Policy" (final-head CI green, not owner-gated); deletion is separate |
+| **Solo** — one session, one objective | `daily/start-session.md` | branch + PR | `daily/close-session.md` (Solo) | asks per PR, then final-reviews and squash-merges its own green PR under `AGENTS.md` › "Delegation And Merge Policy"; deletion is separate |
 | **Lane** — one builder in a parallel round | lane brief → `daily/start-session.md` (Lane mode) | lane branch + PR, only owned files | `daily/close-session.md` (Lane) | **none** — the orchestrator merges |
 | **Orchestrator** — runs a parallel round | `orchestrate-parallel-round.md` | writes briefs, reconciles plans, no product code | Step 7 + `daily/close-session.md` (Orchestrator) | runs the merge train under the same policy, one PR at a time |
 
@@ -42,7 +42,7 @@ owner decisions in the session that performs them (`ritmofit_dev_plan/deployment
 | [`daily/start-session.md`](daily/start-session.md) | Read-only orientation in every mode: revision-aware RF records, git/PRs, handoffs and one action; after approval, record In progress before execution | yes | chat baseline + plan |
 | [`daily/close-session.md`](daily/close-session.md) | Reconcile RF/evidence/handoff/docs → final validation → authorized publication → production observations | yes | PR merged or handed off + handoff file |
 | [`orchestrate-parallel-round.md`](orchestrate-parallel-round.md) | Run 3–4 concurrent lane-agents across sibling checkouts: map → partition → briefs → plan gate → CI gate → merge train → cleanup | yes (orchestrator) | merged lane PRs + round handoff |
-| [`delegate-task.md`](delegate-task.md) | Owner's brief for handing one task to any agent; it executes, opens a PR, and squash-merges on green unless owner-gated | no — owner reviews the PR | PR (merged, or `needs-owner`) |
+| [`delegate-task.md`](delegate-task.md) | Owner's brief for handing one task to any agent; it executes, opens a PR, and asks permission for the final review + squash-merge | no — owner approves each merge | PR (merged, or `ready-to-merge` awaiting permission) |
 | [`templates/handoff.md`](templates/handoff.md) | Handoff file template | — | — |
 | [`templates/lane-brief.md`](templates/lane-brief.md) | Lane brief template (copied untracked per lane) | — | — |
 | [`design-system-drift.md`](design-system-drift.md) | Report-only canon-drift audit: design-system canon vs code vs rendered browser truth | either; local + browser | `docs/audits/design-system-drift-<date>/` on a docs PR |

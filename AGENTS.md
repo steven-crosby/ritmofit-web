@@ -18,7 +18,7 @@
 <!-- note (Codex, 2026-10-27): Aligned RF session transitions, final validation and separate publication/deletion authority. -->
 
 <!-- note (Claude Code, 2026-10-27): Aligned session prompts, handoffs and the RF board: Ready is the owner's queue, draft PRs claim tasks, Done lands in the work PR, CI traces product PRs to RF records, handoffs are restart notes. -->
-<!-- note (Claude Code, 2026-10-27): Owner set a standing delegation grant (branch → PR → squash-merge on green) with CI-enforced owner-gated paths, and made the e2e smoke a required CI step. -->
+<!-- note (Claude Code, 2026-10-27): Owner set a standing delegation grant (branch → PR, then final review + squash-merge with per-PR owner permission) with CI-enforced owner-gated paths, and made the e2e smoke a required CI step. -->
 
 This is the canonical contributor and agent guide for Ritmo Studio. If another instruction file conflicts
 with it, follow `AGENTS.md`, then repair the stale file. When an AI agent edits this file or adds a note
@@ -148,9 +148,9 @@ Every session — any tool, local or cloud — runs `agent-prompts/daily/start-s
 plan (owner confirms substantial work) → execute on a branch + PR → `agent-prompts/daily/close-session.md`.
 The durable output is `main` plus a handoff file; chat and tool memory are scratch.
 
-- **Roles.** _Solo_: one session owns its PRs and squash-merges its own finished green work under
-  "Delegation And Merge Policy" below, which is the standing grant; neither the role nor a task status
-  grants anything beyond it. _Lane_: one
+- **Roles.** _Solo_: one session owns its PRs and, once each is green and the owner gives that PR's
+  merge permission, runs the final review and squash-merges it under "Delegation And Merge Policy"
+  below; neither the role nor a task status grants anything beyond it. _Lane_: one
   builder in a parallel round (`agent-prompts/orchestrate-parallel-round.md`); edits only the files its
   brief assigns, opens its PR, writes its handoff, and **never merges**. _Orchestrator_: partitions the
   round, writes untracked lane briefs from `agent-prompts/templates/lane-brief.md`, reconciles plans,
@@ -188,23 +188,41 @@ manual smoke testing. This section is the owner's **standing grant** (set 2026-1
 "permission already granted" that the daily prompts and RF workflow refer to, for any tool and session.
 
 **Granted without asking**, for work inside an owner-assigned scope: create a branch, commit, push
-that branch, open a PR (draft first, as the claim), update the branch from `main`, retire handoff
-files whose items are done or routed, and squash-merge the agent's own PR when all of these hold:
+that branch, open a PR (draft first, as the claim), update the branch from `main`, and retire handoff
+files whose items are done or routed.
+
+**Merging needs the owner's permission for each PR.** A PR is ready to merge when:
 
 1. The required CI check is green on the **final PR head** and the branch is up to date with `main`
-   (the ruleset enforces both). Merge with `gh pr merge <n> --squash --match-head-commit <sha>`.
-2. The PR touches no owner-gated path (below). CI's owner-gate step enforces this.
-3. Product changes (`apps/`, `packages/`, `e2e/`) change an RF record that cites the PR, with the
+   (the ruleset enforces both).
+2. Product changes (`apps/`, `packages/`, `e2e/`) change an RF record that cites the PR, with the
    task's final state set. CI's RF-trace step enforces this.
-4. The PR body carries the evidence sections in `.github/pull_request_template.md`.
+3. The PR body carries the evidence sections in `.github/pull_request_template.md`.
+
+Then the agent **asks**: "PR #N is green on `<sha>` — may I run the final review and squash-merge?"
+In a live session it asks in chat. A background agent comments that question on the PR, adds the
+`ready-to-merge` label and stops. Permission is the owner saying so in a session, or the owner
+adding `owner-approved` to the PR. Agents never apply `owner-approved` on their own judgment; the one
+exception is the owner explicitly telling the agent in a session to apply it, which the agent records
+as a PR comment before applying it.
+
+With permission, the agent runs its tool's code-review pass on the final PR diff (for example
+`/code-review` in Claude Code, `/review` in Codex, or Cursor's review) and then:
+
+- **No significant findings** (correctness, security, data loss, missing authz): squash-merge with
+  `gh pr merge <n> --squash --match-head-commit <reviewed sha>` and remove `ready-to-merge`.
+- **Findings:** do not merge. Comment them on the PR, remove `ready-to-merge`, and stop. A fix is a
+  new push, so it needs green CI again and a fresh permission. Any push after permission voids it:
+  the agent removes `owner-approved` and asks again.
 
 Auto-merge is off and branches must be current, so concurrent agents merge **one at a time**: update
-the branch, wait for CI on the new head, merge, then the next.
+the branch, wait for CI on the new head, ask, review, merge, then the next.
 
-**Owner-gated** — open the PR, add the `needs-owner` label, name the manual check left, and stop.
-The owner reviews, adds `owner-approved` and merges. Agents never apply `owner-approved` and never
-merge these, even when CI is green. The agent still sets the task's final state in that PR: the open
-PR is the review, so a rejected PR never reaches `main`. The authoritative path list is `scripts/owner-gate.mjs`:
+**Owner-gated** — CI's last step fails until `owner-approved` is present. The agent adds `needs-owner`,
+names the manual check left in the PR, and asks as above. These PRs need the `owner-approved` label
+itself, because the CI gate reads it; it is both the gate approval and the merge permission. The agent still sets the task's final state in the PR: the
+open PR is the review, so a rejected PR never reaches `main`. The authoritative path list is
+`scripts/owner-gate.mjs`:
 
 - D1 migrations and the Drizzle schema
 - auth and authz (Better Auth, sessions, `requireAccess` helpers, their tests)
@@ -213,8 +231,8 @@ PR is the review, so a rejected PR never reaches `main`. The authoritative path 
 - agent rules (`AGENTS.md`, `CLAUDE.md`)
 
 **Never granted:** deploys, remote D1 migrations, secrets, production data, repository settings or
-rulesets, applying `owner-approved`, force-pushing or merging another session's branch, and branch
-deletion. Those keep their separate explicit permission.
+rulesets, applying `owner-approved`, merging without that PR's permission, force-pushing or merging
+another session's branch, and branch deletion. Those keep their separate explicit permission.
 
 **What CI proves:** the required job runs format, task, owner-gate and RF-trace checks, typecheck, lint,
 design-system verify, theme classes, unit and D1 integration tests, the web build with bundle budget,
@@ -351,8 +369,8 @@ risk, RF IDs, verification, screenshots for UI changes (the CI artifact is fine)
 shared-contract, config, secret and deployment impacts, and what CI cannot prove.
 
 Solo project, multiple AI tools across local and remote sessions: `main` must carry the published
-source of truth between sessions. Publish and merge finished work under "Delegation And Merge
-Policy"; do not re-ask for what it grants. For anything it does not grant, leave the concrete next
+source of truth between sessions. Publish finished work under "Delegation And Merge Policy" without
+re-asking for what it grants; ask once per PR for the final review and merge. For anything it does not grant, leave the concrete next
 step in the RF record and handoff rather than inferring approval. See
 `agent-prompts/daily/close-session.md` for ordering.
 

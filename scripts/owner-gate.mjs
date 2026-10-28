@@ -1,8 +1,8 @@
 #!/usr/bin/env node
 // Owner gate for delegated PRs (AGENTS.md › "Delegation And Merge Policy").
 //
-// Agents may squash-merge their own PR once CI is green, except for changes that CI cannot prove
-// or that are hard to undo. Every PR is authored as the owner's account, so GitHub review rules
+// Agents ask the owner before merging any PR. Changes that CI cannot prove or that are hard to undo
+// also fail CI until the owner approves them. Every PR is authored as the owner's account, so GitHub review rules
 // cannot tell an agent from the owner; this check is the backstop. It fails when a PR touches an
 // owner-gated path and does not carry the `owner-approved` label. It guards against an agent
 // misjudging its own change, not against one deliberately applying the label.
@@ -94,12 +94,12 @@ function main() {
   console.log('owner-gate: this PR touches owner-gated paths:');
   for (const { path, gate } of gated) console.log(`  [${gate}] ${path}`);
   if (pass) {
-    console.log(`owner-gate: '${APPROVAL_LABEL}' is present. The owner merges this PR.`);
+    console.log(`owner-gate: '${APPROVAL_LABEL}' is present. The owner approved this PR.`);
     return;
   }
   console.error(
-    `owner-gate: FAIL. Add the 'needs-owner' label and leave it for the owner, who reviews and ` +
-      `applies '${APPROVAL_LABEL}'. Agents never apply that label.`,
+    `owner-gate: FAIL. Add 'needs-owner' and ask the owner, who reviews and applies ` +
+      `'${APPROVAL_LABEL}'. Agents never apply that label.`,
   );
   process.exit(1);
 }

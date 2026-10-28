@@ -97,4 +97,6 @@ Domain vocabulary (class, plan block, section, cue, placed move, clip window): s
 To run an owner brief from `agent-prompts/delegate-task.md`, spawn an `Agent` with
 `isolation: "worktree"` and pass the brief plus "Follow agent-prompts/delegate-task.md" verbatim.
 The worktree keeps it off any other session's uncommitted changes. Each subagent ends in its own PR.
-They must merge one at a time (see the merge policy), so do not ask several to merge simultaneously.
+Subagents can't ask the owner directly, so each stops at green with a PR comment and the
+`ready-to-merge` label. Relay those asks to the owner; with permission, run `/code-review` on each PR's
+final diff and merge them one at a time (see the merge policy).

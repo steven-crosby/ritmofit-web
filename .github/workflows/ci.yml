@@ -2,8 +2,8 @@ name: CI
 
 # Quality gate for the pnpm monorepo. Deploys stay manual by design (see AGENTS.md) —
 # this workflow never deploys, it only blocks regressions on PRs and pushes to main.
-# Agents squash-merge their own PRs when this job is green (AGENTS.md › "Delegation And
-# Merge Policy"), so it is the whole automated review: keep it thorough.
+# Agents ask the owner, run a final code review, then squash-merge once this job is green
+# (AGENTS.md › "Delegation And Merge Policy"), so it is the automated review: keep it thorough.
 on:
   push:
     branches: [main]
@@ -39,8 +39,8 @@ jobs:
       - name: Install
         run: pnpm install --frozen-lockfile
 
-      # Agents may merge on green, so owner-gated paths (migrations, auth, provider/playback,
-      # CI/deploy, agent rules) fail the job until the owner adds `owner-approved`. Its own
+      # Owner-gated paths (migrations, auth, provider/playback, CI/deploy, agent rules) fail the
+      # job until the owner adds `owner-approved`. Its own
       # tests run first — a checker nobody has watched fail is not a gate. The gate itself
       # runs last, so every other check still reports for the owner's review.
       - name: Owner gate self-test

@@ -7,7 +7,7 @@
 
 > **For the owner:** fill in the brief below and paste it to any agent (Claude Code subagent or
 > background task, Cursor background agent, Codex). It is the scope confirmation, so the agent plans
-> and executes without waiting. You review the PR it opens. For three or more concurrent tasks across
+> and executes without waiting. It asks your permission before the final review and squash-merge. For three or more concurrent tasks across
 > sibling checkouts, use [`orchestrate-parallel-round.md`](orchestrate-parallel-round.md) instead.
 
 ## Brief (owner fills in)
@@ -45,9 +45,11 @@ leaves a product decision open; then ask **one** focused question, with your rec
    PR; CI's RF-trace step fails product changes without a record citing the PR. Fill every section
    of `.github/pull_request_template.md`, even when passing the body on the command line, then mark
    the draft ready.
-6. **Close.** Run [`daily/close-session.md`](daily/close-session.md) (Solo). If the PR is not
-   owner-gated, wait for the required check on the final head, then squash-merge with
-   `--match-head-commit`. If it is owner-gated, add `needs-owner` and stop. Never apply
-   `owner-approved`, deploy, or delete branches.
-7. **Report** in under ten lines: the PR link, merged or waiting on the owner, the verification that
-   ran, and anything the owner must still check by hand.
+6. **Close.** Run [`daily/close-session.md`](daily/close-session.md) (Solo). When the required check
+   is green on the final head, ask the owner for permission to run the final review and squash-merge:
+   in chat if the owner is present, otherwise as a PR comment plus the `ready-to-merge` label, then
+   stop (add `needs-owner` too if the PR is owner-gated). With permission, run your tool's code
+   review on the final diff and merge with `--match-head-commit` only if it finds nothing
+   significant. Never apply `owner-approved`, deploy, or delete branches.
+7. **Report** in under ten lines: the PR link, merged or awaiting merge permission, the
+   verification that ran, and anything the owner must still check by hand.

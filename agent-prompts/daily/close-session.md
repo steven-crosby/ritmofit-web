@@ -3,6 +3,7 @@
 <!-- Codex, 2026-10-27: Ordered RF reconciliation and final validation before publication; made permissions explicit. -->
 <!-- Claude Code, 2026-10-27: Pointed permissions at the AGENTS.md standing delegation grant and owner gate. -->
 <!-- Claude Code, 2026-10-27: Done lands in the work PR with its PR link; handoffs are restart notes only. -->
+<!-- Claude Code, 2026-10-27: Merging asks the owner per PR, then runs a final code review before squash-merge. -->
 
 > **INTERACTIVE.** Use whenever a work session ends — any tool, local or cloud, solo or lane.
 > Pair with [`start-session.md`](./start-session.md). Complete the pre-publication steps before
@@ -16,8 +17,8 @@ records, goes through a PR; never push straight to `main`. Merging does not depl
 
 ## Mode, depth and order
 
-- **Solo:** owns its work and PR; squash-merges under the standing grant when final-head checks pass
-  and the PR is not owner-gated.
+- **Solo:** owns its work and PR; when final-head checks pass it asks the owner, then runs the final
+  review and squash-merges (`AGENTS.md` › "Delegation And Merge Policy").
 - **Lane:** prepares its assigned work and handoff; never merges. The orchestrator runs the merge train.
 - **Orchestrator:** follow `../orchestrate-parallel-round.md` for the round and apply these RF,
   evidence and permission rules before its authorized merge train. No product code.
@@ -115,10 +116,14 @@ from verified sources and state what orientation evidence is missing.
 - [ ] Before merge, all RF/handoff/docs changes must be on the PR branch. Wait for checks on the
   **final PR head**, record that SHA, and ensure merge eligibility. An earlier green revision is
   insufficient after task or documentation edits. Use an expected-head guard when merging.
-- **Own finished PR, Solo:** squash-merge when merge permission is granted and final-head checks
-  pass. Announce the action. If the owner-gate step lists owner-gated paths, add `needs-owner`, name
-  the manual check left in the PR, and stop: the owner reviews, adds `owner-approved` and merges.
-  Never apply `owner-approved` yourself. Delete the branch only if deletion is also authorized; do not append
+- **Own finished PR, Solo:** when final-head checks pass, ask: "PR #N is green on `<sha>` — may I
+  run the final review and squash-merge?" In a live session ask in chat; otherwise comment that on
+  the PR, add `ready-to-merge` and stop. Owner-gated PRs also get `needs-owner` and the manual check
+  left. Permission is the owner saying so in a session or adding `owner-approved`; never apply that
+  label yourself. With permission, run your tool's code review on the final diff. No significant
+  findings: squash-merge with `--match-head-commit <reviewed sha>` and remove `ready-to-merge`.
+  Findings: do not merge; comment them, remove `ready-to-merge`, stop. Any later push voids the
+  permission: remove `owner-approved` and ask again. Delete the branch only if deletion is also authorized; do not append
   `--delete-branch` automatically. Missing merge/deletion permission is an explicit next action.
 - **Lane:** leave its PR open for the orchestrator with RF records/handoff complete; report CI state.
 - **Genuinely unfinished:** leave open/draft with the actual remaining acceptance in its RF record.
@@ -172,8 +177,8 @@ pnpm format:check
 git diff --check
 gh pr list --state open
 gh pr checks <n>                         # verify final head as described above
-gh pr merge <n> --squash --match-head-commit <sha>  # standing grant; never owner-gated PRs
-gh pr edit <n> --add-label needs-owner              # owner-gated: stop here
+gh pr edit <n> --add-label ready-to-merge          # ask; add needs-owner if owner-gated
+gh pr merge <n> --squash --match-head-commit <sha>  # only after permission + clean final review
 ```
 
 Canonical gates: `AGENTS.md` › "Verification, PRs, And Commits". Task semantics:
