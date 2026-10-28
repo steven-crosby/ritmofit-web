@@ -97,13 +97,50 @@ const FAIRPLAY_KEY_SYSTEM = 'com.apple.fps';
  */
 const FAIRPLAY_AUDIO_CONTENT_TYPE = 'audio/mp4;codecs="mp4a.40.2"';
 
-/** Succeeded `requestMediaKeySystemAccess`. Anything else remembered is a DOMException name. */
+/**
+ * Succeeded `requestMediaKeySystemAccess`. Anything else remembered is a probe
+ * word from `safariModernAccessErrorWord`, or `timeout`.
+ */
 const SAFARI_MODERN_ACCESS_OK = 'ok';
+
+/** The request had not settled within `SAFARI_MODERN_ACCESS_TIMEOUT_MS`. */
+const SAFARI_MODERN_ACCESS_TIMEOUT = 'timeout';
+
+/** A rejection whose name is not safe to show (custom class, crafted name, non-error value). */
+const SAFARI_MODERN_ACCESS_OTHER = 'other';
+
+/** Short, so a hung key-system request cannot hold the error banner for long. */
+export const SAFARI_MODERN_ACCESS_TIMEOUT_MS = 2_000;
+
+/**
+ * Standard built-in error constructors whose fixed `name` may appear on the
+ * banner (owner decision, 2026-10-28). Resolved lazily: `AggregateError` is
+ * absent in older engines.
+ */
+function builtInErrorConstructors(): ErrorConstructor[] {
+  const names = [
+    'TypeError',
+    'RangeError',
+    'SyntaxError',
+    'ReferenceError',
+    'EvalError',
+    'URIError',
+    'AggregateError',
+    'Error',
+  ] as const;
+  const scope = globalThis as unknown as Record<string, unknown>;
+  return names
+    .map((name) => scope[name])
+    .filter((ctor): ctor is ErrorConstructor => typeof ctor === 'function');
+}
 
 const CONSOLE_PREFIX = '[ritmo apple-music]';
 
 let modernAccessWord: string | null = null;
 let modernAccessProbe: Promise<string | null> | null = null;
+let modernAccessInFlight: Promise<string | null> | null = null;
+/** Bumped by the test reset so a late settle from an older probe is dropped. */
+let modernAccessGeneration = 0;
 
 function webKitMediaKeys(): unknown {
   if (typeof window === 'undefined') return undefined;
@@ -121,9 +158,23 @@ function audioOnlyFairPlayConfiguration(): MediaKeySystemConfiguration {
   };
 }
 
-function domExceptionName(error: unknown): string | null {
-  if (!(error instanceof DOMException)) return null;
-  return /^[A-Za-z][A-Za-z0-9]*$/.test(error.name) ? error.name : null;
+/**
+ * The one word a probe rejection may put on the banner: a DOMException name,
+ * or the standard name of a built-in error. A subclass or crafted `name` maps
+ * to `other`. Never the message or stack, which can carry tokens.
+ */
+function safariModernAccessErrorWord(error: unknown): string {
+  if (error instanceof DOMException) {
+    return /^[A-Za-z][A-Za-z0-9]*$/.test(error.name) ? error.name : SAFARI_MODERN_ACCESS_OTHER;
+  }
+  for (const ctor of builtInErrorConstructors()) {
+    // Exact constructor and its own standard name: `class X extends TypeError`
+    // or `error.name = '...'` must not choose the word.
+    if (error instanceof ctor && Object.getPrototypeOf(error) === ctor.prototype) {
+      return (error as Error).name === ctor.name ? ctor.name : SAFARI_MODERN_ACCESS_OTHER;
+    }
+  }
+  return SAFARI_MODERN_ACCESS_OTHER;
 }
 
 /** Log whether our flag write stuck. Never log the stored value, a token, or an exception message. */
@@ -137,39 +188,79 @@ function logSafariModernEmeFlag(): void {
   console.info(`${CONSOLE_PREFIX} mk-safari-modern-eme ${enabled ? '1' : 'not-1'}`);
 }
 
-async function runSafariModernAccessProbe(): Promise<string | null> {
+/**
+ * Request `com.apple.fps` once. Resolves `"ok"` or a word from
+ * `safariModernAccessErrorWord`, and never rejects.
+ */
+async function requestSafariModernAccess(
+  request: Navigator['requestMediaKeySystemAccess'],
+): Promise<string> {
+  try {
+    // Call it on `navigator`: WebIDL rejects any other receiver with a
+    // TypeError ("Illegal invocation"), so `request(...)` alone never ran (AUD-002).
+    // The access object is intentionally discarded. Creating media keys or a
+    // session here would attach a key session this page does not control.
+    await request.call(navigator, FAIRPLAY_KEY_SYSTEM, [audioOnlyFairPlayConfiguration()]);
+    return SAFARI_MODERN_ACCESS_OK;
+  } catch (error) {
+    return safariModernAccessErrorWord(error);
+  }
+}
+
+async function runSafariModernAccessProbe(generation: number): Promise<string | null> {
   logSafariModernEmeFlag();
   const request = navigator.requestMediaKeySystemAccess;
   if (typeof request !== 'function') return null;
+  const settled = requestSafariModernAccess(request);
+  let timer: ReturnType<typeof setTimeout> | undefined;
+  const timedOut = new Promise<typeof SAFARI_MODERN_ACCESS_TIMEOUT>((resolve) => {
+    timer = setTimeout(
+      () => resolve(SAFARI_MODERN_ACCESS_TIMEOUT),
+      SAFARI_MODERN_ACCESS_TIMEOUT_MS,
+    );
+  });
   try {
-    // The access object is intentionally discarded. Creating media keys or a
-    // session here would attach a key session this page does not control.
-    await request(FAIRPLAY_KEY_SYSTEM, [audioOnlyFairPlayConfiguration()]);
-    return SAFARI_MODERN_ACCESS_OK;
-  } catch (error) {
-    return domExceptionName(error);
+    const word = await Promise.race([settled, timedOut]);
+    if (word === SAFARI_MODERN_ACCESS_TIMEOUT) {
+      // A late answer is still better evidence than "timeout" for a later banner.
+      void settled.then((late) => {
+        if (generation === modernAccessGeneration) modernAccessWord = late;
+      });
+    }
+    return word;
+  } finally {
+    clearTimeout(timer);
   }
 }
 
 /**
  * One audio-only FairPlay probe for this page on iOS Safari, including iOS 27
  * where `WebKitMediaKeys` is absent. Legacy WebKit still probes too.
- * Resolves to `"ok"`, a DOMException name, or null when the call cannot be
- * made or the rejection is not a DOMException. A second call reuses the first
- * result and does not request again. Returns null (not a promise) on other
- * browsers, so `play()` does not yield before MusicKit's own `play()`.
+ * Resolves within `SAFARI_MODERN_ACCESS_TIMEOUT_MS` to `"ok"`, a DOMException
+ * or built-in error name, `"other"`, or `"timeout"`; null when the API is
+ * missing. A second call reuses the first result and does not request again.
+ * Returns null (not a promise) on other browsers. Callers start it after
+ * MusicKit's `play()`, never before, so it cannot use up the iOS user gesture.
  */
 export function probeSafariModernFairPlayAccess(): Promise<string | null> | null {
   if (!webKitMediaKeys() && !isIosSafari()) return null;
   if (!modernAccessProbe) {
+    const generation = modernAccessGeneration;
     // A probe failure must not become "would not play". Remember the word, or null.
-    modernAccessProbe = runSafariModernAccessProbe().then(
-      (word) => {
-        modernAccessWord = word;
-        return word;
-      },
+    const probe: Promise<string | null> = runSafariModernAccessProbe(generation).then(
+      (word) => word,
       () => null,
     );
+    modernAccessProbe = probe;
+    modernAccessInFlight = probe;
+    void probe.then((word) => {
+      if (generation !== modernAccessGeneration) return;
+      // A real word that arrived just after the timeout fired is kept over "timeout".
+      if (word !== SAFARI_MODERN_ACCESS_TIMEOUT || modernAccessWord === null) {
+        modernAccessWord = word;
+      }
+      modernAccessInFlight = null;
+    });
   }
   return modernAccessProbe;
 }
@@ -179,9 +270,19 @@ export function safariModernAccessWord(): string | null {
   return modernAccessWord;
 }
 
+/**
+ * The started probe while it is still unsettled, else null. Does not start a
+ * probe. Bounded by `SAFARI_MODERN_ACCESS_TIMEOUT_MS`.
+ */
+export function safariModernAccessInFlight(): Promise<string | null> | null {
+  return modernAccessInFlight;
+}
+
 export function resetSafariModernAccessProbeForTests(): void {
   modernAccessWord = null;
   modernAccessProbe = null;
+  modernAccessInFlight = null;
+  modernAccessGeneration += 1;
 }
 
 /**
