@@ -47,7 +47,7 @@ leaves a product decision open; then ask **one** focused question, with your rec
    of `.github/pull_request_template.md`, even when passing the body on the command line, then mark
    the draft ready.
 6. **Close.** Run [`daily/close-session.md`](daily/close-session.md) (Solo). When the required check
-   is green on the final head, ask the owner for permission to run the final review and squash-merge:
+   is green on the final head (owner-gated: everything except the final owner-gate step), ask the owner for permission to run the final review and squash-merge:
    in chat if the owner is present, otherwise as a PR comment plus the `ready-to-merge` label, then
    stop (add `needs-owner` too if the PR is owner-gated). With permission, run your tool's code
    review on the final diff and merge with `--match-head-commit` only if it finds nothing

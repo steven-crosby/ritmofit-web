@@ -49,6 +49,15 @@ test('every gated class is caught', () => {
     'apps/api/wrangler.toml': 'CI / deploy / infrastructure',
     'pnpm-workspace.yaml': 'CI / deploy / infrastructure',
     'AGENTS.md': 'agent rules',
+    'agent-prompts/daily/close-session.md': 'agent rules',
+    'agent-prompts/templates/lane-brief.md': 'agent rules',
+    'ritmofit_dev_plan/tasks/README.md': 'agent rules',
+    'ritmofit_dev_plan/handoffs/README.md': 'agent rules',
+    'apps/web/src/components/LiveMode.tsx': 'provider / playback',
+    'apps/web/src/components/LiveMode.test.tsx': 'provider / playback',
+    'apps/web/src/components/ProviderConnectAction.tsx': 'provider / playback',
+    'apps/web/src/components/SpotifyActivationAction.tsx': 'provider / playback',
+    'apps/web/src/lib/providers.ts': 'provider / playback',
     'CLAUDE.md': 'agent rules',
   };
   for (const [path, gate] of Object.entries(cases)) {
@@ -58,12 +67,12 @@ test('every gated class is caught', () => {
 
 test('ordinary product and docs changes are not gated', () => {
   const free = [
-    'apps/web/src/components/LiveMode.tsx',
+    'apps/web/src/components/ClassesHome.tsx',
     'apps/web/src/lib/readiness.ts',
     'apps/api/src/routes/classes.ts',
     'apps/api/src/lib/run-payload.ts',
     'packages/shared/src/entities/class.ts',
-    'agent-prompts/daily/close-session.md',
+    'ritmofit_dev_plan/handoffs/2026-10-27-example.md',
     'ritmofit_dev_plan/tasks/RF-98.json',
     'README.md',
     'e2e/smoke.spec.ts',

@@ -111,8 +111,9 @@ Do not redefine entity shapes inside `apps/api` or `apps/web`. Change a shape on
   `wrangler d1 migrations apply`. **Deploys are intentionally manual** (run `pnpm --filter @ritmofit/api
   deploy` from a checkout) — the Cloudflare **Workers Builds** git integration was deliberately
   disconnected (2026-06-12) so a push to `main` does **not** auto-deploy to production. Don't reconnect
-  it without deciding you want push-to-deploy CI/CD; the existing GitHub Actions CI is advisory and
-  blocks regressions, but deployment remains a separate manual step.
+  it without deciding you want push-to-deploy CI/CD; GitHub Actions CI is the required merge gate
+  (`AGENTS.md` › "Delegation And Merge Policy") and blocks regressions, but deployment remains a
+  separate manual step.
 - **Web:** Vite build → **Workers static assets** served by the **same Worker** as the API (`[assets]`
   in `wrangler.toml`, `run_worker_first=["/api/*"]`, SPA fallback). SPA and API share **one origin**
   (`https://ritmofit.studio`), so the session cookie is first-party and **no cross-origin CORS is

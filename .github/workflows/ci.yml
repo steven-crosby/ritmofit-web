@@ -11,10 +11,12 @@ on:
     # labeled/unlabeled re-run the owner gate when `owner-approved` is added or removed.
     types: [opened, synchronize, reopened, labeled, unlabeled]
 
-# pull-requests: write lets the job remove `owner-approved` when new commits arrive.
+# pull-requests: write removes a stale `owner-approved`; statuses: write binds an approval to the
+# exact commit it was given on.
 permissions:
   contents: read
   pull-requests: write
+  statuses: write
 
 # A newer push to the same ref cancels the in-flight run.
 concurrency:
@@ -26,12 +28,25 @@ jobs:
     name: format · typecheck · lint · test · build · audit
     runs-on: ubuntu-latest
     steps:
-      # Approval covers the commits the owner saw, so a new push voids it. This runs first and
-      # needs no install, so a later failure cannot skip it. GITHUB_TOKEN edits do not trigger
-      # another run. Known gap: a label event that cancels this run before this step leaves the
-      # label in place; the owner's per-PR merge permission is the backstop.
+      # Approval covers only the commit the owner saw. When the owner adds `owner-approved`, this
+      # run records an `owner-approval` commit status on that exact head; the gate later requires
+      # both the label and that status on the current head. Any new commit (a push, a branch
+      # update, commits pushed while the PR was closed) has no status, so a stale label cannot
+      # pass the gate even if removing it below fails. A run cancelled before recording leaves no
+      # status, which fails closed: re-add the label. Agents never create this status by hand.
+      - name: Record owner approval for this head
+        if: github.event_name == 'pull_request' && github.event.action == 'labeled' && github.event.label.name == 'owner-approved'
+        env:
+          GH_TOKEN: ${{ github.token }}
+          HEAD_SHA: ${{ github.event.pull_request.head.sha }}
+        run: |
+          gh api "repos/$GITHUB_REPOSITORY/statuses/$HEAD_SHA" -f state=success \
+            -f context=owner-approval -f description="owner-approved was applied to this commit"
+
+      # Hygiene: drop the label when new commits arrive so the PR shows it needs a fresh approval.
+      # GITHUB_TOKEN edits do not trigger another run.
       - name: Void owner approval on new commits
-        if: github.event_name == 'pull_request' && github.event.action == 'synchronize' && contains(github.event.pull_request.labels.*.name, 'owner-approved')
+        if: github.event_name == 'pull_request' && (github.event.action == 'synchronize' || github.event.action == 'reopened') && contains(github.event.pull_request.labels.*.name, 'owner-approved')
         env:
           GH_TOKEN: ${{ github.token }}
           PR_NUMBER: ${{ github.event.pull_request.number }}
@@ -201,9 +216,17 @@ jobs:
       - name: Owner gate (owner-gated paths need owner-approved)
         if: ${{ !cancelled() && github.event_name == 'pull_request' }}
         env:
+          GH_TOKEN: ${{ github.token }}
           LABELS: ${{ toJSON(github.event.pull_request.labels.*.name) }}
-          ACTION: ${{ github.event.action }}
+          HEAD_SHA: ${{ github.event.pull_request.head.sha }}
         run: |
-          # On a push the payload still lists the approval this run just voided.
-          if [ "$ACTION" = synchronize ]; then LABELS='[]'; fi
+          set -euo pipefail
+          # The label counts only if this exact head carries the recorded approval status.
+          bound=$(gh api "repos/$GITHUB_REPOSITORY/commits/$HEAD_SHA/statuses" --paginate \
+            --jq '[.[] | select(.context == "owner-approval" and .state == "success")] | length' |
+            awk '{ total += $1 } END { print total + 0 }')
+          if [ "$bound" -eq 0 ]; then
+            echo "No owner-approval status on $HEAD_SHA; owner-approved (if present) is not counted."
+            LABELS=$(jq -c 'map(select(. != "owner-approved"))' <<< "$LABELS")
+          fi
           OWNER_GATE_LABELS="$LABELS" node "$RUNNER_TEMP/owner-gate.mjs" < "$RUNNER_TEMP/pr-files.txt"

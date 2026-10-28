@@ -103,8 +103,11 @@ grants anything (execution of that scope); a Ready label an agent set for itself
 - [Close-session](../../agent-prompts/daily/close-session.md) reconciles acceptance and remaining work,
   finishes evidence/handoff/docs edits and authorized retirements, then renders and validates the
   final records before any publication. A later file edit repeats final validation. The final state
-  (usually Done) lands in the work PR itself, so merging publishes it; CI's RF-trace step requires a
-  product PR to change a record citing it. Merging follows the standing grant and final-head checks.
+  (usually Done) lands in the work PR itself, so merging publishes it. CI's RF-trace step requires a
+  product PR to change a record whose `pr` evidence cites it and whose status is final (Done, For
+  review, Blocked or Cancelled); a draft stays red until then. Work spanning several PRs uses one
+  child record per PR (`parent: RF-N`); each PR finalizes its child and the parent closes with the
+  last one. Merging also needs the owner's permission for that PR and green final-head checks.
 - Before retiring a document used as task evidence, preserve its evidence in a durable repo file
   or immutable commit link and update the reference without upgrading its verification status.
   Final validation must run after retirement, not just before it.

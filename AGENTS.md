@@ -194,10 +194,13 @@ files whose items are done or routed.
 **Merging needs the owner's permission for each PR.** A PR is ready to merge when:
 
 1. The required CI check is green on the **final PR head** and the branch is up to date with `main`
-   (the ruleset enforces both).
+   (the ruleset enforces both). For an owner-gated PR the job is red by design until the owner
+   approves, so it is ready when every step except the final owner-gate step has passed.
 2. Product changes (`apps/`, `packages/`, `e2e/`) change an RF record whose `pr` evidence cites the
    PR and whose status is final (Done, For review, Blocked or Cancelled). CI's RF-trace step
-   enforces this, so a draft PR's RF-trace stays red until the task's final state is set.
+   enforces this, so a draft PR's RF-trace stays red until the task's final state is set. Work that
+   spans several PRs gets one child RF record per PR (`parent: RF-N`): each PR finalizes its own
+   child, and the parent closes with the last one, so the board never shows false completion.
 3. The PR body carries the evidence sections in `.github/pull_request_template.md`.
 
 Then the agent **asks**: "PR #N is green on `<sha>` — may I run the final review and squash-merge?"
@@ -214,7 +217,10 @@ With permission, the agent runs its tool's code-review pass on the final PR diff
   `gh pr merge <n> --squash --match-head-commit <reviewed sha>` and remove `ready-to-merge`.
 - **Findings:** do not merge. Comment them on the PR, remove `ready-to-merge`, and stop. A fix is a
   new push, so it needs green CI again and a fresh permission. Any push after permission voids it:
-  CI removes `owner-approved` on every new commit, and the agent asks again.
+  approval counts only for the commit it was given on. When the owner adds `owner-approved`, CI
+  records an `owner-approval` commit status on that exact head, and the gate requires both the label
+  and that status on the current head; CI also drops the label when new commits arrive. The agent
+  asks again. Agents never create the `owner-approval` status by hand.
 
 Auto-merge is off and branches must be current, so concurrent agents merge **one at a time**: update
 the branch, wait for CI on the new head, ask, review, merge, then the next.
@@ -233,9 +239,10 @@ open PR is the review, so a rejected PR never reaches `main`. The authoritative 
 
 **The owner gate is a guardrail, not a security boundary.** It catches an agent misjudging its own
 change. It cannot stop a deliberate bypass: every agent pushes as the owner's account, and a
-`pull_request` run uses the PR's own `ci.yml`, so a PR could edit the gate away. A label event that
-cancels a push run before the approval is voided can also leave a stale `owner-approved`. The real
-backstop is the owner's permission for every merge; agents never edit the gate to get a PR through.
+`pull_request` run uses the PR's own `ci.yml`, so a PR could edit the gate or forge the status. A
+labeled run cancelled before it records the status leaves the approval uncounted, which fails closed
+(re-add the label). The real backstop is the owner's permission for every merge; agents never edit
+the gate to get a PR through.
 
 **Never granted:** deploys, remote D1 migrations, secrets, production data, repository settings or
 rulesets, applying `owner-approved`, merging without that PR's permission, force-pushing or merging

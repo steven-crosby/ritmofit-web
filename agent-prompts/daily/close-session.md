@@ -62,8 +62,9 @@ from verified sources and state what orientation evidence is missing.
     separate claims; do not imply either occurred merely because implementation passed.
   - **For review:** a scoped plan/result awaits review; record the concrete review action.
   - **Blocked:** record the missing input/condition, who or what unblocks it and the restart action.
-  - **Backlog/Ready:** work is deliberately parked and no longer actively executing. Ready requires
-    fulfilled prerequisites and established scope authority. Do not leave an idle session's task
+  - **Backlog:** work is deliberately parked and no longer actively executing. Park it in Backlog,
+    never Ready: only the owner moves a task to Ready, the one status that authorizes execution. A
+    task the owner had put in Ready may go back to Ready only if its scope did not change. Do not leave an idle session's task
     In progress; retain that state only when a named session is actually continuing it.
   - **Cancelled:** explain the approved reject/supersede/duplicate disposition and link the replacement.
 - [ ] Give remaining acceptance or verification a follow-up RF ID when outside the completed task's
@@ -116,7 +117,8 @@ from verified sources and state what orientation evidence is missing.
 - [ ] Before merge, all RF/handoff/docs changes must be on the PR branch. Wait for checks on the
   **final PR head**, record that SHA, and ensure merge eligibility. An earlier green revision is
   insufficient after task or documentation edits. Use an expected-head guard when merging.
-- **Own finished PR, Solo:** when final-head checks pass, ask: "PR #N is green on `<sha>` — may I
+- **Own finished PR, Solo:** when final-head checks pass (for an owner-gated PR: every step except
+  the final owner-gate step), ask: "PR #N is green on `<sha>` — may I
   run the final review and squash-merge?" In a live session ask in chat; otherwise comment that on
   the PR, add `ready-to-merge` and stop. Owner-gated PRs also get `needs-owner` and the manual check
   left. Permission is the owner saying so in a session or adding `owner-approved`. Apply that label

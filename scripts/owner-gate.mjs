@@ -44,6 +44,11 @@ export const GATES = [
       p.startsWith('apps/api/src/lib/apple-jwt') ||
       p.startsWith('apps/api/src/lib/resolve-provider') ||
       p.startsWith('apps/web/src/lib/use-provider-connect') ||
+      p.startsWith('apps/web/src/lib/providers.') ||
+      // UI that drives transport and provider connection: CI's mock providers cannot prove it.
+      /^apps\/web\/src\/components\/(LiveMode|ProviderConnectAction|SpotifyActivationAction)[^/]*$/.test(
+        p,
+      ) ||
       p.startsWith('apps/web/src/lib/playback/') ||
       /^apps\/web\/src\/lib\/(musickit|spotify-playback|use-spotify-activation)[^/]*$/.test(p),
   },
@@ -65,7 +70,13 @@ export const GATES = [
   },
   {
     name: 'agent rules',
-    match: (p) => p === 'AGENTS.md' || p === 'CLAUDE.md',
+    // The prompts and READMEs that put the merge and permission rules into practice.
+    match: (p) =>
+      p === 'AGENTS.md' ||
+      p === 'CLAUDE.md' ||
+      p.startsWith('agent-prompts/') ||
+      p === 'ritmofit_dev_plan/tasks/README.md' ||
+      p === 'ritmofit_dev_plan/handoffs/README.md',
   },
 ];
 
@@ -113,8 +124,9 @@ function main() {
     return;
   }
   console.error(
-    `owner-gate: FAIL. Add 'needs-owner' and ask the owner, who reviews and applies ` +
-      `'${APPROVAL_LABEL}'. Agents never apply that label.`,
+    `owner-gate: FAIL. Add 'needs-owner' and ask the owner. The owner applies ` +
+      `'${APPROVAL_LABEL}', or tells the agent in a session to apply it (record that as a PR ` +
+      `comment first). It counts only for the commit it was given on.`,
   );
   process.exit(1);
 }

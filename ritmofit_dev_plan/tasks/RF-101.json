@@ -21,6 +21,12 @@
       "ref": "https://github.com/steven-crosby/ritmofit-web/pull/643",
       "summary": "Final review #2 of #643 (findings 4 and 5): removing a requireAccess call in a route, or switching a CI check off via its config, is not owner-gated. Deferred by the owner on 2026-10-27 because the gate is a guardrail and every merge needs owner permission.",
       "checkedOn": "2026-10-27"
+    },
+    {
+      "kind": "pr",
+      "ref": "https://github.com/steven-crosby/ritmofit-web/pull/643",
+      "summary": "Review #3 gated agent prompts, the task/handoff READMEs and the Live/provider UI components in #643. Route authz call sites and CI-config files remain ungated and are still this task's scope.",
+      "checkedOn": "2026-10-27"
     }
   ],
   "resolution": null,

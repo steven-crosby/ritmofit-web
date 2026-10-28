@@ -6,9 +6,11 @@ enforces this for apps/, packages/ and e2e/ changes. -->
 
 ## Owner gate
 
-<!-- Every PR: when CI is green, the agent asks the owner before its final review and squash-merge
-(PR comment + `ready-to-merge` if the owner is not in the session). CI's last step lists owner-gated
-paths; if it lists any, also add `needs-owner`. Only the owner applies `owner-approved`. -->
+<!-- Every PR: when CI is green (owner-gated: everything except the final owner-gate step), the
+agent asks the owner before its final review and squash-merge (PR comment + `ready-to-merge` if the
+owner is not in the session). If CI's last step lists owner-gated paths, also add `needs-owner`.
+`owner-approved` comes from the owner, or from the agent only on the owner's explicit in-session
+instruction recorded as a PR comment; it counts only for the commit it was given on. -->
 
 - [ ] Not owner-gated
 - [ ] Owner-gated (migrations / auth / provider-playback / CI-deploy / agent rules) — `needs-owner`

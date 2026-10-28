@@ -228,8 +228,9 @@ Review each lane handoff (read it from the lane's PR head) against the actual di
 agent finding. Recheck that shared-zone edits match the approved ownership matrix and that skipped
 verification is visible.
 
-Before merging, present the PR list, combined risk, dependency-aware merge order, and current CI state;
-request explicit merge authority. Re-read the repository's live merge settings and rules rather than
+Before merging, present the PR list, combined risk, dependency-aware merge order, and current CI state.
+This plans the train; it does not authorize any merge. Merges follow `AGENTS.md` › "Delegation And
+Merge Policy": each PR needs the owner's permission at its final head, then a final review. Re-read the repository's live merge settings and rules rather than
 treating historical GitHub policy as immutable. The project convention is **squash merge** (matches
 `close-session.md` and `main`'s history); confirm it is still allowed before the train.
 
@@ -240,7 +241,14 @@ For each authorized PR, sequentially:
 3. If GitHub reports a conflict or dirty merge, stop; never force or assume disjoint ownership made it
    safe.
 4. Wait for the combined `format · typecheck · lint · test · build · audit` check on the updated tree.
-5. On green, merge with the owner-authorized method; on failure, return the PR to its owning lane.
+   An update push voids any earlier permission for that PR (CI also drops `owner-approved`).
+5. On failure of anything other than the final owner-gate step, return the PR to its owning lane.
+6. When it is ready (see the policy, including owner-gated PRs), ask the owner for this PR at this
+   head: "PR #N is ready on `<sha>` — may I run the final review and squash-merge?" One approval covers
+   one PR at one head; never carry a batch approval across an update.
+7. With permission, run the final code review on the PR's diff. No significant findings: squash-merge
+   with `--match-head-commit <reviewed sha>`. Findings: stop, comment them, and return the PR to its
+   lane.
 
 The last green PR checks the combined merged tree, but still perform a post-merge sanity check on
 `main`. Surface semantic surprises even when Git reports no textual conflict.
