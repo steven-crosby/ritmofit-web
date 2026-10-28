@@ -29,6 +29,7 @@ import {
   configureMusicKit,
   loadMusicKit,
   probeSafariModernFairPlayAccess,
+  safariModernAccessInFlight,
   safariModernAccessWord,
   selectSafariModernFairPlay,
   type MusicKitGlobal,
@@ -63,8 +64,9 @@ export const appleMusicPlayRejectedMessage = (title: string): string =>
   `Apple Music would not play "${title}". Check that your Apple Music subscription is active, then retry.`;
 
 /**
- * Authorized media-element failure. `modernAccess` is `"ok"` or a DOMException
- * name from the one audio-only FairPlay probe, when that probe ran.
+ * Authorized media-element failure. `modernAccess` is the word from the one
+ * audio-only FairPlay probe, when that probe ran: `"ok"`, a DOMException or
+ * built-in error name, `"other"`, or `"timeout"`.
  */
 export function appleMusicPlaybackFailedMessage(
   title: string,
@@ -148,13 +150,28 @@ export class AppleMusicAdapter implements PlaybackAdapter {
     if (state === 'ended') this.events.onFinish?.();
   };
   private readonly onPlaybackError = (): void => {
-    this.events.onError?.({
-      message:
-        this.instance && !this.instance.isAuthorized
-          ? appleMusicAuthorizationLostMessage()
-          : appleMusicPlaybackFailedMessage(this.trackTitle, safariModernAccessWord()),
+    if (this.instance && !this.instance.isAuthorized) {
+      this.events.onError?.({ message: appleMusicAuthorizationLostMessage() });
+      return;
+    }
+    // The probe now starts after MusicKit's play(), so a fast media error can
+    // arrive first. Wait for its word (bounded by the probe's own timeout)
+    // rather than report the bare sentence RF-29 cannot use.
+    const pending = safariModernAccessInFlight();
+    if (!pending) {
+      this.reportPlaybackFailed();
+      return;
+    }
+    void pending.then(() => {
+      if (!this.destroyed) this.reportPlaybackFailed();
     });
   };
+
+  private reportPlaybackFailed(): void {
+    this.events.onError?.({
+      message: appleMusicPlaybackFailedMessage(this.trackTitle, safariModernAccessWord()),
+    });
+  }
 
   constructor(
     private readonly events: AdapterEvents = {},
@@ -264,15 +281,15 @@ export class AppleMusicAdapter implements PlaybackAdapter {
     transportOwners.set(instance, this);
     try {
       try {
-        // Before play(), once per page, on iOS Safari or legacy WebKitMediaKeys.
-        // Other browsers get null and must not yield: a caller that destroys
-        // during play() has to find MusicKit's play still pending.
-        const accessProbe = probeSafariModernFairPlayAccess();
-        if (accessProbe) {
-          await accessProbe;
-          if (this.destroyed) throw new Error('Apple Music play was cancelled.');
-        }
-        await instance.play();
+        // MusicKit's play() first, with no yield before it: a caller that
+        // destroys during play() has to find MusicKit's play still pending,
+        // and on iOS the call must keep the user gesture.
+        const played = instance.play();
+        // Then, once per page on iOS Safari or legacy WebKitMediaKeys, the
+        // FairPlay probe. Never awaited here: it resolves to a word and never
+        // rejects, and the playback-error banner reads that word.
+        void probeSafariModernFairPlayAccess();
+        await played;
       } catch (cause) {
         if (this.destroyed) throw cause;
         // MusicKit rejects with codes such as UNAUTHORIZED or CONTENT_RESTRICTED;
