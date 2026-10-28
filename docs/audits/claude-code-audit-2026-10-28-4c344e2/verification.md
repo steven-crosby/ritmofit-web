@@ -51,4 +51,33 @@ AGENTS.md gate list includes it.
 
 ## Audit reproductions
 
-See the per-lane sections below, filled in as lanes report.
+Each repro is a new file. To run one, copy it into a disposable worktree at `4c344e2` in the
+directory stated in the table, then run the command shown.
+
+| Repro | Finding | Placement → command | Result | Re-run by |
+| --- | --- | --- | --- | --- |
+| `repro/c-music-playback-repro.test.ts` | AUD-001, AUD-002 | copy to `apps/web/src/lib/playback/` → `pnpm --filter @ritmofit/web exec vitest run src/lib/playback/c-music-playback-repro.test.ts` | 4 passed (green = defect reproduced) | lane C, challenge-1 |
+| `repro/lead-cm02-unbound-eme-chromium.cjs` | AUD-002 | `NODE_PATH=$(npm root -g) node repro/lead-cm02-unbound-eme-chromium.cjs` | unbound → `TypeError … Illegal invocation`; bound → resolved | lead |
+| `repro/c-music-refresh-race-repro.test.ts` | AUD-010 | copy to `apps/api/src/lib/music/` → `pnpm --filter @ritmofit/api exec vitest run src/lib/music/c-music-refresh-race-repro.test.ts` | 1 passed (defect reproduced) | lane C, challenge-1 |
+| `repro/b-web-playlist-stale-tracks.repro.test.tsx` | AUD-005, AUD-008 | copy to `apps/web/src/components/` → `npx vitest run src/components/b-web-playlist-stale-tracks.repro.test.tsx` (from `apps/web`) | 2 failed and 1 passed, as expected; the correct-behaviour tests fail | lane B, challenge-1 |
+| `repro/b-web-duplicate-class.repro.test.tsx` | AUD-007 | same placement | 2 failed, as expected | lane B, challenge-1 |
+| `repro/a-api-probes.integration.test.ts` | AUD-011, 012, 013, 014, 015, 016, 017 | copy to `apps/api/test/` → `pnpm --filter @ritmofit/api exec vitest run --config vitest.integration.config.ts test/a-api-probes.integration.test.ts` | 7/7 passed (each asserts the defect) | lane A, challenge-2 |
+| `repro/d2-quality-q01-reset-token-log.integration.test.ts` | AUD-003 | `apps/api/test/`, integration config | `status=500 tokenInLog=true` (token redacted) | lane D2, challenge-3 |
+| `repro/d2-quality-q01-drizzle-error-params.test.ts` | AUD-003 | `apps/api/src/lib/`, unit config | 2/2 | lane D2, challenge-3 |
+| `repro/d2-quality-q02-class-list-unpaginated.integration.test.ts` | AUD-012 | `apps/api/test/`, integration config | 100 → 200, 101 → 500, `?limit=50` → 200 | lane D2 |
+| `repro/d2-quality-q03-response-zod-422.integration.test.ts` | AUD-011 | `apps/api/test/`, integration config | 422, zero log lines | lane D2 |
+| `repro/d1-tooling-deploy-selfcheck-mutation.sh <worktree>` | AUD-004 | run against a disposable worktree | M1, M2 and M3 print `self-check passed`; the control is caught; M3 passes the vitest wrapper | lane D1, challenge-2 |
+| `repro/d1-tooling-owner-gate-*.txt` + `d1-tooling-gate-classify.mjs` | AUD-018, AUD-019 | `node scripts/owner-gate.mjs < repro/d1-tooling-owner-gate-misses.txt` | misses exit 0, controls exit 1 | lane D1, challenge-2 |
+| `repro/d1-tooling-rf-trace-cases.mjs`, `d1-tooling-tasks-validate-cases.mjs`, `d1-tooling-deploy-badsha.sh` | rejected leads | see the lane D1 file | behave as the policy defines | lane D1 |
+
+With the repros added, the existing suites stayed green in the lane worktrees: web playback and
+musickit 251, API music 265 (lane C). No repro edits a tracked file. Each one is a new file copied
+into a disposable worktree.
+
+## Classification summary
+
+- Product failures found by baseline checks: **none**. The baseline is green.
+- Test or harness failure: **none**.
+- Environment limitations: Playwright browser download is blocked, worked around with the
+  preinstalled binary. WebKit is not available.
+- Network limitations: no provider or production access, which was intentional.
