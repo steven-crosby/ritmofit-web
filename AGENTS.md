@@ -213,7 +213,7 @@ With permission, the agent runs its tool's code-review pass on the final PR diff
   `gh pr merge <n> --squash --match-head-commit <reviewed sha>` and remove `ready-to-merge`.
 - **Findings:** do not merge. Comment them on the PR, remove `ready-to-merge`, and stop. A fix is a
   new push, so it needs green CI again and a fresh permission. Any push after permission voids it:
-  the agent removes `owner-approved` and asks again.
+  CI removes `owner-approved` on every new commit, and the agent asks again.
 
 Auto-merge is off and branches must be current, so concurrent agents merge **one at a time**: update
 the branch, wait for CI on the new head, ask, review, merge, then the next.

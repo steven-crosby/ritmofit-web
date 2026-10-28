@@ -28,13 +28,13 @@
     {
       "kind": "test",
       "ref": "e2e/smoke.spec.ts",
-      "summary": "pnpm e2e passed 2/2 (desktop-1440, phone-390) in 16s on macOS with 10 screenshots after installing Chromium. Not yet run on Linux CI.",
+      "summary": "pnpm e2e passed 2/2 (desktop-1440, phone-390) in 16s on macOS with 10 screenshots after installing Chromium. Superseded for Linux by the GitHub Actions entry below.",
       "checkedOn": "2026-10-27"
     },
     {
       "kind": "pr",
       "ref": "https://github.com/steven-crosby/ritmofit-web/pull/643",
-      "summary": "Work PR, opened as a draft to claim the task. Owner-gated (needs-owner). The ci.yml commit waits for the workflow token scope.",
+      "summary": "Work PR, opened as a draft to claim the task. Owner-gated (needs-owner). The ci.yml commit was pushed after the owner granted the workflow scope.",
       "checkedOn": "2026-10-27"
     },
     {

@@ -9,8 +9,8 @@
 //
 // Usage (CI): OWNER_GATE_LABELS='["a","b"]' node scripts/owner-gate.mjs < changed-files.txt
 
-import { readFileSync } from 'node:fs';
-import { pathToFileURL } from 'node:url';
+import { readFileSync, realpathSync } from 'node:fs';
+import { fileURLToPath } from 'node:url';
 
 export const APPROVAL_LABEL = 'owner-approved';
 
@@ -18,7 +18,10 @@ export const APPROVAL_LABEL = 'owner-approved';
 export const GATES = [
   {
     name: 'D1 migrations / schema',
-    match: (p) => p.startsWith('apps/api/migrations/') || p.startsWith('apps/api/src/db/'),
+    match: (p) =>
+      p.startsWith('apps/api/migrations/') ||
+      p.startsWith('apps/api/src/db/') ||
+      p === 'apps/api/drizzle.config.ts',
   },
   {
     name: 'auth / authz',
@@ -26,6 +29,10 @@ export const GATES = [
       /^apps\/api\/src\/(lib|middleware|routes)\/auth[^/]*$/.test(p) ||
       /^apps\/api\/src\/lib\/(authz|team-authz|pkce|crypto)[^/]*$/.test(p) ||
       p.startsWith('apps/web/src/lib/auth-client') ||
+      p.startsWith('apps/web/src/lib/session-guard') ||
+      p.startsWith('apps/api/src/lib/share-target') ||
+      // Worker entry: CORS, the Better Auth handler and route mount order (public vs session).
+      p === 'apps/api/src/index.ts' ||
       /^apps\/api\/test\/[^/]*(authz|access|auth)[^/]*$/.test(p),
   },
   {
@@ -35,6 +42,8 @@ export const GATES = [
       p.startsWith('apps/api/src/lib/music/') ||
       /^apps\/api\/src\/routes\/provider[^/]*$/.test(p) ||
       p.startsWith('apps/api/src/lib/apple-jwt') ||
+      p.startsWith('apps/api/src/lib/resolve-provider') ||
+      p.startsWith('apps/web/src/lib/use-provider-connect') ||
       p.startsWith('apps/web/src/lib/playback/') ||
       /^apps\/web\/src\/lib\/(musickit|spotify-playback|use-spotify-activation)[^/]*$/.test(p),
   },
@@ -46,7 +55,13 @@ export const GATES = [
       p === 'apps/api/wrangler.toml' ||
       p === 'apps/web/public/_headers' ||
       p === 'pnpm-workspace.yaml' ||
-      p === '.pnpmfile.cjs',
+      p === '.pnpmfile.cjs' ||
+      // Service worker config: the /api/ navigation denylist keeps OAuth callbacks off the SPA.
+      p === 'apps/web/vite.config.ts' ||
+      // Scripts behind CI checks, deploys and production smoke (audit:ci, bundle budget, OpenAPI).
+      /^(apps\/(api|web)\/)?package\.json$/.test(p) ||
+      p.startsWith('apps/api/scripts/') ||
+      /^apps\/web\/scripts\/check-[^/]*$/.test(p),
   },
   {
     name: 'agent rules',
@@ -104,4 +119,13 @@ function main() {
   process.exit(1);
 }
 
-if (import.meta.url === pathToFileURL(process.argv[1] ?? '').href) main();
+// Compare resolved paths: a symlinked path (macOS /var -> /private/var) must still run the
+// gate. A guard that silently skips main() would let CI pass without checking anything.
+const invokedDirectly = (() => {
+  try {
+    return realpathSync(process.argv[1] ?? '') === realpathSync(fileURLToPath(import.meta.url));
+  } catch {
+    return false;
+  }
+})();
+if (invokedDirectly) main();

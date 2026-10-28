@@ -1,7 +1,7 @@
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
 import { spawnSync } from 'node:child_process';
-import { mkdtempSync, mkdirSync, writeFileSync } from 'node:fs';
+import { mkdtempSync, mkdirSync, symlinkSync, writeFileSync } from 'node:fs';
 import { tmpdir } from 'node:os';
 import { join } from 'node:path';
 import { fileURLToPath } from 'node:url';
@@ -55,4 +55,16 @@ test('CLI fails closed without PR context or input, and reads records from the c
   assert.equal(run(`apps/web/x.ts\n${REC}\n`, ctx).status, 0);
   assert.equal(run(`apps/web/x.ts\n${REC}\n`, { ...ctx, PR_NUMBER: '124' }).status, 1);
   assert.equal(run('README.md\n', ctx).status, 0);
+});
+
+test('CLI still runs when invoked through a symlinked path', () => {
+  const link = join(mkdtempSync(join(tmpdir(), 'rf-trace-link-')), 'rf-trace.mjs');
+  symlinkSync(SCRIPT, link);
+  const result = spawnSync(process.execPath, [link], {
+    input: 'apps/web/x.ts\n',
+    env: { ...process.env, PR_NUMBER: '1', GITHUB_REPOSITORY: 'o/r' },
+    encoding: 'utf8',
+  });
+  assert.equal(result.status, 1, 'a skipped check would exit 0');
+  assert.match(result.stderr, /rf-trace: FAIL/);
 });

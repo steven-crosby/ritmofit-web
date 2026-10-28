@@ -12,7 +12,7 @@ owner's queue: any agent may execute a Ready task. Publishing follows AGENTS.md 
 Evidence marked **recorded** is a carried-forward claim, not fresh verification.
 A checked PR proves its GitHub state, not product acceptance or production behavior.
 
-97 tasks. backlog: 3 · ready: 0 · in_progress: 0 · blocked: 3 · review: 8 · done: 83 · cancelled: 0.
+98 tasks. backlog: 4 · ready: 0 · in_progress: 0 · blocked: 3 · review: 8 · done: 83 · cancelled: 0.
 
 ## In progress
 
@@ -52,6 +52,7 @@ A checked PR proves its GitHub state, not product acceptance or production behav
 | Task | Priority / kind | Relationships | Next action / resolution | Evidence |
 | --- | --- | --- | --- | --- |
 | [RF-87](tasks/RF-87.json) Verify open-tab update recovery across a deployment | P2 / verification | needs RF-11 | Arrange an attended check during a separately authorized deployment; do not deploy just to close this task. | recorded |
+| [RF-100](tasks/RF-100.json) Label changes rerun only the PR gates, not the full CI job | P3 / task | needs RF-98 | Owner decides whether this is worth doing; then design a gate-only path (separate job or workflow on labeled/unlabeled) that keeps the required check name meaningful. | checked 2026-10-27 |
 | [RF-73](tasks/RF-73.json) Classes buttons fail WCAG 2.5.3 label in name | untriaged / task | — | Reproduce affected controls, propose the smallest label-in-name correction, then seek implementation approval. | recorded |
 | [RF-74](tasks/RF-74.json) Spotify playlist dialog offers Try again where retry cannot help | untriaged / task | — | Review the error/action mapping; obtain approval before changing Spotify behavior while that work is tabled. | recorded |
 

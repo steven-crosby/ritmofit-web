@@ -41,8 +41,8 @@ from verified sources and state what orientation evidence is missing.
   out-of-scope local files alone. If current task records differ from upstream or relevant open PR
   heads, reconcile the revision boundary before changing shared task state.
 - [ ] Identify the session's RF IDs, PRs and handoff, and the permissions already granted for
-  commit, push, PR creation, merge, deploy and deletion. The standing grant covers commit, push, PR
-  and merge of non-owner-gated work; deploy and deletion are never in it. None implies another. Task state, a green
+  commit, push, PR creation, merge, deploy and deletion. The standing grant covers commit, push and PR;
+  every merge also needs the owner's permission for that PR; deploy and deletion are never in it. None implies another. Task state, a green
   gate, this prompt and the Solo role do not grant a missing permission. Continue authorized local
   preparation; put any missing publication permission in an open publication/follow-up RF task's
   next action. A completed implementation task can stay Done with that follow-up link; do not add
@@ -119,11 +119,11 @@ from verified sources and state what orientation evidence is missing.
 - **Own finished PR, Solo:** when final-head checks pass, ask: "PR #N is green on `<sha>` — may I
   run the final review and squash-merge?" In a live session ask in chat; otherwise comment that on
   the PR, add `ready-to-merge` and stop. Owner-gated PRs also get `needs-owner` and the manual check
-  left. Permission is the owner saying so in a session or adding `owner-approved`; never apply that
-  label yourself. With permission, run your tool's code review on the final diff. No significant
+  left. Permission is the owner saying so in a session or adding `owner-approved`. Apply that label
+  only when the owner explicitly tells you to in a session, and record it as a PR comment first. With permission, run your tool's code review on the final diff. No significant
   findings: squash-merge with `--match-head-commit <reviewed sha>` and remove `ready-to-merge`.
   Findings: do not merge; comment them, remove `ready-to-merge`, stop. Any later push voids the
-  permission: remove `owner-approved` and ask again. Delete the branch only if deletion is also authorized; do not append
+  permission (CI removes `owner-approved` automatically); ask again. Delete the branch only if deletion is also authorized; do not append
   `--delete-branch` automatically. Missing merge/deletion permission is an explicit next action.
 - **Lane:** leave its PR open for the orchestrator with RF records/handoff complete; report CI state.
 - **Genuinely unfinished:** leave open/draft with the actual remaining acceptance in its RF record.

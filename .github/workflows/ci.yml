@@ -11,9 +11,10 @@ on:
     # labeled/unlabeled re-run the owner gate when `owner-approved` is added or removed.
     types: [opened, synchronize, reopened, labeled, unlabeled]
 
+# pull-requests: write lets the job remove `owner-approved` when new commits arrive.
 permissions:
   contents: read
-  pull-requests: read
+  pull-requests: write
 
 # A newer push to the same ref cancels the in-flight run.
 concurrency:
@@ -40,23 +41,49 @@ jobs:
         run: pnpm install --frozen-lockfile
 
       # Owner-gated paths (migrations, auth, provider/playback, CI/deploy, agent rules) fail the
-      # job until the owner adds `owner-approved`. Its own
-      # tests run first — a checker nobody has watched fail is not a gate. The gate itself
-      # runs last, so every other check still reports for the owner's review.
+      # job until the owner adds `owner-approved`; product changes must cite their RF record.
+      # Both checkers' own tests run first — a checker nobody has watched fail is not a gate.
+      # The gates themselves run last, so every other check still reports for the owner.
       - name: Owner gate self-test
         run: pnpm owner-gate:test
 
-      # Product changes (apps/, packages/, e2e/) must change an RF record that cites this PR, so
-      # every merge is traceable and a task reaches Done inside its own work PR.
       - name: RF trace self-test
         run: pnpm rf-trace:test
 
-      - name: RF trace (product PRs cite their RF record)
+      # Approval covers the commits the owner saw. A new push voids it; GITHUB_TOKEN edits do
+      # not trigger another run.
+      - name: Void owner approval on new commits
+        if: github.event_name == 'pull_request' && github.event.action == 'synchronize' && contains(github.event.pull_request.labels.*.name, 'owner-approved')
+        env:
+          GH_TOKEN: ${{ github.token }}
+          PR_NUMBER: ${{ github.event.pull_request.number }}
+        run: gh pr edit "$PR_NUMBER" --repo "$GITHUB_REPOSITORY" --remove-label owner-approved
+
+      # Changed files come from the PR files API, which lists a rename's old path too and handles
+      # diffs too large for `gh pr diff`. The gates run main's copy of each checker when main
+      # has one, so a PR cannot loosen the checker that judges it.
+      - name: Prepare PR gates
         if: github.event_name == 'pull_request'
         env:
           GH_TOKEN: ${{ github.token }}
           PR_NUMBER: ${{ github.event.pull_request.number }}
-        run: gh pr diff "$PR_NUMBER" --repo "$GITHUB_REPOSITORY" --name-only | node scripts/rf-trace.mjs
+          BASE_REF: ${{ github.event.pull_request.base.ref }}
+        run: |
+          set -euo pipefail
+          gh api "repos/$GITHUB_REPOSITORY/pulls/$PR_NUMBER/files" --paginate \
+            --jq '.[] | .filename, (.previous_filename // empty)' | sort -u > "$RUNNER_TEMP/pr-files.txt"
+          test -s "$RUNNER_TEMP/pr-files.txt"
+          echo "$(wc -l < "$RUNNER_TEMP/pr-files.txt") changed paths (renames include the old path)"
+          git fetch --no-tags --depth=1 origin "$BASE_REF"
+          for checker in owner-gate rf-trace; do
+            if git cat-file -e "FETCH_HEAD:scripts/$checker.mjs" 2>/dev/null; then
+              git show "FETCH_HEAD:scripts/$checker.mjs" > "$RUNNER_TEMP/$checker.mjs"
+              echo "$checker: using $BASE_REF's copy"
+            else
+              cp "scripts/$checker.mjs" "$RUNNER_TEMP/$checker.mjs"
+              echo "$checker: not on $BASE_REF yet, using this PR's copy"
+            fi
+          done
 
       # Prettier owns code + top-level docs; generated artifacts and long-form
       # reference docs are excluded in .prettierignore.
@@ -155,11 +182,17 @@ jobs:
       - name: Dependency audit (prod)
         run: pnpm audit:ci
 
-      # Last on purpose: an owner-gated PR still shows every other check's result.
+      # Last on purpose: a PR that fails a gate still shows every other check's result.
+      - name: RF trace (product PRs cite their RF record)
+        if: ${{ !cancelled() && github.event_name == 'pull_request' }}
+        run: node "$RUNNER_TEMP/rf-trace.mjs" < "$RUNNER_TEMP/pr-files.txt"
+
       - name: Owner gate (owner-gated paths need owner-approved)
         if: ${{ !cancelled() && github.event_name == 'pull_request' }}
         env:
-          GH_TOKEN: ${{ github.token }}
-          OWNER_GATE_LABELS: ${{ toJSON(github.event.pull_request.labels.*.name) }}
-          PR_NUMBER: ${{ github.event.pull_request.number }}
-        run: gh pr diff "$PR_NUMBER" --repo "$GITHUB_REPOSITORY" --name-only | node scripts/owner-gate.mjs
+          LABELS: ${{ toJSON(github.event.pull_request.labels.*.name) }}
+          ACTION: ${{ github.event.action }}
+        run: |
+          # On a push the payload still lists the approval this run just voided.
+          if [ "$ACTION" = synchronize ]; then LABELS='[]'; fi
+          OWNER_GATE_LABELS="$LABELS" node "$RUNNER_TEMP/owner-gate.mjs" < "$RUNNER_TEMP/pr-files.txt"

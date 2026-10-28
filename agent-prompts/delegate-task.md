@@ -50,6 +50,7 @@ leaves a product decision open; then ask **one** focused question, with your rec
    in chat if the owner is present, otherwise as a PR comment plus the `ready-to-merge` label, then
    stop (add `needs-owner` too if the PR is owner-gated). With permission, run your tool's code
    review on the final diff and merge with `--match-head-commit` only if it finds nothing
-   significant. Never apply `owner-approved`, deploy, or delete branches.
+   significant. Apply `owner-approved` only when the owner explicitly tells you to in a session
+   (record it as a PR comment first); never deploy or delete branches.
 7. **Report** in under ten lines: the PR link, merged or awaiting merge permission, the
    verification that ran, and anything the owner must still check by hand.

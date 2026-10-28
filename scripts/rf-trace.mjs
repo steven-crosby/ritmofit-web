@@ -9,8 +9,8 @@
 // Usage (CI): PR_NUMBER=123 GITHUB_REPOSITORY=owner/repo node scripts/rf-trace.mjs < changed-files.txt
 // Run from the repo root of the PR checkout so the changed records can be read.
 
-import { existsSync, readFileSync } from 'node:fs';
-import { pathToFileURL } from 'node:url';
+import { existsSync, readFileSync, realpathSync } from 'node:fs';
+import { fileURLToPath } from 'node:url';
 
 const PRODUCT = /^(apps|packages|e2e)\//;
 const RECORD = /^ritmofit_dev_plan\/tasks\/RF-\d+\.json$/;
@@ -36,7 +36,9 @@ const escape = (s) => s.replace(/[.*+?^${}()|[\]\\/]/g, '\\$&');
 function main() {
   const { PR_NUMBER, GITHUB_REPOSITORY } = process.env;
   if (!/^\d+$/.test(PR_NUMBER ?? '') || !/^[\w.-]+\/[\w.-]+$/.test(GITHUB_REPOSITORY ?? '')) {
-    console.error('rf-trace: PR_NUMBER and GITHUB_REPOSITORY are required; refusing to pass blind.');
+    console.error(
+      'rf-trace: PR_NUMBER and GITHUB_REPOSITORY are required; refusing to pass blind.',
+    );
     process.exit(1);
   }
   const paths = readFileSync(0, 'utf8')
@@ -65,4 +67,13 @@ function main() {
   process.exit(1);
 }
 
-if (import.meta.url === pathToFileURL(process.argv[1] ?? '').href) main();
+// Compare resolved paths: a symlinked path (macOS /var -> /private/var) must still run the
+// gate. A guard that silently skips main() would let CI pass without checking anything.
+const invokedDirectly = (() => {
+  try {
+    return realpathSync(process.argv[1] ?? '') === realpathSync(fileURLToPath(import.meta.url));
+  } catch {
+    return false;
+  }
+})();
+if (invokedDirectly) main();

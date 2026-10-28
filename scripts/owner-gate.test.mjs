@@ -1,6 +1,9 @@
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
 import { spawnSync } from 'node:child_process';
+import { mkdtempSync, symlinkSync } from 'node:fs';
+import { tmpdir } from 'node:os';
+import { join } from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { evaluate, APPROVAL_LABEL } from './owner-gate.mjs';
 
@@ -17,6 +20,18 @@ test('every gated class is caught', () => {
   const cases = {
     'apps/api/migrations/0042_add_thing.sql': 'D1 migrations / schema',
     'apps/api/src/db/schema.ts': 'D1 migrations / schema',
+    'apps/api/drizzle.config.ts': 'D1 migrations / schema',
+    'apps/api/src/index.ts': 'auth / authz',
+    'apps/web/src/lib/session-guard.ts': 'auth / authz',
+    'apps/api/src/lib/share-target.ts': 'auth / authz',
+    'apps/api/src/lib/resolve-provider.ts': 'provider / playback',
+    'apps/web/src/lib/use-provider-connect.ts': 'provider / playback',
+    'apps/web/vite.config.ts': 'CI / deploy / infrastructure',
+    'package.json': 'CI / deploy / infrastructure',
+    'apps/api/package.json': 'CI / deploy / infrastructure',
+    'apps/web/package.json': 'CI / deploy / infrastructure',
+    'apps/api/scripts/generate-openapi.ts': 'CI / deploy / infrastructure',
+    'apps/web/scripts/check-bundle-budget.mjs': 'CI / deploy / infrastructure',
     'apps/api/src/lib/auth.ts': 'auth / authz',
     'apps/api/src/middleware/auth.ts': 'auth / authz',
     'apps/api/src/lib/authz.test.ts': 'auth / authz',
@@ -53,6 +68,8 @@ test('ordinary product and docs changes are not gated', () => {
     'README.md',
     'e2e/smoke.spec.ts',
     'pnpm-lock.yaml',
+    'apps/web/scripts/generate-tokens.mjs',
+    'packages/shared/package.json',
   ];
   const result = evaluate(free, []);
   assert.deepEqual(result.gated, []);
@@ -73,4 +90,16 @@ test('CLI fails closed on gated paths, empty input and malformed labels', () => 
   assert.equal(run('', '["owner-approved"]').status, 1);
   assert.equal(run('AGENTS.md\n', '["owner-approved"]').status, 0);
   assert.equal(run('README.md\napps/web/src/App.tsx\n', '[]').status, 0);
+});
+
+test('CLI still runs the gate when invoked through a symlinked path', () => {
+  const link = join(mkdtempSync(join(tmpdir(), 'owner-gate-')), 'owner-gate.mjs');
+  symlinkSync(SCRIPT, link);
+  const result = spawnSync(process.execPath, [link], {
+    input: 'AGENTS.md\n',
+    env: { ...process.env, OWNER_GATE_LABELS: '[]' },
+    encoding: 'utf8',
+  });
+  assert.equal(result.status, 1, 'a skipped gate would exit 0');
+  assert.match(result.stdout + result.stderr, /owner-gated paths/);
 });
