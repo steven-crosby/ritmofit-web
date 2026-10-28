@@ -1,0 +1,28 @@
+{
+  "schemaVersion": 1,
+  "id": "RF-121",
+  "title": "Apple Music held-error and probe state are hardened after RF-107",
+  "kind": "task",
+  "status": "backlog",
+  "priority": "P3",
+  "parent": null,
+  "dependsOn": [],
+  "acceptance": [
+    "The held Apple Music playback error (apple-music-adapter.ts onPlaybackError) carries an attempt token captured when the error fires and is delivered only if prepare/stop/destroy have not started a new attempt, with a test that a held error is dropped after destroy then prepare.",
+    "The probe timeout path in musickit.ts handles a late rejection of the settled promise, so no unhandledrejection can escape, with a test.",
+    "The probe's word is written in one place (one settle handler) and the module keeps one probe record instead of three globals plus a test-only generation counter; built-in error constructors are computed once.",
+    "Existing RF-107 probe and adapter tests stay green."
+  ],
+  "nextAction": "Do with or just before RF-108, which reworks apple-music-adapter.ts. Owner-gated (playback code).",
+  "blocker": null,
+  "evidence": [
+    {
+      "kind": "pr",
+      "ref": "https://github.com/steven-crosby/ritmofit-web/pull/649",
+      "summary": "Final review of #649 on 82bffde: non-significant findings logged 2026-10-28. The held-error staleness is not reachable today because runtime.ts builds a fresh adapter per track and drops stale onError by epoch and adapter identity; the attempt token is defense in depth.",
+      "checkedOn": "2026-10-28"
+    }
+  ],
+  "resolution": null,
+  "followUps": []
+}

@@ -11,7 +11,7 @@
     "When the stored clipStartMs or beatAnchorMs of the selected track changes underneath the open track inspector (e.g. a clip-window or downbeat edit made outside the inspector), an untouched Clip start / Downbeat field shows the new value.",
     "A later unrelated inspector Save (e.g. notes) does not re-send the stale clipStartMs or beatAnchorMs, mirroring RF-90's startOffsetMs fix; a deliberately edited value is still sent."
   ],
-  "nextAction": "Confirm whether any surface besides the inspector can change clipStartMs or beatAnchorMs while the inspector is open; if one can, apply RF-90's seed-and-omit pattern (Dashboard.tsx TrackInspector, startAtFieldValue / startAtSeed) to those two fields with a fail-first test. If none can, cancel with that finding.",
+  "nextAction": "Confirm whether any surface besides the inspector can change clipStartMs or beatAnchorMs while the inspector is open; if one can, apply RF-90's value-based re-seed-and-omit rule (Dashboard.tsx TrackInspector, startAtFieldValue / startAtStoredMs, with the value-based rule from #650) to those two fields with a fail-first test. If none can, cancel with that finding.",
   "blocker": null,
   "evidence": [
     {
