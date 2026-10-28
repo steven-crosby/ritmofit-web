@@ -15,6 +15,11 @@
 
 <!-- note (Codex, 2026-10-27): Made repository RF records canonical and added task validation gates. -->
 
+<!-- note (Codex, 2026-10-27): Aligned RF session transitions, final validation and separate publication/deletion authority. -->
+
+<!-- note (Claude Code, 2026-10-27): Aligned session prompts, handoffs and the RF board: Ready is the owner's queue, draft PRs claim tasks, Done lands in the work PR, CI traces product PRs to RF records, handoffs are restart notes. -->
+<!-- note (Claude Code, 2026-10-27): Owner set a standing delegation grant (branch → PR, then final review + squash-merge with per-PR owner permission) with CI-enforced owner-gated paths, and made the e2e smoke a required CI step. -->
+
 This is the canonical contributor and agent guide for Ritmo Studio. If another instruction file conflicts
 with it, follow `AGENTS.md`, then repair the stale file. When an AI agent edits this file or adds a note
 to it, identify the agent and date in a short HTML comment.
@@ -111,7 +116,17 @@ surface, polish, or expand those workflows unless the owner explicitly reopens t
 Before substantial work, inspect the relevant code and docs, then propose a concise plan and wait for
 owner confirmation. Substantial work includes features, architecture, schema/API behavior, auth,
 design-system changes, infrastructure, deploys, and broad refactors. A useful plan names the goal, likely
-files, schema/migration/API impact, frontend impact, risks, open questions, and verification.
+files, schema/migration/API impact, frontend impact, risks, open questions, and verification. A task the
+owner hands off (a delegate brief, a direct ask, or an RF task in **Ready**) is that confirmation for
+its stated scope, including any RF task the agent creates for it: plan, then execute without
+waiting. Stop and ask only when the work must grow beyond the brief or the brief leaves a product
+decision open.
+
+**Ready is the owner's queue.** Only the owner moves a task into Ready, directly or by explicitly
+asking an agent to; an agent never sets Ready on its own, so every Ready task is the owner's choice.
+Agents may move a task out of Ready: by starting it, or by parking it in Backlog with a next action
+noting it came from the owner's Ready queue, so the owner can re-promote it. Tasks an agent creates
+start in Backlog.
 
 Follow "Session Workflow" below for orientation, wrap-up, and handoffs. Do not discard,
 overwrite, stash, or silently include existing worktree changes. Prefer small vertical slices: shared
@@ -136,26 +151,128 @@ outcomes plainly — including what was skipped, substituted, or failed.
 
 Every session — any tool, local or cloud — runs `agent-prompts/daily/start-session.md` →
 plan (owner confirms substantial work) → execute on a branch + PR → `agent-prompts/daily/close-session.md`.
-The durable output is `main` plus a handoff file; chat and tool memory are scratch.
+The durable output is `main` (RF records included), plus a handoff only when a successor needs restart
+context; chat and tool memory are scratch.
 
-- **Roles.** _Solo_: one session owns its PRs and merges its own green work at close. _Lane_: one
+- **Roles.** _Solo_: one session owns its PRs and, once each is green and the owner gives that PR's
+  merge permission, runs the final review and squash-merges it under "Delegation And Merge Policy"
+  below; neither the role nor a task status grants anything beyond it. _Lane_: one
   builder in a parallel round (`agent-prompts/orchestrate-parallel-round.md`); edits only the files its
   brief assigns, opens its PR, writes its handoff, and **never merges**. _Orchestrator_: partitions the
   round, writes untracked lane briefs from `agent-prompts/templates/lane-brief.md`, reconciles plans,
-  and runs the merge train with explicit owner authority; writes no product code.
-- **Handoffs.** Whenever anything is in flight, a next action is owed, an owner decision is open, or
-  `main` is ahead of production, the session writes `ritmofit_dev_plan/handoffs/YYYY-MM-DD-<slug>.md`
-  from `agent-prompts/templates/handoff.md` and commits it on its own PR. Only its author edits it;
-  a later close deletes it once its items are done or routed. Rules:
-  `ritmofit_dev_plan/handoffs/README.md`.
-- **Task sync.** Read the generated RF board and relevant records at start. Reconcile live facts,
-  update the canonical records with bounded acceptance/evidence and outstanding next actions, then
-  run `pnpm tasks:render` and `pnpm tasks:check` before publication. Handoffs reference RF IDs; they
-  retain session context rather than duplicating mutable task state. External boards are views only.
+  and runs the merge train under "Delegation And Merge Policy"; writes no product code.
+- **Handoffs are restart notes.** The RF record owns the next action, owner decisions and evidence;
+  `DEVELOPMENT_PLAN.md` owns `main` vs production. A session writes
+  `ritmofit_dev_plan/handoffs/YYYY-MM-DD-<slug>.md` from `agent-prompts/templates/handoff.md` only
+  when a successor needs context a record cannot hold (unfinished branch state, dated observations, a
+  device check in flight); lanes and orchestrators always write one. It is committed on the session's
+  own PR, only its author edits it, and a later close deletes it once its items are done or routed.
+  Rules: `ritmofit_dev_plan/handoffs/README.md`.
+- **Task sync.** Every start mode reads relevant RF records with an explicit branch/HEAD boundary,
+  comparing upstream and in-flight changes. Orientation stays read-only; after scope approval,
+  select/create the task, confirm prerequisites, record In progress and a concrete restart action,
+  render/validate, then push the branch and open a **draft PR** at once so the claim is visible to
+  other sessions; add that PR's URL to the record's evidence. The task reaches its final state (usually Done) inside the same
+  PR, and merging it is what publishes Done. Use a follow-up PR only for facts unknowable before
+  merge, such as a deploy. At close, finish all task/evidence/handoff/docs edits,
+  including authorized retirements, before final `pnpm tasks:render` and `pnpm tasks:check`.
+  Repeat final validation after later file edits before publication; merged work needs checks on
+  its final PR head. Handoffs link RF IDs and retain context rather than copying mutable statuses.
+  External boards are views only. See the daily prompts for stale-board vs invalid-record handling.
 - **Every change goes through a PR**, docs included; squash merge. Never push straight to `main`.
-- **Record what merged.** A merge that is not yet deployed, or a deploy, is recorded (HISTORY for
-  deploys, DEVELOPMENT_PLAN current focus for main-vs-production, a handoff for anything owed) in the
-  same session — start-session surfaces merges nobody recorded.
+- **Record what merged.** A merge is recorded by the RF record that cites its PR (CI enforces this
+  for product changes). A deploy is recorded in HISTORY, and `DEVELOPMENT_PLAN.md`'s `main` vs
+  production line is refreshed with it or whenever a session observes production. Start-session
+  surfaces merged PRs that no RF record, HISTORY entry or handoff cites.
+- **Handing off a single task:** `agent-prompts/delegate-task.md` is the brief the owner gives a
+  subagent; it ends in a PR under the policy below.
+
+## Delegation And Merge Policy
+
+This is a hobby project: the owner delegates tasks to agents, reviews PRs, and relies on CI instead of
+manual smoke testing. This section is the owner's **standing grant** (set 2026-10-27). It is the
+"permission already granted" that the daily prompts and RF workflow refer to, for any tool and session.
+
+**Granted without asking**, for work inside an owner-assigned scope: create a branch, commit, push
+that branch, open a PR (draft first, as the claim), update the branch from `main`, and retire handoff
+files whose items are done or routed.
+
+**Merging needs the owner's permission for each PR.** A PR is ready to merge when:
+
+1. The required CI check is green on the **final PR head** and the branch is up to date with `main`
+   (the ruleset enforces both). For an owner-gated PR the job is red by design until the owner
+   approves, so it is ready when every step except the final owner-gate step has passed.
+2. Product changes (`apps/`, `packages/`, `e2e/`) change an RF record whose `pr` evidence cites the
+   PR and whose status is final (Done, For review, Blocked or Cancelled). CI's RF-trace step
+   enforces this, so a draft PR's RF-trace stays red until the task's final state is set. Work that
+   spans several PRs gets one child RF record per PR (`parent: RF-N`): each PR finalizes its own
+   child, and the parent closes with the last one, so the board never shows false completion.
+3. The PR body carries the evidence sections in `.github/pull_request_template.md`.
+
+Then the agent **asks**: "PR #N is green on `<sha>` — may I run the final review and squash-merge?"
+In a live session it asks in chat. A background agent comments that question on the PR, adds the
+`ready-to-merge` label and stops. Permission is the owner saying so in a session, or the owner
+adding `owner-approved` to the PR. Once a PR has that permission, any Solo or Orchestrator session
+may finish it: run the final review below and merge, even though another session opened it. A Lane
+session never merges, even an approved PR. Agents never apply `owner-approved` on their own judgment; the one
+exception is the owner explicitly telling the agent in a session to apply it, which the agent records
+as a PR comment before applying it.
+
+With permission, the agent runs its tool's code-review pass on the final PR diff at a
+confidence-over-recall setting (for example `/code-review medium` in Claude Code, `/review` in
+Codex, or Cursor's review). A finding is **significant** only if it is:
+
+- (a) a correctness bug in executable code (app code, scripts, CI workflow), including security,
+  data loss and missing authz; or
+- (b) a contradiction about who grants permission, sets Ready, or merges.
+
+Everything else (wording, coverage gaps, design trade-offs, ideas) is logged as Backlog RF tasks
+cited in a PR comment, and does not block. Then:
+
+- **No significant findings:** log the rest, squash-merge with
+  `gh pr merge <n> --squash --match-head-commit <reviewed sha>` and remove `ready-to-merge`.
+- **Significant findings:** do not merge. Comment them on the PR, remove `ready-to-merge`, and stop. A fix is a
+  new push, so it needs green CI again and a fresh permission. Any push after permission voids it:
+  approval counts only for the commit it was given on. When the owner adds `owner-approved`, CI
+  records an `owner-approval` commit status on that exact head, and the gate requires both the label
+  and that status on the current head; CI also drops the label when new commits arrive. The agent
+  asks again. Agents never create the `owner-approval` status by hand.
+
+Auto-merge is off and branches must be current, so concurrent agents merge **one at a time**: update
+the branch, wait for CI on the new head, ask, review, merge, then the next.
+
+**Owner-gated** — CI's last step fails until `owner-approved` is present. The agent adds `needs-owner`,
+names the manual check left in the PR, and asks as above. These PRs need the `owner-approved` label
+itself, because the CI gate reads it; it is both the gate approval and the merge permission. The agent still sets the task's final state in the PR: the
+open PR is the review, so a rejected PR never reaches `main`. The authoritative path list is
+`scripts/owner-gate.mjs`:
+
+- D1 migrations and the Drizzle schema
+- auth and authz (Better Auth, sessions, `requireAccess` helpers, their tests)
+- provider and playback code — CI uses mock providers and cannot prove real playback
+- CI, deploy scripts, Worker config, security headers, workspace overrides
+- agent rules (`AGENTS.md`, `CLAUDE.md`)
+
+**The owner gate is a guardrail, not a security boundary.** It catches an agent misjudging its own
+change. It cannot stop a deliberate bypass: every agent pushes as the owner's account, and a
+`pull_request` run uses the PR's own `ci.yml`, so a PR could edit the gate or forge the status. A
+labeled run cancelled before it records the status leaves the approval uncounted, which fails closed
+(re-add the label). The real backstop is the owner's permission for every merge; agents never edit
+the gate to get a PR through.
+
+**Never granted:** deploys, remote D1 migrations, secrets, production data, repository settings or
+rulesets, applying `owner-approved` except on the owner's explicit in-session instruction, merging
+any PR without that PR's permission, force-pushing another session's branch, merging another
+session's PR except in the orchestrator's merge train, when relaying a subagent's ask, or when a
+Solo or Orchestrator session finishes a PR that already has the owner's permission (a Lane never
+merges), and branch deletion. Those keep their separate explicit permission.
+
+**What CI proves:** the required job runs format, task, owner-gate and RF-trace checks, typecheck, lint,
+design-system verify, theme classes, unit and D1 integration tests, the web build with bundle budget,
+a Playwright smoke of the signed-in core loop at 1440 and 390 wide (overflow and axe WCAG 2.2 AA),
+OpenAPI drift, iOS contract parity and the dependency audit. It uploads per-page screenshots as the
+`e2e-screenshots` artifact. It does **not** prove real Spotify/Apple Music/SoundCloud playback, real
+devices, or production; a PR that could affect those names the remaining check.
 
 ## Project Structure
 
@@ -191,6 +308,10 @@ Use Node `>=22.13` and pnpm `>=11.4`.
 - `pnpm --filter @ritmofit/api openapi`: regenerate `apps/api/openapi/openapi.json`.
 - `pnpm --filter @ritmofit/api contract-parity`: compare backend/OpenAPI run-payload DTOs with the
   vendored iOS snapshot allowlist.
+- `pnpm e2e`: build the SPA and run the Playwright smoke (mock providers, fresh local D1, port 8798).
+  Once per machine: `pnpm --filter @ritmofit/e2e exec playwright install chromium`.
+- `pnpm owner-gate:test`: test the owner-gated path list in `scripts/owner-gate.mjs`.
+- `pnpm rf-trace:test`: test `scripts/rf-trace.mjs`, which requires product PRs to cite an RF record.
 
 The root `pnpm test` uses `--if-present`. When a workspace package gains its first tests, add an
 explicit `test` script to that package so a green root command cannot silently mean zero tests ran.
@@ -256,31 +377,36 @@ Before submitting code, run the CI-equivalent gate unless the owner accepts a na
 
 ```bash
 pnpm format:check
+pnpm owner-gate:test
+pnpm rf-trace:test
 pnpm tasks:test
 pnpm tasks:check
 pnpm -r typecheck
 pnpm lint
 (cd ritmofit_design_system && npm run verify)
+pnpm --filter @ritmofit/web theme-classes --selftest
 pnpm --filter @ritmofit/web theme-classes
 pnpm test
 pnpm --filter @ritmofit/api test:integration
 pnpm --filter @ritmofit/web build
+pnpm --filter @ritmofit/e2e e2e
 pnpm --filter @ritmofit/api openapi
 git diff --exit-code apps/api/openapi/openapi.json
 pnpm --filter @ritmofit/api contract-parity
 pnpm audit:ci
 ```
 
-CI is advisory and never deploys. Use small Conventional Commits, commonly scoped:
-`feat(web): ...`, `fix(api): ...`, `test(api): ...`, `docs: ...`. PRs should explain behavior and risk,
-link relevant issues, list verification, include screenshots for UI changes, and call out schema,
-migration, shared-contract, config, secret, and deployment impacts.
+CI is the required merge gate (see "Delegation And Merge Policy") and never deploys. Use small Conventional Commits, commonly scoped:
+`feat(web): ...`, `fix(api): ...`, `test(api): ...`, `docs: ...`. PRs follow
+`.github/pull_request_template.md` even when the body is passed on the command line: behavior and
+risk, RF IDs, verification, screenshots for UI changes (the CI artifact is fine), schema, migration,
+shared-contract, config, secret and deployment impacts, and what CI cannot prove.
 
-Solo project, multiple AI tools (Codex, Claude Code, Cursor) across local and remote/ephemeral
-sessions on unscheduled time — `main` has to be the current source of truth between sessions, so a
-PR that is this session's own finished work with a green gate defaults to **merge at close, branch
-deleted** rather than sitting open. See `agent-prompts/daily/close-session.md` › "PR hygiene" for
-the one exception (genuinely unfinished work).
+Solo project, multiple AI tools across local and remote sessions: `main` must carry the published
+source of truth between sessions. Publish finished work under "Delegation And Merge Policy" without
+re-asking for what it grants; ask once per PR for the final review and merge. For anything it does not grant, leave the concrete next
+step in the RF record and handoff rather than inferring approval. See
+`agent-prompts/daily/close-session.md` for ordering.
 
 ## Security And Deployment
 

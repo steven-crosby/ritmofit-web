@@ -69,7 +69,9 @@ handoff, and stay idle. Idle is a correct outcome.
 
 ## 12. Close
 
-Run `agent-prompts/daily/close-session.md` in **Lane** mode: push, open the PR (draft until green),
-write `ritmofit_dev_plan/handoffs/YYYY-MM-DD-r<R>-lane<N>-<role>.md` from
+Run `agent-prompts/daily/close-session.md` in **Lane** mode. Your claim is the draft PR you opened
+when execution started (start-session › "After approval"). Set your assigned RF record's final state
+in that PR and cite the PR URL as `pr` evidence (CI's RF-trace step requires it for product changes),
+mark the draft ready once green, write `ritmofit_dev_plan/handoffs/YYYY-MM-DD-r<R>-lane<N>-<role>.md` from
 `agent-prompts/templates/handoff.md` on your lane branch, and **do not merge** — the orchestrator
 runs the merge train.

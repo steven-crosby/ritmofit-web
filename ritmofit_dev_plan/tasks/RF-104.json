@@ -1,0 +1,27 @@
+{
+  "schemaVersion": 1,
+  "id": "RF-104",
+  "title": "Parallel delegated agents run the e2e smoke without port collisions",
+  "kind": "task",
+  "status": "backlog",
+  "priority": "P3",
+  "parent": null,
+  "dependsOn": [
+    "RF-98"
+  ],
+  "acceptance": [
+    "Concurrent delegated agents can run pnpm e2e without colliding on port 8798 (documented E2E_PORT use or serialization)."
+  ],
+  "nextAction": "Document E2E_PORT per worktree in delegate-task.md, or serialize local e2e runs for parallel subagents.",
+  "blocker": null,
+  "evidence": [
+    {
+      "kind": "pr",
+      "ref": "https://github.com/steven-crosby/ritmofit-web/pull/643",
+      "summary": "Final review #4 of #643 (finding 9): parallel worktree subagents all bind the default e2e port. Logged 2026-10-27.",
+      "checkedOn": "2026-10-27"
+    }
+  ],
+  "resolution": null,
+  "followUps": []
+}

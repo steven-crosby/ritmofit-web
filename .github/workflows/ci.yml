@@ -1,12 +1,22 @@
 name: CI
 
-# Quality gate for the pnpm monorepo: typecheck + lint + unit tests. Deploys stay
-# manual by design (see AGENTS.md) — this workflow never deploys, it only blocks
-# regressions on PRs and pushes to main.
+# Quality gate for the pnpm monorepo. Deploys stay manual by design (see AGENTS.md) —
+# this workflow never deploys, it only blocks regressions on PRs and pushes to main.
+# Agents ask the owner, run a final code review, then squash-merge once this job is green
+# (AGENTS.md › "Delegation And Merge Policy"), so it is the automated review: keep it thorough.
 on:
   push:
     branches: [main]
   pull_request:
+    # labeled/unlabeled re-run the owner gate when `owner-approved` is added or removed.
+    types: [opened, synchronize, reopened, labeled, unlabeled]
+
+# pull-requests: write removes a stale `owner-approved`; statuses: write binds an approval to the
+# exact commit it was given on.
+permissions:
+  contents: read
+  pull-requests: write
+  statuses: write
 
 # A newer push to the same ref cancels the in-flight run.
 concurrency:
@@ -18,6 +28,32 @@ jobs:
     name: format · typecheck · lint · test · build · audit
     runs-on: ubuntu-latest
     steps:
+      # Approval covers only the commit the owner saw. When the owner adds `owner-approved`, this
+      # run records an `owner-approval` commit status on that exact head; the gate later requires
+      # both the label and that status on the current head. Any new commit (a push, a branch
+      # update, commits pushed while the PR was closed) has no status, so a stale label cannot
+      # pass the gate even if removing it below fails. A run cancelled before recording leaves no
+      # status, which fails closed: re-add the label. Agents never create this status by hand.
+      - name: Record owner approval for this head
+        if: github.event_name == 'pull_request' && github.event.action == 'labeled' && github.event.label.name == 'owner-approved'
+        env:
+          GH_TOKEN: ${{ github.token }}
+          HEAD_SHA: ${{ github.event.pull_request.head.sha }}
+        run: |
+          gh api "repos/$GITHUB_REPOSITORY/statuses/$HEAD_SHA" -f state=success \
+            -f context=owner-approval -f description="owner-approved was applied to this commit"
+
+      # Hygiene: drop the label when new commits arrive so the PR shows it needs a fresh approval.
+      # The commit binding above already makes a stale label count for nothing, so a failure here
+      # must not skip the real checks. GITHUB_TOKEN edits do not trigger another run.
+      - name: Void owner approval on new commits
+        continue-on-error: true
+        if: github.event_name == 'pull_request' && (github.event.action == 'synchronize' || github.event.action == 'reopened') && contains(github.event.pull_request.labels.*.name, 'owner-approved')
+        env:
+          GH_TOKEN: ${{ github.token }}
+          PR_NUMBER: ${{ github.event.pull_request.number }}
+        run: gh pr edit "$PR_NUMBER" --repo "$GITHUB_REPOSITORY" --remove-label owner-approved
+
       - uses: actions/checkout@v4
 
       # pnpm/action-setup reads the version from the root package.json
@@ -31,6 +67,49 @@ jobs:
 
       - name: Install
         run: pnpm install --frozen-lockfile
+
+      # Owner-gated paths (migrations, auth, provider/playback, CI/deploy, agent rules) fail the
+      # job until the owner adds `owner-approved`; product changes must cite their RF record.
+      # Both checkers' own tests run first — a checker nobody has watched fail is not a gate.
+      # The gates themselves run last, so every other check still reports for the owner.
+      - name: Owner gate self-test
+        run: pnpm owner-gate:test
+
+      - name: RF trace self-test
+        run: pnpm rf-trace:test
+
+      # Changed files come from the PR files API, which lists a rename's old path too and handles
+      # diffs too large for `gh pr diff`. The gates run main's copy of each checker when main
+      # has one, so a PR cannot loosen the checker that judges it.
+      - name: Prepare PR gates
+        if: github.event_name == 'pull_request'
+        env:
+          GH_TOKEN: ${{ github.token }}
+          PR_NUMBER: ${{ github.event.pull_request.number }}
+          BASE_REF: ${{ github.event.pull_request.base.ref }}
+        run: |
+          set -euo pipefail
+          gh api "repos/$GITHUB_REPOSITORY/pulls/$PR_NUMBER/files" --paginate \
+            --jq '.[] | [.filename, (.previous_filename // "")] | @tsv' > "$RUNNER_TEMP/pr-files.tsv"
+          # The files API stops at 3,000 files. Fail closed rather than gate a truncated list.
+          expected=$(gh api "repos/$GITHUB_REPOSITORY/pulls/$PR_NUMBER" --jq .changed_files)
+          listed=$(grep -c . "$RUNNER_TEMP/pr-files.tsv" || true)
+          if [ "$listed" -ne "$expected" ]; then
+            echo "PR has $expected changed files but the API listed $listed; refusing to gate a partial list."
+            exit 1
+          fi
+          tr '\t' '\n' < "$RUNNER_TEMP/pr-files.tsv" | grep . | sort -u > "$RUNNER_TEMP/pr-files.txt"
+          echo "$listed changed files, $(wc -l < "$RUNNER_TEMP/pr-files.txt") paths including renames' old paths"
+          git fetch --no-tags --depth=1 origin "$BASE_REF"
+          for checker in owner-gate rf-trace; do
+            if git cat-file -e "FETCH_HEAD:scripts/$checker.mjs" 2>/dev/null; then
+              git show "FETCH_HEAD:scripts/$checker.mjs" > "$RUNNER_TEMP/$checker.mjs"
+              echo "$checker: using $BASE_REF's copy"
+            else
+              cp "scripts/$checker.mjs" "$RUNNER_TEMP/$checker.mjs"
+              echo "$checker: not on $BASE_REF yet, using this PR's copy"
+            fi
+          done
 
       # Prettier owns code + top-level docs; generated artifacts and long-form
       # reference docs are excluded in .prettierignore.
@@ -84,6 +163,29 @@ jobs:
       - name: Build web
         run: pnpm --filter @ritmofit/web build
 
+      # Browser smoke against the build above: sign up, build a Cycle class with mock tracks,
+      # write cues, run Live, End Class — at 1440 and 390 wide, with overflow and axe WCAG 2.2
+      # AA checks. Mock providers and a throwaway D1; no secrets. It cannot prove real provider
+      # playback (AGENTS.md › "Music Constraints"); PRs name that check when it applies.
+      - name: Install Playwright Chromium
+        run: pnpm --filter @ritmofit/e2e exec playwright install --with-deps chromium
+
+      - name: End-to-end smoke (Playwright)
+        run: pnpm --filter @ritmofit/e2e e2e
+
+      # Per-page screenshots for PR review, plus traces on failure. Download from the run's
+      # Summary page (zip).
+      - name: Upload e2e screenshots and traces
+        if: ${{ !cancelled() }}
+        uses: actions/upload-artifact@v4
+        with:
+          name: e2e-screenshots
+          path: |
+            e2e/.state/shots/
+            e2e/.state/test-results/
+          if-no-files-found: ignore
+          retention-days: 14
+
       # The OpenAPI spec is generated from the shared Zod schemas; fail if the
       # committed spec has drifted from a fresh regen.
       - name: OpenAPI spec up to date
@@ -105,3 +207,28 @@ jobs:
       # are documented in REVIEW.md. Any NEW advisory fails the build.
       - name: Dependency audit (prod)
         run: pnpm audit:ci
+
+      # Last on purpose: a PR that fails a gate still shows every other check's result.
+      - name: RF trace (product PRs cite their RF record)
+        if: ${{ !cancelled() && github.event_name == 'pull_request' }}
+        env:
+          PR_NUMBER: ${{ github.event.pull_request.number }}
+        run: node "$RUNNER_TEMP/rf-trace.mjs" < "$RUNNER_TEMP/pr-files.txt"
+
+      - name: Owner gate (owner-gated paths need owner-approved)
+        if: ${{ !cancelled() && github.event_name == 'pull_request' }}
+        env:
+          GH_TOKEN: ${{ github.token }}
+          LABELS: ${{ toJSON(github.event.pull_request.labels.*.name) }}
+          HEAD_SHA: ${{ github.event.pull_request.head.sha }}
+        run: |
+          set -euo pipefail
+          # The label counts only if this exact head carries the recorded approval status.
+          bound=$(gh api "repos/$GITHUB_REPOSITORY/commits/$HEAD_SHA/statuses" --paginate \
+            --jq '[.[] | select(.context == "owner-approval" and .state == "success")] | length' |
+            awk '{ total += $1 } END { print total + 0 }')
+          if [ "$bound" -eq 0 ]; then
+            echo "No owner-approval status on $HEAD_SHA; owner-approved (if present) is not counted."
+            LABELS=$(jq -c 'map(select(. != "owner-approved"))' <<< "$LABELS")
+          fi
+          OWNER_GATE_LABELS="$LABELS" node "$RUNNER_TEMP/owner-gate.mjs" < "$RUNNER_TEMP/pr-files.txt"

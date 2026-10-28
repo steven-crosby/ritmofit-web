@@ -1,0 +1,28 @@
+{
+  "schemaVersion": 1,
+  "id": "RF-103",
+  "title": "Task claims stay visible from claim to merge",
+  "kind": "task",
+  "status": "backlog",
+  "priority": "P3",
+  "parent": null,
+  "dependsOn": [
+    "RF-98"
+  ],
+  "acceptance": [
+    "Another session can tell a task is claimed from its claim until its PR merges or closes, including after the draft becomes ready with the task set to Done.",
+    "Parallel agents told to take the top Ready task do not both start the same task."
+  ],
+  "nextAction": "Design a claim signal that survives the draft-to-ready transition (for example, any open PR whose head changes the task record) and update start-session and delegate-task.",
+  "blocker": null,
+  "evidence": [
+    {
+      "kind": "pr",
+      "ref": "https://github.com/steven-crosby/ritmofit-web/pull/643",
+      "summary": "Final review #4 of #643 (finding 7): the claim definition requires a draft PR with the task In progress, which lapses once the task is finalized in the ready PR. Logged 2026-10-27.",
+      "checkedOn": "2026-10-27"
+    }
+  ],
+  "resolution": null,
+  "followUps": []
+}

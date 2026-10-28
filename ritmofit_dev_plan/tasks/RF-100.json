@@ -1,0 +1,28 @@
+{
+  "schemaVersion": 1,
+  "id": "RF-100",
+  "title": "Label changes rerun only the PR gates, not the full CI job",
+  "kind": "task",
+  "status": "backlog",
+  "priority": "P3",
+  "parent": null,
+  "dependsOn": [
+    "RF-98"
+  ],
+  "acceptance": [
+    "Adding or removing a label (ready-to-merge, needs-owner, owner-approved) re-evaluates the owner gate without re-running install, tests, build and the e2e smoke, while the required check still reflects the gate result for the current head.",
+    "A label-only rerun can no longer turn a green PR red through a flaky e2e or cancel an in-flight run."
+  ],
+  "nextAction": "Owner decides whether this is worth doing; then design a gate-only path (separate job or workflow on labeled/unlabeled) that keeps the required check name meaningful.",
+  "blocker": null,
+  "evidence": [
+    {
+      "kind": "pr",
+      "ref": "https://github.com/steven-crosby/ritmofit-web/pull/643",
+      "summary": "Final review of #643 (finding 9): every label change reruns the whole ~5 minute job because the gate shares the required job; deferred by the owner on 2026-10-27.",
+      "checkedOn": "2026-10-27"
+    }
+  ],
+  "resolution": null,
+  "followUps": []
+}

@@ -92,13 +92,14 @@ pnpm --filter @ritmofit/api contract-parity
 pnpm audit:ci
 ```
 
-### End-to-end smoke (local only)
+### End-to-end smoke
 
 `pnpm e2e` builds the SPA, boots the Worker on `http://localhost:8798` against a fresh local D1
 in `e2e/.state/` with mock providers, and drives the signed-in core loop in Playwright at 1440 and
 390 wide: sign up, create an empty Cycle class, add two mock tracks, write cues, Run live without
 music, play, End Class. Every destination is checked for sideways overflow and for WCAG 2.2 AA
-violations with axe. It takes about 30 seconds. It is not part of `pnpm test` or CI.
+violations with axe. It takes about 30 seconds. It is not part of `pnpm test`, but CI runs it on
+every PR and uploads the per-page screenshots as the `e2e-screenshots` artifact.
 
 ```bash
 pnpm --filter @ritmofit/e2e exec playwright install chromium   # once per machine
@@ -153,6 +154,9 @@ migrations **before** the code that depends on them.
   accessibility, motion, and layout guidance for UI work.
 - [`docs/onboarding/ritmofit-tutorial-video-cuts.md`](docs/onboarding/ritmofit-tutorial-video-cuts.md) —
   caption/cut specs for the landing-hero and onboarding tutorial videos.
+- [`agent-prompts/delegate-task.md`](agent-prompts/delegate-task.md) — how to hand one task to an
+  agent; it opens a PR and, once CI is green, asks your permission before its final review and
+  squash-merge (see `AGENTS.md` › "Delegation And Merge Policy").
 - [`agent-prompts/`](agent-prompts/README.md) — the session workflow (start/close-session, parallel
   lanes, handoff and lane-brief templates) plus attended audit packs, including the agent-agnostic
   [design-audit pack](agent-prompts/design-audit/README.md).

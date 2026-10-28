@@ -12,14 +12,14 @@ handoff file, never chat:
 
 ```
 start-session ──► plan ──► owner confirms ──► execute ──► close-session ──► handoff
-   (orient)         (substantial work only)     (PR)       (merge/record)   (owed forward)
+   (orient)         (substantial work only)     (PR)       (verify/record)   (owed forward)
 ```
 
 | Role | Start | Execute | Close | Merge authority |
 |---|---|---|---|---|
-| **Solo** — one session, one objective | `daily/start-session.md` | branch + PR | `daily/close-session.md` (Solo) | merges its own green PR at close (squash, owner gets a beat to object) |
+| **Solo** — one session, one objective | `daily/start-session.md` | branch + PR | `daily/close-session.md` (Solo) | asks per PR, then final-reviews and squash-merges its own green PR under `AGENTS.md` › "Delegation And Merge Policy"; deletion is separate |
 | **Lane** — one builder in a parallel round | lane brief → `daily/start-session.md` (Lane mode) | lane branch + PR, only owned files | `daily/close-session.md` (Lane) | **none** — the orchestrator merges |
-| **Orchestrator** — runs a parallel round | `orchestrate-parallel-round.md` | writes briefs, reconciles plans, no product code | Step 7 + `daily/close-session.md` (Orchestrator) | runs the merge train with explicit owner authority |
+| **Orchestrator** — runs a parallel round | `orchestrate-parallel-round.md` | writes briefs, reconciles plans, no product code | Step 7 + `daily/close-session.md` (Orchestrator) | runs the merge train under the same policy, one PR at a time |
 
 Where state lives (so the next session — any tool — can answer "what's next"):
 
@@ -39,9 +39,10 @@ owner decisions in the session that performs them (`ritmofit_dev_plan/deployment
 
 | Path | What it is | Attended? | Output |
 |---|---|---|---|
-| [`daily/start-session.md`](daily/start-session.md) | Orientation: git, PRs, handoffs, unrecorded merges, trackers, production evidence, one recommended action | yes | chat baseline + plan |
-| [`daily/close-session.md`](daily/close-session.md) | Wrap: git/PR/branch hygiene, optional gates and deploy reconcile, handoff, docs sync | yes | PR merged or handed off + handoff file |
+| [`daily/start-session.md`](daily/start-session.md) | Read-only orientation in every mode: revision-aware RF records, git/PRs, handoffs and one action; after approval, record In progress before execution | yes | chat baseline + plan |
+| [`daily/close-session.md`](daily/close-session.md) | Reconcile RF/evidence/handoff/docs → final validation → authorized publication → production observations | yes | PR merged or handed off + handoff file |
 | [`orchestrate-parallel-round.md`](orchestrate-parallel-round.md) | Run 3–4 concurrent lane-agents across sibling checkouts: map → partition → briefs → plan gate → CI gate → merge train → cleanup | yes (orchestrator) | merged lane PRs + round handoff |
+| [`delegate-task.md`](delegate-task.md) | Owner's brief for handing one task to any agent; it executes, opens a PR, and asks permission for the final review + squash-merge | no — owner approves each merge | PR (merged, or `ready-to-merge` awaiting permission) |
 | [`templates/handoff.md`](templates/handoff.md) | Handoff file template | — | — |
 | [`templates/lane-brief.md`](templates/lane-brief.md) | Lane brief template (copied untracked per lane) | — | — |
 | [`design-system-drift.md`](design-system-drift.md) | Report-only canon-drift audit: design-system canon vs code vs rendered browser truth | either; local + browser | `docs/audits/design-system-drift-<date>/` on a docs PR |

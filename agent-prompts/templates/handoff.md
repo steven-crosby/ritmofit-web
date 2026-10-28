@@ -8,7 +8,7 @@ branch: ''
 head: '' # SHA of the last work commit before this handoff commit (a file cannot hold its own commit's SHA), or n/a
 base: '' # origin/main SHA the branch was last synced with
 prs: [] # e.g. ['#491 (draft)', '#492 (merged)']
-status: open # open = something is in flight or a next action is owed; closed = nothing owed
+status: open # open = its restart context still matters; closed = nothing owed
 ---
 
 # <one-line outcome of the session>
@@ -27,14 +27,11 @@ status: open # open = something is in flight or a next action is owed; closed = 
 - Anything started and not finished: branch, PR, what remains, how to resume.
 - "None" when nothing is in flight.
 
-## Next action
+## Restart context
 
-One recommended next action for whoever picks this up, with the confirmation it needs.
-
-## Blockers and owner decisions
-
-- Open decisions only the owner can make, and blockers outside the repo (device, account, secret).
-- "None" when empty.
+- The next action, owner decisions and blockers live in the RF records above, not here. Add only
+  what a successor needs that a record cannot hold: unfinished branch state, a device check in
+  flight, a dated observation, where you stopped and why.
 
 ## Verification
 

@@ -1,0 +1,97 @@
+{
+  "schemaVersion": 1,
+  "id": "RF-99",
+  "title": "Session prompts, handoffs and the RF board agree for delegated CI/CD",
+  "kind": "documentation",
+  "status": "done",
+  "priority": "P1",
+  "parent": null,
+  "dependsOn": [
+    "RF-97"
+  ],
+  "acceptance": [
+    "Ready is the owner's queue and the only status that authorizes execution; agent-created tasks start in Backlog (AGENTS.md, start-session, task README, board header, delegate-task).",
+    "Agents claim a task with a draft PR at execution start, and the task's final state lands in that same PR with the PR cited as evidence; follow-up PRs only for post-merge facts such as a deploy.",
+    "Handoffs are restart notes: RF records own next actions and decisions; no handoff is owed just for a merge or main vs production; retiring a routed handoff is under the standing grant.",
+    "Start-session counts a merge as recorded when an RF record cites its PR.",
+    "CI's RF-trace step fails a PR changing apps/, packages/ or e2e/ unless a changed RF record cites that PR; its tests run first and have been watched failing."
+  ],
+  "nextAction": null,
+  "blocker": null,
+  "evidence": [
+    {
+      "kind": "test",
+      "ref": "scripts/rf-trace.test.mjs",
+      "summary": "3/3 pass locally; removing the exact-number guard and forcing pass each failed tests. Dry run against #625's real file list failed as expected (its record was updated in a separate PR).",
+      "checkedOn": "2026-10-27"
+    },
+    {
+      "kind": "document",
+      "ref": "agent-prompts/daily/start-session.md",
+      "summary": "Walked four scenarios (ordinary task, owner-gated task, second agent mid-task, abandoned draft) through the revised start/close prompts, handoff rules and CI steps; one residual race (two agents before either opens a draft PR) accepted and documented. Manual review, not automated prompt testing.",
+      "checkedOn": "2026-10-27"
+    },
+    {
+      "kind": "pr",
+      "ref": "https://github.com/steven-crosby/ritmofit-web/pull/643",
+      "summary": "Work PR, opened as a draft to claim the task. Owner-gated (needs-owner). The ci.yml commit waits for the workflow token scope.",
+      "checkedOn": "2026-10-27"
+    },
+    {
+      "kind": "test",
+      "ref": "https://github.com/steven-crosby/ritmofit-web/actions/runs/40610775187",
+      "summary": "GitHub Actions on Linux for bfc2622: all steps passed including RF-trace, D1 integration, build, Playwright e2e (10 screenshots uploaded as e2e-screenshots); the final owner-gate step failed as designed because #643 touches owner-gated paths and lacks owner-approved.",
+      "checkedOn": "2026-10-27"
+    },
+    {
+      "kind": "pr",
+      "ref": "https://github.com/steven-crosby/ritmofit-web/pull/643",
+      "summary": "Final review findings fixed in #643: close-session no longer grants merging, owner-approved exception aligned, RF-trace moved last with !cancelled(), gated paths extended, CI voids owner-approved on push, gates use the PR files API and main's checker copies, and a symlink-safe CLI guard (the old guard silently skipped the gate). Label-rerun cost logged as RF-100.",
+      "checkedOn": "2026-10-27"
+    },
+    {
+      "kind": "pr",
+      "ref": "https://github.com/steven-crosby/ritmofit-web/pull/643",
+      "summary": "Final review #2 fixes: RF-trace now requires exact pr evidence and a final status (In progress fails); approval voiding runs first; gates fail closed past the 3,000-file API limit; tasks.mjs had the same symlink fail-open guard (confirmed: check exited 0 silently) and is fixed with a test. AGENTS.md states the gate is a guardrail, not a security boundary. Route/CI-config gating logged as RF-101.",
+      "checkedOn": "2026-10-27"
+    },
+    {
+      "kind": "pr",
+      "ref": "https://github.com/steven-crosby/ritmofit-web/pull/643",
+      "summary": "Final review #3 fixes (owner chose all 8): close-session parks in Backlog only; orchestrator merge train asks per PR at its head with a final review; owner-gated PRs are ready when all but the gate step pass; gate text, PR template and label descriptions match the policy; architecture.md no longer calls CI advisory; multi-PR work uses child RF records; approval is bound to the exact head via an owner-approval commit status (stale labels no longer pass; tested with a stubbed gh); agent prompts and Live/provider UI are owner-gated.",
+      "checkedOn": "2026-10-27"
+    },
+    {
+      "kind": "pr",
+      "ref": "https://github.com/steven-crosby/ritmofit-web/pull/643",
+      "summary": "Final review #4 fixes: close-session Ready, deletion and gated-permission contradictions; CLAUDE.md limited to Claude mechanics; void step no longer blocks CI on failure; the policy defines a significant finding (code correctness or authority contradiction) and runs the final review at medium effort. Findings 6-9 logged as RF-101..RF-104.",
+      "checkedOn": "2026-10-27"
+    },
+    {
+      "kind": "pr",
+      "ref": "https://github.com/steven-crosby/ritmofit-web/pull/643",
+      "summary": "Final review #5 (medium, significance rule): three authority contradictions fixed: one canonical Ready rule in AGENTS.md referenced by start/close-session and the tasks README; Never-granted list matches the merge train and subagent relay; brief wording no longer tells agents to set Ready. Non-significant items logged as RF-105.",
+      "checkedOn": "2026-10-27"
+    },
+    {
+      "kind": "pr",
+      "ref": "https://github.com/steven-crosby/ritmofit-web/pull/643",
+      "summary": "Final review #6 (medium, significance rule): fixed start-session's 'status never grants execution' and named who may finish an approved PR whose agent has stopped; non-significant items added to RF-101 and RF-105.",
+      "checkedOn": "2026-10-27"
+    },
+    {
+      "kind": "pr",
+      "ref": "https://github.com/steven-crosby/ritmofit-web/pull/643",
+      "summary": "Final review #7 (medium): fixed two authority contradictions: only the owner moves a task into Ready (agents may only move tasks out, parking to Backlog with a note), and a Lane never merges even an approved PR. Also fixed delegate-task's gated-PR wait, start-session's 'take' wording and the handoff line; latent items logged on RF-102 and RF-105.",
+      "checkedOn": "2026-10-27"
+    },
+    {
+      "kind": "pr",
+      "ref": "https://github.com/steven-crosby/ritmofit-web/pull/643",
+      "summary": "Final review #8 (medium): one significant item fixed: the owner gate's no-gated-paths message no longer says 'Agent merge allowed' (it states per-PR permission is still needed). Also aligned the Task sync wording with RF-trace's final states and added theme-classes --selftest to the local gate list; coverage and stacked-PR items logged on RF-101/RF-105.",
+      "checkedOn": "2026-10-27"
+    }
+  ],
+  "resolution": "Ready is the owner's queue, draft PRs claim tasks, the final state lands in the work PR, handoffs are restart notes, and merges count as recorded when an RF record cites them. RF-trace runs in the required job and passed on GitHub Linux (run 40610775187). Its first live pass on a product PR will come from the first product PR after merge.",
+  "followUps": []
+}

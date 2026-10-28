@@ -1,155 +1,191 @@
 # Close-session — wrap up a Ritmo Studio work session
 
-> **INTERACTIVE.** Use this whenever a work session in `ritmofit-web` ends — any tool, local or
-> cloud, solo or lane. Work through the checklist top to bottom, run the checks yourself, and pause
-> only at owner-decision points: commit scope, merge/close PRs, deploy, remote migrations, or
-> production data cleanup. Pair it with [`start-session.md`](./start-session.md).
+<!-- Codex, 2026-10-27: Ordered RF reconciliation and final validation before publication; made permissions explicit. -->
+<!-- Claude Code, 2026-10-27: Pointed permissions at the AGENTS.md standing delegation grant and owner gate. -->
+<!-- Claude Code, 2026-10-27: Done lands in the work PR with its PR link; handoffs are restart notes only. -->
+<!-- Claude Code, 2026-10-27: Merging asks the owner per PR, then runs a final code review before squash-merge. -->
 
-Deploys are **manual** and production-facing; merging to `main` does **not** deploy. Every change,
-docs included, goes through a PR — never push straight to `main`. Run everything from the repo root.
-Do not re-run work this session already finished (gates, deploy, docs record). If start-session
-never ran, still do this wrap.
+> **INTERACTIVE.** Use whenever a work session ends — any tool, local or cloud, solo or lane.
+> Pair with [`start-session.md`](./start-session.md). Complete the pre-publication steps before
+> committing, pushing or merging. Permissions already granted include the standing grant in
+> `AGENTS.md` › "Delegation And Merge Policy"; ask only for a missing permission needed for the next
+> action. Do not reopen settled approvals.
 
-Steven is the sole developer and moves across Codex, Claude Code, and Cursor, local and
-remote/ephemeral, on unscheduled time. `main` plus the handoff files — not any tool's session state
-or chat — must let the next session answer "what's next". Hence: solo sessions **merge** their own
-finished green work at close, and every session leaves a handoff when anything is owed forward.
+The durable state is the canonical RF records on `main`, plus tracked plans, evidence and session
+handoffs. An external board and chat are not authority. Every change, including docs and task
+records, goes through a PR; never push straight to `main`. Merging does not deploy.
 
-## Close mode and depth
+## Mode, depth and order
 
-**Mode** (match the start-session mode):
+- **Solo:** owns its work and PR; when final-head checks pass it asks the owner, then runs the final
+  review and squash-merges (`AGENTS.md` › "Delegation And Merge Policy").
+- **Lane:** prepares its assigned work and handoff; never merges. The orchestrator runs the merge train.
+- **Orchestrator:** follow `../orchestrate-parallel-round.md` for the round and apply these RF,
+  evidence and permission rules before its authorized merge train. No product code.
 
-- **Solo** — this session owns its PRs end to end; merge at close per §2.
-- **Lane** — one lane of a parallel round: push, open the PR, write the lane handoff (§5), and
-  **never merge** — the orchestrator runs the merge train. Skip §4 deploy decisions.
-- **Orchestrator** — closing a round: follow `../orchestrate-parallel-round.md` Step 7, then §5
-  here for the round handoff.
+**Light:** baseline, RF reconciliation, handoff/docs, final task validation, authorized publication
+and summary. **Full:** also run any outstanding CI-equivalent gates for code, contracts, schema or
+deployment behavior and production reconciliation when relevant. Do not repeat checks on unchanged
+content merely to close; material edits invalidate the affected checks. Task validation is mandatory
+in every mode/depth after the final record, evidence, handoff and documentation edits.
 
-**Depth:**
+**Order:** inspect → reconcile tasks and finish files → verify final content → publish if authorized
+→ reconcile any deployment/post-publication observations → summarize. Any subsequent file edit
+returns to final validation before that edit is published. If start-session never ran, still close
+from verified sources and state what orientation evidence is missing.
 
-- **Light (default):** git, PRs, branch hygiene, handoff, inbox/docs if anything new landed,
-  secrets/blockers, summary. After a merge or deploy this session, still state main-vs-production
-  align/ahead and the Worker id.
-- **Full:** add verification gates (§3) and a production reconcile (§4) when this session changed
-  code, contracts, schema, or deployment behavior *and* those checks have not run.
+## 1. Baseline and authority
 
-Never deploy from this prompt unless the owner grants it in this session. Deploy and smoke live in
-`ritmofit_dev_plan/deployment-runbook.md`; the CI-equivalent gate lives in `AGENTS.md` ›
-"Verification, PRs, And Commits". Do not fork either here.
+- [ ] Confirm branch/HEAD, `git status -sb`, upstream sync and fetched `origin/main` as needed. Own
+  only this session's changes; never stash, discard, overwrite or include unrelated work. Leave
+  out-of-scope local files alone. If current task records differ from upstream or relevant open PR
+  heads, reconcile the revision boundary before changing shared task state.
+- [ ] Identify the session's RF IDs, PRs and handoff, and the permissions already granted for
+  commit, push, PR creation, merge, deploy and deletion. The standing grant covers commit, push and PR;
+  it also covers retiring routed handoff files in a PR. Every merge needs the owner's permission
+  for that PR; deploys and branch deletion are never in it. None implies another. Task state, a green
+  gate, this prompt and the Solo role do not grant a missing permission. Continue authorized local
+  preparation; put any missing publication permission in an open publication/follow-up RF task's
+  next action. A completed implementation task can stay Done with that follow-up link; do not add
+  a next action to a Done record or misclassify completed implementation as unfinished.
+- [ ] Read the task workflow at `ritmofit_dev_plan/tasks/README.md`. If task validation fails,
+  distinguish board-only drift from invalid records/paths as in start-session. Repair only within
+  authorized scope. Do not publish invalid records or use an external board as a fallback.
 
-## 1. Working tree and branch
+## 2. Reconcile RF records and finish all files
 
-- [ ] `git status -sb` — identify which session owns any uncommitted change. Offer to commit only
-  this session's finished, in-scope work; leave everything else untouched and report it. Never
-  stash, discard, reset, overwrite, or silently include unrelated work. Note branch, upstream sync,
-  ahead/behind, and whether `main` is current with `origin/main`.
-- [ ] Prune merged branches. Local: delete local feature branches already merged to `main` without
-  asking; flag unmerged ones. Remote: list candidates (`git branch -r --merged origin/main` and/or
-  PRs merged by squash) and get an explicit owner yes before deleting any remote branch.
-- [ ] If the worktree is left off `main`, say so ("Left on branch X") and offer to switch back.
+- [ ] For each selected task, compare its actual acceptance with results and live sources. Update
+  bounded evidence (`checkedOn`, environment, exactly what passed), then choose the truthful state:
+  - **Done:** this task's acceptance is met, evidence and resolution are present, prerequisites are
+    Done and children are closed; `nextAction` and `blocker` are null. Set Done **inside the work
+    PR**, with that PR's URL as `pr` evidence: merging the PR publishes Done, and a closed PR never
+    reaches `main`. Acceptance never lists "merged" itself. Deployment and audible acceptance remain
+    separate claims; do not imply either occurred merely because implementation passed.
+  - **For review:** a scoped plan/result awaits review; record the concrete review action.
+  - **Blocked:** record the missing input/condition, who or what unblocks it and the restart action.
+  - **Backlog:** work is deliberately parked and no longer actively executing. Park it in Backlog,
+    never Ready (`AGENTS.md` › "Working Agreement": only the owner moves a task into Ready). If it
+    came from the owner's Ready queue, say so in its next action so the owner can re-promote it. Do not leave an idle session's task
+    In progress; retain that state only when a named session is actually continuing it.
+  - **Cancelled:** explain the approved reject/supersede/duplicate disposition and link the replacement.
+- [ ] Give remaining acceptance or verification a follow-up RF ID when outside the completed task's
+  bounded scope. Keep the product acceptance task open when the outcome is unverified. Capture new
+  work or explicit defer/reject/duplicate dispositions in RF records, not parallel backlog lists.
+  If acceptance requires a deploy or another event after merge, keep that acceptance in a follow-up
+  task; only such post-merge facts go on a follow-up PR, never the merge itself.
+- [ ] Write a handoff from `agent-prompts/templates/handoff.md` only when a successor needs context
+  the RF record cannot hold (unfinished branch state, dated observations, a device check in flight);
+  lanes and orchestrators always leave one. The next action, owner decisions and evidence go in the
+  RF record, never only in the handoff. Do not write a handoff just to record a merge or `main` vs
+  production. Describe expected merge state conditionally; do not report a future merge as fact.
+- [ ] Retire a handoff once every obligation is completed or routed; the standing grant covers
+  deleting the file in a PR.
+  Never edit another active lane's handoff. Before removing a file cited by task evidence, preserve
+  the evidence in a durable repo document or immutable commit link and update the references without
+  upgrading the claim's verification status. If deletion is not authorized, retain it and route cleanup.
+- [ ] Drain authorized INBOX breadcrumbs into RF records, decisions or other owning docs. Keep
+  `DEVELOPMENT_PLAN.md` focused on direction/current production state; `HISTORY.md` owns deployment
+  evidence. Update focused conventions/runbooks when their subject changed. No unrelated cleanup.
 
-## 2. PR hygiene
+## 3. Final validation — before every publication
 
-List open PRs (`gh pr list --state open` or the session's GitHub integration). **Before merging
-anything, finish §5's handoff and docs updates on the same branch** — a squash merge deletes the
-branch, so there is nowhere to commit them afterwards. State that only arises after the merge (a
-deploy, a post-merge production check) goes in a follow-up `docs:` PR. For each PR:
+- [ ] After **all** task, evidence, handoff, retirement and documentation edits, run:
 
-- **This session's PR, finished, gate green — Solo mode:** default to merge — **squash**, delete
-  the branch (`gh pr ready <n>` if draft, then `gh pr merge <n> --squash --delete-branch`). State
-  that you are merging and give the owner a beat to object; this is not a silent auto-merge.
-- **This session's PR — Lane mode:** leave it open for the orchestrator; make sure it is pushed,
-  CI is running or green, and the lane handoff is on the branch.
-- **This session's PR, genuinely unfinished:** leave it open/draft and say so in the handoff.
-- **Another session's or lane's PR:** leave it alone.
-- **Stale/superseded:** close with a reason (owner confirmation).
+  ```bash
+  pnpm tasks:render
+  pnpm tasks:check
+  git diff --check
+  ```
 
-Goal: no orphaned PRs, and none of this session's finished solo work left dangling.
+  Run these in Light, Full, Solo, Lane and Orchestrator closes alike. Fix invalid records/paths
+  before rendering; a stale board alone is regenerated from the records. Never hand-edit the board.
+- [ ] Docs/task-only changes: run `pnpm format:check` and check touched local links/paths. Planning,
+  agent-prompt and audit directories are Prettier-ignored; a format pass does not check their links
+  or prose. Run `pnpm tasks:test` when task tooling changes. Code/contracts/schema/deployment
+  behavior: run the outstanding CI-equivalent gate in `AGENTS.md`; do not duplicate that gate here.
+- [ ] Review the complete in-scope diff, including new files. Preserve evidence limits, check for
+  secrets and unintended scope, and verify the generated board belongs to the final records.
+  Any later file edit requires the affected checks and final task validation again before publication.
 
-## 3. Verification gates (full close only)
+## 4. Authorized publication and PR hygiene
 
-Run and report pass/fail with real output. Docs-only: at minimum `pnpm format:check` (note that
-`ritmofit_dev_plan/`, `agent-prompts/`, and `docs/audits/` are Prettier-ignored, so also check
-links/paths you touched). Code, contracts, schema, or deployment behavior: the full CI-equivalent
-gate from `AGENTS.md` (includes `theme-classes`).
+- [ ] List open PRs; identify this session's work (normally the draft PR opened as the claim). Commit,
+  push and update it, then mark it ready, within permissions already granted. Product changes need a
+  changed RF record citing the PR or CI's RF-trace step fails. Fill every section of `.github/pull_request_template.md` (RF IDs,
+  verification, screenshots or the `e2e-screenshots` artifact, what CI cannot prove), including when
+  the body is passed on the command line. If publication is
+  not authorized, leave a concrete local diff and restart action; do not call it published or on main.
+- [ ] Before merge, all RF/handoff/docs changes must be on the PR branch. Wait for checks on the
+  **final PR head**, record that SHA, and ensure merge eligibility. An earlier green revision is
+  insufficient after task or documentation edits. Use an expected-head guard when merging.
+- **Own finished PR, Solo:** when final-head checks pass (for an owner-gated PR: every step except
+  the final owner-gate step), ask: "PR #N is green on `<sha>` — may I
+  run the final review and squash-merge?" In a live session ask in chat; otherwise comment that on
+  the PR, add `ready-to-merge` and stop. Owner-gated PRs also get `needs-owner` and the manual check
+  left. Permission is the owner saying so in a session or adding `owner-approved`; an owner-gated PR
+  needs the label itself, so a chat "yes" is enough only if the owner also tells you to apply it
+  (record that as a PR comment first). With permission (for an owner-gated PR, after the label's CI rerun is green on the same head), run
+  the final review as `AGENTS.md` ›
+  "Delegation And Merge Policy" defines it. No significant findings: log the rest as RF tasks,
+  squash-merge with `--match-head-commit <reviewed sha>` and remove `ready-to-merge`. Significant
+  findings: do not merge; comment them, remove `ready-to-merge`, stop. Any later push voids the
+  permission (CI removes `owner-approved` automatically); ask again. Delete the branch only if deletion is also authorized; do not append
+  `--delete-branch` automatically. Missing merge/deletion permission is an explicit next action.
+- **Lane:** leave its PR open for the orchestrator with RF records/handoff complete; report CI state.
+- **Genuinely unfinished:** leave open/draft with the actual remaining acceptance in its RF record.
+- **Another session's PR:** leave it alone unless explicitly assigned for review or disposition.
+- **Stale/superseded PR:** close only with owner authorization and a recorded reason.
+- [ ] After merge, verify merged SHA and outcome and sync the local checkout only when safe. A squash
+  does not inherently delete the branch. Local/remote branch deletion requires authorization and
+  verification that no needed work is lost. State the branch left active.
 
-## 4. Deployment state (Solo and Orchestrator)
+Goal: no unrecorded publication outcome, missing next action or orphaned task. Authorized finished
+work should reach main; ungranted publication actions remain explicit rather than inferred.
 
-- [ ] After a merge or deploy this session, state whether production is aligned with `main` and the
-  Worker id — briefly on a light close; full evidence (three-hash SPA settle, mounted-route smoke)
-  on a full close, the deploy path, or when alignment is in doubt. If this environment cannot reach
-  production or Cloudflare, say "not checked from this environment" — never infer from docs.
-- [ ] Default to **not** deploying just because code merged. Deploy now only for a batch the owner
-  wants live, an urgent fix (prod bug / regression / security / live-verification finding), or a
-  risky change (schema/migration, auth, provider, infra) that ships on its own.
-- [ ] If a deploy is wanted, confirm with the owner, then follow the runbook end to end.
+## 5. Production and post-publication facts
 
-## 5. Handoff, docs, and status sync
+- [ ] Merging is not deploying. Deploy only with the owner's applicable explicit permission, using
+  `ritmofit_dev_plan/deployment-runbook.md` end to end. Do not infer deploy authority from urgency,
+  task priority, an implementation approval or this prompt. Remote migrations, secrets and data
+  cleanup keep their separate permission boundaries.
+- [ ] When production state matters after merge/deploy, read the Worker version and apply the runbook's
+  served-asset evidence bar. State actual main-vs-production observations and runtime vs docs/tooling
+  differences. If unreachable, say "not checked from this environment"; do not infer from docs.
+- [ ] After a production deploy, record HISTORY first, then DEVELOPMENT_PLAN and the related RF
+  acceptance/evidence. Facts only knowable after merge/deploy go on a follow-up docs PR within
+  applicable permissions; repeat §2–§4, including final task validation, before publishing it.
+  Do not call that record published while local/unmerged unless the owner deliberately parks it.
+- [ ] Production fixtures follow `ritmofit_dev_plan/prod-fixture-hygiene.md`. Record retained fixtures
+  without changing remote data unless authorized. Do not commit secrets or production data dumps.
 
-- [ ] **Tasks first.** Update relevant `ritmofit_dev_plan/tasks/RF-*.json` records with bounded
-  acceptance, dated evidence, resolution or the next action/blocker. Preserve original evidence
-  limits: merged, deployed and audibly accepted are different claims. Give any remaining work a
-  follow-up RF ID; a Done parent cannot have open children. New work needs a task or an explicit
-  defer/reject/duplicate disposition. Run `pnpm tasks:render` and `pnpm tasks:check` before publication.
-  An external board is a view, never authority. Tasks do not grant commit/push/PR/merge/deploy permission.
+## 6. Final summary
 
-- [ ] **Handoff.** Write `ritmofit_dev_plan/handoffs/YYYY-MM-DD-<lane-slug>.md` from
-  `agent-prompts/templates/handoff.md` and commit it on this session's branch/PR **before** §2's
-  merge (describe the state the merge will produce, for example "`main` ahead of production by
-  #N once merged"):
-  - Lane and Orchestrator: always (an idle lane writes `status: closed` with its evidence).
-  - Solo: whenever anything is in flight, a next action is owed, an owner decision is open, or
-    `main` is ahead of production. Skip only when HISTORY/DEVELOPMENT_PLAN already say everything.
-  - Rules: `ritmofit_dev_plan/handoffs/README.md`. Production is "as observed", never inferred.
-- [ ] **Retire handoffs.** Delete handoff files whose items this session completed or routed to a
-  real home, and stale ones flagged at start-session once routed. Never edit another open lane's
-  handoff.
-- [ ] After a production deploy: append the dated entry to `ritmofit_dev_plan/HISTORY.md` first,
-  then refresh the current-focus / main-vs-production block in `DEVELOPMENT_PLAN.md`, on a docs PR
-  (`docs: record the #<pr> deploy (Worker <id>)`). Do not call the session closed while that
-  record is only local or unmerged unless the owner parks it.
-- [ ] Drain `INBOX.md`: capture breadcrumbs that surfaced this session, route each open `- [ ]`
-  item via its routing table, **delete each line once routed**, and delete stale ones.
-- [ ] Track actionable forward work in canonical RF records, linking the most specific tracked
-  plan or evidence doc. Do not create parallel backlog lists. Handoffs link RF IDs and retain
-  restart context; product direction stays in DEVELOPMENT_PLAN.
-  Use `web-ios-parity.md` only for owner-requested iOS handoff or explicit cross-surface notes.
-- [ ] Update focused docs (`conventions.md`, `authorization.md`, `deployment-runbook.md`, …) when
-  their subject changed; update `AGENTS.md` only when durable workflows, boundaries, or canonical
-  commands changed. Do not revive files in `ritmofit_dev_plan/archive/`.
+Print a concise state report that matches the RF records and handoff:
 
-## 6. Secrets, blockers, and data hygiene
-
-- [ ] Restate known blockers still open (they belong in the handoff too).
-- [ ] Confirm no secrets were committed; production secrets are managed with `wrangler secret put`.
-- [ ] Production test data: follow `ritmofit_dev_plan/prod-fixture-hygiene.md`; record any fixture
-  left for owner review in the handoff and HISTORY.
-- [ ] Report unexpected untracked junk (for example a local `.pnpm-store/`); do not commit it.
-
-## 7. Final summary
-
-Print a tight state report that matches the handoff:
-
-- **Close:** mode, depth, and what was skipped because it already ran.
-- **Git:** branch, clean or dirty, synced or ahead/behind.
-- **PRs:** open count and disposition.
-- **Verification:** commands run and results; skipped gates listed.
-- **Deployment:** production vs `main`, Worker version, D1 migration state when checked.
-- **Handoff:** path written (or why none), handoffs retired.
-- **Tasks:** RF IDs updated, remaining blockers, generated-board validation.
-- **Docs:** status/history docs updated or intentionally unchanged; deploy-record PR state.
-- **Next session:** blockers first, then the single highest-value follow-up.
+- **Close:** mode/depth; verification already completed vs run or skipped now.
+- **Git/PRs:** branch, revision/sync, this session's publication outcome and other relevant open PRs.
+- **RF:** selected IDs, acceptance outcome/state, remaining follow-ups/blockers and next action;
+  record/board validation result and revision. Separate implementation completion from publication.
+- **Verification:** actual results and material limits, including final-head CI when merged.
+- **Production:** when relevant, observed Worker/main/runtime status or explicitly not checked;
+  D1 migration state only when verified. No deploy implication from a merge.
+- **Handoff/docs:** paths written or retained, authorized retirements and any unpublished records.
+- **Next:** one highest-value action, with any missing permission identified. Do not ask again for
+  permission already granted for that scope.
 
 ## Quick reference
 
 ```bash
-git status -sb
-git branch -vv
-git branch -r --merged origin/main
+pnpm tasks show RF-N
+pnpm tasks:render
+pnpm tasks:check
+pnpm format:check
+git diff --check
 gh pr list --state open
-gh pr ready <n>                              # undraft before merging
-gh pr merge <n> --squash --delete-branch     # Solo: this session's own finished + green PR
+gh pr checks <n>                         # verify final head as described above
+gh pr edit <n> --add-label ready-to-merge          # ask; add needs-owner if owner-gated
+gh pr merge <n> --squash --match-head-commit <sha>  # only after permission + clean final review
 ```
 
-Gates: `AGENTS.md` › "Verification, PRs, And Commits". Deploy and smoke:
-`ritmofit_dev_plan/deployment-runbook.md`. Do not run deploy commands from this cheat sheet.
+Canonical gates: `AGENTS.md` › "Verification, PRs, And Commits". Task semantics:
+`ritmofit_dev_plan/tasks/README.md`. Deploy/runbook authority is unchanged.
