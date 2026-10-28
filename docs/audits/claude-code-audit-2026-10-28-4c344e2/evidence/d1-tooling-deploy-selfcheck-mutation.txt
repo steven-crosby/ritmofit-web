@@ -6,3 +6,7 @@ M3 worktree builds sha~1 instead of sha          exit=0  1x guard-ok | self-chec
 CONTROL (dirty check removed) exit=1 :: dirty tree was accepted self-check FAIL: git guard and /tmp worktree self-check failed: 1 
 M3 under CI vitest wrapper:  Test Files  1 passed (1)
 M3 under CI vitest wrapper:       Tests  1 passed (1)
+# bash semantics behind T-01 (bash 5.2.21(1)-release)
+$ ( set -euo pipefail; false; echo "still running after false"; true ) && echo "pass" || echo "fail"
+still running after false
+pass

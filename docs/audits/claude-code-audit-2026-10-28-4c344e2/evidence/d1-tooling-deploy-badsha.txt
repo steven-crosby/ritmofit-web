@@ -1,0 +1,8 @@
+fatal: expected 'acknowledgments', received 'packfile'
+warning: push negotiation failed; proceeding anyway with push
+From /tmp/tmp.rGGdn3fHXz/origin
+ * branch            main       -> FETCH_HEAD
+fatal: Needed a single revision
+node major 22 matches .nvmrc
+fatal: Needed a single revision
+deploy.sh exit=128

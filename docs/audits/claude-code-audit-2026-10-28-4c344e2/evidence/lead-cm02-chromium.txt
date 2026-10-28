@@ -1,0 +1,4 @@
+# CM-02 lead check, headless Chromium 1243 (Playwright), http://localhost secure context, 2026-10-28
+# run: NODE_PATH=$(npm root -g) node repro/lead-cm02-unbound-eme-chromium.cjs
+{"unbound":"TypeError: Failed to execute 'requestMediaKeySystemAccess' on 'Navigator': Illegal invocation","bound":"resolved"}
+# Safari/WebKit not run here (no WebKit in container); WebIDL receiver checks are spec-mandated for all engines.

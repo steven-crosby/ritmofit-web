@@ -1,25 +1,24 @@
 $ OWNER_GATE_LABELS=[] node scripts/owner-gate.mjs < repro/d1-tooling-owner-gate-misses.txt
-owner-gate: 13 changed files, none owner-gated. Merging still needs the owner's permission for this PR.
+owner-gate: 12 changed files, none owner-gated. Merging still needs the owner's permission for this PR.
 exit=0
 
-$ ... < repro/d1-tooling-owner-gate-controls.txt
+$ OWNER_GATE_LABELS=[] node scripts/owner-gate.mjs < repro/d1-tooling-owner-gate-controls.txt
 owner-gate: this PR touches owner-gated paths:
   [D1 migrations / schema] apps/api/migrations/0099_x.sql
   [auth / authz] apps/api/test/authz.integration.test.ts
 owner-gate: FAIL. Add 'needs-owner' and ask the owner. The owner applies 'owner-approved', or tells the agent in a session to apply it (record that as a PR comment first). It counts only for the commit it was given on.
 exit=1
 
-# per-path classification
+# per-path classification (GATES from scripts/owner-gate.mjs @4c344e2)
 UNGATED	apps/api/test/password-reset.integration.test.ts
 UNGATED	apps/api/test/helpers.ts
 UNGATED	apps/api/test/apply-migrations.ts
-UNGATED	apps/api/vitest.integration.config.ts
-UNGATED	apps/api/src/lib/track-import.ts
-UNGATED	apps/api/src/lib/email.ts
-UNGATED	.npmrc
+UNGATED	apps/api/src/lib/auth/index.ts
+UNGATED	apps/api/src/lib/authz/class.ts
+UNGATED	apps/api/src/middleware/session.ts
+UNGATED	apps/api/src/routes/provider/callback.ts
+UNGATED	apps/api/test/authz/nested.integration.test.ts
 UNGATED	.cursor/install.sh
 UNGATED	apps/api/Migrations/0099_case_variant.sql
 UNGATED	apps/api/src/DB/schema.ts
-UNGATED	Apps/api/wrangler.toml
 UNGATED	agents.md
-UNGATED	apps/web/public/_Headers
