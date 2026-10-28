@@ -17,7 +17,8 @@
 
 **Current actionable state:** [RF board](./tasks.md), backed by canonical [task records](./tasks/README.md).
 [RF-29](./tasks/RF-29.json) remains blocked: the latest recorded iPhone Safari Apple Music attempt
-failed with the bare banner and a `0:00` clock. The next owner retry is in the
+failed with the bare banner and a `0:00` clock. The next owner retry waits for RF-107 to merge and
+deploy; see RF-29's next action, which supersedes the retry in the
 [dated handoff](./handoffs/2026-10-27-iphone-fairplay.md). [RF-80](./tasks/RF-80.json) is blocked on
 recovering its original plan into git; preflight implementation is not approved.
 [RF-90–94 audit intake](./tasks.md) captures proposed remediation, not implementation authority.

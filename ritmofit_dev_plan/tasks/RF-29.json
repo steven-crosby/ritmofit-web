@@ -13,8 +13,8 @@
     "On the identified production bundle, Steven hears Apple Music in iPhone Safari Live, then verifies pause, resume, seek, and track advance.",
     "Record device/browser, bundle and Worker, audible outcome, and any exact failure. UI or SDK success alone does not pass."
   ],
-  "nextAction": "Wait for RF-107 to merge and deploy, then do the owner iPhone Safari retry on the deployed bundle and record modern-access: <word>. A missing modern-access: word on the current bundle is explained by AUD-002, not only a stale bundle. Do not implement or deploy from this task.",
-  "blocker": "The next iPhone check cannot yield its modern-access: diagnostic until the FairPlay probe bug (AUD-002) is fixed in RF-107 and deployed; a fresh owner device check is still needed after that.",
+  "nextAction": "Wait for RF-107 to merge and for the owner to deploy it, then do the owner iPhone Safari retry on the deployed bundle and record modern-access: <word>. Do not retry on the current bundle: it still has the probe bug (AUD-002), so a retry would likely spend an Apple Music check before the subscription ends around 2026-11-27 without producing the diagnostic. This supersedes the retry instruction in handoffs/2026-10-27-iphone-fairplay.md. Do not implement or deploy from this task.",
+  "blocker": "The next iPhone check likely cannot yield its modern-access: diagnostic until the FairPlay probe bug (AUD-002) is fixed in RF-107 and deployed. The audit confirmed the bug in Chromium, not on iPhone, so this is likely rather than certain.",
   "evidence": [
     {
       "kind": "source",

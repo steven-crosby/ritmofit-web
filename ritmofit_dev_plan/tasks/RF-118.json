@@ -1,0 +1,28 @@
+{
+  "schemaVersion": 1,
+  "id": "RF-118",
+  "title": "The 2026-10-28 audit intake records route every disposition and keep historical notes intact",
+  "kind": "task",
+  "status": "backlog",
+  "priority": "P3",
+  "parent": null,
+  "dependsOn": [],
+  "acceptance": [
+    "RF-92 carries AUD-006 (Live recovery Reconnect drops the class position) as an acceptance line, as RF-117 says it should.",
+    "AUD-017 (OpenAPI drift, folded into Codex A-11/D-8) is named in an RF record, so it is not lost when RF-117 closes.",
+    "The 2026-10-27 Cursor-attributed 'Legacy focus context' block in DEVELOPMENT_PLAN.md no longer mixes in 2026-10-28 facts; the Spotify reopen lives only in the current sections.",
+    "RF-117's status and the #646 PR description agree on whether it is For review or Backlog, and RF-117's nextAction names the owner review it needs."
+  ],
+  "nextAction": "One docs-only PR editing RF-92, RF-117 (or a new record for AUD-017) and DEVELOPMENT_PLAN.md; run pnpm tasks:render and pnpm tasks:check.",
+  "blocker": null,
+  "evidence": [
+    {
+      "kind": "pr",
+      "ref": "https://github.com/steven-crosby/ritmofit-web/pull/646",
+      "summary": "Final review of #646 on c827f4d: non-significant record findings logged 2026-10-28 under the significance rule (RF-117 routing gaps for AUD-006 and AUD-017, a historical DEVELOPMENT_PLAN block edited under its old byline, RF-117 status vs PR text). RF-90's fail-before-fix requirement goes in Lane B's brief instead.",
+      "checkedOn": "2026-10-28"
+    }
+  ],
+  "resolution": null,
+  "followUps": []
+}

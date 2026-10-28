@@ -3,17 +3,19 @@
   "id": "RF-108",
   "title": "Scrubbing or pausing Live during a track start keeps music playing",
   "kind": "task",
-  "status": "ready",
+  "status": "backlog",
   "priority": "P2",
   "parent": null,
-  "dependsOn": [],
+  "dependsOn": [
+    "RF-107"
+  ],
   "acceptance": [
     "A seek, skip, or pause then resume during an in-flight Apple or Spotify start ends playing or buffering at the new position (lane repro CM-01 passes).",
     "Each singleton adapter exposes a settle signal (for example whenIdle()); runtime.enterTrack awaits it, bounded to about 3 s, and re-checks the epoch before prepare.",
     "A never-settling previous call ends in a bounded, clearly worded error; existing runtime supersession tests still pass, and one new runtime test uses a real adapter with a lease.",
     "Owner device check: audible scrub, pause and resume on iPhone Safari (Apple) and desktop Chrome."
   ],
-  "nextAction": "Lane A of the 2026-10-28 two-lane round, second PR: start only after RF-107's PR merges (not in dependsOn, because the validator rejects a Ready task with an open dependency). Bounded settle wait in apps/web/src/lib/playback/. The Spotify adapter half is in scope now that Spotify is reopened (owner, 2026-10-28). Owner-gated; device check owed.",
+  "nextAction": "Parked from the owner's Ready queue on 2026-10-28 because RF-107 is not Done yet (Ready requires prerequisites Done). The owner re-promotes it to Ready when RF-107's PR merges. Then: Lane A's second PR, a bounded settle wait in apps/web/src/lib/playback/. The Spotify adapter half is in scope now that Spotify is reopened (owner, 2026-10-28). Owner-gated; device check owed.",
   "blocker": null,
   "evidence": [
     {

@@ -12,7 +12,7 @@ owner's queue: any agent may execute a Ready task. Publishing follows AGENTS.md 
 Evidence marked **recorded** is a carried-forward claim, not fresh verification.
 A checked PR proves its GitHub state, not product acceptance or production behavior.
 
-115 tasks. backlog: 20 · ready: 3 · in_progress: 0 · blocked: 2 · review: 7 · done: 83 · cancelled: 0.
+116 tasks. backlog: 22 · ready: 2 · in_progress: 0 · blocked: 2 · review: 7 · done: 83 · cancelled: 0.
 
 ## In progress
 
@@ -24,7 +24,7 @@ A checked PR proves its GitHub state, not product acceptance or production behav
 
 | Task | Priority / kind | Relationships | Next action / resolution | Evidence |
 | --- | --- | --- | --- | --- |
-| [RF-29](tasks/RF-29.json) iPhone Apple Music plays sound in Safari | P1 / verification | needs RF-107 | The next iPhone check cannot yield its modern-access: diagnostic until the FairPlay probe bug (AUD-002) is fixed in RF-107 and deployed; a fresh owner device check is still needed after that. Next: Wait for RF-107 to merge and deploy, then do the owner iPhone Safari retry on the deployed bundle and record modern-access: &lt;word&gt;. A missing modern-access: word on the current bundle is explained by AUD-002, not only a stale bundle. Do not implement or deploy from this task. | recorded |
+| [RF-29](tasks/RF-29.json) iPhone Apple Music plays sound in Safari | P1 / verification | needs RF-107 | The next iPhone check likely cannot yield its modern-access: diagnostic until the FairPlay probe bug (AUD-002) is fixed in RF-107 and deployed. The audit confirmed the bug in Chromium, not on iPhone, so this is likely rather than certain. Next: Wait for RF-107 to merge and for the owner to deploy it, then do the owner iPhone Safari retry on the deployed bundle and record modern-access: &lt;word&gt;. Do not retry on the current bundle: it still has the probe bug (AUD-002), so a retry would likely spend an Apple Music check before the subscription ends around 2026-11-27 without producing the diagnostic. This supersedes the retry instruction in handoffs/2026-10-27-iphone-fairplay.md. Do not implement or deploy from this task. | recorded |
 | [RF-80](tasks/RF-80.json) Define device playback verification before Start | untriaged / plan | — | Full plan and root-cause document exist only in the prior tool project store; contents are not available in git. Next: Recover the original plan and root-cause document into the repo, then request owner review. This task does not authorize preflight implementation. | recorded |
 
 ## For review
@@ -44,8 +44,7 @@ A checked PR proves its GitHub state, not product acceptance or production behav
 | Task | Priority / kind | Relationships | Next action / resolution | Evidence |
 | --- | --- | --- | --- | --- |
 | [RF-90](tasks/RF-90.json) Builder saves keep stored cue, move and section times (B-3, B-2, B-1) | P1 / task | — | Lane B of the 2026-10-28 two-lane round: implement Codex packet 1 (B-1, B-2, B-3) in ChoreographyEditor, SegmentBand, the Dashboard track inspector and the classes.ts comment; port the two Codex repros as regression tests. Not owner-gated. | recorded; checked 2026-10-28 |
-| [RF-107](tasks/RF-107.json) The iPhone FairPlay probe records modern-access: on a playback error | P2 / task | — | Lane A of the 2026-10-28 two-lane round, first PR: fix the existing probe in apps/web/src/lib/musickit.ts per acceptance. Owner-gated. Closes Done once merged and deployed; the owner iPhone check that records modern-access: &lt;word&gt; belongs to RF-29, not this task. | recorded; checked 2026-10-28 |
-| [RF-108](tasks/RF-108.json) Scrubbing or pausing Live during a track start keeps music playing | P2 / task | — | Lane A of the 2026-10-28 two-lane round, second PR: start only after RF-107's PR merges (not in dependsOn, because the validator rejects a Ready task with an open dependency). Bounded settle wait in apps/web/src/lib/playback/. The Spotify adapter half is in scope now that Spotify is reopened (owner, 2026-10-28). Owner-gated; device check owed. | recorded; checked 2026-10-28 |
+| [RF-107](tasks/RF-107.json) The iPhone FairPlay probe records modern-access: on a playback error | P1 / task | — | Lane A of the 2026-10-28 two-lane round, first PR: fix the existing probe in apps/web/src/lib/musickit.ts per acceptance. Owner-gated. The work PR sets Done when it merges (agents do not deploy). The deploy and the owner iPhone check that records modern-access: &lt;word&gt; belong to RF-29. P1 because it gates P1 RF-29 inside the Apple Music window that ends around 2026-11-27. | recorded; checked 2026-10-28 |
 
 ## Backlog
 
@@ -53,6 +52,7 @@ A checked PR proves its GitHub state, not product acceptance or production behav
 | --- | --- | --- | --- | --- |
 | [RF-92](tasks/RF-92.json) Triage Spotify expiry finding C-1 and retry classification C-2 | P1 / plan | — | Spotify reopened by the owner on 2026-10-28. Await owner Ready; Apple work comes first until the Apple Music subscription ends around 2026-11-27. Resume risk: the Spotify developer app rejects the connected account ("The user is not registered for this application"), so Web API calls return 403. | recorded; checked 2026-10-28 |
 | [RF-87](tasks/RF-87.json) Verify open-tab update recovery across a deployment | P2 / verification | needs RF-11 | Arrange an attended check during a separately authorized deployment; do not deploy just to close this task. | recorded |
+| [RF-108](tasks/RF-108.json) Scrubbing or pausing Live during a track start keeps music playing | P2 / task | needs RF-107 | Parked from the owner's Ready queue on 2026-10-28 because RF-107 is not Done yet (Ready requires prerequisites Done). The owner re-promotes it to Ready when RF-107's PR merges. Then: Lane A's second PR, a bounded settle wait in apps/web/src/lib/playback/. The Spotify adapter half is in scope now that Spotify is reopened (owner, 2026-10-28). Owner-gated; device check owed. | recorded; checked 2026-10-28 |
 | [RF-115](tasks/RF-115.json) Import attaches the recording the instructor asked for | P2 / task | — | Await owner Ready. C-23 and C-26 may ride along if they stay in attachProviderId and importTrackFromCandidate. Do not mix with RF-92. Split out of RF-94 at intake. Owner-gated paths: the PR needs owner-approved. | recorded |
 | [RF-116](tasks/RF-116.json) A password reset signs out old sessions, and Disconnect drops provider logins | P2 / task | — | Await owner Ready. Split out of RF-94 at intake. Owner-gated paths: the PR needs owner-approved. | recorded |
 | [RF-100](tasks/RF-100.json) Label changes rerun only the PR gates, not the full CI job | P3 / task | needs RF-98 | Owner decides whether this is worth doing; then design a gate-only path (separate job or workflow on labeled/unlabeled) that keeps the required check name meaningful. | checked 2026-10-27 |
@@ -69,6 +69,7 @@ A checked PR proves its GitHub state, not product acceptance or production behav
 | [RF-113](tasks/RF-113.json) No API write can create overlapping free-mode tracks | P3 / task | — | Await owner Ready. Files: the track route and its free-mode overlap helper in apps/api. Not owner-gated per the audit; confirm with scripts/owner-gate.mjs. | recorded |
 | [RF-114](tasks/RF-114.json) Parallel library loads never show Reconnect for a healthy provider | P3 / task | — | Investigate SoundCloud refresh-token reuse before any code. Files if confirmed: apps/api/src/lib/music/ token refresh. Owner-gated paths: the PR needs owner-approved. | recorded |
 | [RF-117](tasks/RF-117.json) Disposition the 2026-10-28 audit items that are not fix packets | P3 / plan | — | Owner reviews the proposed dispositions; this record authorizes no implementation. | recorded |
+| [RF-118](tasks/RF-118.json) The 2026-10-28 audit intake records route every disposition and keep historical notes intact | P3 / task | — | One docs-only PR editing RF-92, RF-117 (or a new record for AUD-017) and DEVELOPMENT_PLAN.md; run pnpm tasks:render and pnpm tasks:check. | checked 2026-10-28 |
 | [RF-73](tasks/RF-73.json) Classes buttons fail WCAG 2.5.3 label in name | untriaged / task | — | Reproduce affected controls, propose the smallest label-in-name correction, then seek implementation approval. | recorded |
 | [RF-74](tasks/RF-74.json) Spotify playlist dialog offers Try again where retry cannot help | untriaged / task | — | Review the error/action mapping. Spotify reopened by the owner on 2026-10-28; Apple work comes first until about 2026-11-27. Resume risk: the Spotify developer app rejects the connected account ("The user is not registered for this application"), so Web API calls return 403. | recorded; checked 2026-10-28 |
 
