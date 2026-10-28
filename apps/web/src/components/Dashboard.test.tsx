@@ -2792,6 +2792,13 @@ describe('Dashboard track focus management', () => {
       });
       fireEvent.click(inspector.getByRole('button', { name: 'Save' }));
       await inspector.findByText('Saved.');
+      if (key === 'startOffsetMs') {
+        // RF-90: Start at is sent only when its value differs from the stored
+        // start, and 0:00 over a stored 0 does not. A 0:00 that differs is
+        // covered by "resets edited inspector anchors".
+        expect(vi.mocked(api.updateClassTrack).mock.calls[0]?.[1]).not.toHaveProperty(key);
+        return;
+      }
       expect(api.updateClassTrack).toHaveBeenCalledWith(
         'ct-1',
         expect.objectContaining({ [key]: 0 }),
@@ -2817,9 +2824,13 @@ describe('Dashboard track focus management', () => {
         expect.objectContaining({
           clipStartMs: ms,
           beatAnchorMs: ms,
-          startOffsetMs: ms,
           notes: 'Only the notes changed.',
         }),
+      );
+      // RF-90 / B-1: an untouched free-placement start is not re-sent, so a
+      // concurrent timeline drag cannot be reverted by a notes save.
+      expect(vi.mocked(api.updateClassTrack).mock.calls[0]?.[1]).not.toHaveProperty(
+        'startOffsetMs',
       );
     },
   );
@@ -2933,9 +2944,10 @@ describe('Dashboard track focus management', () => {
         clipStartMs: 0,
         clipEndMs: null,
         beatAnchorMs: 0,
-        startOffsetMs: 0,
       }),
     );
+    // RF-90 / B-1: a blank, untouched Start at is not re-sent on a notes save.
+    expect(vi.mocked(api.updateClassTrack).mock.calls[0]?.[1]).not.toHaveProperty('startOffsetMs');
   });
 
   it.each(['Track length', 'Clip end (minutes:seconds)'])(

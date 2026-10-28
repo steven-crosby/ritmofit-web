@@ -290,7 +290,10 @@ export const importClassTracksSchema = z
   });
 export type ImportClassTracks = z.infer<typeof importClassTracksSchema>;
 
-/** Patch a class_track. `startOffsetMs` / `position` are server-derived, so not here. */
+/**
+ * Patch a class_track. `position` is server-derived, so not here. `startOffsetMs` is
+ * accepted only in free placement (sequential offsets are server-derived).
+ */
 export const updateClassTrackSchema = classTrackInputFields;
 export type UpdateClassTrack = z.infer<typeof updateClassTrackSchema>;
 

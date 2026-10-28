@@ -513,6 +513,8 @@ function SegmentEditor({
   const [editingId, setEditingId] = useState<string | null>(null);
   const [editType, setEditType] = useState<SegmentType>('warm_up');
   const [editStartClock, setEditStartClock] = useState('0:00');
+  // The clock the edit row was seeded with; an unchanged start is not re-sent.
+  const [editStartSeed, setEditStartSeed] = useState('0:00');
 
   const maxMs = totalDurationMs > 0 ? totalDurationMs : null;
   const addStart = anchorFieldState(startClock, maxMs);
@@ -537,6 +539,7 @@ function SegmentEditor({
     setEditingId(s.id);
     setEditType(s.type);
     setEditStartClock(formatClockFromMs(s.startOffsetMs));
+    setEditStartSeed(formatClockFromMs(s.startOffsetMs));
   };
 
   const saveEdit = async () => {
@@ -544,7 +547,12 @@ function SegmentEditor({
     if (!editingId || startOffsetMs == null) return;
     setBusy(true);
     try {
-      await updateSection(editingId, { type: editType, startOffsetMs });
+      // The clock rounds to whole seconds, so an untouched start is omitted and
+      // the server keeps the stored millisecond value (RF-90, Codex B-3).
+      await updateSection(
+        editingId,
+        editStartClock === editStartSeed ? { type: editType } : { type: editType, startOffsetMs },
+      );
       setEditingId(null);
       await onChanged();
     } catch (e) {

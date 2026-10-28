@@ -99,6 +99,38 @@ function useBeatSnap(bpm: number | null, beatAnchorMs: number) {
   return { canSnap, snap, setSnap, maybeSnap };
 }
 
+/**
+ * The anchor an inline edit should send: `undefined` (omit it, so the server keeps
+ * the stored millisecond value) while the field still shows the clock it was seeded
+ * with, else the typed value through the snapper. The clock rounds to whole
+ * seconds, so re-sending an untouched field would move a sub-second or
+ * beat-snapped anchor (RF-90, Codex B-3), and a stale seed would revert a timeline
+ * marker drag (B-2).
+ */
+export function editedAnchorMs(
+  clock: string,
+  seededClock: string,
+  parsedMs: number,
+  snapMs: (ms: number) => number,
+): number | undefined {
+  return clock === seededClock ? undefined : snapMs(parsedMs);
+}
+
+/**
+ * Reload a choreography list when the parent's run payload says it changed
+ * underneath it (a timeline marker drag), not only when the track changes. Any
+ * change counts, including the payload first arriving after mount (undefined to
+ * a key): the list may have loaded before a drag the payload already reflects.
+ */
+function useReloadOnSync(syncKey: string | undefined, load: () => Promise<void>) {
+  const synced = useRef(syncKey);
+  useEffect(() => {
+    if (synced.current === syncKey) return;
+    synced.current = syncKey;
+    void load();
+  }, [syncKey, load]);
+}
+
 function SnapToggle({
   canSnap,
   snap,
@@ -423,6 +455,7 @@ export function CuesSection({
   focus = null,
   startEntryNonce = 0,
   onChanged,
+  syncKey,
 }: {
   classTrackId: string;
   durationMs: number | null;
@@ -438,6 +471,8 @@ export function CuesSection({
   startEntryNonce?: number;
   /** Refresh run-payload-derived readiness and timeline after cue mutations. */
   onChanged?: () => void;
+  /** Changes when the run payload's cues for this track change; reloads the list. */
+  syncKey?: string;
 }) {
   const { canSnap, snap, setSnap, maybeSnap } = useBeatSnap(bpm, beatAnchorMs);
   const [cues, setCues] = useState<Cue[] | null>(null);
@@ -459,6 +494,8 @@ export function CuesSection({
   const [editIntensity, setEditIntensity] = useState<CueIntensity | ''>('');
   const [editNote, setEditNote] = useState('');
   const [editAnchorClock, setEditAnchorClock] = useState('0:00');
+  // The clock the edit row was seeded with; an unchanged field is not re-sent.
+  const [editAnchorSeed, setEditAnchorSeed] = useState('0:00');
   const [editColor, setEditColor] = useState<string | null>(null);
   const editButtonRefs = useRef(new Map<string, HTMLButtonElement>());
   const addAnchorRef = useRef<HTMLInputElement>(null);
@@ -529,6 +566,7 @@ export function CuesSection({
       loadRevision.current += 1;
     };
   }, [load]);
+  useReloadOnSync(syncKey, load);
 
   const startEdit = (cue: Cue) => {
     setEditingId(cue.id);
@@ -538,6 +576,7 @@ export function CuesSection({
     setEditIntensity(cue.intensity ?? '');
     setEditNote(cue.note ?? '');
     setEditAnchorClock(formatClockFromMs(cue.anchorMs));
+    setEditAnchorSeed(formatClockFromMs(cue.anchorMs));
     setEditColor(cue.color);
     setError(null);
   };
@@ -553,14 +592,15 @@ export function CuesSection({
     const savedId = editingId;
     const submittedRevision = editRevision.current;
     const submittedFocus = focusRevision.current;
+    const sentAnchorMs = editedAnchorMs(editAnchorClock, editAnchorSeed, anchorMs, maybeSnap);
     setBusy(true);
     setError(null);
     try {
       // Always send the builder fields (including null) so a cleared duration,
       // BPM, intensity, note, or color persists. An omitted field would leave
-      // the old value.
+      // the old value. The anchor is the exception: it is sent only when edited.
       await updateCue(editingId, {
-        anchorMs: maybeSnap(anchorMs),
+        anchorMs: sentAnchorMs,
         text: editText.trim(),
         durationMs: editDuration.value,
         bpm: editBpm.value,
@@ -569,6 +609,9 @@ export function CuesSection({
         color: editColor,
       });
       if (!active.current) return;
+      // A row kept open by a newer edit now compares against the saved clock, so
+      // typing the pre-save value back is a change and is sent.
+      if (sentAnchorMs !== undefined) setEditAnchorSeed(formatClockFromMs(sentAnchorMs));
       const draftUnchanged = editRevision.current === submittedRevision;
       if (draftUnchanged) setEditingId(null);
       await load();
@@ -911,6 +954,7 @@ export function MovesSection({
   focus = null,
   onChanged,
   onOpenSongsByMove,
+  syncKey,
 }: {
   classTrackId: string;
   durationMs: number | null;
@@ -924,6 +968,8 @@ export function MovesSection({
   onChanged?: () => void;
   /** Open the Songs-by-Move dialog — recall songs choreographed with a move. */
   onOpenSongsByMove?: () => void;
+  /** Changes when the run payload's moves for this track change; reloads the list. */
+  syncKey?: string;
 }) {
   const { canSnap, snap, setSnap, maybeSnap } = useBeatSnap(bpm, beatAnchorMs);
   const [moves, setMoves] = useState<ClassTrackMove[] | null>(null);
@@ -948,6 +994,8 @@ export function MovesSection({
   const [editPick, setEditPick] = useState<string>(CUSTOM); // CUSTOM | m:<id> | u:<id>
   const [editCustom, setEditCustom] = useState('');
   const [editAnchorClock, setEditAnchorClock] = useState('0:00');
+  // The clock the edit row was seeded with; an unchanged field is not re-sent.
+  const [editAnchorSeed, setEditAnchorSeed] = useState('0:00');
   const [editIntensity, setEditIntensity] = useState<Intensity | ''>('');
   const editButtonRefs = useRef(new Map<string, HTMLButtonElement>());
   const addAnchorRef = useRef<HTMLInputElement>(null);
@@ -998,6 +1046,7 @@ export function MovesSection({
       loadRevision.current += 1;
     };
   }, [load]);
+  useReloadOnSync(syncKey, load);
   useEffect(() => {
     void loadMovesLibrary()
       .then((rows) => {
@@ -1151,6 +1200,7 @@ export function MovesSection({
   const startEdit = (m: ClassTrackMove) => {
     setEditingId(m.id);
     setEditAnchorClock(formatClockFromMs(m.anchorMs));
+    setEditAnchorSeed(formatClockFromMs(m.anchorMs));
     setEditIntensity(m.intensity ?? '');
     // Seed the selector from the placement's reference (library / user move / one-off).
     setEditPick(pickForPlacement(m.moveId, m.userMoveId));
@@ -1169,17 +1219,22 @@ export function MovesSection({
     const savedId = editingId;
     const submittedRevision = editRevision.current;
     const submittedFocus = focusRevision.current;
+    const sentAnchorMs = editedAnchorMs(editAnchorClock, editAnchorSeed, anchorMs, maybeSnap);
     setBusy(true);
     setError(null);
     try {
       // Switching the reference nulls the others to hold the at-most-one invariant
       // (the server re-checks the merged result).
+      // The anchor is sent only when edited (see `editedAnchorMs`).
       await updatePlacedMove(editingId, {
-        anchorMs: maybeSnap(anchorMs),
+        anchorMs: sentAnchorMs,
         intensity: editIntensity === '' ? null : editIntensity,
         ...refFields(editPick, editCustom),
       });
       if (!active.current) return;
+      // A row kept open by a newer edit now compares against the saved clock, so
+      // typing the pre-save value back is a change and is sent.
+      if (sentAnchorMs !== undefined) setEditAnchorSeed(formatClockFromMs(sentAnchorMs));
       const draftUnchanged = editRevision.current === submittedRevision;
       if (draftUnchanged) setEditingId(null);
       await load();
