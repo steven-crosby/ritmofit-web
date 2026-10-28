@@ -3,22 +3,28 @@
   "id": "RF-92",
   "title": "Triage Spotify expiry finding C-1 and retry classification C-2",
   "kind": "plan",
-  "status": "blocked",
+  "status": "backlog",
   "priority": "P1",
   "parent": null,
   "dependsOn": [],
   "acceptance": [
-    "Reconfirm expired-grant and retry/reconnect classification on current main when Spotify work resumes.",
+    "Reconfirm expired-grant and retry/reconnect classification on current main.",
     "Agree packet 3 and an actual browser/audio acceptance procedure before implementing provider changes."
   ],
-  "nextAction": "Ask Steven to reopen Spotify work when prioritizing this finding.",
-  "blocker": "Spotify work remains tabled by the owner.",
+  "nextAction": "Spotify reopened by the owner on 2026-10-28. Await owner Ready; Apple work comes first until the Apple Music subscription ends around 2026-11-27. Resume risk: the Spotify developer app rejects the connected account (\"The user is not registered for this application\"), so Web API calls return 403.",
+  "blocker": null,
   "evidence": [
     {
       "kind": "document",
       "ref": "docs/audits/codex-code-audit-2026-10-27-4e0b150/NEXT_SESSION.md",
-      "summary": "Audit packet 3 remains actionable but current product focus explicitly tables Spotify.",
+      "summary": "Audit packet 3 remains actionable. It was tabled with Spotify until the owner reopened Spotify on 2026-10-28.",
       "checkedOn": null
+    },
+    {
+      "kind": "observation",
+      "ref": "https://github.com/steven-crosby/ritmofit-web/pull/646",
+      "summary": "Owner decision in session on 2026-10-28: Spotify work is reopened (the family now has Spotify Family). The Apple Music subscription ends around 2026-11-27, so Apple hardening and Apple device checks come first in that window.",
+      "checkedOn": "2026-10-28"
     }
   ],
   "resolution": null,

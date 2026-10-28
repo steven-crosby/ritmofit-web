@@ -1,0 +1,35 @@
+{
+  "schemaVersion": 1,
+  "id": "RF-115",
+  "title": "Import attaches the recording the instructor asked for",
+  "kind": "task",
+  "status": "backlog",
+  "priority": "P2",
+  "parent": null,
+  "dependsOn": [],
+  "acceptance": [
+    "Re-read the Codex lane provider-music section 7 and re-run repro/c-followup-repro.patch before coding; C-21 to C-25 were not independently challenged.",
+    "The C-21 through C-25 repros pass under the new contract.",
+    "Instrumental, karaoke and club mix do not auto-attach when an exact title exists; tests that lock in the old loose match are updated on purpose.",
+    "A SoundCloud finish 3.5 s short of the stored duration advances, without hiding a real early stop past 4 s.",
+    "A second URL submit after a lost response does not grow the class; a 429 returns a non-null error and a retry imports only the missing song."
+  ],
+  "nextAction": "Await owner Ready. C-23 and C-26 may ride along if they stay in attachProviderId and importTrackFromCandidate. Do not mix with RF-92. Split out of RF-94 at intake. Owner-gated paths: the PR needs owner-approved.",
+  "blocker": null,
+  "evidence": [
+    {
+      "kind": "document",
+      "ref": "docs/audits/codex-code-audit-2026-10-27-4e0b150/NEXT_SESSION.md",
+      "summary": "Packet 5 of the 2026-10-27 Codex audit (C-21, C-22, C-24, C-25; C-21 is P2). Audit-only proposal.",
+      "checkedOn": null
+    },
+    {
+      "kind": "document",
+      "ref": "docs/audits/codex-code-audit-2026-10-27-4e0b150/findings.md",
+      "summary": "Ranked findings and challenge status from the 2026-10-27 Codex audit at 4e0b150.",
+      "checkedOn": null
+    }
+  ],
+  "resolution": null,
+  "followUps": []
+}

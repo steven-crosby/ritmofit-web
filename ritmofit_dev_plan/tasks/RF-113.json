@@ -1,0 +1,32 @@
+{
+  "schemaVersion": 1,
+  "id": "RF-113",
+  "title": "No API write can create overlapping free-mode tracks",
+  "kind": "task",
+  "status": "backlog",
+  "priority": "P3",
+  "parent": null,
+  "dependsOn": [],
+  "acceptance": [
+    "PATCH /tracks/:id refuses a duration change that creates a free-mode overlap with 422, matching PATCH /class-tracks (repro A-07 passes).",
+    "Existing track-edit tests stay green."
+  ],
+  "nextAction": "Await owner Ready. Files: the track route and its free-mode overlap helper in apps/api. Not owner-gated per the audit; confirm with scripts/owner-gate.mjs.",
+  "blocker": null,
+  "evidence": [
+    {
+      "kind": "document",
+      "ref": "docs/audits/claude-code-audit-2026-10-28-4c344e2/remediation-plan.md",
+      "summary": "Proposed as packet 7 of the 2026-10-28 Claude audit at 4c344e2. Audit-only proposal; not reverified at intake.",
+      "checkedOn": null
+    },
+    {
+      "kind": "document",
+      "ref": "docs/audits/claude-code-audit-2026-10-28-4c344e2/findings.md",
+      "summary": "AUD-014 (P3, confirmed integration repro): no SPA caller today. Repro and evidence files are listed in the audit package.",
+      "checkedOn": null
+    }
+  ],
+  "resolution": null,
+  "followUps": []
+}

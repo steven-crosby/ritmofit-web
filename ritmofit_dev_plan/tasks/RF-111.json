@@ -1,0 +1,34 @@
+{
+  "schemaVersion": 1,
+  "id": "RF-111",
+  "title": "Opening, closing and duplicating in Music and Classes never acts on a stale or hidden request",
+  "kind": "task",
+  "status": "backlog",
+  "priority": "P3",
+  "parent": null,
+  "dependsOn": [],
+  "acceptance": [
+    "openPlaylist ignores a late reply for a playlist no longer shown and clears the songs on Back, so Start class never creates class B with A's songs (lane-B repro passes).",
+    "Duplicate runs through useAsyncAction: it shows pending state and an error message, and a repeat tap does not make a second copy (lane-B repro passes).",
+    "Closing the playlist or likes dialog during Creating does not navigate the instructor into the new class later; the recommended behavior is to skip navigation and show a toast.",
+    "TrackPreview Reconnect writes a destination:'builder' return record and catches failures; a new test covers the return record. The e2e smoke is unchanged."
+  ],
+  "nextAction": "Await owner Ready; the close-during-Creating behavior is a small product call (recommended: skip navigation and toast). Files: Music playlist/likes dialogs, Classes duplicate action, TrackPreview in apps/web. Not owner-gated per scripts/owner-gate.mjs at audit time.",
+  "blocker": null,
+  "evidence": [
+    {
+      "kind": "document",
+      "ref": "docs/audits/claude-code-audit-2026-10-28-4c344e2/remediation-plan.md",
+      "summary": "Proposed as packet 5 of the 2026-10-28 Claude audit at 4c344e2. Audit-only proposal; not reverified at intake.",
+      "checkedOn": null
+    },
+    {
+      "kind": "document",
+      "ref": "docs/audits/claude-code-audit-2026-10-28-4c344e2/findings.md",
+      "summary": "AUD-005, AUD-007, AUD-008 and AUD-009 (P3, jsdom repros or code trace). Repro and evidence files are listed in the audit package.",
+      "checkedOn": null
+    }
+  ],
+  "resolution": null,
+  "followUps": []
+}

@@ -1,0 +1,34 @@
+{
+  "schemaVersion": 1,
+  "id": "RF-112",
+  "title": "A stored row that fails the response schema returns a logged 500, not a silent 422",
+  "kind": "task",
+  "status": "backlog",
+  "priority": "P3",
+  "parent": null,
+  "dependsOn": [],
+  "acceptance": [
+    "Response re-validation wraps its ZodError in a tagged ResponseValidationError that maps to 500 and logs one sanitized line (using the RF-109 sanitizer); repro A-02 or Q-03 shows this.",
+    "Real input-validation 422s are unchanged (existing tests).",
+    "Output parsing tolerates the dormant Explore/profile values in AUD-015, or input validation rejects them, without hiding real drift.",
+    "If durationMs gets a bound in packages/shared, OpenAPI is regenerated and iOS contract parity stays green; the PR names the contract change."
+  ],
+  "nextAction": "Await owner Ready. Prefer after RF-109 so it reuses the sanitizer. AUD-012 (unpaginated GET /classes above 100) moved to RF-91. Files: apps/api/src/index.ts, packages/shared schemas. Owner-gated paths: the PR needs owner-approved.",
+  "blocker": null,
+  "evidence": [
+    {
+      "kind": "document",
+      "ref": "docs/audits/claude-code-audit-2026-10-28-4c344e2/remediation-plan.md",
+      "summary": "Proposed as packet 6 of the 2026-10-28 Claude audit at 4c344e2. Audit-only proposal; not reverified at intake.",
+      "checkedOn": null
+    },
+    {
+      "kind": "document",
+      "ref": "docs/audits/claude-code-audit-2026-10-28-4c344e2/findings.md",
+      "summary": "AUD-011 (P3, confirmed integration repro) plus AUD-015 tolerant output; AUD-012 from this packet is carried by RF-91. Repro and evidence files are listed in the audit package.",
+      "checkedOn": null
+    }
+  ],
+  "resolution": null,
+  "followUps": []
+}

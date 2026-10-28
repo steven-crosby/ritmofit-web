@@ -11,7 +11,7 @@
     "Identify each unretryable playlist error and its actionable recovery.",
     "After approved implementation, verify retryable errors retain retry and unretryable errors offer the appropriate recovery."
   ],
-  "nextAction": "Review the error/action mapping; obtain approval before changing Spotify behavior while that work is tabled.",
+  "nextAction": "Review the error/action mapping. Spotify reopened by the owner on 2026-10-28; Apple work comes first until about 2026-11-27. Resume risk: the Spotify developer app rejects the connected account (\"The user is not registered for this application\"), so Web API calls return 403.",
   "blocker": null,
   "evidence": [
     {
@@ -19,6 +19,12 @@
       "ref": "https://github.com/steven-crosby/ritmofit-web/blob/f35d5d5992035c3895b948b3dc90e96ea6eaffa1/ritmofit_dev_plan/tasks.md#L24",
       "summary": "Original board entry; historical assertion, not independently verified product behavior.",
       "checkedOn": null
+    },
+    {
+      "kind": "observation",
+      "ref": "https://github.com/steven-crosby/ritmofit-web/pull/646",
+      "summary": "Owner decision in session on 2026-10-28: Spotify work is reopened (the family now has Spotify Family). The Apple Music subscription ends around 2026-11-27, so Apple hardening and Apple device checks come first in that window.",
+      "checkedOn": "2026-10-28"
     }
   ],
   "resolution": null,

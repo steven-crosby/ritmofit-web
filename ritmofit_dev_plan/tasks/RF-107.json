@@ -1,0 +1,39 @@
+{
+  "schemaVersion": 1,
+  "id": "RF-107",
+  "title": "The iPhone FairPlay probe records modern-access: on a playback error",
+  "kind": "task",
+  "status": "ready",
+  "priority": "P1",
+  "parent": null,
+  "dependsOn": [],
+  "acceptance": [
+    "navigator.requestMediaKeySystemAccess is called as a bound method; a unit test with a receiver-checked stub resolves ok after one call, and the same stub rejecting an unbound call fails the old code (regression lock).",
+    "The probe has a short timeout (about 2 s) that resolves a distinct word such as timeout, and a never-settling stub does not delay play().",
+    "The probe runs after instance.play() is called, or is not awaited before it, so it cannot use up the iOS user gesture."
+  ],
+  "nextAction": "Lane A of the 2026-10-28 two-lane round, first PR: fix the existing probe in apps/web/src/lib/musickit.ts per acceptance. Owner-gated. The work PR sets Done when it merges (agents do not deploy). The deploy and the owner iPhone check that records modern-access: <word> belong to RF-29. P1 because it gates P1 RF-29 inside the Apple Music window that ends around 2026-11-27.",
+  "blocker": null,
+  "evidence": [
+    {
+      "kind": "document",
+      "ref": "docs/audits/claude-code-audit-2026-10-28-4c344e2/remediation-plan.md",
+      "summary": "Proposed as packet 1 of the 2026-10-28 Claude audit at 4c344e2. Audit-only proposal; not reverified at intake.",
+      "checkedOn": null
+    },
+    {
+      "kind": "document",
+      "ref": "docs/audits/claude-code-audit-2026-10-28-4c344e2/findings.md",
+      "summary": "AUD-002 (P2, confirmed in real Chromium): the probe calls requestMediaKeySystemAccess unbound, so it throws and modern-access: can never appear. Repro and evidence files are listed in the audit package.",
+      "checkedOn": null
+    },
+    {
+      "kind": "observation",
+      "ref": "https://github.com/steven-crosby/ritmofit-web/pull/646",
+      "summary": "Owner set Ready in session on 2026-10-28 and approved fixing the existing FairPlay probe despite RF-29 saying not to add another probe.",
+      "checkedOn": "2026-10-28"
+    }
+  ],
+  "resolution": null,
+  "followUps": []
+}
