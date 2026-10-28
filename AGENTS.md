@@ -172,7 +172,7 @@ context; chat and tool memory are scratch.
   comparing upstream and in-flight changes. Orientation stays read-only; after scope approval,
   select/create the task, confirm prerequisites, record In progress and a concrete restart action,
   render/validate, then push the branch and open a **draft PR** at once so the claim is visible to
-  other sessions; add that PR's URL to the record's evidence. The task reaches Done inside the same
+  other sessions; add that PR's URL to the record's evidence. The task reaches its final state (usually Done) inside the same
   PR, and merging it is what publishes Done. Use a follow-up PR only for facts unknowable before
   merge, such as a deploy. At close, finish all task/evidence/handoff/docs edits,
   including authorized retirements, before final `pnpm tasks:render` and `pnpm tasks:check`.
@@ -384,6 +384,7 @@ pnpm tasks:check
 pnpm -r typecheck
 pnpm lint
 (cd ritmofit_design_system && npm run verify)
+pnpm --filter @ritmofit/web theme-classes --selftest
 pnpm --filter @ritmofit/web theme-classes
 pnpm test
 pnpm --filter @ritmofit/api test:integration

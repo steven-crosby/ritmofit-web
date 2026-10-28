@@ -113,7 +113,8 @@ function main() {
   const { gated, pass } = evaluate(paths, parseLabels(process.env.OWNER_GATE_LABELS));
   if (gated.length === 0) {
     console.log(
-      `owner-gate: ${paths.length} changed files, none owner-gated. Agent merge allowed.`,
+      `owner-gate: ${paths.length} changed files, none owner-gated. ` +
+        `Merging still needs the owner's permission for this PR.`,
     );
     return;
   }

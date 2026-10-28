@@ -14,7 +14,8 @@
     "A failing self-test or Install step yields a clear gate message instead of 'Cannot find module' from the final gate steps.",
     "Playwright's browser download is cached across runs; the symlink-safe CLI guard has one tested implementation where the CI copy constraint allows.",
     "Write-scoped tokens (pull-requests, statuses) are not reachable by third-party build, install or test steps, for example by moving the record/void/gate steps into their own small job.",
-    "tasks:check flags pr evidence that is a non-canonical form of a PR URL, or RF-trace explains the mismatch."
+    "tasks:check flags pr evidence that is a non-canonical form of a PR URL, or RF-trace explains the mismatch.",
+    "A PR retargeted to main, or stacked on an unmerged branch, is re-gated against main's checker and file list."
   ],
   "nextAction": "Pick the cheapest fixes first (reopen handling, clear message when gate inputs are missing), then caching.",
   "blocker": null,
@@ -35,6 +36,12 @@
       "kind": "pr",
       "ref": "https://github.com/steven-crosby/ritmofit-web/pull/643",
       "summary": "Final review #7 of #643: RF-trace needs the exact canonical PR URL; variants (trailing slash, /files, #comment) fail closed with a 'not cited' message. Logged 2026-10-27.",
+      "checkedOn": "2026-10-27"
+    },
+    {
+      "kind": "pr",
+      "ref": "https://github.com/steven-crosby/ritmofit-web/pull/643",
+      "summary": "Final review #8 of #643: gates use the base branch's checker, so a stacked PR is judged by an unmerged branch's checker; base changes ('edited') do not re-run the gates. Mostly mitigated by the up-to-date rule; logged 2026-10-27.",
       "checkedOn": "2026-10-27"
     }
   ],

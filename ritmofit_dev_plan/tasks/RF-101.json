@@ -11,7 +11,8 @@
   ],
   "acceptance": [
     "The owner gate covers files whose edits can remove authz or disable a CI check: route files with requireAccess call sites (apps/api/src/routes/*, lib/member-target.ts) and CI-config files (eslint config, .prettierignore, Playwright and vitest configs, e2e/serve.mjs, scripts/tasks.mjs, .nvmrc), or the owner records why a class stays ungated, plus provider/OAuth integration tests, apps/api/src/lib/deploy-script.test.ts, e2e/package.json and packages/shared/package.json, pnpm-lock.yaml, and the Live readiness UI (LivePreflight, LiveTimeline, lib/live-readiness).",
-    "The added friction is weighed against the owner already approving every merge; the decision is recorded."
+    "The added friction is weighed against the owner already approving every merge; the decision is recorded.",
+    "Also consider rate-limit.ts, routes/mock.ts and lib/mock-catalog.ts, lib/connection-return.ts, and the PWA recovery files."
   ],
   "nextAction": "Owner decides whether to gate route and CI-config files, given every merge already needs per-PR permission.",
   "blocker": null,
@@ -38,6 +39,12 @@
       "kind": "pr",
       "ref": "https://github.com/steven-crosby/ritmofit-web/pull/643",
       "summary": "Final review #6 of #643 added pnpm-lock.yaml and the Live readiness UI to this task's ungated-coverage scope.",
+      "checkedOn": "2026-10-27"
+    },
+    {
+      "kind": "pr",
+      "ref": "https://github.com/steven-crosby/ritmofit-web/pull/643",
+      "summary": "Final review #8 of #643 added rate-limit.ts, the mock route and catalog, connection-return.ts and the PWA recovery files (applyServiceWorkerUpdate, lazyWithReload, pwa-config test) to this task's ungated scope.",
       "checkedOn": "2026-10-27"
     }
   ],
