@@ -184,4 +184,23 @@ describe('a-api probes', () => {
     expect(after.status).toBe(422);
     expect(classesAfter.status).toBe(422);
   });
+
+  it('A-05: the legacy unpaginated GET /classes 500s once a library has more than 100 classes (new D-1 site)', async () => {
+    const u = await signUpUser();
+    const api = authed(u.cookie);
+    for (let i = 0; i < 101; i++) {
+      // Direct D1 insert keeps the probe fast; the route path is identical.
+      await env.DB.prepare(
+        `INSERT INTO classes (id, owner_user_id, title, status, visibility, timeline_mode, created_at, updated_at)
+         VALUES (?, ?, ?, 'draft', 'private', 'sequential', ?, ?)`,
+      )
+        .bind(crypto.randomUUID(), u.userId, `Class ${i}`, 1_700_000_000_000 + i, 1_700_000_000_000 + i)
+        .run();
+    }
+    const legacy = await api('/api/v1/classes');
+    const paged = await api('/api/v1/classes?limit=50');
+    console.log('[A-05] 101 classes: GET /classes (legacy, no limit) ->', legacy.status, '| ?limit=50 ->', paged.status);
+    expect(legacy.status).toBe(500);
+    expect(paged.status).toBe(200);
+  });
 });

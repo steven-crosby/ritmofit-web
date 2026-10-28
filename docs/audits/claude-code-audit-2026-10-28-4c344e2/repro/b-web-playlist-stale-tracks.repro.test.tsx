@@ -110,6 +110,18 @@ describe('B-01 saved-playlist browser stale track reply', () => {
           ownerUserId: 'me',
           title: body.title,
           template: body.template ?? 'cycle',
+          description: null,
+          status: 'draft',
+          visibility: 'private',
+          timelineMode: 'sequential',
+          targetDurationMs: null,
+          scaffoldRecipeId: null,
+          createdAt: 1,
+          updatedAt: 1,
+          lastOpenedAt: null,
+          featuredCategory: null,
+          coverImageUrl: null,
+          tags: [],
         }) as never,
     );
     vi.mocked(api.importTrack).mockImplementation(
@@ -190,6 +202,18 @@ describe('B-01 saved-playlist browser stale track reply', () => {
           ownerUserId: 'me',
           title: body.title,
           template: body.template ?? 'cycle',
+          description: null,
+          status: 'draft',
+          visibility: 'private',
+          timelineMode: 'sequential',
+          targetDurationMs: null,
+          scaffoldRecipeId: null,
+          createdAt: 1,
+          updatedAt: 1,
+          lastOpenedAt: null,
+          featuredCategory: null,
+          coverImageUrl: null,
+          tags: [],
         }) as never,
     );
     vi.mocked(api.importTrack).mockImplementation(
@@ -224,5 +248,57 @@ describe('B-01 saved-playlist browser stale track reply', () => {
     await waitFor(() => expect(api.importTrack).toHaveBeenCalled());
     // Observed: the class titled "Cooldown Flow" imports Warmup Ride's song.
     expect(vi.mocked(api.importTrack).mock.calls.map((c) => c[1])).toEqual(['warm-1']);
+  });
+
+  it('B-01b: closing the dialog mid-create and moving on does not yank the instructor into the new class later', async () => {
+    vi.mocked(api.listClasses).mockResolvedValue({ items: [], nextCursor: null });
+    vi.mocked(api.listConnections).mockResolvedValue([
+      {
+        id: 'conn-spotify',
+        userId: 'me',
+        provider: 'spotify',
+        providerUserId: 'u',
+        scope: 'user-library-read streaming',
+        expiresAt: null,
+        createdAt: 1,
+        updatedAt: 1,
+      } as never,
+    ]);
+    vi.mocked(api.listLikes).mockResolvedValue([]);
+    vi.mocked(api.getMe).mockResolvedValue({ id: 'me', name: 'Tester', email: 't@x', image: null } as never);
+    vi.mocked(api.listPlaylists).mockResolvedValue([
+      { provider: 'spotify', playlistId: 'pl-a', name: 'Warmup Ride', ownerName: 'S', trackCount: 1, coverImageUrl: null },
+    ]);
+    vi.mocked(api.listPlaylistTracks).mockResolvedValue([song('warm-1', 'Warm Song')]);
+    vi.mocked(api.createClass).mockImplementation(
+      async (body) =>
+        ({ id: '00000000-0000-4000-8000-0000000000c2', ownerUserId: 'me', title: body.title, template: 'cycle', description: null, status: 'draft', visibility: 'private', timelineMode: 'sequential', targetDurationMs: null, scaffoldRecipeId: null, createdAt: 1, updatedAt: 1, lastOpenedAt: null, featuredCategory: null, coverImageUrl: null, tags: [] }) as never,
+    );
+    const imported = deferred<unknown>();
+    vi.mocked(api.importTrack).mockReturnValue(imported.promise as never);
+    vi.mocked(api.importClassTracks).mockResolvedValue([]);
+    vi.mocked(api.listClassTracks).mockResolvedValue([]);
+    vi.mocked(api.getRunPayload).mockRejectedValue(new Error('no payload'));
+    vi.mocked(api.listClassPlanBlocks).mockResolvedValue([]);
+
+    render(<Dashboard userId="me" userName="Tester" />);
+    fireEvent.click(await screen.findByRole('button', { name: 'Music' }));
+    fireEvent.click(await screen.findByRole('button', { name: /^Spotify,/ }));
+    fireEvent.click(await screen.findByRole('button', { name: 'Open Warmup Ride' }));
+    const dialog = await screen.findByRole('dialog', { name: 'Browse Spotify playlists' });
+    await within(dialog).findByText('Warm Song');
+    fireEvent.click(within(dialog).getByRole('button', { name: 'Start class from Warmup Ride' }));
+    await waitFor(() => expect(api.importTrack).toHaveBeenCalled());
+    // Close is enabled while "Creating..." runs; the instructor closes it and goes to Account.
+    fireEvent.click(within(dialog).getByRole('button', { name: 'Close playlist browser' }));
+    fireEvent.click(screen.getByRole('button', { name: 'Account' }));
+    expect(screen.getByRole('button', { name: 'Account' }).getAttribute('aria-current')).toBe('page');
+
+    await act(async () => imported.resolve({ id: 't-warm-1', durationMs: 180000 }));
+    await act(async () => {
+      await new Promise((r) => setTimeout(r, 20));
+    });
+    // Correct: the background import does not navigate. Observed on 4c344e2: Classes + builder open.
+    expect(screen.getByRole('button', { name: 'Account' }).getAttribute('aria-current')).toBe('page');
   });
 });
