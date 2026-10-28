@@ -203,4 +203,21 @@ describe('a-api probes', () => {
     expect(legacy.status).toBe(500);
     expect(paged.status).toBe(200);
   });
+
+  it('A-06: unauthenticated sign-up answers differently for a registered vs an unknown email', async () => {
+    const existing = await signUpUser();
+    const signUp = (email: string, ip: string) =>
+      call('/api/auth/sign-up/email', {
+        method: 'POST',
+        headers: { 'content-type': 'application/json', 'cf-connecting-ip': ip },
+        body: JSON.stringify({ email, password: 'whatever-pw-123', name: 'Probe' }),
+      });
+    const known = await signUp(existing.email, '198.51.100.7');
+    const unknown = await signUp(`nobody-${crypto.randomUUID()}@example.com`, '198.51.100.8');
+    const kb = await json(known);
+    const ub = await json(unknown);
+    console.log('[A-06] sign-up registered email ->', known.status, kb?.code);
+    console.log('[A-06] sign-up unknown email   ->', unknown.status, ub?.code);
+    expect(known.status).not.toBe(unknown.status);
+  });
 });
