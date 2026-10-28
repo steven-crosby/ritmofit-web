@@ -3,7 +3,7 @@
   "id": "RF-107",
   "title": "The iPhone FairPlay probe records modern-access: on a playback error",
   "kind": "task",
-  "status": "backlog",
+  "status": "ready",
   "priority": "P2",
   "parent": null,
   "dependsOn": [],
@@ -13,7 +13,7 @@
     "The probe runs after instance.play() is called, or is not awaited before it, so it cannot use up the iOS user gesture.",
     "Owner device check: after deploy, the iPhone Safari failure shows modern-access: <word>, recorded on RF-29."
   ],
-  "nextAction": "Owner decision first: RF-29 says not to add another probe; this fixes the existing #634/#636 probe rather than adding one. Then move to Ready. Files: apps/web/src/lib/musickit.ts and its tests. Owner-gated paths: the PR needs owner-approved.",
+  "nextAction": "Lane A of the 2026-10-28 two-lane round, first PR: fix the existing probe in apps/web/src/lib/musickit.ts per acceptance. Owner-gated; device check follows deploy via RF-29.",
   "blocker": null,
   "evidence": [
     {
@@ -27,6 +27,12 @@
       "ref": "docs/audits/claude-code-audit-2026-10-28-4c344e2/findings.md",
       "summary": "AUD-002 (P2, confirmed in real Chromium): the probe calls requestMediaKeySystemAccess unbound, so it throws and modern-access: can never appear. Repro and evidence files are listed in the audit package.",
       "checkedOn": null
+    },
+    {
+      "kind": "observation",
+      "ref": "https://github.com/steven-crosby/ritmofit-web/pull/646",
+      "summary": "Owner set Ready in session on 2026-10-28 and approved fixing the existing FairPlay probe despite RF-29 saying not to add another probe.",
+      "checkedOn": "2026-10-28"
     }
   ],
   "resolution": null,

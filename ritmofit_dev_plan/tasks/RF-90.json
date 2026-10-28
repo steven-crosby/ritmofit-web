@@ -3,7 +3,7 @@
   "id": "RF-90",
   "title": "Triage Builder timing and lost-update findings B-3, B-2, B-1",
   "kind": "plan",
-  "status": "review",
+  "status": "ready",
   "priority": "P1",
   "parent": null,
   "dependsOn": [],
@@ -11,7 +11,7 @@
     "Reconfirm all three findings on current main and agree packet 1 scope before implementation.",
     "Proposed fix preserves 10313, 12750, 241500 ms on text-only saves and 65000 ms after a free-placement drag; deliberate time edits still snap."
   ],
-  "nextAction": "Review audit packet 1 and seek owner implementation approval.",
+  "nextAction": "Lane B of the 2026-10-28 two-lane round: implement Codex packet 1 (B-1, B-2, B-3) in ChoreographyEditor, SegmentBand, the Dashboard track inspector and the classes.ts comment; port the two Codex repros as regression tests. Not owner-gated.",
   "blocker": null,
   "evidence": [
     {
@@ -19,6 +19,12 @@
       "ref": "docs/audits/codex-code-audit-2026-10-27-4e0b150/NEXT_SESSION.md",
       "summary": "Audit packet 1 records three P1 findings. Migration did not rerun reproductions.",
       "checkedOn": null
+    },
+    {
+      "kind": "observation",
+      "ref": "https://github.com/steven-crosby/ritmofit-web/pull/646",
+      "summary": "Owner set Ready in session on 2026-10-28 and approved packet 1 scope as written (time fields sent only when edited; notes save stops sending startOffsetMs; inspector re-seeds).",
+      "checkedOn": "2026-10-28"
     }
   ],
   "resolution": null,

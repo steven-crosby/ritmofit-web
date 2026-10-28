@@ -12,7 +12,7 @@ owner's queue: any agent may execute a Ready task. Publishing follows AGENTS.md 
 Evidence marked **recorded** is a carried-forward claim, not fresh verification.
 A checked PR proves its GitHub state, not product acceptance or production behavior.
 
-115 tasks. backlog: 20 · ready: 0 · in_progress: 0 · blocked: 3 · review: 9 · done: 83 · cancelled: 0.
+115 tasks. backlog: 18 · ready: 3 · in_progress: 0 · blocked: 3 · review: 8 · done: 83 · cancelled: 0.
 
 ## In progress
 
@@ -32,7 +32,6 @@ A checked PR proves its GitHub state, not product acceptance or production behav
 
 | Task | Priority / kind | Relationships | Next action / resolution | Evidence |
 | --- | --- | --- | --- | --- |
-| [RF-90](tasks/RF-90.json) Triage Builder timing and lost-update findings B-3, B-2, B-1 | P1 / plan | — | Review audit packet 1 and seek owner implementation approval. | recorded |
 | [RF-91](tasks/RF-91.json) Triage D1 parameter-limit finding D-1 | P1 / plan | — | Review packet 2 and seek approval; do not query production or modify data. | recorded; checked 2026-10-28 |
 | [RF-93](tasks/RF-93.json) Triage latent migration rebuild finding A-7 | P1 / plan | — | Review packet 4 and seek approval for a local guard. No historical or production data-loss claim. | recorded |
 | [RF-94](tasks/RF-94.json) Disposition the remaining engineering audit findings | P2 / plan | follow-ups RF-115, RF-116 | Review the remaining ranked findings with Steven before scheduling implementation. | recorded; checked 2026-10-28 |
@@ -46,15 +45,15 @@ A checked PR proves its GitHub state, not product acceptance or production behav
 
 | Task | Priority / kind | Relationships | Next action / resolution | Evidence |
 | --- | --- | --- | --- | --- |
-| — | — | — | — | — |
+| [RF-90](tasks/RF-90.json) Triage Builder timing and lost-update findings B-3, B-2, B-1 | P1 / plan | — | Lane B of the 2026-10-28 two-lane round: implement Codex packet 1 (B-1, B-2, B-3) in ChoreographyEditor, SegmentBand, the Dashboard track inspector and the classes.ts comment; port the two Codex repros as regression tests. Not owner-gated. | recorded; checked 2026-10-28 |
+| [RF-107](tasks/RF-107.json) The iPhone FairPlay probe records modern-access: on a playback error | P2 / task | — | Lane A of the 2026-10-28 two-lane round, first PR: fix the existing probe in apps/web/src/lib/musickit.ts per acceptance. Owner-gated; device check follows deploy via RF-29. | recorded; checked 2026-10-28 |
+| [RF-108](tasks/RF-108.json) Scrubbing or pausing Live during a track start keeps music playing | P2 / task | — | Lane A of the 2026-10-28 two-lane round, second PR after RF-107: bounded settle wait in apps/web/src/lib/playback/. Owner-gated; device check owed. | recorded; checked 2026-10-28 |
 
 ## Backlog
 
 | Task | Priority / kind | Relationships | Next action / resolution | Evidence |
 | --- | --- | --- | --- | --- |
 | [RF-87](tasks/RF-87.json) Verify open-tab update recovery across a deployment | P2 / verification | needs RF-11 | Arrange an attended check during a separately authorized deployment; do not deploy just to close this task. | recorded |
-| [RF-107](tasks/RF-107.json) The iPhone FairPlay probe records modern-access: on a playback error | P2 / task | — | Owner decision first: RF-29 says not to add another probe; this fixes the existing #634/#636 probe rather than adding one. Then move to Ready. Files: apps/web/src/lib/musickit.ts and its tests. Owner-gated paths: the PR needs owner-approved. | recorded |
-| [RF-108](tasks/RF-108.json) Scrubbing or pausing Live during a track start keeps music playing | P2 / task | — | Await owner Ready. Files: apps/web/src/lib/playback/ (runtime, adapters). Better after RF-107 so device checks can share a session. Owner-gated paths: the PR needs owner-approved. | recorded |
 | [RF-115](tasks/RF-115.json) Import attaches the recording the instructor asked for | P2 / task | — | Await owner Ready. C-23 and C-26 may ride along if they stay in attachProviderId and importTrackFromCandidate. Do not mix with RF-92. Split out of RF-94 at intake. Owner-gated paths: the PR needs owner-approved. | recorded |
 | [RF-116](tasks/RF-116.json) A password reset signs out old sessions, and Disconnect drops provider logins | P2 / task | — | Await owner Ready. Split out of RF-94 at intake. Owner-gated paths: the PR needs owner-approved. | recorded |
 | [RF-100](tasks/RF-100.json) Label changes rerun only the PR gates, not the full CI job | P3 / task | needs RF-98 | Owner decides whether this is worth doing; then design a gate-only path (separate job or workflow on labeled/unlabeled) that keeps the required check name meaningful. | checked 2026-10-27 |
