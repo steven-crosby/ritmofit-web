@@ -16,26 +16,26 @@ describe('Q-03 response-side ZodError maps to a silent 422', () => {
     const api = authed(user.cookie);
     const now = Date.now();
     const id = crypto.randomUUID();
-    await createDb(env)
-      .insert(tracks)
-      .values({
-        id,
-        ownerUserId: user.userId,
-        title: 'Song',
-        artist: '', // trackSchema requires min(1); D1 has no length CHECK
-        albumArtUrl: null,
-        durationMs: 180000,
-        displayBpm: null,
-        isrc: null,
-        matchKey: 'song::',
-        createdAt: now,
-        updatedAt: now,
-      });
+    await createDb(env).insert(tracks).values({
+      id,
+      ownerUserId: user.userId,
+      title: 'Song',
+      artist: '', // trackSchema requires min(1); D1 has no length CHECK
+      albumArtUrl: null,
+      durationMs: 180000,
+      displayBpm: null,
+      isrc: null,
+      matchKey: 'song::',
+      createdAt: now,
+      updatedAt: now,
+    });
     const errorSpy = vi.spyOn(console, 'error');
     const warnSpy = vi.spyOn(console, 'warn');
     const res = await api(`/api/v1/tracks/${id}`);
     const body = (await res.json()) as { error: { code: string; message: string } };
-    console.log(`Q-03 status=${res.status} code=${body.error.code} message="${body.error.message}"`);
+    console.log(
+      `Q-03 status=${res.status} code=${body.error.code} message="${body.error.message}"`,
+    );
     expect(res.status).toBe(422);
     expect(body.error.message).toBe('Request body failed validation.');
     expect(errorSpy).not.toHaveBeenCalled();
