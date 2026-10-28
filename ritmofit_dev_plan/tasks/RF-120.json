@@ -11,7 +11,9 @@
     "An untouched cue, move or section time near the track or class end no longer fails the rounded-clock 'past the end' validation on an unrelated save (for example a cue at 239600 ms in a 239800 ms track whose field shows 4:00).",
     "An edit made inside the inspector reloads the cue or move list once, not twice (today it reloads after its own save and again when the syncKey changes).",
     "The track inspector no longer serializes every cue and move with JSON.stringify on every render just to build the syncKey; it uses a cheap key, such as a payload revision or a memoized signature.",
-    "One helper in apps/web/src/lib/duration.ts owns the untouched-field rule, and ChoreographyEditor, SegmentBand and the track inspector use it instead of three separate copies."
+    "One helper in apps/web/src/lib/duration.ts owns the untouched-field rule, and ChoreographyEditor, SegmentBand and the track inspector use it instead of three separate copies.",
+    "An open cue or move edit row whose row reloads underneath it (syncKey, or its own save) shows the reloaded clock while its field is untouched, instead of the stale one.",
+    "Turning Snap to beat on is documented, and the choice is pinned by a test: an untouched anchor is not re-snapped on an unrelated save, because only a deliberate clock edit snaps."
   ],
   "nextAction": "One web PR. Start with a fail-first test for the near-end validation case, then extract the shared helper and reduce the double reload. Keep RF-90's regression tests green. RF-119 covers the remaining inspector fields separately.",
   "blocker": null,
@@ -20,6 +22,12 @@
       "kind": "pr",
       "ref": "https://github.com/steven-crosby/ritmofit-web/pull/650",
       "summary": "Logged from the orchestrator's final review of #650 at 4a173d2 (2026-10-28), which found these as non-significant: near-end rounded validation (pre-existing), the double list reload, JSON.stringify of cues and moves on render, and three implementations of the untouched-field rule.",
+      "checkedOn": "2026-10-28"
+    },
+    {
+      "kind": "pr",
+      "ref": "https://github.com/steven-crosby/ritmofit-web/pull/650",
+      "summary": "Added from the orchestrator's final review of #650 at 9589b61 (2026-10-28): the stale clock in an open edit row after a reload, and untouched anchors no longer snapping when Snap is turned on (undocumented). The earlier items were reconfirmed.",
       "checkedOn": "2026-10-28"
     }
   ],

@@ -5657,14 +5657,12 @@ function TrackInspector({
   );
   // Free-placement start on the class timeline (m:ss). Blank = 0:00.
   const [startAt, setStartAt] = useState(() => startAtFieldValue(track.startOffsetMs));
-  // The stored start the inspector last saw, as field text. A timeline drag changes
+  // The stored start (ms) the inspector last saw. A timeline drag changes
   // `track.startOffsetMs` underneath this keyed-by-id inspector (RF-90, Codex B-1).
-  const [startAtSeed, setStartAtSeed] = useState(() => startAtFieldValue(track.startOffsetMs));
-  // True while Start at holds text the instructor typed and has not saved. Only
-  // then is it sent, and only then does it survive a change to the stored start.
-  // Text, not equality with the seed, decides this: `01:05` and `1:05` are the
-  // same start, and a server-clamped save stores a different one.
-  const [startAtEdited, setStartAtEdited] = useState(false);
+  // Start at follows one value rule, not keystrokes: the field is untouched while
+  // it parses to the stored start (`01:05` equals `1:05`; typing a value away and
+  // back counts as untouched), and only a different value is sent.
+  const [startAtStoredMs, setStartAtStoredMs] = useState(track.startOffsetMs ?? 0);
   const startAtRef = useRef(startAt);
   startAtRef.current = startAt;
   const [notes, setNotes] = useState(track.notes ?? '');
@@ -5718,18 +5716,20 @@ function TrackInspector({
     notes,
   });
   const [savedDraft, setSavedDraft] = useState(draft);
-  // Re-seed an unedited Start at with the canonical text when the stored start
-  // moves (adjusting state during render, so the field never shows the stale
-  // value). Unsaved typed text is the instructor's and is kept. The saved
-  // snapshot moves with the field, so the re-seed does not read as unsaved.
-  const nextStartAtSeed = startAtFieldValue(track.startOffsetMs);
-  if (nextStartAtSeed !== startAtSeed) {
-    setStartAtSeed(nextStartAtSeed);
-    if (!startAtEdited) {
-      setStartAt(nextStartAtSeed);
+  // When the stored start moves, re-seed Start at with its canonical text if the
+  // field still held the previous stored value (adjusting state during render,
+  // so the field never shows the stale value). Text that parses to anything else
+  // is the instructor's edit and is kept. The saved snapshot moves with the
+  // field, so the re-seed does not read as unsaved.
+  const storedStartMs = track.startOffsetMs ?? 0;
+  if (storedStartMs !== startAtStoredMs) {
+    setStartAtStoredMs(storedStartMs);
+    if (parseInspectorAnchor(startAt, startAtStoredMs) === startAtStoredMs) {
+      const reseeded = startAtFieldValue(track.startOffsetMs);
+      setStartAt(reseeded);
       const saved = JSON.parse(savedDraft) as { startAt?: string };
       if (saved.startAt === startAt) {
-        setSavedDraft(JSON.stringify({ ...saved, startAt: nextStartAtSeed }));
+        setSavedDraft(JSON.stringify({ ...saved, startAt: reseeded }));
       }
     }
   }
@@ -5873,10 +5873,10 @@ function TrackInspector({
       return;
     }
     // Free-placement start: sent only in free mode (the server rejects it
-    // otherwise) and only when the instructor edited the field, so a notes save
-    // cannot revert a timeline drag (RF-90, Codex B-1).
+    // otherwise) and only when the field's value differs from the stored start,
+    // so a notes save cannot revert a timeline drag (RF-90, Codex B-1).
     let startOffsetMs: number | undefined;
-    if (canPlaceFreely && startAtEdited && startAt !== startAtSeed) {
+    if (canPlaceFreely) {
       const parsed = parseInspectorAnchor(startAt, track.startOffsetMs);
       if (parsed == null) {
         rejectField(
@@ -5885,7 +5885,7 @@ function TrackInspector({
         );
         return;
       }
-      startOffsetMs = parsed;
+      if (parsed !== (track.startOffsetMs ?? 0)) startOffsetMs = parsed;
     }
     // Save disables as soon as the request starts. Move focus to its nearby
     // status first, so a button-initiated save does not strand focus on <body>.
@@ -5897,7 +5897,7 @@ function TrackInspector({
       const trimmedBpm = bpm.trim();
       const trimmedRpm = rpm.trim();
       const trimmedHolds = holdCountVal.trim();
-      await updateClassTrack(track.id, {
+      const updated = await updateClassTrack(track.id, {
         intensity,
         displayBpmOverride: trimmedBpm === '' ? null : Number(trimmedBpm),
         displayRpm: trimmedRpm === '' ? null : Number(trimmedRpm),
@@ -5909,11 +5909,16 @@ function TrackInspector({
         ...(startOffsetMs !== undefined ? { startOffsetMs } : {}),
         notes: notes.trim() === '' ? null : notes.trim(),
       });
-      // Saved text is no longer the instructor's draft, so the stored start
-      // (as the server kept it) re-seeds the field from here on. Text typed
-      // while the save was in flight stays an edit.
-      if (startAtRef.current === submittedStartAt) setStartAtEdited(false);
-      setSavedDraft(draft);
+      // A sent start now shows what the server stored, which may be clamped
+      // (even back to the unchanged value). Text typed while the save was in
+      // flight is a newer edit and is kept.
+      if (startOffsetMs !== undefined && startAtRef.current === submittedStartAt) {
+        const storedText = startAtFieldValue(updated?.startOffsetMs ?? startOffsetMs);
+        setStartAt(storedText);
+        setSavedDraft(JSON.stringify({ ...(JSON.parse(draft) as object), startAt: storedText }));
+      } else {
+        setSavedDraft(draft);
+      }
       setJustSaved(true);
       onSaved();
     } catch (e) {
@@ -6213,10 +6218,7 @@ function TrackInspector({
                       {...fieldProps('startAt', `startat-help-${track.id}`)}
                       className={timeFieldClass('startAt', 'w-32')}
                       value={startAt}
-                      onChange={(e) => {
-                        setStartAt(e.target.value);
-                        setStartAtEdited(true);
-                      }}
+                      onChange={(e) => setStartAt(e.target.value)}
                     />
                     <span
                       id={`startat-help-${track.id}`}

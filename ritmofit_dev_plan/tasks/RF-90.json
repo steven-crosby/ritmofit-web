@@ -36,7 +36,7 @@
     {
       "kind": "pr",
       "ref": "https://github.com/steven-crosby/ritmofit-web/pull/650",
-      "summary": "Fix PR: cue, move and section edits omit the time unless the field was edited; the track inspector re-seeds an untouched Start at and sends startOffsetMs only when edited; cue and move lists reload when the run payload changes. Not deployed. Final review at 4a173d2 found two correctness bugs: a non-canonical or server-clamped typed start brought B-1 back, and a reverted clock was dropped when an edit row stayed open across a save. Both are fixed with fail-first tests, and syncKey now also reloads when the payload first arrives.",
+      "summary": "Fix PR: cue, move and section edits omit the time unless the field was edited; the track inspector re-seeds an untouched Start at and sends startOffsetMs only when edited; cue and move lists reload when the run payload changes. Not deployed. Final review at 4a173d2 found two correctness bugs: a non-canonical or server-clamped typed start brought B-1 back, and a reverted clock was dropped when an edit row stayed open across a save. Both are fixed with fail-first tests, and syncKey now also reloads when the payload first arrives. A second review at 9589b61 found that a start typed away and back still reverted a drag, so the Start at keystroke flag was replaced by one value rule: re-seed while the field parses to the previous stored start, send only a value that differs from the current stored start, and show the server's stored start after a save.",
       "checkedOn": "2026-10-28"
     }
   ],

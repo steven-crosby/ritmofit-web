@@ -3,9 +3,9 @@ date: 2026-10-28
 tool: Claude Code (local)
 lane: lane-2-builder-save-times
 branch: fix/rf-90-builder-save-times
-head: 47814c9
+head: HEADSHA
 base: 9166826
-prs: ['#650 (open, review fixes pushed, needs fresh merge permission)']
+prs: ['#650 (open, review round 2 fixes pushed, needs fresh merge permission)']
 status: open
 ---
 
@@ -31,6 +31,15 @@ status: open
   - **Cue and move rows:** an edit row kept open across a save moves its seed to the saved clock,
     so typing the pre-save value back is sent.
   - **syncKey:** it now also reloads on undefined → defined.
+- A second review at `9589b61` found a third variant of the same bug: stored 3:20, type `3:2` then
+  `3:20`, drag to 4:10, and a notes save reverted the drag. The Start at keystroke flag was replaced
+  by one value rule (tests red first in `88779a3`):
+  - The field re-seeds while it parses to the previous stored start.
+  - Only a value that differs from the current stored start is sent.
+  - After a save, the field shows the start the server stored, including one clamped back to the
+    unchanged value.
+  - An explicit `0:00` over a stored 0 is therefore no longer sent. The existing `Dashboard.test.tsx`
+    "accepts explicit 0:00" case now asserts that for Start at.
 
 ## Tasks
 

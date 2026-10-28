@@ -2792,6 +2792,13 @@ describe('Dashboard track focus management', () => {
       });
       fireEvent.click(inspector.getByRole('button', { name: 'Save' }));
       await inspector.findByText('Saved.');
+      if (key === 'startOffsetMs') {
+        // RF-90: Start at is sent only when its value differs from the stored
+        // start, and 0:00 over a stored 0 does not. A 0:00 that differs is
+        // covered by "resets edited inspector anchors".
+        expect(vi.mocked(api.updateClassTrack).mock.calls[0]?.[1]).not.toHaveProperty(key);
+        return;
+      }
       expect(api.updateClassTrack).toHaveBeenCalledWith(
         'ct-1',
         expect.objectContaining({ [key]: 0 }),
