@@ -3,7 +3,7 @@ date: 2026-10-28
 tool: Claude Code (local)
 lane: lane-2-builder-save-times
 branch: fix/rf-90-builder-save-times
-head: HEADSHA
+head: 47814c9
 base: 9166826
 prs: ['#650 (open, review fixes pushed, needs fresh merge permission)']
 status: open
