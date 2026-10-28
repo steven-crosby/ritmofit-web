@@ -3,7 +3,7 @@
   "id": "RF-98",
   "title": "Delegated PRs merge on a thorough required CI gate with owner-gated exceptions",
   "kind": "task",
-  "status": "in_progress",
+  "status": "done",
   "priority": "P1",
   "parent": null,
   "dependsOn": [
@@ -16,7 +16,7 @@
     "agent-prompts/delegate-task.md and .github/pull_request_template.md give a hand-off brief and PR evidence sections, linked from the prompt index, README and CLAUDE.md.",
     "Codex's RF-97 session corrections are carried forward intact and point at the standing grant."
   ],
-  "nextAction": "Claude Code on docs/delegation-workflow (with RF-99): after the owner adds the workflow token scope, push, get CI green on Linux, set Done with the PR as evidence in the final commit, and hand the owner-gated PR to Steven.",
+  "nextAction": null,
   "blocker": null,
   "evidence": [
     {
@@ -36,8 +36,14 @@
       "ref": "https://github.com/steven-crosby/ritmofit-web/pull/643",
       "summary": "Work PR, opened as a draft to claim the task. Owner-gated (needs-owner). The ci.yml commit waits for the workflow token scope.",
       "checkedOn": "2026-10-27"
+    },
+    {
+      "kind": "test",
+      "ref": "https://github.com/steven-crosby/ritmofit-web/actions/runs/40610775187",
+      "summary": "GitHub Actions on Linux for bfc2622: all steps passed including RF-trace, D1 integration, build, Playwright e2e (10 screenshots uploaded as e2e-screenshots); the final owner-gate step failed as designed because #643 touches owner-gated paths and lacks owner-approved.",
+      "checkedOn": "2026-10-27"
     }
   ],
-  "resolution": null,
+  "resolution": "Standing delegation grant, owner gate and e2e smoke are in the required CI job. On GitHub Linux (run 40610775187, bfc2622) every check passed, including the Playwright smoke at 1440 and 390 with a 10-screenshot artifact; the owner gate, run last, correctly failed this owner-gated PR pending owner-approved. Merging #643 publishes this; deployment is not involved.",
   "followUps": []
 }

@@ -12,14 +12,13 @@ owner's queue: any agent may execute a Ready task. Publishing follows AGENTS.md 
 Evidence marked **recorded** is a carried-forward claim, not fresh verification.
 A checked PR proves its GitHub state, not product acceptance or production behavior.
 
-97 tasks. backlog: 3 · ready: 0 · in_progress: 2 · blocked: 3 · review: 8 · done: 81 · cancelled: 0.
+97 tasks. backlog: 3 · ready: 0 · in_progress: 0 · blocked: 3 · review: 8 · done: 83 · cancelled: 0.
 
 ## In progress
 
 | Task | Priority / kind | Relationships | Next action / resolution | Evidence |
 | --- | --- | --- | --- | --- |
-| [RF-98](tasks/RF-98.json) Delegated PRs merge on a thorough required CI gate with owner-gated exceptions | P1 / task | needs RF-97 | Claude Code on docs/delegation-workflow (with RF-99): after the owner adds the workflow token scope, push, get CI green on Linux, set Done with the PR as evidence in the final commit, and hand the owner-gated PR to Steven. | checked 2026-10-27 |
-| [RF-99](tasks/RF-99.json) Session prompts, handoffs and the RF board agree for delegated CI/CD | P1 / documentation | needs RF-97 | Claude Code on docs/delegation-workflow (with RF-98): after the owner adds the workflow token scope, push, get CI green on Linux, set RF-98/RF-99 Done with the PR as evidence in the final commit, and hand the owner-gated PR to Steven. | checked 2026-10-27 |
+| — | — | — | — | — |
 
 ## Blocked / waiting
 
@@ -60,6 +59,8 @@ A checked PR proves its GitHub state, not product acceptance or production behav
 
 | Task | Priority / kind | Relationships | Next action / resolution | Evidence |
 | --- | --- | --- | --- | --- |
+| [RF-98](tasks/RF-98.json) Delegated PRs merge on a thorough required CI gate with owner-gated exceptions | P1 / task | needs RF-97 | Standing delegation grant, owner gate and e2e smoke are in the required CI job. On GitHub Linux (run 40610775187, bfc2622) every check passed, including the Playwright smoke at 1440 and 390 with a 10-screenshot artifact; the owner gate, run last, correctly failed this owner-gated PR pending owner-approved. Merging #643 publishes this; deployment is not involved. | checked 2026-10-27 |
+| [RF-99](tasks/RF-99.json) Session prompts, handoffs and the RF board agree for delegated CI/CD | P1 / documentation | needs RF-97 | Ready is the owner's queue, draft PRs claim tasks, the final state lands in the work PR, handoffs are restart notes, and merges count as recorded when an RF record cites them. RF-trace runs in the required job and passed on GitHub Linux (run 40610775187). Its first live pass on a product PR will come from the first product PR after merge. | checked 2026-10-27 |
 | [RF-88](tasks/RF-88.json) Review deploy guard regression coverage PR #596 | P2 / task | — | Reviewed against current main on 2026-10-27: the self-check assertions are meaningful (ran under macOS bash 3.2; no temp files or worktrees left). Typecheck failed on current dependencies because the test redeclared ImportMeta.url; that block was removed in c906cf4. Squash-merged as d76fbd3. Tests and self-check only; deploy behavior unchanged. | recorded; checked 2026-10-27 |
 | [RF-89](tasks/RF-89.json) Review core workflow regression coverage PR #625 | P2 / task | — | Reviewed against current main on 2026-10-27: web 171, Spotify 49 and D1 integration 4 tests passed on the merged tree. Squash-merged as 0065eaf. Tests only; its handoff, whose sole action was this merge, is retired. | recorded; checked 2026-10-27 |
 | [RF-95](tasks/RF-95.json) Implement the repository-owned RF task system | P2 / task | — | Repository-owned task tooling and migration completed; all acceptance checks passed locally. PR #640 publishes this result once merged. No deployment is required. | checked 2026-10-27 |

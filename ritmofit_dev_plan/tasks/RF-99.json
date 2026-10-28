@@ -3,7 +3,7 @@
   "id": "RF-99",
   "title": "Session prompts, handoffs and the RF board agree for delegated CI/CD",
   "kind": "documentation",
-  "status": "in_progress",
+  "status": "done",
   "priority": "P1",
   "parent": null,
   "dependsOn": [
@@ -16,7 +16,7 @@
     "Start-session counts a merge as recorded when an RF record cites its PR.",
     "CI's RF-trace step fails a PR changing apps/, packages/ or e2e/ unless a changed RF record cites that PR; its tests run first and have been watched failing."
   ],
-  "nextAction": "Claude Code on docs/delegation-workflow (with RF-98): after the owner adds the workflow token scope, push, get CI green on Linux, set RF-98/RF-99 Done with the PR as evidence in the final commit, and hand the owner-gated PR to Steven.",
+  "nextAction": null,
   "blocker": null,
   "evidence": [
     {
@@ -36,8 +36,14 @@
       "ref": "https://github.com/steven-crosby/ritmofit-web/pull/643",
       "summary": "Work PR, opened as a draft to claim the task. Owner-gated (needs-owner). The ci.yml commit waits for the workflow token scope.",
       "checkedOn": "2026-10-27"
+    },
+    {
+      "kind": "test",
+      "ref": "https://github.com/steven-crosby/ritmofit-web/actions/runs/40610775187",
+      "summary": "GitHub Actions on Linux for bfc2622: all steps passed including RF-trace, D1 integration, build, Playwright e2e (10 screenshots uploaded as e2e-screenshots); the final owner-gate step failed as designed because #643 touches owner-gated paths and lacks owner-approved.",
+      "checkedOn": "2026-10-27"
     }
   ],
-  "resolution": null,
+  "resolution": "Ready is the owner's queue, draft PRs claim tasks, the final state lands in the work PR, handoffs are restart notes, and merges count as recorded when an RF record cites them. RF-trace runs in the required job and passed on GitHub Linux (run 40610775187). Its first live pass on a product PR will come from the first product PR after merge.",
   "followUps": []
 }
