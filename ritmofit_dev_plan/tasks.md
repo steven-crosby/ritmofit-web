@@ -12,7 +12,7 @@ owner's queue: any agent may execute a Ready task. Publishing follows AGENTS.md 
 Evidence marked **recorded** is a carried-forward claim, not fresh verification.
 A checked PR proves its GitHub state, not product acceptance or production behavior.
 
-103 tasks. backlog: 9 · ready: 0 · in_progress: 0 · blocked: 3 · review: 8 · done: 83 · cancelled: 0.
+104 tasks. backlog: 10 · ready: 0 · in_progress: 0 · blocked: 3 · review: 8 · done: 83 · cancelled: 0.
 
 ## In progress
 
@@ -58,6 +58,7 @@ A checked PR proves its GitHub state, not product acceptance or production behav
 | [RF-103](tasks/RF-103.json) Task claims stay visible from claim to merge | P3 / task | needs RF-98 | Design a claim signal that survives the draft-to-ready transition (for example, any open PR whose head changes the task record) and update start-session and delegate-task. | checked 2026-10-27 |
 | [RF-104](tasks/RF-104.json) Parallel delegated agents run the e2e smoke without port collisions | P3 / task | needs RF-98 | Document E2E_PORT per worktree in delegate-task.md, or serialize local e2e runs for parallel subagents. | checked 2026-10-27 |
 | [RF-105](tasks/RF-105.json) CI gate steps stay robust and fast under failures and reopen | P3 / task | needs RF-98 | Pick the cheapest fixes first (reopen handling, clear message when gate inputs are missing), then caching. | checked 2026-10-27 |
+| [RF-106](tasks/RF-106.json) Audit repro scripts and docs in the 2026-10-28 audit package are portable and clean up after themselves | P3 / task | — | One docs PR editing files under docs/audits/claude-code-audit-2026-10-28-4c344e2/ only; rerun each changed repro once in a disposable worktree. | checked 2026-10-28 |
 | [RF-73](tasks/RF-73.json) Classes buttons fail WCAG 2.5.3 label in name | untriaged / task | — | Reproduce affected controls, propose the smallest label-in-name correction, then seek implementation approval. | recorded |
 | [RF-74](tasks/RF-74.json) Spotify playlist dialog offers Try again where retry cannot help | untriaged / task | — | Review the error/action mapping; obtain approval before changing Spotify behavior while that work is tabled. | recorded |
 
