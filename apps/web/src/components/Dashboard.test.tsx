@@ -2940,9 +2940,7 @@ describe('Dashboard track focus management', () => {
       }),
     );
     // RF-90 / B-1: a blank, untouched Start at is not re-sent on a notes save.
-    expect(vi.mocked(api.updateClassTrack).mock.calls[0]?.[1]).not.toHaveProperty(
-      'startOffsetMs',
-    );
+    expect(vi.mocked(api.updateClassTrack).mock.calls[0]?.[1]).not.toHaveProperty('startOffsetMs');
   });
 
   it.each(['Track length', 'Clip end (minutes:seconds)'])(
