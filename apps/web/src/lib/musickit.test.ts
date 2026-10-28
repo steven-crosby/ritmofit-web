@@ -252,17 +252,48 @@ describe('Safari modern FairPlay', () => {
 describe('Safari modern FairPlay access probe', () => {
   const webKitWindow = window as Window & { WebKitMediaKeys?: object };
 
-  function installRequest(request: ReturnType<typeof vi.fn>): void {
+  /**
+   * Installs `request` behind a WebIDL-style receiver check ("Illegal invocation"
+   * in Blink, "Can only call ... on instances of Navigator" in WebKit). A bare
+   * `vi.fn()` ignores `this`, which hid AUD-002, so every probe test goes through this.
+   */
+  function installRequest(request: (...args: never[]) => unknown): void {
     Object.defineProperty(navigator, 'requestMediaKeySystemAccess', {
       configurable: true,
       writable: true,
-      value: request,
+      value: function (this: unknown, ...args: never[]) {
+        if (this !== navigator) throw new TypeError('Illegal invocation');
+        return request(...args);
+      },
     });
+  }
+
+  async function probeWord(): Promise<string | null> {
+    const { probeSafariModernFairPlayAccess } = await import('./musickit.js');
+    return probeSafariModernFairPlayAccess();
   }
 
   afterEach(() => {
     delete webKitWindow.WebKitMediaKeys;
     Reflect.deleteProperty(navigator, 'requestMediaKeySystemAccess');
+  });
+
+  it('calls a receiver-checked requestMediaKeySystemAccess as a navigator method and resolves ok', async () => {
+    const userAgent = vi.spyOn(navigator, 'userAgent', 'get').mockReturnValue(IOS_SAFARI_UA);
+    const calls = vi.fn(async () => ({ createMediaKeys: vi.fn() }));
+    installRequest(calls);
+    const info = vi.spyOn(console, 'info').mockImplementation(() => {});
+    try {
+      const { probeSafariModernFairPlayAccess, safariModernAccessWord } =
+        await import('./musickit.js');
+      await expect(probeSafariModernFairPlayAccess()).resolves.toBe('ok');
+      expect(calls).toHaveBeenCalledTimes(1);
+      expect(calls).toHaveBeenCalledWith('com.apple.fps', FAIRPLAY_AUDIO_ONLY);
+      expect(safariModernAccessWord()).toBe('ok');
+    } finally {
+      info.mockRestore();
+      userAgent.mockRestore();
+    }
   });
 
   it('does not request a key system on desktop Chrome when WebKitMediaKeys is absent', async () => {
@@ -373,7 +404,7 @@ describe('Safari modern FairPlay access probe', () => {
     }
   });
 
-  it('does not remember a rejection that is not a DOMException', async () => {
+  it('remembers only the built-in name of a plain Error rejection', async () => {
     webKitWindow.WebKitMediaKeys = {};
     const request = vi.fn(async () => {
       throw new Error('developer-token SECRETVALUE');
@@ -382,8 +413,131 @@ describe('Safari modern FairPlay access probe', () => {
     const info = vi.spyOn(console, 'info').mockImplementation(() => {});
     try {
       const { probeSafariModernFairPlayAccess } = await import('./musickit.js');
-      await expect(probeSafariModernFairPlayAccess()).resolves.toBeNull();
+      await expect(probeSafariModernFairPlayAccess()).resolves.toBe('Error');
       expect(JSON.stringify(info.mock.calls)).not.toContain('SECRETVALUE');
+    } finally {
+      info.mockRestore();
+    }
+  });
+
+  it('remembers TypeError for a TypeError rejection, never its message', async () => {
+    webKitWindow.WebKitMediaKeys = {};
+    installRequest(async () => {
+      throw new TypeError('music-user-token SECRETVALUE');
+    });
+    const info = vi.spyOn(console, 'info').mockImplementation(() => {});
+    try {
+      await expect(probeWord()).resolves.toBe('TypeError');
+    } finally {
+      info.mockRestore();
+    }
+  });
+
+  it.each<[string, () => unknown]>([
+    [
+      'a built-in subclass with a crafted name',
+      () => {
+        class CraftedError extends TypeError {
+          override name = 'SECRETVALUE';
+        }
+        return new CraftedError('developer-token');
+      },
+    ],
+    [
+      'a built-in error with a reassigned name',
+      () => Object.assign(new RangeError('developer-token'), { name: 'SECRETVALUE' }),
+    ],
+    [
+      'a custom class that keeps a built-in name',
+      () => {
+        class Sneaky extends Error {
+          override name = 'TypeError';
+        }
+        return new Sneaky('developer-token SECRETVALUE');
+      },
+    ],
+    ['a non-error value', () => ({ name: 'SECRETVALUE' })],
+    ['a DOMException with a non-word name', () => new DOMException('m', 'SECRET VALUE!')],
+  ])('maps %s to other without leaking it', async (_label: string, makeError: () => unknown) => {
+    webKitWindow.WebKitMediaKeys = {};
+    installRequest(async () => {
+      throw makeError();
+    });
+    const info = vi.spyOn(console, 'info').mockImplementation(() => {});
+    try {
+      await expect(probeWord()).resolves.toBe('other');
+      expect(JSON.stringify(info.mock.calls)).not.toContain('SECRET');
+    } finally {
+      info.mockRestore();
+    }
+  });
+
+  it('records a synchronous TypeError from the request call as TypeError', async () => {
+    webKitWindow.WebKitMediaKeys = {};
+    installRequest(() => {
+      throw new TypeError('Illegal invocation');
+    });
+    const info = vi.spyOn(console, 'info').mockImplementation(() => {});
+    try {
+      await expect(probeWord()).resolves.toBe('TypeError');
+    } finally {
+      info.mockRestore();
+    }
+  });
+
+  it('resolves timeout after about 2 s for a never-settling request, then keeps a late word', async () => {
+    vi.useFakeTimers();
+    webKitWindow.WebKitMediaKeys = {};
+    let resolveLate: (value: object) => void = () => {};
+    const request = vi.fn(
+      () =>
+        new Promise((resolve) => {
+          resolveLate = resolve;
+        }),
+    );
+    installRequest(request);
+    const info = vi.spyOn(console, 'info').mockImplementation(() => {});
+    try {
+      const {
+        SAFARI_MODERN_ACCESS_TIMEOUT_MS,
+        probeSafariModernFairPlayAccess,
+        safariModernAccessInFlight,
+        safariModernAccessWord,
+      } = await import('./musickit.js');
+      expect(SAFARI_MODERN_ACCESS_TIMEOUT_MS).toBe(2_000);
+      const probe = probeSafariModernFairPlayAccess();
+      let settled: string | null | undefined;
+      void probe?.then((word) => {
+        settled = word;
+      });
+      expect(safariModernAccessInFlight()).toBe(probe);
+      await vi.advanceTimersByTimeAsync(SAFARI_MODERN_ACCESS_TIMEOUT_MS - 1);
+      expect(settled).toBeUndefined();
+      await vi.advanceTimersByTimeAsync(1);
+      expect(settled).toBe('timeout');
+      expect(safariModernAccessWord()).toBe('timeout');
+      expect(safariModernAccessInFlight()).toBeNull();
+      expect(request).toHaveBeenCalledTimes(1);
+      resolveLate({ createMediaKeys: vi.fn() });
+      await vi.advanceTimersByTimeAsync(0);
+      expect(safariModernAccessWord()).toBe('ok');
+      await expect(probeSafariModernFairPlayAccess()).resolves.toBe('timeout');
+      expect(request).toHaveBeenCalledTimes(1);
+    } finally {
+      info.mockRestore();
+    }
+  });
+
+  it('does not report an in-flight probe before one starts or after it settles', async () => {
+    webKitWindow.WebKitMediaKeys = {};
+    installRequest(async () => ({ createMediaKeys: vi.fn() }));
+    const info = vi.spyOn(console, 'info').mockImplementation(() => {});
+    try {
+      const { probeSafariModernFairPlayAccess, safariModernAccessInFlight } =
+        await import('./musickit.js');
+      expect(safariModernAccessInFlight()).toBeNull();
+      await probeSafariModernFairPlayAccess();
+      expect(safariModernAccessInFlight()).toBeNull();
     } finally {
       info.mockRestore();
     }

@@ -3,7 +3,7 @@
   "id": "RF-107",
   "title": "The iPhone FairPlay probe records modern-access: on a playback error",
   "kind": "task",
-  "status": "in_progress",
+  "status": "done",
   "priority": "P1",
   "parent": null,
   "dependsOn": [],
@@ -12,7 +12,7 @@
     "The probe has a short timeout (about 2 s) that resolves a distinct word such as timeout, and a never-settling stub does not delay play().",
     "The probe runs after instance.play() is called, or is not awaited before it, so it cannot use up the iOS user gesture."
   ],
-  "nextAction": "In progress: Lane 1 of round 20261028a on branch fix/rf-107-fairplay-probe (draft PR claims it). Restart: bind the probe call to navigator, add the ~2 s timeout word, start the probe after instance.play() is called, and let the playback-error banner wait for a pending probe. Owner-gated; the deploy and the owner iPhone check that records modern-access: <word> belong to RF-29.",
+  "nextAction": null,
   "blocker": null,
   "evidence": [
     {
@@ -32,8 +32,20 @@
       "ref": "https://github.com/steven-crosby/ritmofit-web/pull/646",
       "summary": "Owner set Ready in session on 2026-10-28 and approved fixing the existing FairPlay probe despite RF-29 saying not to add another probe.",
       "checkedOn": "2026-10-28"
+    },
+    {
+      "kind": "pr",
+      "ref": "https://github.com/steven-crosby/ritmofit-web/pull/649",
+      "summary": "Work PR for RF-107 (Lane 1, round 20261028a): bound call, 2 s timeout, probe after play(), banner waits for the word. Receiver-checked unit test failed on dc8e72a before the fix (expected null to be ok) and passes after.",
+      "checkedOn": "2026-10-28"
+    },
+    {
+      "kind": "observation",
+      "ref": "https://github.com/steven-crosby/ritmofit-web/pull/649",
+      "summary": "Owner decision (Steven, in session via the round orchestrator, 2026-10-28): the probe word may also record the name of standard built-in JavaScript errors (TypeError, RangeError, SyntaxError, ReferenceError, EvalError, URIError, AggregateError, Error) besides DOMException names; never the message or stack; custom or crafted names map to other.",
+      "checkedOn": "2026-10-28"
     }
   ],
-  "resolution": null,
+  "resolution": "PR #649: the probe calls navigator.requestMediaKeySystemAccess as a bound method, resolves timeout after 2 s, starts only after MusicKit play() is called and is never awaited before it, and a playback error waits for an in-flight probe so the banner carries modern-access: <word>. The word is ok, a DOMException name, a standard built-in error name (owner decision 2026-10-28), other, or timeout. Unit-verified with receiver-checked stubs; not device-verified (RF-29).",
   "followUps": []
 }

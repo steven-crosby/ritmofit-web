@@ -12,13 +12,13 @@ owner's queue: any agent may execute a Ready task. Publishing follows AGENTS.md 
 Evidence marked **recorded** is a carried-forward claim, not fresh verification.
 A checked PR proves its GitHub state, not product acceptance or production behavior.
 
-116 tasks. backlog: 22 · ready: 1 · in_progress: 1 · blocked: 2 · review: 7 · done: 83 · cancelled: 0.
+116 tasks. backlog: 22 · ready: 1 · in_progress: 0 · blocked: 2 · review: 7 · done: 84 · cancelled: 0.
 
 ## In progress
 
 | Task | Priority / kind | Relationships | Next action / resolution | Evidence |
 | --- | --- | --- | --- | --- |
-| [RF-107](tasks/RF-107.json) The iPhone FairPlay probe records modern-access: on a playback error | P1 / task | — | In progress: Lane 1 of round 20261028a on branch fix/rf-107-fairplay-probe (draft PR claims it). Restart: bind the probe call to navigator, add the ~2 s timeout word, start the probe after instance.play() is called, and let the playback-error banner wait for a pending probe. Owner-gated; the deploy and the owner iPhone check that records modern-access: &lt;word&gt; belong to RF-29. | recorded; checked 2026-10-28 |
+| — | — | — | — | — |
 
 ## Blocked / waiting
 
@@ -78,6 +78,7 @@ A checked PR proves its GitHub state, not product acceptance or production behav
 | --- | --- | --- | --- | --- |
 | [RF-98](tasks/RF-98.json) Delegated PRs merge on a thorough required CI gate with owner-gated exceptions | P1 / task | needs RF-97 | Standing delegation grant (revised by the owner on 2026-10-27 to ask before each final review and merge), owner gate and e2e smoke are in the required CI job. On GitHub Linux every check passed (first full pass: run 40610775187 on bfc2622; the final head's run is on #643), including the Playwright smoke at 1440 and 390 with a 10-screenshot artifact; the owner gate, run last, correctly failed this owner-gated PR pending owner-approved. Merging #643 publishes this; deployment is not involved. | checked 2026-10-27 |
 | [RF-99](tasks/RF-99.json) Session prompts, handoffs and the RF board agree for delegated CI/CD | P1 / documentation | needs RF-97 | Ready is the owner's queue, draft PRs claim tasks, the final state lands in the work PR, handoffs are restart notes, and merges count as recorded when an RF record cites them. RF-trace runs in the required job and passed on GitHub Linux (run 40610775187). Its first live pass on a product PR will come from the first product PR after merge. | checked 2026-10-27 |
+| [RF-107](tasks/RF-107.json) The iPhone FairPlay probe records modern-access: on a playback error | P1 / task | — | PR #649: the probe calls navigator.requestMediaKeySystemAccess as a bound method, resolves timeout after 2 s, starts only after MusicKit play() is called and is never awaited before it, and a playback error waits for an in-flight probe so the banner carries modern-access: &lt;word&gt;. The word is ok, a DOMException name, a standard built-in error name (owner decision 2026-10-28), other, or timeout. Unit-verified with receiver-checked stubs; not device-verified (RF-29). | recorded; checked 2026-10-28 |
 | [RF-88](tasks/RF-88.json) Review deploy guard regression coverage PR #596 | P2 / task | follow-ups RF-110 | Reviewed against current main on 2026-10-27: the self-check assertions are meaningful (ran under macOS bash 3.2; no temp files or worktrees left). Typecheck failed on current dependencies because the test redeclared ImportMeta.url; that block was removed in c906cf4. Squash-merged as d76fbd3. Tests and self-check only; deploy behavior unchanged. Amended 2026-10-28: the Claude audit (AUD-004) showed one self-check block cannot fail, so "meaningful" is wrong for that block; the fix is tracked in RF-110. | recorded; checked 2026-10-27 |
 | [RF-89](tasks/RF-89.json) Review core workflow regression coverage PR #625 | P2 / task | — | Reviewed against current main on 2026-10-27: web 171, Spotify 49 and D1 integration 4 tests passed on the merged tree. Squash-merged as 0065eaf. Tests only; its handoff, whose sole action was this merge, is retired. | recorded; checked 2026-10-27 |
 | [RF-95](tasks/RF-95.json) Implement the repository-owned RF task system | P2 / task | — | Repository-owned task tooling and migration completed; all acceptance checks passed locally. PR #640 publishes this result once merged. No deployment is required. | checked 2026-10-27 |
