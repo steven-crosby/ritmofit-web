@@ -49,7 +49,7 @@ Items under the audit's "Withdrawn or corrected" were not filed.
 | Sign-in | Apple button lacks the logo; panel H2s precede the H1 | Verified | Browser check | — | RF-142, RF-143 |
 | Classes | "Needs music" names several gaps | Verified | Reproduced, wider than the audit says | `readinessLabel` maps empty blocks, songs outside blocks, no tracks and unlinked tracks all to "Needs music" | RF-134 |
 | Classes | Home template cards show Cycle and Pilates only | Verified | Explained | RF-37 (Done) shipped exactly "Cycle and Pilates templates"; `LIBRARY_TEMPLATES` in `library-shell.ts` | RF-131 (decision 4) |
-| Classes | "Jump back in" repeats Recents | Verified | Reproduced | Both read `recentClasses` (`library-shell.ts`) | RF-142 |
+| Classes | "Jump back in" repeats Recents | Verified | Reproduced | Both read `recentClasses` (`library-shell.ts`), but `jumpBackInClasses` also drops `[QA]` titles and caps at four, so the production repetition may partly come from fixture data (corrected 2026-10-29, #658 review) | RF-142 |
 | Classes | Tab title stays "Ritmo Studio"; "Steven" is a `<p>`; narrow-width DOM order | Verified | Reproduced | `Dashboard.tsx` title effect; `ClassesHome.tsx` `order-2 lg:order-none` | RF-142 |
 | Classes | Nothing surfaces "your next class" | Judgment (notes only) | Not withdrawn; the #438 claim was | — | RF-134 |
 | Classes | `[QA]` fixtures dominate the list | Verified | Tracked | `ritmofit_dev_plan/prod-fixture-hygiene.md` (SPC-21); owner cleanup, not code | none |

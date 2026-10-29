@@ -11,7 +11,7 @@
     "When setQueue times out in apple-music-adapter.ts, the pending-queue lock for that instance no longer blocks the next prepare, so Retry playback can try again without a page reload.",
     "A test covers: setQueue never settles, prepare times out, the next prepare reaches setQueue instead of 'still finishing a previous queue request'."
   ],
-  "nextAction": "Folded into the RF-124 plan (same file, same failure path). Owner-gated (playback code).",
+  "nextAction": "Implemented on PR #656 (fix/rf-124-resume-in-place), which must be rebased onto main after #657: drop its RF-124 and RF-29 edits (both Done on main), finalize RF-123 and its resume-in-place work in its own record(s), then ask for owner approval. Owner-gated (playback code).",
   "blocker": null,
   "evidence": [
     {

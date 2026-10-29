@@ -3,7 +3,7 @@
   "id": "RF-139",
   "title": "Sign-in and sign-up have their own URLs",
   "kind": "task",
-  "status": "backlog",
+  "status": "cancelled",
   "priority": "P1",
   "parent": null,
   "dependsOn": [],
@@ -13,7 +13,7 @@
     "The service-worker navigation fallback still denies /api/ routes, and OAuth and reset-password callbacks still reach the Worker.",
     "The approach is chosen together with the in-app refresh record (RF-129 on PR #657) so the app does not get two routing mechanisms."
   ],
-  "nextAction": "Plan with RF-129 (filed on PR #657, not yet on main): a known-path entry plus pushState, or the router RF-129 chooses. Files: apps/web/src/App.tsx, Login.tsx, MarketingPage.tsx, the SW navigation config. Login is auth UI: check scripts/owner-gate.mjs before the PR. Surface: web.",
+  "nextAction": null,
   "blocker": null,
   "evidence": [
     {
@@ -29,6 +29,6 @@
       "checkedOn": "2026-10-29"
     }
   ],
-  "resolution": null,
+  "resolution": "Duplicate scope folded into RF-129 (2026-10-29, owner-approved phased plan) so refresh-restore and the sign-in/sign-up paths share one routing approach; acceptance carried over.",
   "followUps": []
 }

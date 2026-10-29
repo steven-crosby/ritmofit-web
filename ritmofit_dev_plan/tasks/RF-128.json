@@ -13,7 +13,7 @@
     "On iPhone Safari Live, the first Apple Music song is audible within 1 s of tapping Start class on 5G.",
     "Work that needs no gesture (load MusicKit, configure, check authorization) happens before Start; only setQueue/play run in the tap."
   ],
-  "nextAction": "Measure where the 5 s goes during the RF-124 on-device probe (MusicKit load, config fetch, setQueue, play), then plan with RF-124. Owner-gated (playback code).",
+  "nextAction": "RF-124 is Done and its device runs did not time Start. Plan: instrument MusicKit load, config fetch, setQueue and play with timestamps in the Apple adapter (debug-only), have the owner time one Start on iPhone Safari, then move pre-gesture work before the tap. Consider dropping the unprefixed com.apple.fps probe in play() (RF-147). Owner-gated (playback code).",
   "blocker": null,
   "evidence": [
     {

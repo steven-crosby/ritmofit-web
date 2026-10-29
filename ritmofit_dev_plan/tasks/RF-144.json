@@ -6,12 +6,14 @@
   "status": "backlog",
   "priority": "P3",
   "parent": null,
-  "dependsOn": [],
+  "dependsOn": [
+    "RF-131"
+  ],
   "acceptance": [
     "ritmofit-design-system.md §9.8 no longer says Spotify and Apple Music are catalog-only; it matches D21, D24 and providerCapabilityTruth.",
     "After the RF-131 Preferences decision, D21 names the Account sections; HISTORY.md stays as written."
   ],
-  "nextAction": "Docs-only PR. The §9.8 fix can go now; the D21 line waits on RF-131 decision 5. Surface: docs (design canon, so iOS reads it too).",
+  "nextAction": "Docs-only PR. The §9.8 fix can ship first as its own child record if wanted; the D21 line waits on RF-131 decision 5. Surface: docs (design canon, so iOS reads it too).",
   "blocker": null,
   "evidence": [
     {
