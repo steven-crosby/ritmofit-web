@@ -30,6 +30,12 @@
       "ref": "docs/audits/ux-audit-2026-10-28/README.md",
       "summary": "2026-10-28 owner UX audit of production: \"Open decisions and untested areas\" > Owner decisions. Browser evidence; not re-observed at intake.",
       "checkedOn": "2026-10-29"
+    },
+    {
+      "kind": "pr",
+      "ref": "https://github.com/steven-crosby/ritmofit-web/pull/658",
+      "summary": "Intake PR: audit copied in, run-decisions.md written, RF-131–RF-144 filed in Backlog.",
+      "checkedOn": "2026-10-29"
     }
   ],
   "resolution": null,
