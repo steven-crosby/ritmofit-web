@@ -1,0 +1,18 @@
+{
+  "schemaVersion": 1,
+  "id": "RF-122",
+  "title": "iPhone Safari CSP allows Apple Music HLS audio",
+  "kind": "task",
+  "status": "backlog",
+  "priority": "untriaged",
+  "parent": null,
+  "dependsOn": [],
+  "acceptance": [
+    "Replace with a concrete observable acceptance check before starting work."
+  ],
+  "nextAction": "Define scope and acceptance criteria; obtain any required owner approval.",
+  "blocker": null,
+  "evidence": [],
+  "resolution": null,
+  "followUps": []
+}
