@@ -14,7 +14,7 @@
     "A label-only rerun can no longer turn a green PR red through a flaky e2e or cancel an in-flight run.",
     "A label edit on an already-merged PR can no longer cancel the post-merge push run on main (a closed PR's pull_request run shares the ci-refs/heads/main concurrency group today)."
   ],
-  "nextAction": "Owner set Ready on 2026-10-28. Design a gate-only path for labeled/unlabeled events (separate job or workflow) that keeps the required check name meaningful, so a label edit re-evaluates only the owner gate. Owner-gated: the change edits .github/workflows/ci.yml.",
+  "nextAction": "Owner set Ready on 2026-10-28. Design a gate-only path for labeled/unlabeled events (separate job or workflow) that keeps the required check name meaningful, so a label edit re-evaluates only the owner gate. Also key the concurrency group per PR (for example ci-${{ github.event.pull_request.number || github.ref }}) so a label edit on a merged PR cannot cancel main's push run (acceptance 3). Until fixed, agents remove ready-to-merge before merging, never after. Owner-gated: the change edits .github/workflows/ci.yml.",
   "blocker": null,
   "evidence": [
     {

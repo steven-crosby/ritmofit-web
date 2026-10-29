@@ -1,0 +1,30 @@
+{
+  "schemaVersion": 1,
+  "id": "RF-126",
+  "title": "Device, provider and network matrix shows where Ritmo plays",
+  "kind": "verification",
+  "status": "backlog",
+  "priority": "P1",
+  "parent": null,
+  "dependsOn": [],
+  "acceptance": [
+    "device-provider-matrix.md has an owner-witnessed Pass for Apple Music and for Spotify on each D25 platform (iPhone, iPad, Mac, Windows, Android) on at least one cellular and one Wi-Fi network each where the provider's app works.",
+    "Every non-Pass cell links an RF task that owns its fix or explains why the provider offers no official path there.",
+    "Rows record device, browser, network kind, date, Worker or bundle, and the exact observed outcome; UI or SDK success alone never passes."
+  ],
+  "nextAction": "Fill rows as owner checks happen on the owner's MacBook, iPhone and Galaxy tablet (Android); start with the iPhone Safari Apple Music retry after RF-122 (RF-29) and RF-125. Windows and iPad have no test device yet. Research Spotify's official mobile-browser path before testing Spotify on phones and tablets. This task grants no implementation or deploy.",
+  "blocker": null,
+  "evidence": [
+    {
+      "kind": "document",
+      "ref": "ritmofit_dev_plan/device-provider-matrix.md",
+      "summary": "Matrix created for D25 on 2026-10-28 with the first iPhone and Mac rows.",
+      "checkedOn": "2026-10-28"
+    }
+  ],
+  "resolution": null,
+  "followUps": [
+    "RF-29",
+    "RF-125"
+  ]
+}

@@ -1,0 +1,25 @@
+{
+  "schemaVersion": 1,
+  "id": "RF-127",
+  "title": "Playback CSP docs describe iOS native HLS under media-src",
+  "kind": "documentation",
+  "status": "backlog",
+  "priority": "P3",
+  "parent": null,
+  "dependsOn": [],
+  "acceptance": [
+    "The media-src comment in apps/web/public/_headers says iPhone Safari fetches Apple's HLS manifest, sub-playlists and segments under media-src (not connect-src as on desktop)."
+  ],
+  "nextAction": "One-line comment fix in _headers; owner-gated path (security headers), so batch it with the next _headers change. The planning doc was fixed in the follow-up docs PR.",
+  "blocker": null,
+  "evidence": [
+    {
+      "kind": "pr",
+      "ref": "https://github.com/steven-crosby/ritmofit-web/pull/652",
+      "summary": "Final review of #652 on 18dec10 noted the comment still says segments go over connect-src; non-blocking.",
+      "checkedOn": "2026-10-28"
+    }
+  ],
+  "resolution": null,
+  "followUps": []
+}

@@ -16,20 +16,25 @@
 <!-- Claude Code, 2026-10-28: Recorded the owner reopening Spotify and split audit intake sources. -->
 <!-- Claude Code, 2026-10-28: Round 20261028a close: RF-107 and RF-90 merged, not deployed. -->
 
+<!-- Claude Code, 2026-10-28: Deployed RF-107/RF-90 and RF-122; recorded D25 and the device matrix. -->
+
 **Current actionable state:** [RF board](./tasks.md), backed by canonical [task records](./tasks/README.md).
-[RF-29](./tasks/RF-29.json) remains blocked: the latest recorded iPhone Safari Apple Music attempt
-failed with the bare banner and a `0:00` clock. RF-107 merged on 2026-10-28 as
-[#649](https://github.com/steven-crosby/ritmofit-web/pull/649) (`9166826`) and is **not deployed**;
-the next owner retry waits for that deploy. See RF-29's next action, which supersedes the retry in
-the [dated handoff](./handoffs/2026-10-27-iphone-fairplay.md). RF-90 (Builder saves keep stored
-times) merged the same day as [#650](https://github.com/steven-crosby/ritmofit-web/pull/650)
-(`492e181`), also not deployed. [RF-80](./tasks/RF-80.json) is blocked on
-recovering its original plan into git; preflight implementation is not approved.
-[RF-90–94 audit intake](./tasks.md) captures proposed remediation, not implementation authority.
-The 2026-10-28 audit intake adds RF-107–117: RF-107–114 and RF-117 come from the Claude audit, and
-RF-115 and RF-116 from the Codex audit. [RF-107](./tasks/RF-107.json) (FairPlay probe bug) now gates a
-meaningful RF-29 retry. Spotify work was reopened by the owner on 2026-10-28; Apple hardening and Apple
-device checks come first until the Apple Music subscription ends around 2026-11-27.
+**Main vs production (observed 2026-10-28):** production is Worker `b41b99f9-8b93-4947-915c-ca18bd42d2d2`
+at main `04e695f`, SPA `assets/index-BTdVQWvK.js`; it carries RF-107 (#649), RF-90 (#650) and RF-122
+(#652). Rollback is `d092af3c-114f-416f-bbe5-cb112cb52306`. See [HISTORY](./HISTORY.md). Docs records
+after `04e695f` do not change runtime.
+[RF-29](./tasks/RF-29.json) stays blocked on the owner's iPhone retry: on the RF-107 build the banner
+read `modern-access: ok` with no audio, and Web Inspector showed the page CSP blocking Apple's HLS
+audio, fixed by [RF-122](./tasks/RF-122.json). Authorization on the owner's home Wi-Fi stalls after Face
+ID ([RF-125](./tasks/RF-125.json)). [D25](./decisions.md) (owner, 2026-10-28): if a device can run the
+Apple Music or Spotify app, Ritmo works there; the [device, provider and network
+matrix](./device-provider-matrix.md) ([RF-126](./tasks/RF-126.json)) tracks it.
+[RF-80](./tasks/RF-80.json) is blocked on recovering its original plan into git; preflight
+implementation is not approved. [RF-90–94 audit intake](./tasks.md) captures proposed remediation, not
+implementation authority. The 2026-10-28 audit intake adds RF-107–117 (RF-107–114 and RF-117 from the
+Claude audit, RF-115 and RF-116 from the Codex audit). Spotify work was reopened by the owner on
+2026-10-28; Apple hardening and Apple device checks come first until the Apple Music subscription ends
+around 2026-11-27.
 
 **Baseline checked by Codex, 2026-10-27:** main `f35d5d5` contains two docs-only commits after deployed
 `535e61a`. The Worker API reports `24cdedc9-8103-417c-a502-23b0846c0967` at 100%, message `535e61a`.

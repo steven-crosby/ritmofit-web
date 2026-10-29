@@ -14,8 +14,8 @@
     "On the identified production bundle, Steven hears Apple Music in iPhone Safari Live, then verifies pause, resume, seek, and track advance.",
     "Record device/browser, bundle and Worker, audible outcome, and any exact failure. UI or SDK success alone does not pass."
   ],
-  "nextAction": "After RF-122 (#652) merges and the owner deploys it, retry Break Stuff once in iPhone Safari Live with Web Inspector open and record audible outcome, then pause, resume, seek and track advance. If audio plays, close RF-124 as not needed. Do not implement or deploy from this task.",
-  "blocker": "iPhone Safari's page CSP blocks Apple's HLS manifest (media-src), fixed by RF-122; needs merge and an owner deploy before the next device check.",
+  "nextAction": "RF-122 is deployed (Worker b41b99f9-8b93-4947-915c-ca18bd42d2d2, 2026-10-28). Retry Break Stuff once in iPhone Safari Live with Web Inspector attached: first clear the service worker and caches (or reload), authorize on a network where Apple Music works (RF-125 covers the home Wi-Fi stall), tap Start class, and record the audible outcome, then pause, resume, seek and track advance. If setQueue hangs or the banner says 'still finishing a previous queue request', record it for RF-124/RF-123 and reload before any second try. Do not implement or deploy from this task.",
+  "blocker": "Waiting on the owner's iPhone retry on the RF-122 deploy; authorization on home Wi-Fi currently stalls (RF-125).",
   "evidence": [
     {
       "kind": "source",

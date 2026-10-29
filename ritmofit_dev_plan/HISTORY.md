@@ -13,6 +13,29 @@ detail). Current focus and `main` vs production live in the "Now" block of
 
 ## Deploy and session log (newest first)
 
+> **Deploy 2026-10-28 (second) — #652 on main `04e695f`.** `scripts/deploy.sh` from a clean
+> detached worktree at `origin/main` `04e695f`
+> ([#652](https://github.com/steven-crosby/ritmofit-web/pull/652), RF-122: page CSP `media-src` adds
+> `https://*.itunes.apple.com` so iPhone Safari can load Apple's HLS audio). Remote D1: none to apply.
+> New Worker `b41b99f9-8b93-4947-915c-ca18bd42d2d2`; rollback `d092af3c-114f-416f-bbe5-cb112cb52306`.
+> SPA entry unchanged at `assets/index-BTdVQWvK.js` (headers-only change); propagation 3/3. `/` and
+> `/api/v1/health` 200, `/classes`, `/explore`, `/teams` 401, security headers present; a cache-busted
+> fetch of `/` served `media-src 'self' blob: https://*.itunes.apple.com`. Skipped: the five-minute tail
+> watch, and the authed smoke (the QA session token in `apps/api/.qa-beta-token` has expired; both
+> calls returned 401). The iPhone retry is RF-29.
+>
+> **Deploy 2026-10-28 — RF-107 and RF-90 on main `b6af93e`.** `scripts/deploy.sh` from a clean detached
+> worktree at `origin/main` `b6af93e`, which carries
+> [#649](https://github.com/steven-crosby/ritmofit-web/pull/649) (`9166826`, RF-107 FairPlay probe) and
+> [#650](https://github.com/steven-crosby/ritmofit-web/pull/650) (`492e181`, RF-90 Builder stored times).
+> Remote D1: none to apply. New Worker `d092af3c-114f-416f-bbe5-cb112cb52306` (created
+> 2026-10-29T00:16:11Z); rollback `24cdedc9-8103-417c-a502-23b0846c0967` (`535e61a`). SPA
+> `assets/index-BTdVQWvK.js` (was `assets/index-CClNobxY.js`); propagation 3/3. Status smoke and
+> security headers passed. Authed smoke failed with 401 on both calls (expired QA token), not a
+> deploy fault. The first tail attempt did not run (no `timeout` on macOS); a verified five-minute
+> tail afterwards saw no events, no exceptions and no 5xx. Owner iPhone Safari retry on this build:
+> `modern-access: ok`, no audio; Web Inspector then showed the CSP `media-src` refusal fixed by RF-122.
+
 > **Deploy 2026-10-27 — #637 and #636 on main `535e61a`.** Production deploy at
 > 2026-10-27T20:06:15Z (2:06 PM MT) through
 > `scripts/deploy.sh 535e61aa9e940ca357f7d4d71ac5c65cdf3adf80` from a clean

@@ -20,6 +20,12 @@
       "ref": "https://github.com/steven-crosby/ritmofit-web/pull/643",
       "summary": "Final review #4 of #643 (finding 9): parallel worktree subagents all bind the default e2e port. Logged 2026-10-27.",
       "checkedOn": "2026-10-27"
+    },
+    {
+      "kind": "observation",
+      "ref": "ritmofit_dev_plan/handoffs/2026-10-28-r20261028a-orchestrator.md",
+      "summary": "Round 20261028a, 2026-10-28: two lane worktrees ran pnpm e2e in parallel with E2E_PORT=8798 and E2E_PORT=8799 and per-worktree e2e/.state, with no port or state collision.",
+      "checkedOn": "2026-10-28"
     }
   ],
   "resolution": null,
