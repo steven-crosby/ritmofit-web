@@ -1,0 +1,43 @@
+{
+  "schemaVersion": 1,
+  "id": "RF-131",
+  "title": "The owner decides the six open questions from the 2026-10-28 UX audit",
+  "kind": "plan",
+  "status": "backlog",
+  "priority": "P0",
+  "parent": null,
+  "dependsOn": [],
+  "acceptance": [
+    "Run rule: whether empty plan blocks, songs outside a block and over-time blocks block a run, only a music start, or nothing. The answer is recorded here and unblocks RF-133.",
+    "Readiness vocabulary: either rename each readiness dimension by what it checks, or collapse to \"Can run\" and \"Can play music\". Recorded here; unblocks RF-134.",
+    "Tempo: provision GetSongBPM (owner sets the secret after a terms and quota check), stop flagging missing BPM on the Classes list, or both in order.",
+    "HIIT on the Classes home template cards: add the third card, or note on RF-37 why there are two.",
+    "Account Preferences: cut (RF-144 names the three Account sections in D21) or keep (a new record defines the preferences).",
+    "Spotify while the developer allowlist is unresolved: hide its library and playback for accounts not on the allowlist, or keep it visible and name the real cause.",
+    "Each answer is recorded in this record and in run-decisions.md; any new implementation gets its own Backlog record."
+  ],
+  "nextAction": "Owner answers the six decisions, one at a time, starting with the run rule. Briefs with options and what each costs are in docs/audits/ux-audit-2026-10-28/run-decisions.md \"Owner decisions\". This record authorizes no implementation.",
+  "blocker": null,
+  "evidence": [
+    {
+      "kind": "document",
+      "ref": "docs/audits/ux-audit-2026-10-28/run-decisions.md",
+      "summary": "Decision briefs 1-6, written at intake against main c9b89a7.",
+      "checkedOn": "2026-10-29"
+    },
+    {
+      "kind": "document",
+      "ref": "docs/audits/ux-audit-2026-10-28/README.md",
+      "summary": "2026-10-28 owner UX audit of production: \"Open decisions and untested areas\" > Owner decisions. Browser evidence; not re-observed at intake.",
+      "checkedOn": "2026-10-29"
+    },
+    {
+      "kind": "pr",
+      "ref": "https://github.com/steven-crosby/ritmofit-web/pull/658",
+      "summary": "Intake PR: audit copied in, run-decisions.md written, RF-131–RF-144 filed in Backlog.",
+      "checkedOn": "2026-10-29"
+    }
+  ],
+  "resolution": null,
+  "followUps": []
+}

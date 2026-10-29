@@ -1,0 +1,34 @@
+{
+  "schemaVersion": 1,
+  "id": "RF-137",
+  "title": "Music reopens on the provider and view the instructor last used",
+  "kind": "task",
+  "status": "backlog",
+  "priority": "P1",
+  "parent": null,
+  "dependsOn": [],
+  "acceptance": [
+    "After choosing Apple Music and leaving Music, coming back shows Apple Music in the same view.",
+    "A first visit opens on a connected provider when there is one, not the first provider in PROVIDER_ORDER.",
+    "A remembered provider that is now disconnected falls back to a connected one with no error.",
+    "Remembering uses per-viewer state that survives private mode failing (no hard dependency on storage)."
+  ],
+  "nextAction": "Files: apps/web/src/components/Dashboard.tsx (MusicWorkspace selectedProvider and libraryKind state), apps/web/src/lib/music-library.ts. Surface: web.",
+  "blocker": null,
+  "evidence": [
+    {
+      "kind": "source",
+      "ref": "apps/web/src/components/Dashboard.tsx",
+      "summary": "selectedProvider starts at PROVIDER_ORDER[0] (SoundCloud) and is not persisted; a disconnected provider defaults to Catalog. Checked on main c9b89a7.",
+      "checkedOn": "2026-10-29"
+    },
+    {
+      "kind": "document",
+      "ref": "docs/audits/ux-audit-2026-10-28/README.md",
+      "summary": "2026-10-28 owner UX audit of production: Top priority 8 and the walkthrough re-check that the choice resets after leaving Music. Browser evidence; not re-observed at intake.",
+      "checkedOn": "2026-10-29"
+    }
+  ],
+  "resolution": null,
+  "followUps": []
+}

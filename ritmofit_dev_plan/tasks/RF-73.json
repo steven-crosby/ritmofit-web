@@ -3,7 +3,7 @@
   "id": "RF-73",
   "title": "Classes buttons fail WCAG 2.5.3 label in name",
   "kind": "task",
-  "status": "backlog",
+  "status": "cancelled",
   "priority": "untriaged",
   "parent": null,
   "dependsOn": [],
@@ -11,7 +11,7 @@
     "Identify each affected Classes control and show that its accessible name includes its visible text.",
     "Verify the fix at desktop and phone widths with keyboard navigation after owner implementation approval."
   ],
-  "nextAction": "Reproduce affected controls, propose the smallest label-in-name correction, then seek implementation approval.",
+  "nextAction": null,
   "blocker": null,
   "evidence": [
     {
@@ -19,9 +19,15 @@
       "ref": "https://github.com/steven-crosby/ritmofit-web/blob/f35d5d5992035c3895b948b3dc90e96ea6eaffa1/ritmofit_dev_plan/tasks.md#L23",
       "summary": "Original board entry; historical assertion, not independently verified product behavior.",
       "checkedOn": null
+    },
+    {
+      "kind": "document",
+      "ref": "ritmofit_dev_plan/DEVELOPMENT_PLAN.md",
+      "checkedOn": "2026-10-29",
+      "summary": "Owner-approved phased plan (2026-10-29) folds RF-73 into RF-142, Phase 5."
     }
   ],
-  "resolution": null,
+  "resolution": "Duplicated by RF-142, which now carries the WCAG 2.5.3 label-in-name check for Classes controls (owner-approved board cleanup, 2026-10-29).",
   "followUps": [],
   "imported": {
     "status": "Queued",

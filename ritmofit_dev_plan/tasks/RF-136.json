@@ -1,0 +1,34 @@
+{
+  "schemaVersion": 1,
+  "id": "RF-136",
+  "title": "Preflight groups repeated failures, names the provider and puts the fix beside them",
+  "kind": "task",
+  "status": "backlog",
+  "priority": "P1",
+  "parent": null,
+  "dependsOn": [],
+  "acceptance": [
+    "Tracks that fail for the same reason and provider show as one group with a count, not one row each.",
+    "A no-connected-provider failure names the provider the tracks are linked to.",
+    "The fix action (connect or reconnect that provider, or Manage connections) sits with the group, not after the full list.",
+    "Run without music and the honest Blocked verdict are unchanged."
+  ],
+  "nextAction": "Files: apps/web/src/components/LivePreflight.tsx, apps/web/src/lib/playback/coordinator.ts and types.ts (the unplayable reason needs the provider). Owner-gated (playback code): the PR needs owner-approved. Surface: web.",
+  "blocker": null,
+  "evidence": [
+    {
+      "kind": "source",
+      "ref": "apps/web/src/components/LivePreflight.tsx",
+      "summary": "PreflightGroup renders one row per track; Manage connections renders after both lists; the no_connected_provider label carries no provider. Checked on main c9b89a7.",
+      "checkedOn": "2026-10-29"
+    },
+    {
+      "kind": "document",
+      "ref": "docs/audits/ux-audit-2026-10-28/README.md",
+      "summary": "2026-10-28 owner UX audit of production: Top priority 11 and the Live preflight rows. Browser evidence; not re-observed at intake.",
+      "checkedOn": "2026-10-29"
+    }
+  ],
+  "resolution": null,
+  "followUps": []
+}

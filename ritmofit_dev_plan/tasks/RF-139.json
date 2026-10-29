@@ -1,0 +1,34 @@
+{
+  "schemaVersion": 1,
+  "id": "RF-139",
+  "title": "Sign-in and sign-up have their own URLs",
+  "kind": "task",
+  "status": "backlog",
+  "priority": "P1",
+  "parent": null,
+  "dependsOn": [],
+  "acceptance": [
+    "Sign-in and sign-up open at their own paths, so an invite email can link straight to sign-up.",
+    "Browser Back from sign-in returns to the landing page.",
+    "The service-worker navigation fallback still denies /api/ routes, and OAuth and reset-password callbacks still reach the Worker.",
+    "The approach is chosen together with the in-app refresh record (RF-129 on PR #657) so the app does not get two routing mechanisms."
+  ],
+  "nextAction": "Plan with RF-129 (filed on PR #657, not yet on main): a known-path entry plus pushState, or the router RF-129 chooses. Files: apps/web/src/App.tsx, Login.tsx, MarketingPage.tsx, the SW navigation config. Login is auth UI: check scripts/owner-gate.mjs before the PR. Surface: web.",
+  "blocker": null,
+  "evidence": [
+    {
+      "kind": "source",
+      "ref": "apps/web/src/App.tsx",
+      "summary": "Only /, /privacy and /reset-password are known paths; sign-in renders at /. Checked on main c9b89a7.",
+      "checkedOn": "2026-10-29"
+    },
+    {
+      "kind": "document",
+      "ref": "docs/audits/ux-audit-2026-10-28/README.md",
+      "summary": "2026-10-28 owner UX audit of production: Top priority 7 and the Sign-in row on the missing URL. Browser evidence; not re-observed at intake.",
+      "checkedOn": "2026-10-29"
+    }
+  ],
+  "resolution": null,
+  "followUps": []
+}

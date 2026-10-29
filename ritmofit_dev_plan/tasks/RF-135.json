@@ -1,0 +1,40 @@
+{
+  "schemaVersion": 1,
+  "id": "RF-135",
+  "title": "Copper marks identity and the one primary action per surface, never status",
+  "kind": "task",
+  "status": "backlog",
+  "priority": "P1",
+  "parent": null,
+  "dependsOn": [],
+  "acceptance": [
+    "Classes row status marks use the caution channel (or no color), not bg-brand.",
+    "The Live queue shows at most one copper primary; the other Preflight buttons are secondary.",
+    "Landing CTAs are reviewed against §9.1 and the outcome recorded (judgment: header plus hero is a common pattern).",
+    "The e2e screenshots at 1440 and 390 show one copper primary on Classes and Live."
+  ],
+  "nextAction": "Files: apps/web/src/components/ClassesHome.tsx (status dot), Dashboard.tsx (LiveQueueCard buttons), MarketingPage.tsx. Choose which Live card keeps the primary (for example the next class she is likely to teach) and say so in the PR. Surface: web.",
+  "blocker": null,
+  "evidence": [
+    {
+      "kind": "source",
+      "ref": "apps/web/src/components/ClassesHome.tsx",
+      "summary": "The readiness dot is drawn with bg-brand on every non-Ready row. Checked on main c9b89a7.",
+      "checkedOn": "2026-10-29"
+    },
+    {
+      "kind": "source",
+      "ref": "apps/web/src/components/Dashboard.tsx",
+      "summary": "Every LiveQueueCard button uses rf-btn-primary. Checked on main c9b89a7.",
+      "checkedOn": "2026-10-29"
+    },
+    {
+      "kind": "document",
+      "ref": "docs/audits/ux-audit-2026-10-28/README.md",
+      "summary": "2026-10-28 owner UX audit of production: Top priorities 5 and 10, and cross-cutting theme 2. Browser evidence; not re-observed at intake.",
+      "checkedOn": "2026-10-29"
+    }
+  ],
+  "resolution": null,
+  "followUps": []
+}
