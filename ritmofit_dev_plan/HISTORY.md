@@ -22,7 +22,8 @@ detail). Current focus and `main` vs production live in the "Now" block of
 > and `/api/v1/health` 200, `/classes`, `/explore`, `/teams` 401, security headers present. Not done:
 > the five-minute tail watch (`wrangler tail` from this shell captured no events, not even three
 > deliberate health requests that returned 200, so a quiet tail proves nothing) and the authed smoke
-> (QA token still expired). The owner's iPhone run is RF-29.
+> (QA token still expired). Owner iPhone Safari Live on this build, same day: Start, Next to songs 2
+> and 3, Previous, Pause/Resume, seek and auto-advance all audible; RF-124 and RF-29 Done.
 
 > **Session 2026-10-29 — UX audit intake and phased plan (docs only).** The owner's 2026-10-28
 > production UX audit was copied to `docs/audits/ux-audit-2026-10-28/`, verified against main `c9b89a7`
