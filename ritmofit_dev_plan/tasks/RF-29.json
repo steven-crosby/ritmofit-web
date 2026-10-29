@@ -15,8 +15,8 @@
     "On the identified production bundle, Steven hears Apple Music in iPhone Safari Live, then verifies pause, resume, seek, and track advance.",
     "Record device/browser, bundle and Worker, audible outcome, and any exact failure. UI or SDK success alone does not pass."
   ],
-  "nextAction": "After RF-124 is deployed, repeat in iPhone Safari Live on 5G: Start, Pause, Resume, Next, seek and auto-advance, recording the audible outcome of each and the Start delay (RF-128). Do not implement or deploy from this task.",
-  "blocker": "Audible on iPhone 5G after RF-122, but Resume and Next fail (RF-124).",
+  "nextAction": "After RF-124 is deployed, run one normal class in iPhone Safari Live on 5G and on Wi-Fi with Web Inspector attached: first reload once (the new bundle clears the stored FairPlay flag) and note the bundle hash, then record the audible outcome of Start (and its delay, RF-128), Pause/Resume, Next, a seek and auto-advance. If anything hangs or shows a banner, capture the console and the exact banner text. Do not implement or deploy from this task.",
+  "blocker": "Waiting on the RF-124 deploy (PR #657): on production, iPhone plays only the first song.",
   "evidence": [
     {
       "kind": "source",
@@ -47,6 +47,12 @@
       "ref": "ritmofit_dev_plan/tasks/RF-29.json",
       "checkedOn": "2026-10-28",
       "summary": "Owner iPhone Safari, 5G, Worker b41b99f9 (RF-122 live), screen recording 23:06: Start class played Break Stuff after about 5 s. Pause worked. Resume stuck on 'Waiting for music — Provider playback has not confirmed progress'. Next to Rollin' (Air Raid Vehicle) showed 'Playback stopped' with Playback error at class clock 2:47."
+    },
+    {
+      "kind": "observation",
+      "ref": "ritmofit_dev_plan/device-provider-matrix.md",
+      "checkedOn": "2026-10-29",
+      "summary": "Owner iPhone Safari (iOS 27.0.1), Wi-Fi, bundle index-BTdVQWvK.js, Worker b41b99f9, Web Inspector probe 09:24-09:56. With mk-safari-modern-eme=1 (set by Ritmo): first song plays and un-pause works, but every later song load (setQueue, skipToNextItem, changeToMediaAtIndex, natural end of a 2-song queue, and a real tap on an injected button) resolved or aborted with MusicKit stopped and no item. With the flag removed and blocked before MusicKit loaded: Ritmo's own Start, Next (Rollin' played), Pause/Resume and auto-advance (track 2 start → advancing) all played on production code."
     }
   ],
   "resolution": null,
