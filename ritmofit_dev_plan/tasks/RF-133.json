@@ -1,0 +1,43 @@
+{
+  "schemaVersion": 1,
+  "id": "RF-133",
+  "title": "Builder, Live queue and preflight apply one rule for when a class can run",
+  "kind": "task",
+  "status": "backlog",
+  "priority": "P0",
+  "parent": null,
+  "dependsOn": [
+    "RF-131"
+  ],
+  "acceptance": [
+    "The rule decided in RF-131 is implemented in one shared helper used by the builder Run live button, the Classes row, the Live queue card and header count, and preflight.",
+    "For one class, the builder, Classes, the Live queue and preflight never disagree about whether it can run, with music or without.",
+    "Over-time blocks follow the rule RF-131 records for them.",
+    "Comments that call duration the only run gate (Dashboard.tsx, readiness.ts, live-readiness.ts, ClassReadinessSummary.tsx) match the new rule.",
+    "If the rule changes what \"runnable\" means, the iOS Live gate impact is written into this record for the iOS repo."
+  ],
+  "nextAction": "Waits on the RF-131 run-rule decision. Files: apps/web/src/lib/readiness.ts, class-scaffold.ts (planNextStep), creation-next-step.ts, live-readiness.ts, Dashboard.tsx (builder header and LiveQueueCard), LivePreflight.tsx. Preflight is playback UI: check scripts/owner-gate.mjs before the PR. Surface: both if runnable changes.",
+  "blocker": null,
+  "evidence": [
+    {
+      "kind": "source",
+      "ref": "apps/web/src/components/Dashboard.tsx",
+      "summary": "Builder: canRun = canRunPayload && !planLead && planReady; runEnabled = canRun && !planLead, where planLead (planNextStep) is set for songs outside a block, any empty block or any over-time block. LiveQueueCard: canRun = classReadiness().runnable (duration only). Checked on main c9b89a7.",
+      "checkedOn": "2026-10-29"
+    },
+    {
+      "kind": "source",
+      "ref": "apps/web/src/components/LivePreflight.tsx",
+      "summary": "Start class needs preflight.ok and browser authorization; Run without music is always enabled. No plan-block check. Checked on main c9b89a7.",
+      "checkedOn": "2026-10-29"
+    },
+    {
+      "kind": "document",
+      "ref": "docs/audits/ux-audit-2026-10-28/README.md",
+      "summary": "2026-10-28 owner UX audit of production: Top priority 2 (P0) and the Live row on \"[QA] Goal Template Cycle\". Browser evidence; not re-observed at intake.",
+      "checkedOn": "2026-10-29"
+    }
+  ],
+  "resolution": null,
+  "followUps": []
+}

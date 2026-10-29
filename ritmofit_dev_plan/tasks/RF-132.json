@@ -1,0 +1,42 @@
+{
+  "schemaVersion": 1,
+  "id": "RF-132",
+  "title": "Music shows an instructor's whole library song list, and library search reaches all of it",
+  "kind": "task",
+  "status": "backlog",
+  "priority": "P0",
+  "parent": null,
+  "dependsOn": [],
+  "acceptance": [
+    "Liked or library songs are not cut off at 200 for Apple Music, Spotify or SoundCloud: the list pages (a \"Load more\" or incremental load), or loads the full set within a documented upper bound that says when it is reached.",
+    "Search on the Songs list finds a song that sits past the first page, either by loading it or by a server-side search.",
+    "\"Create class from liked songs\" uses the same paging and says when it used a subset.",
+    "The \"Recents\" sort is relabeled or reimplemented: today it is the provider's own order (alphabetical for Apple library songs), not recency.",
+    "GET /providers/:provider/likes changes are registered in generate-openapi.ts and the OpenAPI drift and contract-parity checks pass; the iOS snapshot refresh is a separate iOS PR.",
+    "No provider audio or derived data is cached; any paging cursor is the provider's own."
+  ],
+  "nextAction": "Plan first: choose client paging vs server search per provider (Apple, Spotify and SoundCloud expose different library APIs) and re-verify each provider API before coding. Files: packages/music/src/{apple-music,spotify,soundcloud}.ts, apps/api/src/lib/music/user-likes.ts, apps/api/src/routes/providers.ts, apps/web Music workspace. Owner-gated (provider code): the PR needs owner-approved. Surface: both (API contract).",
+  "blocker": null,
+  "evidence": [
+    {
+      "kind": "source",
+      "ref": "packages/music/src/apple-music.ts",
+      "summary": "fetchAppleMusicLibrarySongs defaults maxTracks to 200 (pages of 100); spotify.ts and soundcloud.ts use the same default. user-likes.ts never passes maxTracks; the /likes route takes no cursor. Checked on main c9b89a7.",
+      "checkedOn": "2026-10-29"
+    },
+    {
+      "kind": "source",
+      "ref": "apps/web/src/lib/music-library.ts",
+      "summary": "filterLibrary filters only the loaded rows; orderLibrary returns provider order for \"recents\". Checked on main c9b89a7.",
+      "checkedOn": "2026-10-29"
+    },
+    {
+      "kind": "document",
+      "ref": "docs/audits/ux-audit-2026-10-28/README.md",
+      "summary": "2026-10-28 owner UX audit of production: Top priority 1 (P0) and Music rows on the 200-song cap, search and Recents. Browser evidence; not re-observed at intake.",
+      "checkedOn": "2026-10-29"
+    }
+  ],
+  "resolution": null,
+  "followUps": []
+}

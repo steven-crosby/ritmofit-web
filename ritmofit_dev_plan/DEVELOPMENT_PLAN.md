@@ -12,35 +12,49 @@
 
 ## Now
 
-<!-- Codex, 2026-10-27: Reconciled failed iPhone acceptance and routed actionable state to RF records. -->
-<!-- Claude Code, 2026-10-28: Recorded the owner reopening Spotify and split audit intake sources. -->
-<!-- Claude Code, 2026-10-28: Round 20261028a close: RF-107 and RF-90 merged, not deployed. -->
-
-<!-- Claude Code, 2026-10-28: Deployed RF-107/RF-90 and RF-122; recorded D25 and the device matrix. -->
+<!-- Claude Code, 2026-10-29: Rewrote Now around the phased plan after the 2026-10-28 UX audit intake; superseded text moved to HISTORY. -->
 
 **Current actionable state:** [RF board](./tasks.md), backed by canonical [task records](./tasks/README.md).
+The order of work is [Phases](#phases) below; each phase lists RF records, not a second backlog.
 **Main vs production (observed 2026-10-28):** production is Worker `b41b99f9-8b93-4947-915c-ca18bd42d2d2`
-at main `04e695f`, SPA `assets/index-BTdVQWvK.js`; it carries RF-107 (#649), RF-90 (#650) and RF-122
-(#652). Rollback is `d092af3c-114f-416f-bbe5-cb112cb52306`. See [HISTORY](./HISTORY.md). Docs records
-after `04e695f` do not change runtime.
-[RF-29](./tasks/RF-29.json) stays blocked on the owner's iPhone retry: on the RF-107 build the banner
-read `modern-access: ok` with no audio, and Web Inspector showed the page CSP blocking Apple's HLS
-audio, fixed by [RF-122](./tasks/RF-122.json). Authorization on the owner's home Wi-Fi stalls after Face
-ID ([RF-125](./tasks/RF-125.json)). [D25](./decisions.md) (owner, 2026-10-28): if a device can run the
-Apple Music or Spotify app, Ritmo works there; the [device, provider and network
-matrix](./device-provider-matrix.md) ([RF-126](./tasks/RF-126.json)) tracks it.
-[RF-80](./tasks/RF-80.json) is blocked on recovering its original plan into git; preflight
-implementation is not approved. [RF-90–94 audit intake](./tasks.md) captures proposed remediation, not
-implementation authority. The 2026-10-28 audit intake adds RF-107–117 (RF-107–114 and RF-117 from the
-Claude audit, RF-115 and RF-116 from the Codex audit). Spotify work was reopened by the owner on
-2026-10-28; Apple hardening and Apple device checks come first until the Apple Music subscription ends
-around 2026-11-27.
+at main `04e695f`, SPA `assets/index-BTdVQWvK.js` (RF-107, RF-90, RF-122). Rollback is
+`d092af3c-114f-416f-bbe5-cb112cb52306`. Main has gained only docs since (`git diff 04e695f` touches no
+`apps`, `packages` or `e2e` file), so no deploy is owed. See [HISTORY](./HISTORY.md).
+**In flight:** [RF-124](./tasks/RF-124.json) (iPhone Apple Music plays every song; PR #657, owner-gated,
+then a deploy and the owner's iPhone run that also settles [RF-29](./tasks/RF-29.json)); resume in place
+(#656, to rebase after #657); the D25 provider matrix (#654); the 2026-10-28 owner UX audit intake
+([RF-131–RF-144](./tasks.md), [verification](../docs/audits/ux-audit-2026-10-28/run-decisions.md)).
+**Next step:** land #657, deploy it, and run the iPhone check; in parallel the owner answers the six
+audit questions in [RF-131](./tasks/RF-131.json), run rule first, which unblocks RF-133 and RF-134.
+**Window:** the Apple Music subscription ends around 2026-11-27, so anything that needs a live Apple
+account (Phase 1) goes first. Spotify is reopened (owner, 2026-10-28) but every Web API call returns
+`403` until the developer app accepts the connected account.
+**Open owner decisions:** RF-131's six questions; the review queue (RF-91, RF-93, RF-94, RF-96, RF-16,
+RF-23, RF-32); whether [RF-80](./tasks/RF-80.json) is cancelled or rescoped now that RF-124 found the
+playback root cause; Live finish placement (see Backlog).
 
-**Baseline checked by Codex, 2026-10-27:** main `f35d5d5` contains two docs-only commits after deployed
-`535e61a`. The Worker API reports `24cdedc9-8103-417c-a502-23b0846c0967` at 100%, message `535e61a`.
-Three cache-busted public SPA requests returned 403 from this environment, so served-bundle parity
-is not verified here. D1 migration state was not re-checked. The deploy observations below remain
-historical evidence, not a current claim that production equals main or that iPhone acceptance passed.
+## Phases
+
+<!-- Claude Code, 2026-10-29: Owner-approved phased plan (session 2026-10-29). -->
+
+Ordered by the Apple Music window, then by the audit's P0s. A phase lists records; each record's
+status, acceptance and next action stay canonical. Agents still need the owner's Ready, a brief or a
+direct ask before starting one.
+
+| Phase | Target | Records | Why this order |
+| --- | --- | --- | --- |
+| 0. Land what is in flight | this week | #657 → deploy → owner iPhone run → [RF-124](./tasks/RF-124.json), [RF-29](./tasks/RF-29.json); #658; #654; [RF-131](./tasks/RF-131.json) decisions | Clears the P1 playback fix and unblocks the UX P0s |
+| 1. Apple hardening | by ~2026-11-20 | [RF-132](./tasks/RF-132.json) (Apple first), [RF-128](./tasks/RF-128.json), [RF-125](./tasks/RF-125.json), #656 with [RF-123](./tasks/RF-123.json) under RF-124, [RF-108](./tasks/RF-108.json), [RF-121](./tasks/RF-121.json), [RF-136](./tasks/RF-136.json), [RF-126](./tasks/RF-126.json) (incl. desktop Safari) | Needs a live Apple subscription |
+| 2. Trust and truth | after RF-131 | [RF-133](./tasks/RF-133.json), [RF-134](./tasks/RF-134.json), [RF-135](./tasks/RF-135.json), [RF-137](./tasks/RF-137.json), RF-129 + [RF-139](./tasks/RF-139.json), [RF-138](./tasks/RF-138.json), [RF-145](./tasks/RF-145.json) | The audit's main theme; mostly web |
+| 3. Spotify | when the `403` is resolved | [RF-92](./tasks/RF-92.json) (with [RF-74](./tasks/RF-74.json)), [RF-16](./tasks/RF-16.json), RF-131 decision 6 | Blocked by the developer-app allowlist |
+| 4. Beta-expansion gate | before inviting more instructors | [RF-116](./tasks/RF-116.json) → [RF-140](./tasks/RF-140.json) (self-service deletion, D22), the D22 provider-terms review | Required before expansion |
+| 5. Polish | fill-in | [RF-141](./tasks/RF-141.json), [RF-142](./tasks/RF-142.json) (absorbs RF-73), [RF-143](./tasks/RF-143.json), [RF-144](./tasks/RF-144.json), [RF-146](./tasks/RF-146.json) | Copy, accessibility, benchmark triage |
+| Background | between phases | [RF-100](./tasks/RF-100.json) (Ready), RF-101–RF-106, RF-109–RF-115, RF-117–RF-120, [RF-127](./tasks/RF-127.json) | Small P3 hardening |
+
+Cleanup still owed once the in-flight PRs land: RF-123 closes with #656; RF-139 folds into RF-129 once
+#657 puts RF-129 on `main`.
+
+---
 
 ## Legacy focus context
 
@@ -253,7 +267,8 @@ seconds. Design: [`playlist-import-blocks-design.md`](./playlist-import-blocks-d
 proposes a 20-minute HIIT interaction prototype and contract proposal as its first slice; it does not
 authorize implementation. Recipe/scaffold rules: [`class-template-handoff.md`](./class-template-handoff.md).
 
-**Instructor benchmark gaps (2026-09-29)** — findings only; evidence in
+**Instructor benchmark gaps (2026-09-29)** — findings only, to be triaged into records by
+[RF-146](./tasks/RF-146.json); evidence in
 [`docs/audits/instructor-benchmark-2026-09-29/evidence/`](../docs/audits/instructor-benchmark-2026-09-29/evidence/README.md):
 
 - Verify Apple Music from web Live on a real iPhone for a full class (Bluetooth output, screen
@@ -268,7 +283,7 @@ authorize implementation. Recipe/scaffold rules: [`class-template-handoff.md`](.
 **SPC-09 — provider permission vs provider error.** Design the API signals that separate a permission
 failure from a provider error before adding UI states (Studio Pulse Check; ledger:
 [`run-decisions.md`](../docs/audits/studio-pulse-check-2026-09-13/run-decisions.md)). Replaced as the
-next focus by Phase 1 (2026-09-30); still open.
+next focus by Phase 1 (2026-09-30); tracked as [RF-145](./tasks/RF-145.json).
 
 **Spotify — reopened (owner, 2026-10-28).** It was tabled on 2026-10-02 until Apple Music UI/UX and
 Live playback were hardened. The family now has Spotify Family. The Apple Music subscription ends

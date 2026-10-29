@@ -1,0 +1,33 @@
+{
+  "schemaVersion": 1,
+  "id": "RF-143",
+  "title": "The sign-in brand panel stays within the type scale and quiet, per §3.6 and OD-01",
+  "kind": "task",
+  "status": "backlog",
+  "priority": "P2",
+  "parent": null,
+  "dependsOn": [],
+  "acceptance": [
+    "The panel headline is at most display (34px), or the panel is removed.",
+    "No class-shape artwork or campaign display type on sign-in.",
+    "The form H1 is the strongest element on the surface, and screen readers reach it before the panel."
+  ],
+  "nextAction": "Judgment-heavy: propose two options with screenshots in the PR. Files: apps/web/src/components/Login.tsx. Surface: web.",
+  "blocker": null,
+  "evidence": [
+    {
+      "kind": "source",
+      "ref": "apps/web/src/components/Login.tsx",
+      "summary": "The panel headline uses clamp(2rem,5vw,4.5rem), 72px at desktop, above display-xl (52px). Checked on main c9b89a7.",
+      "checkedOn": "2026-10-29"
+    },
+    {
+      "kind": "document",
+      "ref": "docs/audits/ux-audit-2026-10-28/README.md",
+      "summary": "2026-10-28 owner UX audit of production: Top priority 13 and the Sign-in brand panel rows. Browser evidence; not re-observed at intake.",
+      "checkedOn": "2026-10-29"
+    }
+  ],
+  "resolution": null,
+  "followUps": []
+}

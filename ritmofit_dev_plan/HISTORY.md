@@ -13,6 +13,17 @@ detail). Current focus and `main` vs production live in the "Now" block of
 
 ## Deploy and session log (newest first)
 
+> **Session 2026-10-29 — UX audit intake and phased plan (docs only).** The owner's 2026-10-28
+> production UX audit was copied to `docs/audits/ux-audit-2026-10-28/`, verified against main `c9b89a7`
+> and filed as RF-131–RF-144. The owner approved a phased plan, now `DEVELOPMENT_PLAN.md` › Phases.
+> Board cleanup: RF-73 cancelled into RF-142; RF-74 grouped under RF-92; RF-145 (SPC-09) and RF-146
+> (benchmark gaps) filed. Superseded "Now" text, preserved here: production Worker `b41b99f9` at
+> `04e695f` (RF-107, RF-90, RF-122); RF-29 blocked on the owner's iPhone retry after the RF-122 CSP fix;
+> RF-125 Wi-Fi authorization stall; D25 and the device matrix (RF-126); RF-80 blocked on recovering
+> its plan; RF-90–94 and RF-107–117 audit intake; Spotify reopened 2026-10-28 with Apple first until
+> ~2026-11-27. The Codex 2026-10-27 baseline (main `f35d5d5`, Worker `24cdedc9` at `535e61a`, SPA
+> parity unverified from that environment) is also retired from "Now".
+
 > **Deploy 2026-10-28 (second) — #652 on main `04e695f`.** `scripts/deploy.sh` from a clean
 > detached worktree at `origin/main` `04e695f`
 > ([#652](https://github.com/steven-crosby/ritmofit-web/pull/652), RF-122: page CSP `media-src` adds

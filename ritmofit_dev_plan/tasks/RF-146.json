@@ -1,0 +1,33 @@
+{
+  "schemaVersion": 1,
+  "id": "RF-146",
+  "title": "Instructor benchmark gaps from 2026-09-29 are triaged into records",
+  "kind": "plan",
+  "status": "backlog",
+  "priority": "P3",
+  "parent": null,
+  "dependsOn": [],
+  "acceptance": [
+    "Each 2026-09-29 benchmark gap is either filed as its own Backlog record, linked to an existing record that covers it, or recorded as declined by the owner.",
+    "Gaps already covered elsewhere are named (for example the real-iPhone full-class check under RF-29 and RF-126).",
+    "The two instructor questions (Struct Club's Live \"Open\" intensity, where she sees a beats-remaining count) are recorded with the owner's answer or left as an open owner question."
+  ],
+  "nextAction": "Walk the gap list in DEVELOPMENT_PLAN.md › Backlog › Instructor benchmark gaps against open records, propose the mapping, and file only what the owner accepts. Schema-changing gaps (cue plus per-cue note) need their own plan.",
+  "blocker": null,
+  "evidence": [
+    {
+      "kind": "document",
+      "ref": "docs/audits/instructor-benchmark-2026-09-29/evidence/README.md",
+      "summary": "2026-09-29 instructor benchmark evidence; findings only, no implementation authority.",
+      "checkedOn": "2026-10-29"
+    },
+    {
+      "kind": "document",
+      "ref": "ritmofit_dev_plan/DEVELOPMENT_PLAN.md",
+      "checkedOn": "2026-10-29",
+      "summary": "Moved from the plan's Backlog prose into a record; Phase 5 of the owner-approved phased plan (2026-10-29)."
+    }
+  ],
+  "resolution": null,
+  "followUps": []
+}

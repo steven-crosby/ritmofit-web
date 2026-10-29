@@ -1,0 +1,51 @@
+{
+  "schemaVersion": 1,
+  "id": "RF-134",
+  "title": "Every readiness and connection label says only what it checked, in one vocabulary",
+  "kind": "task",
+  "status": "backlog",
+  "priority": "P1",
+  "parent": null,
+  "dependsOn": [
+    "RF-131"
+  ],
+  "acceptance": [
+    "The Live card music line no longer says \"Music ready\" or \"a music service Live can play\" when it has only checked for provider links.",
+    "Account Apple Music playback no longer shows \"Authorized\" from stored connection data alone; it says what is known and that Live checks this browser (D24).",
+    "The Live header count says what it counts.",
+    "Classes list labels name the actual gap (\"2 blocks empty\", \"1 song outside the plan\") instead of one \"Needs music\" for four different states, and a tempo-only gap does not read like a blocker.",
+    "Connection states and actions use one word each across Music, Account and preflight (\"Session expired\"/\"Reconnect needed\"/\"Reconnect\"; \"Manage\" vs \"Manage connections\").",
+    "The new vocabulary is written into the design canon; iOS follows the canon wording.",
+    "Judgment, if the owner accepts it: Classes home surfaces one next class and what is left on it."
+  ],
+  "nextAction": "Waits on the RF-131 vocabulary (and tempo) decisions; can start with the D24 Account fix, which needs no decision. Files: apps/web/src/lib/readiness.ts, library-shell.ts, providers.ts, Dashboard.tsx, ConnectionStateMark.tsx, ritmofit_design_system copy. Surface: web; iOS for canon wording only.",
+  "blocker": null,
+  "evidence": [
+    {
+      "kind": "source",
+      "ref": "apps/web/src/lib/readiness.ts",
+      "summary": "The music dimension checks only providerRefs.length; its detail text claims \"Live can play\", which the file header says is preflight's job. Checked on main c9b89a7.",
+      "checkedOn": "2026-10-29"
+    },
+    {
+      "kind": "source",
+      "ref": "apps/web/src/lib/providers.ts",
+      "summary": "providerCapabilityTruth labels playback \"Authorized\" from a stored connection with playback scope; Live checks MusicKit isAuthorized in the current browser. Checked on main c9b89a7.",
+      "checkedOn": "2026-10-29"
+    },
+    {
+      "kind": "source",
+      "ref": "apps/web/src/lib/library-shell.ts",
+      "summary": "readinessLabel maps four plan and music states to \"Needs music\"; every non-Ready label gets the same dot. Checked on main c9b89a7.",
+      "checkedOn": "2026-10-29"
+    },
+    {
+      "kind": "document",
+      "ref": "docs/audits/ux-audit-2026-10-28/README.md",
+      "summary": "2026-10-28 owner UX audit of production: Top priorities 3, 4 and 5, cross-cutting theme 1, and the matching Classes, Live and Account rows. Browser evidence; not re-observed at intake.",
+      "checkedOn": "2026-10-29"
+    }
+  ],
+  "resolution": null,
+  "followUps": []
+}
