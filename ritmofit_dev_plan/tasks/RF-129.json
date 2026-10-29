@@ -14,7 +14,7 @@
     "The service-worker navigation fallback still denies /api/ routes, and OAuth and reset-password callbacks still reach the Worker.",
     "One routing approach covers both refresh-restore and the sign-in/sign-up paths, so the app does not get two routing mechanisms."
   ],
-  "nextAction": "Plan: the app has no router (App.tsx switches on pathname; Dashboard keeps navigation in component state). Decide between URL paths/hash for class detail and Live, or restoring the last screen from session storage. Owner decision on approach first. Absorbs RF-139 (sign-in/sign-up URLs, P1, from the 2026-10-28 UX audit): files App.tsx, Login.tsx, MarketingPage.tsx and the SW navigation config; Login is auth UI, so check scripts/owner-gate.mjs before the PR. Surface: web.",
+  "nextAction": "Plan: the app has no router (App.tsx switches on pathname; Dashboard keeps navigation in component state). Decide between URL paths/hash for class detail and Live, or restoring the last screen from session storage. Owner decision on approach first. Absorbs RF-139 (sign-in/sign-up URLs, P1, from the 2026-10-28 UX audit): files App.tsx, Login.tsx, MarketingPage.tsx and the SW navigation config; The SW navigation config (apps/web/vite.config.ts) is owner-gated in scripts/owner-gate.mjs; Login.tsx and App.tsx are not. Surface: web.",
   "blocker": null,
   "evidence": [
     {

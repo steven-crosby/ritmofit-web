@@ -27,7 +27,7 @@ Items under the audit's "Withdrawn or corrected" were not filed.
 | 4 | Account "Playback ✓ Authorized" vs preflight browser authorization | Verified | Reproduced; conflicts with D24 | "Authorized" means a stored connection with playback scope (`apps/web/src/lib/providers.ts`, `providerCapabilityTruth`). Live checks MusicKit `isAuthorized` in the current browser (`LiveMode.tsx`). D24 "Truth and recovery" says these are separate capabilities. | RF-134 |
 | 5 | "Needs tempo" styled like a blocker, copper dot | Verified | Reproduced | `apps/web/src/lib/library-shell.ts` `readinessLabel`/`readinessMark`: every non-Ready label gets the same dot, drawn `bg-brand` in `ClassesHome.tsx`. Tempo is an attention state, not a gate (`readiness.ts`). | RF-134, RF-135 |
 | 6 | No per-track preview, select or add on Music | Verified | Reproduced, scoped to the Music page | Song rows and the playlist dialog have no per-track controls. The builder already lazy-loads `TrackPreview` (`Dashboard.tsx`). | RF-138 |
-| 7 | Sign-in has no URL of its own | Verified | Reproduced | `App.tsx` knows only `/`, `/privacy`, `/reset-password`; there is no router. | RF-139 |
+| 7 | Sign-in has no URL of its own | Verified | Reproduced | `App.tsx` knows only `/`, `/privacy`, `/reset-password`; there is no router. | RF-129 (RF-139 folded in, 2026-10-29) |
 | 8 | Music opens on SoundCloud + Catalog every visit | Verified | Reproduced | `useState<Provider>(PROVIDER_ORDER[0])` with `PROVIDER_ORDER = ['soundcloud', …]` (`providers.ts:22`); nothing is saved; a disconnected provider defaults to Catalog (`defaultLibraryKind`). | RF-137 |
 | 9 | Account Security has no controls; copy is ambiguous | Verified | Reproduced | The Security section is one paragraph and a privacy link. D22 requires self-service deletion before expansion. RF-116 covers session revocation on password reset only. | RF-140 |
 | 10 | 28 copper "Preflight" buttons | Verified | Reproduced | Every `LiveQueueCard` button uses `rf-btn-primary`. | RF-135 |
@@ -49,7 +49,7 @@ Items under the audit's "Withdrawn or corrected" were not filed.
 | Sign-in | Apple button lacks the logo; panel H2s precede the H1 | Verified | Browser check | — | RF-142, RF-143 |
 | Classes | "Needs music" names several gaps | Verified | Reproduced, wider than the audit says | `readinessLabel` maps empty blocks, songs outside blocks, no tracks and unlinked tracks all to "Needs music" | RF-134 |
 | Classes | Home template cards show Cycle and Pilates only | Verified | Explained | RF-37 (Done) shipped exactly "Cycle and Pilates templates"; `LIBRARY_TEMPLATES` in `library-shell.ts` | RF-131 (decision 4) |
-| Classes | "Jump back in" repeats Recents | Verified | Reproduced | Both read `recentClasses` (`library-shell.ts`), but `jumpBackInClasses` also drops `[QA]` titles and caps at four, so the production repetition may partly come from fixture data (corrected 2026-10-29, #658 review) | RF-142 |
+| Classes | "Jump back in" repeats Recents | Verified | Reproduced | Both read `recentClasses` (`library-shell.ts`); `jumpBackInClasses` also drops `[QA]` titles and caps at four, while Recents keeps `[QA]` rows, so the repetition is among non-QA classes (clarified 2026-10-29) | RF-142 |
 | Classes | Tab title stays "Ritmo Studio"; "Steven" is a `<p>`; narrow-width DOM order | Verified | Reproduced | `Dashboard.tsx` title effect; `ClassesHome.tsx` `order-2 lg:order-none` | RF-142 |
 | Classes | Nothing surfaces "your next class" | Judgment (notes only) | Not withdrawn; the #438 claim was | — | RF-134 |
 | Classes | `[QA]` fixtures dominate the list | Verified | Tracked | `ritmofit_dev_plan/prod-fixture-hygiene.md` (SPC-21); owner cleanup, not code | none |
@@ -141,7 +141,7 @@ All six are held in RF-131. Briefs:
 | RF-136 | Preflight groups failures, names the provider, puts the fix beside them | P1 | Web |
 | RF-137 | Music reopens on the last provider and view | P1 | Web |
 | RF-138 | Music page track preview, select and add | P1 | Web |
-| RF-139 | Sign-in and sign-up have their own URLs | P1 | Web |
+| RF-139 | Sign-in and sign-up have their own URLs (cancelled 2026-10-29: folded into RF-129) | P1 | Web |
 | RF-140 | Account Security controls | P1 | Both (auth API) |
 | RF-141 | Plain words and D17 effort words on instructor surfaces | P2 | Web |
 | RF-142 | Repeated elements removed; small accessibility gaps fixed | P2 | Web |

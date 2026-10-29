@@ -20,6 +20,12 @@
       "ref": "ritmofit_dev_plan/device-provider-matrix.md",
       "summary": "Matrix created for D25 on 2026-10-28 with the first iPhone and Mac rows.",
       "checkedOn": "2026-10-28"
+    },
+    {
+      "kind": "document",
+      "ref": "ritmofit_dev_plan/device-provider-matrix.md",
+      "summary": "2026-10-29: iPhone Safari Apple Music Pass row added (network not recorded); Mac Safari now uses legacy FairPlay after RF-124 and is unverified.",
+      "checkedOn": "2026-10-29"
     }
   ],
   "resolution": null,
