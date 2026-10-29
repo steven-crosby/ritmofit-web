@@ -505,11 +505,21 @@ export class AppleMusicAdapter implements PlaybackAdapter {
         }
       });
 
-    await this.withTimeout(
-      queued,
-      this.host.prepareTimeoutMs ?? DEFAULT_PREPARE_TIMEOUT_MS,
-      `The Apple Music player timed out loading "${title}".`,
-    );
+    try {
+      await this.withTimeout(
+        queued,
+        this.host.prepareTimeoutMs ?? DEFAULT_PREPARE_TIMEOUT_MS,
+        `The Apple Music player timed out loading "${title}".`,
+      );
+    } catch (cause) {
+      // MusicKit's setQueue can hang without ever settling (iPhone Safari
+      // outside a user gesture, RF-123), so `finally` above may never run.
+      // Release this generation's lock here so Retry can queue again.
+      if (pendingQueueGenerations.get(instance) === generation) {
+        pendingQueueGenerations.delete(instance);
+      }
+      throw cause;
+    }
   }
 
   private async withTimeout<T>(work: Promise<T>, timeoutMs: number, message: string): Promise<T> {

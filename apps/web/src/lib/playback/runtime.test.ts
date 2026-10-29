@@ -328,7 +328,7 @@ describe('RuntimePlaybackCoordinator', () => {
     expect(created[1]!.calls).toEqual(['prepare:ct-1:15000-135000', 'seek:25000', 'play']);
   });
 
-  it('pauses provider audio and resumes with a fresh cue at the clock position', async () => {
+  it('pauses provider audio and resumes the same adapter in place at the clock position', async () => {
     const payload = makePayload([makeEntry({ classTrackId: 'ct-1', durationMs: 180_000 })]);
     const { coordinator, created } = makeHarness(payload, connections('soundcloud'));
     await coordinator.start(0);
@@ -336,8 +336,52 @@ describe('RuntimePlaybackCoordinator', () => {
     expect(created[0]!.calls).toEqual(['prepare:ct-1:0-180000', 'play', 'pause']);
     expect(coordinator.getStatus()).toEqual({ kind: 'paused' });
     await coordinator.resume(30_000);
+    // RF-124: no release or re-prepare, and play() is the first provider call.
+    expect(created).toHaveLength(1);
+    expect(created[0]!.calls).toEqual([
+      'prepare:ct-1:0-180000',
+      'play',
+      'pause',
+      'play',
+      'seek:30000',
+    ]);
+    expect(coordinator.getStatus()).toEqual({ kind: 'playing', index: 0, provider: 'soundcloud' });
+  });
+
+  it('resumes into a different track with a fresh prepare', async () => {
+    const payload = makePayload([
+      makeEntry({ classTrackId: 'ct-1', startOffsetMs: 0, durationMs: 60_000 }),
+      makeEntry({ classTrackId: 'ct-2', startOffsetMs: 60_000, durationMs: 60_000 }),
+    ]);
+    const { coordinator, created } = makeHarness(payload, connections('soundcloud'));
+    await coordinator.start(0);
+    await coordinator.pause();
+    await coordinator.resume(70_000);
+    expect(created[0]!.calls).toEqual(['prepare:ct-1:0-60000', 'play', 'pause', 'stop', 'destroy']);
+    expect(created[1]!.calls).toEqual(['prepare:ct-2:0-60000', 'seek:10000', 'play']);
+  });
+
+  it('falls back to a fresh prepare when the in-place play is refused', async () => {
+    const payload = makePayload([makeEntry({ classTrackId: 'ct-1', durationMs: 180_000 })]);
+    const { coordinator, created } = makeHarness(payload, connections('soundcloud'));
+    await coordinator.start(0);
+    await coordinator.pause();
+    created[0]!.play = () => Promise.reject(new Error('refused'));
+    await coordinator.resume(30_000);
+    expect(created).toHaveLength(2);
     expect(created[1]!.calls).toEqual(['prepare:ct-1:0-180000', 'seek:30000', 'play']);
     expect(coordinator.getStatus()).toEqual({ kind: 'playing', index: 0, provider: 'soundcloud' });
+  });
+
+  it('keeps adapter errors live after an in-place resume', async () => {
+    const payload = makePayload([makeEntry({ classTrackId: 'ct-1', durationMs: 180_000 })]);
+    const { coordinator, created, errors } = makeHarness(payload, connections('soundcloud'));
+    await coordinator.start(0);
+    await coordinator.pause();
+    await coordinator.resume(0);
+    created[0]!.events.onError?.({ message: 'widget died' });
+    expect(errors.map((error) => error.message)).toEqual(['widget died']);
+    expect(coordinator.getStatus().kind).toBe('error');
   });
 
   it('surfaces a prepare failure as a recoverable error and destroys the adapter', async () => {
@@ -1189,8 +1233,31 @@ describe('music-led runtime authority', () => {
     await vi.advanceTimersByTimeAsync(5_000);
     expect(run.positions).toEqual([5_000]);
     await run.coordinator.resume(5_000);
-    expect(run.created[1]!.calls).toContain('seek:5000');
+    // Held position: the paused item continues in place, with no seek (RF-124).
+    expect(run.created).toHaveLength(1);
+    expect(run.created[0]!.calls.slice(-2)).toEqual(['pause', 'play']);
     expect(run.coordinator.getStatus().kind).toBe('buffering');
+    run.report({ positionMs: 6_000, state: 'playing' });
+    await vi.advanceTimersByTimeAsync(250);
+    expect(run.positions).toEqual([5_000, 6_000]);
+  });
+
+  it('seeks the paused item in place when the clock was scrubbed while paused', async () => {
+    const run = musicRun();
+    await run.coordinator.start();
+    run.report({ positionMs: 5_000, state: 'playing' });
+    await vi.advanceTimersByTimeAsync(250);
+    await run.coordinator.pause();
+    await run.coordinator.resume(40_000);
+    expect(run.created).toHaveLength(1);
+    expect(run.created[0]!.calls.slice(-3)).toEqual(['pause', 'play', 'seek:40000']);
+    // A position behind the seek target is not progress.
+    run.report({ positionMs: 30_000, state: 'playing' });
+    await vi.advanceTimersByTimeAsync(250);
+    expect(run.positions).toEqual([5_000]);
+    run.report({ positionMs: 41_000, state: 'playing' });
+    await vi.advanceTimersByTimeAsync(250);
+    expect(run.positions).toEqual([5_000, 41_000]);
   });
   it('bounds preparation and destroys an adapter whose prepare never settles', async () => {
     let adapter!: FakeAdapter;

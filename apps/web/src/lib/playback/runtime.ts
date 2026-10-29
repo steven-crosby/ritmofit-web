@@ -104,6 +104,13 @@ const DEFAULT_LIVENESS_INTERVAL_MS = 2_500;
  */
 const ENDPOINT_TOLERANCE_MS = 1_000;
 
+/**
+ * How far the held clock may sit from the provider's last confirmed position
+ * and still resume without a provider seek. Pause holds both together, so only
+ * a scrub while paused moves them apart.
+ */
+const RESUME_SEEK_TOLERANCE_MS = 1_000;
+
 export interface RuntimeCoordinatorOptions extends SelectionOptions {
   adapters: AdapterRegistry;
   onStatus?: (status: CoordinatorStatus) => void;
@@ -128,6 +135,8 @@ interface ActiveJob {
   index: number;
   provider: Provider;
   entry: RunPayloadTrackEntry;
+  /** The epoch whose adapter events count; resume-in-place re-arms it. */
+  epoch: number;
 }
 
 /**
@@ -240,12 +249,64 @@ export class RuntimePlaybackCoordinator {
   }
 
   /**
-   * Resume at the host clock's current position (a user gesture). Also the
-   * retry path from the error state: it re-resolves the segment from scratch.
+   * Resume at the host clock's current position (a user gesture). From a
+   * pause on the same track this continues the paused provider item in place;
+   * otherwise (and as the retry path from the error state) it re-resolves the
+   * segment from scratch.
    */
   async resume(elapsedMs: number): Promise<void> {
     this.running = true;
-    await this.enter(elapsedMs, ++this.epoch);
+    const epoch = ++this.epoch;
+    const job = this.active;
+    if (job && this.status.kind === 'paused') {
+      const segment = segmentAt(this.payload, elapsedMs);
+      if (segment.kind === 'track' && segment.index === job.index) {
+        if (await this.resumeInPlace(job, elapsedMs, epoch)) return;
+        if (epoch !== this.epoch) return;
+      }
+    }
+    await this.enter(elapsedMs, epoch);
+  }
+
+  /**
+   * Continue the paused job without releasing or re-preparing it (RF-124).
+   * iPhone Safari only lets MusicKit start audio inside the user's tap, and a
+   * re-prepare awaits a fresh queue load before play(), so the tap has expired
+   * by then. play() is the first awaited call here so it still runs inside the
+   * tap. Resolves false when the provider refused, so resume() falls back to
+   * a fresh enter.
+   */
+  private async resumeInPlace(job: ActiveJob, elapsedMs: number, epoch: number): Promise<boolean> {
+    job.epoch = epoch;
+    this.transitionEpoch = epoch;
+    try {
+      const providerMs = providerMsAt(job.entry, elapsedMs);
+      // Music-led runs know the provider's confirmed position. The legacy
+      // host-clocked contract does not, so it always re-seeks to the clock.
+      const reposition =
+        !this.options.onPosition ||
+        Math.abs(providerMs - this.providerPosition) > RESUME_SEEK_TOLERANCE_MS;
+      await this.bounded(job.adapter.play(), 20_000);
+      if (epoch !== this.epoch || this.active !== job) return true;
+      if (reposition) {
+        await this.bounded(job.adapter.seek(providerMs), 20_000);
+        if (epoch !== this.epoch || this.active !== job) return true;
+      }
+      if (this.options.onPosition) {
+        if (reposition) this.providerPosition = providerMs;
+        this.progressAt = Date.now();
+        this.finishedJob = null;
+        this.setStatus({ kind: 'buffering', index: job.index, provider: job.provider });
+        this.transportTimer = setInterval(() => void this.sampleTransport(), 250);
+      } else {
+        this.setStatus({ kind: 'playing', index: job.index, provider: job.provider });
+      }
+      return true;
+    } catch {
+      return false;
+    } finally {
+      if (this.transitionEpoch === epoch) this.transitionEpoch = null;
+    }
   }
 
   /**
@@ -364,13 +425,15 @@ export class RuntimePlaybackCoordinator {
       // FINISH requires fresh endpoint evidence; a short stream is a mismatch.
       onFinish: () => {
         const job = this.active;
-        if (!this.options.onPosition || epoch !== this.epoch || job?.adapter !== adapter) return;
+        if (!this.options.onPosition || job?.adapter !== adapter || job.epoch !== this.epoch)
+          return;
         this.finishedJob = job;
         void this.sampleTransport();
       },
       onTransportState: (state) => {
         const job = this.active;
-        if (!this.options.onPosition || epoch !== this.epoch || job?.adapter !== adapter) return;
+        if (!this.options.onPosition || job?.adapter !== adapter || job.epoch !== this.epoch)
+          return;
         if (state !== 'playing' && state !== 'ended') {
           this.transportRevision++;
           this.setStatus({ kind: 'buffering', index, provider: selection.provider });
@@ -387,7 +450,8 @@ export class RuntimePlaybackCoordinator {
       },
       onError: ({ message }) => {
         // Ignore a dead adapter's late errors (already superseded).
-        if (epoch !== this.epoch || !this.running || this.active?.adapter !== adapter) return;
+        const job = this.active;
+        if (!this.running || job?.adapter !== adapter || job.epoch !== this.epoch) return;
         this.fail({
           phase: 'adapter',
           provider: selection.provider,
@@ -429,7 +493,7 @@ export class RuntimePlaybackCoordinator {
       if (this.transitioningAdapter !== adapter) return;
       this.transitioningAdapter = null;
       this.transitionAbort = null;
-      this.active = { adapter, index, provider: selection.provider, entry };
+      this.active = { adapter, index, provider: selection.provider, entry, epoch };
       if (this.options.onPosition) {
         this.providerPosition = providerMs;
         this.progressAt = Date.now();
