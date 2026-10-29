@@ -8,14 +8,15 @@
   "parent": null,
   "dependsOn": [
     "RF-107",
-    "RF-122"
+    "RF-122",
+    "RF-124"
   ],
   "acceptance": [
     "On the identified production bundle, Steven hears Apple Music in iPhone Safari Live, then verifies pause, resume, seek, and track advance.",
     "Record device/browser, bundle and Worker, audible outcome, and any exact failure. UI or SDK success alone does not pass."
   ],
-  "nextAction": "RF-122 is deployed (Worker b41b99f9-8b93-4947-915c-ca18bd42d2d2, 2026-10-28). Retry Break Stuff once in iPhone Safari Live with Web Inspector attached: first clear the service worker and caches (or reload), authorize on a network where Apple Music works (RF-125 covers the home Wi-Fi stall), tap Start class, and record the audible outcome, then pause, resume, seek and track advance. If setQueue hangs or the banner says 'still finishing a previous queue request', record it for RF-124/RF-123 and reload before any second try. Do not implement or deploy from this task.",
-  "blocker": "Waiting on the owner's iPhone retry on the RF-122 deploy; authorization on home Wi-Fi currently stalls (RF-125).",
+  "nextAction": "After RF-124 is deployed, repeat in iPhone Safari Live on 5G: Start, Pause, Resume, Next, seek and auto-advance, recording the audible outcome of each and the Start delay (RF-128). Do not implement or deploy from this task.",
+  "blocker": "Audible on iPhone 5G after RF-122, but Resume and Next fail (RF-124).",
   "evidence": [
     {
       "kind": "source",
@@ -40,6 +41,12 @@
       "ref": "ritmofit_dev_plan/tasks/RF-122.json",
       "summary": "2026-10-28 owner retry on Worker d092af3c-114f-416f-bbe5-cb112cb52306 / assets/index-BTdVQWvK.js (RF-107 deployed): banner 'Apple Music playback failed for \"Break Stuff\". modern-access: ok.', no audio, clock 0:00. FairPlay access is available; Web Inspector showed the CSP media-src refusal of aod-ssl.itunes.apple.com (RF-122). Console: 'Refused to load https://aod-ssl.itunes.apple.com/.../mzaf_A1440754477...m3u8 because it does not appear in the media-src directive of the Content Security Policy', then MusicKit mediaPlaybackError MEDIA_PLAYBACK 'Playback Error'. setQueue for song 1440754477 timed out (20 s, twice) without an emulated user gesture and resolved in 313 ms with one.",
       "checkedOn": "2026-10-28"
+    },
+    {
+      "kind": "observation",
+      "ref": "ritmofit_dev_plan/tasks/RF-29.json",
+      "checkedOn": "2026-10-28",
+      "summary": "Owner iPhone Safari, 5G, Worker b41b99f9 (RF-122 live), screen recording 23:06: Start class played Break Stuff after about 5 s. Pause worked. Resume stuck on 'Waiting for music — Provider playback has not confirmed progress'. Next to Rollin' (Air Raid Vehicle) showed 'Playback stopped' with Playback error at class clock 2:47."
     }
   ],
   "resolution": null,
