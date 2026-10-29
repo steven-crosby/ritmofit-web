@@ -15,7 +15,7 @@
     "An open cue or move edit row whose row reloads underneath it (syncKey, or its own save) shows the reloaded clock while its field is untouched, instead of the stale one.",
     "Turning Snap to beat on is documented, and the choice is pinned by a test: an untouched anchor is not re-snapped on an unrelated save, because only a deliberate clock edit snaps."
   ],
-  "nextAction": "One web PR. Start with a fail-first test for the near-end validation case, then extract the shared helper and reduce the double reload. Keep RF-90's regression tests green. RF-119 covers the remaining inspector fields separately.",
+  "nextAction": "One web PR. Start with a fail-first test for the near-end validation case, then extract the shared helper and reduce the double reload. Keep RF-90's regression tests green. RF-119 covers the remaining inspector fields separately. iOS note from the retired Lane 2 handoff: if the iOS builder re-sends rounded clock values on unrelated edits, it has the same stored-time revert bug RF-90 fixed on web; check before iOS builder work.",
   "blocker": null,
   "evidence": [
     {

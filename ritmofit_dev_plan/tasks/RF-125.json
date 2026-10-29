@@ -1,0 +1,27 @@
+{
+  "schemaVersion": 1,
+  "id": "RF-125",
+  "title": "Apple Music authorization completes on any network where Apple Music works",
+  "kind": "investigation",
+  "status": "backlog",
+  "priority": "P1",
+  "parent": null,
+  "dependsOn": [],
+  "acceptance": [
+    "On a network where the Apple Music app itself plays (D25), iPhone Safari's Apple Music authorization in Ritmo returns to Ritmo after Face ID and the preflight shows authorized.",
+    "Root cause recorded: which request or redirect stalls on the failing network (Web Inspector on the main page and on the Apple authorization page), or proof that a Ritmo header/flow causes it.",
+    "If authorization cannot complete, Ritmo stops waiting within a bounded time and tells the instructor what happened and what to try, instead of a stuck Apple screen."
+  ],
+  "nextAction": "Owner: retry authorization on cellular to confirm it completes there, then on home Wi-Fi with Web Inspector attached to the Apple authorization page (Develop menu lists it separately). Do not change product code from this task without approval; any fix is owner-gated (playback/auth surfaces).",
+  "blocker": null,
+  "evidence": [
+    {
+      "kind": "observation",
+      "ref": "ritmofit_dev_plan/device-provider-matrix.md",
+      "summary": "Owner, 2026-10-28, iPhone Safari on home Wi-Fi after the RF-122 deploy: the Apple authorization screen opens and Face ID succeeds, then the screen stays stuck; a refresh shows the Apple Music sign-in again. Earlier the same evening on cellular (5G) authorization completed every time. Not yet diagnosed; Ritmo sends no Cross-Origin-Opener-Policy header.",
+      "checkedOn": "2026-10-28"
+    }
+  ],
+  "resolution": null,
+  "followUps": []
+}

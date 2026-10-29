@@ -255,7 +255,7 @@ verified working on Worker `94126954-0e61-408e-b404-bb380c338141`. Existing Spot
   SoundCloud "session expired — reconnect" chip / unplayable-verdict copy in `TrackPreview.tsx`).
 - CSP/`Permissions-Policy` in `apps/web/public/_headers`: `script-src` + `frame-src` += `sdk.scdn.co`;
   `connect-src` += `api.spotify.com` / `*.spotify.com` (and likely `wss://*.spotify.com`); `media-src
-  'self' blob:` already present; the SDK's cross-origin DRM (Widevine) iframe needs `encrypted-media`, so
+  'self' blob: https://*.itunes.apple.com` already present (the host was added for iPhone Safari's native HLS by RF-122, 2026-10-28); the SDK's cross-origin DRM (Widevine) iframe needs `encrypted-media`, so
   expect a `Permissions-Policy: encrypted-media=(self "https://sdk.scdn.co")` addition. **Tune this with
   the same empirical live pass used for Apple Music** (drive a real browser, watch `securitypolicyviolation`
   + SDK error events, add hosts until it plays).

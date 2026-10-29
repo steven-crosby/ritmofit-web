@@ -593,6 +593,29 @@ implementation/release approvals remain in effect.
 
 ---
 
+## D25 — If a device can run the provider's app, Ritmo works there **[Resolved 2026-10-28]**
+
+<!-- note (Claude Code, 2026-10-28): Records Steven's product decision from the 2026-10-28 session. -->
+
+**Decision (owner's words):** "if the user has an Android, Windows, Mac, or Apple device, and they can
+run Apple or Spotify apps no problem, then Ritmofit should work."
+
+**Meaning:** the bar is the provider's own app on the same device and the same network. A network,
+browser or device where the Apple Music or Spotify app works is in scope for Ritmo; "the network
+blocks the provider" is not an acceptable explanation when the provider's own app plays there.
+Where a provider cannot serve a platform through an official web SDK, Ritmo uses another official
+path (for example controlling the provider's app) rather than declaring the platform unsupported.
+
+**Evidence:** the [device, provider and network matrix](./device-provider-matrix.md) is the checklist
+([RF-126](./tasks/RF-126.json)). A cell passes only on an audible, owner-witnessed result per the music
+constraints; UI or SDK success alone does not pass.
+
+**Refines:** D21/D24. Music constraints, official-SDK-only playback and separate implementation,
+release and deploy approvals stay in effect. This is product canon, not a claim that current code
+meets it.
+
+---
+
 ## Deferred from M1
 
 - **Segments / class sections.** *(Deferred from M1; **shipped later**.)* In M1 segments were a design
