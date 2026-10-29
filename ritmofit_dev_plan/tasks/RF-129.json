@@ -1,0 +1,25 @@
+{
+  "schemaVersion": 1,
+  "id": "RF-129",
+  "title": "A browser refresh returns to the screen the instructor was on",
+  "kind": "task",
+  "status": "backlog",
+  "priority": "P2",
+  "parent": null,
+  "dependsOn": [],
+  "acceptance": [
+    "Refreshing Safari on a class's detail screen or in Live returns to that class (and, in Live, to the class with the held position or a clear resume prompt), not the Classes home."
+  ],
+  "nextAction": "Plan: the app has no router (App.tsx switches on pathname; Dashboard keeps navigation in component state). Decide between URL paths/hash for class detail and Live, or restoring the last screen from session storage. Owner decision on approach first.",
+  "blocker": null,
+  "evidence": [
+    {
+      "kind": "observation",
+      "ref": "ritmofit_dev_plan/tasks/RF-29.json",
+      "checkedOn": "2026-10-29",
+      "summary": "Owner noticed during the 2026-10-29 iPhone probe."
+    }
+  ],
+  "resolution": null,
+  "followUps": []
+}

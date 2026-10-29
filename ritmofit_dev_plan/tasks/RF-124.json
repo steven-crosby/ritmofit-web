@@ -1,22 +1,20 @@
 {
   "schemaVersion": 1,
   "id": "RF-124",
-  "title": "Apple Music Resume and Next play on iPhone Safari",
+  "title": "Apple Music plays every song of a class on iPhone Safari",
   "kind": "task",
-  "status": "ready",
+  "status": "review",
   "priority": "P1",
   "parent": null,
   "dependsOn": [
     "RF-122"
   ],
   "acceptance": [
-    "On iPhone Safari Live with Apple Music, Resume after Pause and Next both play audibly within 1 s of the tap, and auto-advance plays the next song with no tap.",
-    "Resume on the same song does not reload the queue (no release, prepare or setQueue); it continues the paused MusicKit item.",
-    "Track changes that need a new song keep MusicKit inside the user's tap or inside an already-playing session, chosen from an on-device probe recorded in evidence before code.",
-    "Unit tests cover resume-in-place, a seek while paused, and track change; desktop Chrome Apple Music and SoundCloud/Spotify transport do not regress.",
-    "Owner hears Start, Pause, Resume, Next, seek and auto-advance on the deployed bundle; RF-29 records it."
+    "Ritmo no longer sets mk-safari-modern-eme on iOS Safari or legacy WebKit, and clears a stored \"1\" before MusicKit loads and before each queue/play, so MusicKit stays on its default FairPlay path.",
+    "Unit tests cover clearing a stored flag before the MusicKit script loads (WebKitMediaKeys and iOS Safari UA), never setting it, and leaving desktop Chrome storage alone.",
+    "Owner hears Start, Pause/Resume, Next and auto-advance in iPhone Safari Live on the deployed bundle with no console changes; RF-29 records it."
   ],
-  "nextAction": "Owner moved this to Ready on 2026-10-29. Planning: present the written plan (on-device probe first, then resume-in-place and track change, folding in RF-123) for owner confirmation before code. Owner-gated playback PR.",
+  "nextAction": "PR #657 is the fix (owner-gated playback code). After the owner approves and merges it, deploy with owner permission, then the owner runs one normal iPhone Safari class (Start, Pause/Resume, Next, let a song end) for RF-29; mark this Done from that result. Resume in place and the RF-123 lock fix stay on PR #656 as a follow-up.",
   "blocker": null,
   "evidence": [
     {
@@ -30,6 +28,18 @@
       "ref": "ritmofit_dev_plan/tasks/RF-29.json",
       "checkedOn": "2026-10-28",
       "summary": "Owner iPhone Safari, 5G, Worker b41b99f9 (RF-122 live), screen recording 23:06: Start class played Break Stuff after about 5 s. Pause worked. Resume stuck on 'Waiting for music — Provider playback has not confirmed progress'. Next to Rollin' (Air Raid Vehicle) showed 'Playback stopped' with Playback error at class clock 2:47."
+    },
+    {
+      "kind": "observation",
+      "ref": "ritmofit_dev_plan/device-provider-matrix.md",
+      "checkedOn": "2026-10-29",
+      "summary": "Owner iPhone Safari (iOS 27.0.1), Wi-Fi, bundle index-BTdVQWvK.js, Worker b41b99f9, Web Inspector probe 09:24-09:56. With mk-safari-modern-eme=1 (set by Ritmo): first song plays and un-pause works, but every later song load (setQueue, skipToNextItem, changeToMediaAtIndex, natural end of a 2-song queue, and a real tap on an injected button) resolved or aborted with MusicKit stopped and no item. With the flag removed and blocked before MusicKit loaded: Ritmo's own Start, Next (Rollin' played), Pause/Resume and auto-advance (track 2 start → advancing) all played on production code."
+    },
+    {
+      "kind": "pr",
+      "ref": "https://github.com/steven-crosby/ritmofit-web/pull/657",
+      "checkedOn": "2026-10-29",
+      "summary": "Clears the modern FairPlay flag instead of setting it (musickit.ts, apple-music-adapter.ts) with tests."
     }
   ],
   "resolution": null,

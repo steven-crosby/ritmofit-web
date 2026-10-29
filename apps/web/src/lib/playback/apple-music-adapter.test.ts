@@ -577,6 +577,8 @@ describe('Apple Music FairPlay probe', () => {
     const createSession = vi.fn();
     const createMediaKeys = vi.fn(async () => ({ createSession }));
     request.mockResolvedValue({ createMediaKeys });
+    // Left over from an earlier Ritmo build that set it on iOS.
+    localStorage.setItem(MUSICKIT_SAFARI_MODERN_EME_KEY, '1');
     try {
       const { adapter, instance, errors } = await prepared();
       await adapter.play();
@@ -589,8 +591,8 @@ describe('Apple Music FairPlay probe', () => {
       expect(request.mock.calls[0]?.[1]?.[0]?.videoCapabilities).toBeUndefined();
       expect(createMediaKeys).not.toHaveBeenCalled();
       expect(createSession).not.toHaveBeenCalled();
-      expect(localStorage.getItem(MUSICKIT_SAFARI_MODERN_EME_KEY)).toBe('1');
-      expect(info.mock.calls).toEqual([['[ritmo apple-music] mk-safari-modern-eme 1']]);
+      expect(localStorage.getItem(MUSICKIT_SAFARI_MODERN_EME_KEY)).toBeNull();
+      expect(info.mock.calls).toEqual([['[ritmo apple-music] mk-safari-modern-eme not-1']]);
       expect(JSON.stringify(info.mock.calls)).not.toContain('dev-token');
       expect(errors).toEqual(['Apple Music playback failed for "Baiana". modern-access: ok.']);
     } finally {
@@ -647,8 +649,9 @@ describe('Apple Music FairPlay probe', () => {
     expect(request).toHaveBeenCalledWith('com.apple.fps', audioOnly);
     expect(createMediaKeys).not.toHaveBeenCalled();
     expect(createSession).not.toHaveBeenCalled();
-    expect(localStorage.getItem(MUSICKIT_SAFARI_MODERN_EME_KEY)).toBe('1');
-    expect(info.mock.calls).toEqual([['[ritmo apple-music] mk-safari-modern-eme 1']]);
+    // RF-124: the stored flag is cleared, so MusicKit stays on legacy FairPlay.
+    expect(localStorage.getItem(MUSICKIT_SAFARI_MODERN_EME_KEY)).toBeNull();
+    expect(info.mock.calls).toEqual([['[ritmo apple-music] mk-safari-modern-eme not-1']]);
     expect(JSON.stringify(info.mock.calls)).not.toContain('SECRETVALUE');
     expect(JSON.stringify(info.mock.calls)).not.toContain('dev-token');
     expect(errors).toEqual(['Apple Music playback failed for "Baiana". modern-access: ok.']);

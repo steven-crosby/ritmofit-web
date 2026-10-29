@@ -12,7 +12,7 @@ owner's queue: any agent may execute a Ready task. Publishing follows AGENTS.md 
 Evidence marked **recorded** is a carried-forward claim, not fresh verification.
 A checked PR proves its GitHub state, not product acceptance or production behavior.
 
-126 tasks. backlog: 29 · ready: 2 · in_progress: 0 · blocked: 2 · review: 7 · done: 86 · cancelled: 0.
+128 tasks. backlog: 31 · ready: 1 · in_progress: 0 · blocked: 2 · review: 8 · done: 86 · cancelled: 0.
 
 ## In progress
 
@@ -24,7 +24,7 @@ A checked PR proves its GitHub state, not product acceptance or production behav
 
 | Task | Priority / kind | Relationships | Next action / resolution | Evidence |
 | --- | --- | --- | --- | --- |
-| [RF-29](tasks/RF-29.json) iPhone Apple Music plays sound in Safari | P1 / verification | needs RF-107, RF-122, RF-124 | Audible on iPhone 5G after RF-122, but Resume and Next fail (RF-124). Next: After RF-124 is deployed, repeat in iPhone Safari Live on 5G: Start, Pause, Resume, Next, seek and auto-advance, recording the audible outcome of each and the Start delay (RF-128). Do not implement or deploy from this task. | recorded; checked 2026-10-28 |
+| [RF-29](tasks/RF-29.json) iPhone Apple Music plays sound in Safari | P1 / verification | needs RF-107, RF-122, RF-124 | Waiting on the RF-124 deploy (PR #657): on production, iPhone plays only the first song. Next: After RF-124 is deployed, run one normal class in iPhone Safari Live on 5G and on Wi-Fi with Web Inspector attached: first reload once (the new bundle clears the stored FairPlay flag) and note the bundle hash, then record the audible outcome of Start (and its delay, RF-128), Pause/Resume, Next, a seek and auto-advance. If anything hangs or shows a banner, capture the console and the exact banner text. Do not implement or deploy from this task. | recorded; checked 2026-10-28; checked 2026-10-29 |
 | [RF-80](tasks/RF-80.json) Define device playback verification before Start | untriaged / plan | — | Full plan and root-cause document exist only in the prior tool project store; contents are not available in git. Next: Recover the original plan and root-cause document into the repo, then request owner review. This task does not authorize preflight implementation. | recorded |
 
 ## For review
@@ -33,6 +33,7 @@ A checked PR proves its GitHub state, not product acceptance or production behav
 | --- | --- | --- | --- | --- |
 | [RF-91](tasks/RF-91.json) Triage D1 parameter-limit finding D-1 | P1 / plan | — | Review packet 2 and seek approval; do not query production or modify data. | recorded |
 | [RF-93](tasks/RF-93.json) Triage latent migration rebuild finding A-7 | P1 / plan | — | Review packet 4 and seek approval for a local guard. No historical or production data-loss claim. | recorded |
+| [RF-124](tasks/RF-124.json) Apple Music plays every song of a class on iPhone Safari | P1 / task | needs RF-122 | PR #657 is the fix (owner-gated playback code). After the owner approves and merges it, deploy with owner permission, then the owner runs one normal iPhone Safari class (Start, Pause/Resume, Next, let a song end) for RF-29; mark this Done from that result. Resume in place and the RF-123 lock fix stay on PR #656 as a follow-up. | checked 2026-10-28; checked 2026-10-29 |
 | [RF-94](tasks/RF-94.json) Disposition the remaining engineering audit findings | P2 / plan | follow-ups RF-115, RF-116 | Review the remaining ranked findings with Steven before scheduling implementation. | recorded |
 | [RF-96](tasks/RF-96.json) Disposition legacy planning and handoff obligations | P2 / plan | — | Triage legacy planning and handoffs without treating their old approval or merge instructions as current authority. | recorded |
 | [RF-16](tasks/RF-16.json) Editorial Spotify playlist 404 still shares the outage envelope | untriaged / investigation | — | Reconfirm the 404/error mapping against current code. Spotify reopened by the owner on 2026-10-28; any provider change needs its own approved task. Resume risk: the Spotify developer app rejects the connected account ("The user is not registered for this application"), so Web API calls return 403. | recorded; checked 2026-10-28 |
@@ -43,7 +44,6 @@ A checked PR proves its GitHub state, not product acceptance or production behav
 
 | Task | Priority / kind | Relationships | Next action / resolution | Evidence |
 | --- | --- | --- | --- | --- |
-| [RF-124](tasks/RF-124.json) Apple Music Resume and Next play on iPhone Safari | P1 / task | needs RF-122 | Owner moved this to Ready on 2026-10-29. Planning: present the written plan (on-device probe first, then resume-in-place and track change, folding in RF-123) for owner confirmation before code. Owner-gated playback PR. | checked 2026-10-28 |
 | [RF-100](tasks/RF-100.json) Label changes rerun only the PR gates, not the full CI job | P3 / task | needs RF-98 | Owner set Ready on 2026-10-28. Design a gate-only path for labeled/unlabeled events (separate job or workflow) that keeps the required check name meaningful, so a label edit re-evaluates only the owner gate. Also key the concurrency group per PR (for example ci-${{ github.event.pull_request.number &#124;&#124; github.ref }}) so a label edit on a merged PR cannot cancel main's push run (acceptance 3). Until fixed, agents remove ready-to-merge before merging, never after. Owner-gated: the change edits .github/workflows/ci.yml. | checked 2026-10-27; checked 2026-10-28 |
 
 ## Backlog
@@ -59,6 +59,7 @@ A checked PR proves its GitHub state, not product acceptance or production behav
 | [RF-116](tasks/RF-116.json) A password reset signs out old sessions, and Disconnect drops provider logins | P2 / task | — | Await owner Ready. Split out of RF-94 at intake. Owner-gated paths: the PR needs owner-approved. | recorded |
 | [RF-123](tasks/RF-123.json) Apple Music retry is not blocked by a timed-out queue request | P2 / task | — | Folded into the RF-124 plan (same file, same failure path). Owner-gated (playback code). | checked 2026-10-28 |
 | [RF-128](tasks/RF-128.json) Apple Music Start class sounds within 1 s on iPhone Safari | P2 / task | needs RF-124 | Measure where the 5 s goes during the RF-124 on-device probe (MusicKit load, config fetch, setQueue, play), then plan with RF-124. Owner-gated (playback code). | checked 2026-10-28 |
+| [RF-129](tasks/RF-129.json) A browser refresh returns to the screen the instructor was on | P2 / task | — | Plan: the app has no router (App.tsx switches on pathname; Dashboard keeps navigation in component state). Decide between URL paths/hash for class detail and Live, or restoring the last screen from session storage. Owner decision on approach first. | checked 2026-10-29 |
 | [RF-101](tasks/RF-101.json) Owner-gate route authz call sites and CI-config files | P3 / task | needs RF-98 | Owner decides whether to gate route and CI-config files, given every merge already needs per-PR permission. | checked 2026-10-27; recorded |
 | [RF-102](tasks/RF-102.json) Owner approval binds only to a commit the owner actually saw | P3 / task | needs RF-98 | Owner decides whether to harden further (for example, bind to the reviewed SHA named in the approval) given per-PR merge permission is the backstop. | checked 2026-10-27 |
 | [RF-103](tasks/RF-103.json) Task claims stay visible from claim to merge | P3 / task | needs RF-98 | Design a claim signal that survives the draft-to-ready transition (for example, any open PR whose head changes the task record) and update start-session and delegate-task. | checked 2026-10-27 |
@@ -77,6 +78,7 @@ A checked PR proves its GitHub state, not product acceptance or production behav
 | [RF-120](tasks/RF-120.json) Builder time fields: one untouched-field rule and cheaper choreography sync | P3 / task | — | One web PR. Start with a fail-first test for the near-end validation case, then extract the shared helper and reduce the double reload. Keep RF-90's regression tests green. RF-119 covers the remaining inspector fields separately. iOS note from the retired Lane 2 handoff: if the iOS builder re-sends rounded clock values on unrelated edits, it has the same stored-time revert bug RF-90 fixed on web; check before iOS builder work. | checked 2026-10-28 |
 | [RF-121](tasks/RF-121.json) Apple Music held-error and probe state are hardened after RF-107 | P3 / task | — | Do with or just before RF-108, which reworks apple-music-adapter.ts. Owner-gated (playback code). | checked 2026-10-28 |
 | [RF-127](tasks/RF-127.json) Playback CSP docs describe iOS native HLS under media-src | P3 / documentation | — | One-line comment fix in _headers; owner-gated path (security headers), so batch it with the next _headers change. The planning doc was fixed in the follow-up docs PR. | checked 2026-10-28 |
+| [RF-130](tasks/RF-130.json) Live shows the next song, not only the next cue, in Cue-by-Cue | P3 / task | — | Design copy for the Next row with the ux-copy guidance; small web change in Live Mode. | checked 2026-10-29 |
 | [RF-73](tasks/RF-73.json) Classes buttons fail WCAG 2.5.3 label in name | untriaged / task | — | Reproduce affected controls, propose the smallest label-in-name correction, then seek implementation approval. | recorded |
 | [RF-74](tasks/RF-74.json) Spotify playlist dialog offers Try again where retry cannot help | untriaged / task | — | Review the error/action mapping. Spotify reopened by the owner on 2026-10-28; Apple work comes first until about 2026-11-27. Resume risk: the Spotify developer app rejects the connected account ("The user is not registered for this application"), so Web API calls return 403. | recorded; checked 2026-10-28 |
 

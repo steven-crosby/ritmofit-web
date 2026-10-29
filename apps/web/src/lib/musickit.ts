@@ -23,7 +23,7 @@ const MUSICKIT_SRC = 'https://js-cdn.music.apple.com/musickit/v3/musickit.js';
  */
 export const MUSICKIT_SAFARI_MODERN_EME_KEY = 'mk-safari-modern-eme';
 
-type FairPlayStorage = { setItem(key: string, value: string): void };
+type FairPlayStorage = { removeItem(key: string): void };
 
 function navigatorUserAgent(): string {
   try {
@@ -59,16 +59,19 @@ export function isIosSafari(
 }
 
 /**
- * MusicKit takes the legacy FairPlay path unless `mk-safari-modern-eme` is `"1"`.
- * iOS 27 Safari can do that without exposing `WebKitMediaKeys`: `play()` is
- * accepted, then the hidden `<audio id="apple-music-player">` errors.
- * `configureMusicKit` passes `suppressErrorDialog` so MusicKit does not also
- * open its in-page OK box. Desktop Chrome has no `WebKitMediaKeys` and uses
- * Widevine, so this flag stays unset there. The flag selects
- * `requestMediaKeySystemAccess('com.apple.fps')`. If that access fails,
- * MusicKit falls back to the legacy session on its own.
+ * Keep MusicKit on its default (legacy) FairPlay path by clearing
+ * `mk-safari-modern-eme`. With that flag at `"1"`, iPhone Safari (iOS 27.0.1)
+ * plays the first song of a page and then fails every later song load: Next,
+ * Resume (which re-queues) and auto-advance all left MusicKit stopped with no
+ * item. With the flag cleared, Start, Pause/Resume, Next and auto-advance all
+ * played on the owner's iPhone on 2026-10-29 (RF-124). The earlier iPhone
+ * silence this flag was added for was the page CSP `media-src` (RF-122).
+ * Ritmo set the flag on iOS until RF-124, so browsers can still hold `"1"`;
+ * this removes it before MusicKit loads and before each queue/play. Desktop
+ * Chrome has no `WebKitMediaKeys` and uses Widevine, so storage is left alone
+ * there.
  */
-export function selectSafariModernFairPlay(
+export function clearSafariModernFairPlay(
   webKitMediaKeys: unknown = typeof window === 'undefined'
     ? undefined
     : (window as Window & { WebKitMediaKeys?: unknown }).WebKitMediaKeys,
@@ -82,9 +85,9 @@ export function selectSafariModernFairPlay(
   try {
     const target = storage === undefined ? localStorage : storage;
     if (!target) return;
-    target.setItem(MUSICKIT_SAFARI_MODERN_EME_KEY, '1');
+    target.removeItem(MUSICKIT_SAFARI_MODERN_EME_KEY);
   } catch {
-    // A blocked getter or a rejected write stays on legacy FairPlay.
+    // A blocked getter or a rejected write leaves storage as it was.
   }
 }
 
@@ -391,7 +394,7 @@ let loadPromise: Promise<MusicKitGlobal> | null = null;
 export function loadMusicKit(): Promise<MusicKitGlobal> {
   // Before the script, and before a page that already has the singleton: the
   // key session is created on the first play, and it reads this flag then.
-  selectSafariModernFairPlay();
+  clearSafariModernFairPlay();
   if (window.MusicKit) return Promise.resolve(window.MusicKit);
   if (loadPromise) return loadPromise;
 
@@ -430,7 +433,7 @@ export async function configureMusicKit(
   music: MusicKitGlobal,
   config: AppleMusicClientConfig,
 ): Promise<MusicKitInstance> {
-  selectSafariModernFairPlay();
+  clearSafariModernFairPlay();
   if (!configuration) {
     const existing = music.getInstance();
     if (existing) return existing;

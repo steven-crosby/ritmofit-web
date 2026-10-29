@@ -16,6 +16,7 @@ Network column: name the kind of network (cellular, home Wi-Fi, other Wi-Fi), ne
 | Device / OS | Browser | Provider | Network | Authorize | Audible Live | Transport | Checked | Evidence |
 | --- | --- | --- | --- | --- | --- | --- | --- | --- |
 | iPhone, iOS 27.0.1 | Safari | Apple Music | Cellular (5G) | Pass | Pass on Worker `b41b99f9` after RF-122 fixed CSP `media-src`; Start took about 5 s ([RF-128](./tasks/RF-128.json)) | Fail: Resume stuck on Waiting for music; Next showed Playback stopped ([RF-124](./tasks/RF-124.json)) | 2026-10-28 | [RF-29](./tasks/RF-29.json), [RF-122](./tasks/RF-122.json) |
+| iPhone, iOS 27.0.1 | Safari | Apple Music | Wi-Fi (probe, flag cleared by hand) | Pass | Audible on Worker `b41b99f9` with `mk-safari-modern-eme` removed in the console | Pass: Next, Pause/Resume and auto-advance; with the flag on, every song after the first failed | 2026-10-29 | [RF-124](./tasks/RF-124.json), [RF-29](./tasks/RF-29.json) |
 | iPhone, iOS 27.0.1 | Safari | Apple Music | Home Wi-Fi | Fail: stalls after Face ID | Not reached | Not reached | 2026-10-28 | [RF-125](./tasks/RF-125.json) |
 | iPhone | Safari | Spotify | Any | Not checked | Not checked | Not checked | — | Spotify's Web Playback SDK targets desktop browsers; a phone path may need Spotify Connect (to verify) |
 | iPad | Safari | Apple Music | Any | Not checked | Not checked | Not checked | — | — |

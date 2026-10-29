@@ -3,7 +3,7 @@ import { afterEach, describe, expect, it, vi } from 'vitest';
 import {
   MUSICKIT_SAFARI_MODERN_EME_KEY,
   isIosSafari,
-  selectSafariModernFairPlay,
+  clearSafariModernFairPlay,
   type MusicKitGlobal,
 } from './musickit.js';
 
@@ -116,18 +116,18 @@ describe('iOS Safari detection', () => {
 });
 
 describe('Safari modern FairPlay', () => {
-  it('writes the enabled value for legacy WebKitMediaKeys and for iOS Safari', () => {
-    const storage = { setItem: vi.fn() };
-    selectSafariModernFairPlay(undefined, storage, false);
-    expect(storage.setItem).not.toHaveBeenCalled();
+  it('clears the flag for legacy WebKitMediaKeys and for iOS Safari (RF-124)', () => {
+    const storage = { removeItem: vi.fn() };
+    clearSafariModernFairPlay(undefined, storage, false);
+    expect(storage.removeItem).not.toHaveBeenCalled();
 
-    selectSafariModernFairPlay({ isTypeSupported: () => true }, storage, false);
-    expect(storage.setItem).toHaveBeenCalledTimes(1);
-    expect(storage.setItem).toHaveBeenCalledWith(MUSICKIT_SAFARI_MODERN_EME_KEY, '1');
+    clearSafariModernFairPlay({ isTypeSupported: () => true }, storage, false);
+    expect(storage.removeItem).toHaveBeenCalledTimes(1);
+    expect(storage.removeItem).toHaveBeenCalledWith(MUSICKIT_SAFARI_MODERN_EME_KEY);
 
-    const iosStorage = { setItem: vi.fn() };
-    selectSafariModernFairPlay(undefined, iosStorage, true);
-    expect(iosStorage.setItem).toHaveBeenCalledWith(MUSICKIT_SAFARI_MODERN_EME_KEY, '1');
+    const iosStorage = { removeItem: vi.fn() };
+    clearSafariModernFairPlay(undefined, iosStorage, true);
+    expect(iosStorage.removeItem).toHaveBeenCalledWith(MUSICKIT_SAFARI_MODERN_EME_KEY);
   });
 
   it('does not throw when reading localStorage throws', () => {
@@ -141,9 +141,9 @@ describe('Safari modern FairPlay', () => {
       },
     });
     try {
-      expect(() => selectSafariModernFairPlay(undefined)).not.toThrow();
+      expect(() => clearSafariModernFairPlay(undefined)).not.toThrow();
       expect(reads).toBe(0);
-      expect(() => selectSafariModernFairPlay({})).not.toThrow();
+      expect(() => clearSafariModernFairPlay({})).not.toThrow();
       expect(reads).toBe(1);
     } finally {
       if (original) Object.defineProperty(window, 'localStorage', original);
@@ -152,10 +152,10 @@ describe('Safari modern FairPlay', () => {
 
   it('ignores a storage write that Safari private mode rejects', () => {
     expect(() =>
-      selectSafariModernFairPlay(
+      clearSafariModernFairPlay(
         {},
         {
-          setItem() {
+          removeItem() {
             throw new Error('denied');
           },
         },
@@ -163,10 +163,11 @@ describe('Safari modern FairPlay', () => {
     ).not.toThrow();
   });
 
-  it('selects modern FairPlay before injecting the MusicKit script', async () => {
+  it('clears a stored modern FairPlay flag before injecting the MusicKit script', async () => {
     (window as Window & { WebKitMediaKeys?: object }).WebKitMediaKeys = {};
+    localStorage.setItem(MUSICKIT_SAFARI_MODERN_EME_KEY, '1');
     const append = vi.spyOn(document.head, 'appendChild').mockImplementation((node: Node) => {
-      expect(localStorage.getItem(MUSICKIT_SAFARI_MODERN_EME_KEY)).toBe('1');
+      expect(localStorage.getItem(MUSICKIT_SAFARI_MODERN_EME_KEY)).toBeNull();
       return HTMLElement.prototype.appendChild.call(document.head, node);
     });
     const { loadMusicKit } = await import('./musickit.js');
@@ -217,10 +218,11 @@ describe('Safari modern FairPlay', () => {
     });
   });
 
-  it('selects modern FairPlay on iOS Safari before the script loads, without WebKitMediaKeys', async () => {
+  it('clears the flag on iOS Safari before the script loads, without WebKitMediaKeys', async () => {
     const userAgent = vi.spyOn(navigator, 'userAgent', 'get').mockReturnValue(IOS_SAFARI_UA);
+    localStorage.setItem(MUSICKIT_SAFARI_MODERN_EME_KEY, '1');
     const append = vi.spyOn(document.head, 'appendChild').mockImplementation((node: Node) => {
-      expect(localStorage.getItem(MUSICKIT_SAFARI_MODERN_EME_KEY)).toBe('1');
+      expect(localStorage.getItem(MUSICKIT_SAFARI_MODERN_EME_KEY)).toBeNull();
       return HTMLElement.prototype.appendChild.call(document.head, node);
     });
     try {
@@ -237,15 +239,18 @@ describe('Safari modern FairPlay', () => {
     }
   });
 
-  it('does not set the FairPlay flag in a browser without WebKitMediaKeys', async () => {
+  it('never sets the FairPlay flag, and leaves desktop Chrome storage alone', async () => {
     const setItem = vi.spyOn(Storage.prototype, 'setItem');
+    const removeItem = vi.spyOn(Storage.prototype, 'removeItem');
     const { loadMusicKit } = await import('./musickit.js');
     const pending = loadMusicKit();
     expect(setItem).not.toHaveBeenCalledWith(MUSICKIT_SAFARI_MODERN_EME_KEY, '1');
+    expect(removeItem).not.toHaveBeenCalled();
     window.MusicKit = {} as MusicKitGlobal;
     document.dispatchEvent(new Event('musickitloaded'));
     await pending;
     setItem.mockRestore();
+    removeItem.mockRestore();
   });
 });
 

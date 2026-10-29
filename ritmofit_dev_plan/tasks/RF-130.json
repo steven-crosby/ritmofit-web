@@ -1,0 +1,25 @@
+{
+  "schemaVersion": 1,
+  "id": "RF-130",
+  "title": "Live shows the next song, not only the next cue, in Cue-by-Cue",
+  "kind": "task",
+  "status": "backlog",
+  "priority": "P3",
+  "parent": null,
+  "dependsOn": [],
+  "acceptance": [
+    "When the current song's last cue is next, Cue-by-Cue shows the next song's title (for example 'Next song: Rollin''), so 'End of track' is not the only hint."
+  ],
+  "nextAction": "Design copy for the Next row with the ux-copy guidance; small web change in Live Mode.",
+  "blocker": null,
+  "evidence": [
+    {
+      "kind": "observation",
+      "ref": "ritmofit_dev_plan/tasks/RF-29.json",
+      "checkedOn": "2026-10-29",
+      "summary": "Owner noticed during the 2026-10-29 iPhone probe."
+    }
+  ],
+  "resolution": null,
+  "followUps": []
+}
