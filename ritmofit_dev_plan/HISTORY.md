@@ -13,6 +13,17 @@ detail). Current focus and `main` vs production live in the "Now" block of
 
 ## Deploy and session log (newest first)
 
+> **Deploy 2026-10-29 — RF-124 on main `d81c0fc`.** `scripts/deploy.sh` from a clean detached
+> worktree at `origin/main` `d81c0fc` ([#657](https://github.com/steven-crosby/ritmofit-web/pull/657),
+> RF-124: stop forcing modern FairPlay so iPhone Safari plays every song, plus RF-129/RF-130 records).
+> Everything else after `04e695f` is docs. Remote D1: none to apply. New Worker
+> `2a302ce6-7665-47d2-8f79-68d6822450b1`; rollback `b41b99f9-8b93-4947-915c-ca18bd42d2d2` (`04e695f`).
+> SPA `assets/index-Cqjj6m_w.js` (was `assets/index-BTdVQWvK.js`); propagation 3/3 after 4 tries. `/`
+> and `/api/v1/health` 200, `/classes`, `/explore`, `/teams` 401, security headers present. Not done:
+> the five-minute tail watch (`wrangler tail` from this shell captured no events, not even three
+> deliberate health requests that returned 200, so a quiet tail proves nothing) and the authed smoke
+> (QA token still expired). The owner's iPhone run is RF-29.
+
 > **Session 2026-10-29 — UX audit intake and phased plan (docs only).** The owner's 2026-10-28
 > production UX audit was copied to `docs/audits/ux-audit-2026-10-28/`, verified against main `c9b89a7`
 > and filed as RF-131–RF-144. The owner approved a phased plan, now `DEVELOPMENT_PLAN.md` › Phases.

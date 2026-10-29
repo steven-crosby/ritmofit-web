@@ -16,15 +16,16 @@
 
 **Current actionable state:** [RF board](./tasks.md), backed by canonical [task records](./tasks/README.md).
 The order of work is [Phases](#phases) below; each phase lists RF records, not a second backlog.
-**Main vs production (observed 2026-10-28):** production is Worker `b41b99f9-8b93-4947-915c-ca18bd42d2d2`
-at main `04e695f`, SPA `assets/index-BTdVQWvK.js` (RF-107, RF-90, RF-122). Rollback is
-`d092af3c-114f-416f-bbe5-cb112cb52306`. Main has gained only docs since (`git diff 04e695f` touches no
-`apps`, `packages` or `e2e` file), so no deploy is owed. See [HISTORY](./HISTORY.md).
-**In flight:** [RF-124](./tasks/RF-124.json) (iPhone Apple Music plays every song; PR #657, owner-gated,
-then a deploy and the owner's iPhone run that also settles [RF-29](./tasks/RF-29.json)); resume in place
+**Main vs production (observed 2026-10-29):** production is Worker `2a302ce6-7665-47d2-8f79-68d6822450b1`
+at main `d81c0fc`, SPA `assets/index-Cqjj6m_w.js`; it adds RF-124 (#657) to RF-107, RF-90 and RF-122.
+Rollback is `b41b99f9-8b93-4947-915c-ca18bd42d2d2`. Docs records after `d81c0fc` do not change runtime.
+See [HISTORY](./HISTORY.md).
+**In flight:** [RF-124](./tasks/RF-124.json) (iPhone Apple Music plays every song; #657 merged and
+deployed 2026-10-29, waiting on the owner's iPhone run that also settles [RF-29](./tasks/RF-29.json)); resume in place
 (#656, to rebase after #657); the D25 provider matrix (#654); the 2026-10-28 owner UX audit intake
 ([RF-131–RF-144](./tasks.md), [verification](../docs/audits/ux-audit-2026-10-28/run-decisions.md)).
-**Next step:** land #657, deploy it, and run the iPhone check; in parallel the owner answers the six
+**Next step:** the owner's iPhone run on the new build (reload once, check the bundle is
+`index-Cqjj6m_w.js`); in parallel the owner answers the six
 audit questions in [RF-131](./tasks/RF-131.json), run rule first, which unblocks RF-133 and RF-134.
 **Window:** the Apple Music subscription ends around 2026-11-27, so anything that needs a live Apple
 account (Phase 1) goes first. Spotify is reopened (owner, 2026-10-28) but every Web API call returns

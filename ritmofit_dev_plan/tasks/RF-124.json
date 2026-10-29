@@ -14,7 +14,7 @@
     "Unit tests cover clearing a stored flag before the MusicKit script loads (WebKitMediaKeys and iOS Safari UA), never setting it, and leaving desktop Chrome storage alone.",
     "Owner hears Start, Pause/Resume, Next and auto-advance in iPhone Safari Live on the deployed bundle with no console changes; RF-29 records it."
   ],
-  "nextAction": "PR #657 is the fix (owner-gated playback code). After the owner approves and merges it, deploy with owner permission, then the owner runs one normal iPhone Safari class (Start, Pause/Resume, Next, let a song end) for RF-29; mark this Done from that result. Resume in place and the RF-123 lock fix stay on PR #656 as a follow-up.",
+  "nextAction": "Deployed 2026-10-29 (Worker 2a302ce6, SPA index-Cqjj6m_w.js). The owner runs one normal iPhone Safari class for RF-29 (Start, Pause/Resume, Next, let a song end, and confirm song 2 plays); mark this Done from that result. Also check desktop Safari, which now uses legacy FairPlay (RF-126). Resume in place and the RF-123 lock fix stay on PR #656.",
   "blocker": null,
   "evidence": [
     {
@@ -40,6 +40,12 @@
       "ref": "https://github.com/steven-crosby/ritmofit-web/pull/657",
       "checkedOn": "2026-10-29",
       "summary": "Clears the modern FairPlay flag instead of setting it (musickit.ts, apple-music-adapter.ts) with tests."
+    },
+    {
+      "kind": "observation",
+      "ref": "ritmofit_dev_plan/HISTORY.md",
+      "summary": "Deployed 2026-10-29: Worker 2a302ce6-7665-47d2-8f79-68d6822450b1 at main d81c0fc, SPA assets/index-Cqjj6m_w.js; rollback b41b99f9. Smoke and headers passed; tail watch and authed smoke not done.",
+      "checkedOn": "2026-10-29"
     }
   ],
   "resolution": null,

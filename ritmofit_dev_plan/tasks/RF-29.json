@@ -15,7 +15,7 @@
     "On the identified production bundle, Steven hears Apple Music in iPhone Safari Live, then verifies pause, resume, seek, and track advance.",
     "Record device/browser, bundle and Worker, audible outcome, and any exact failure. UI or SDK success alone does not pass."
   ],
-  "nextAction": "After RF-124 is deployed, run one normal class in iPhone Safari Live on 5G and on Wi-Fi with Web Inspector attached: first reload once (the new bundle clears the stored FairPlay flag) and note the bundle hash, then record the audible outcome of Start (and its delay, RF-128), Pause/Resume, Next, a seek and auto-advance. If anything hangs or shows a banner, capture the console and the exact banner text. Do not implement or deploy from this task.",
+  "nextAction": "RF-124 is deployed (2026-10-29, SPA index-Cqjj6m_w.js). Run one normal class in iPhone Safari Live on 5G and on Wi-Fi with Web Inspector attached: first reload once (the new bundle clears the stored FairPlay flag) and note the bundle hash, then record the audible outcome of Start (and its delay, RF-128), Pause/Resume, Next, a seek and auto-advance. If anything hangs or shows a banner, capture the console and the exact banner text. Do not implement or deploy from this task.",
   "blocker": "Waiting on the RF-124 deploy (PR #657): on production, iPhone plays only the first song.",
   "evidence": [
     {
@@ -53,6 +53,12 @@
       "ref": "ritmofit_dev_plan/device-provider-matrix.md",
       "checkedOn": "2026-10-29",
       "summary": "Owner iPhone Safari (iOS 27.0.1), Wi-Fi, bundle index-BTdVQWvK.js, Worker b41b99f9, Web Inspector probe 09:24-09:56. With mk-safari-modern-eme=1 (set by Ritmo): first song plays and un-pause works, but every later song load (setQueue, skipToNextItem, changeToMediaAtIndex, natural end of a 2-song queue, and a real tap on an injected button) resolved or aborted with MusicKit stopped and no item. With the flag removed and blocked before MusicKit loaded: Ritmo's own Start, Next (Rollin' played), Pause/Resume and auto-advance (track 2 start → advancing) all played on production code."
+    },
+    {
+      "kind": "observation",
+      "ref": "ritmofit_dev_plan/HISTORY.md",
+      "summary": "Deployed 2026-10-29: Worker 2a302ce6-7665-47d2-8f79-68d6822450b1 at main d81c0fc, SPA assets/index-Cqjj6m_w.js; rollback b41b99f9. Smoke and headers passed; tail watch and authed smoke not done.",
+      "checkedOn": "2026-10-29"
     }
   ],
   "resolution": null,
