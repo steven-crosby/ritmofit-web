@@ -1,16 +1,20 @@
 {
   "schemaVersion": 1,
   "id": "RF-129",
-  "title": "A browser refresh returns to the screen the instructor was on",
+  "title": "The app has real URLs: a refresh returns to the same screen, and sign-in and sign-up have their own paths",
   "kind": "task",
   "status": "backlog",
-  "priority": "P2",
+  "priority": "P1",
   "parent": null,
   "dependsOn": [],
   "acceptance": [
-    "Refreshing Safari on a class's detail screen or in Live returns to that class (and, in Live, to the class with the held position or a clear resume prompt), not the Classes home."
+    "Refreshing Safari on a class's detail screen or in Live returns to that class (and, in Live, to the class with the held position or a clear resume prompt), not the Classes home.",
+    "Sign-in and sign-up open at their own paths, so an invite email can link straight to sign-up.",
+    "Browser Back from sign-in returns to the landing page.",
+    "The service-worker navigation fallback still denies /api/ routes, and OAuth and reset-password callbacks still reach the Worker.",
+    "One routing approach covers both refresh-restore and the sign-in/sign-up paths, so the app does not get two routing mechanisms."
   ],
-  "nextAction": "Plan: the app has no router (App.tsx switches on pathname; Dashboard keeps navigation in component state). Decide between URL paths/hash for class detail and Live, or restoring the last screen from session storage. Owner decision on approach first.",
+  "nextAction": "Plan: the app has no router (App.tsx switches on pathname; Dashboard keeps navigation in component state). Decide between URL paths/hash for class detail and Live, or restoring the last screen from session storage. Owner decision on approach first. Absorbs RF-139 (sign-in/sign-up URLs, P1, from the 2026-10-28 UX audit): files App.tsx, Login.tsx, MarketingPage.tsx and the SW navigation config; Login is auth UI, so check scripts/owner-gate.mjs before the PR. Surface: web.",
   "blocker": null,
   "evidence": [
     {
@@ -18,6 +22,12 @@
       "ref": "ritmofit_dev_plan/tasks/RF-29.json",
       "checkedOn": "2026-10-29",
       "summary": "Owner noticed during the 2026-10-29 iPhone probe."
+    },
+    {
+      "kind": "observation",
+      "ref": "https://github.com/steven-crosby/ritmofit-web/pull/658#issuecomment-6507540146",
+      "summary": "RF-139 folded in as planned once #657 put RF-129 on main (owner-approved plan, 2026-10-29). Priority raised to P1 to carry RF-139's audit priority.",
+      "checkedOn": "2026-10-29"
     }
   ],
   "resolution": null,

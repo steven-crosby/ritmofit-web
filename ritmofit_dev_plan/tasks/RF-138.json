@@ -13,7 +13,7 @@
     "Preview plays only through the official provider SDK or widget; nothing is cached.",
     "Keyboard and screen-reader access match the existing builder preview."
   ],
-  "nextAction": "Design pass first: where selection lives and what it adds to (new class or an open class). Files: apps/web/src/components/Dashboard.tsx (Music song rows and playlist dialog), TrackPreview.tsx, PlaylistSongPicker.tsx. Owner-gated (playback): the PR needs owner-approved and a real-browser preview check. Surface: web.",
+  "nextAction": "Design pass first: where selection lives and what it adds to (new class or an open class). Files: apps/web/src/components/Dashboard.tsx (Music song rows and playlist dialog), TrackPreview.tsx, PlaylistSongPicker.tsx. Check scripts/owner-gate.mjs for the files the PR actually touches; playback code under apps/web/src/lib/playback/ is gated. Either way the PR needs a real-browser preview check, which CI cannot prove. Surface: web.",
   "blocker": null,
   "evidence": [
     {

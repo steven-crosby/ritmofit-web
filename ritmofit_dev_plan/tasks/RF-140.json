@@ -6,7 +6,9 @@
   "status": "backlog",
   "priority": "P1",
   "parent": null,
-  "dependsOn": [],
+  "dependsOn": [
+    "RF-116"
+  ],
   "acceptance": [
     "A signed-in email account can change its password from Account without signing out.",
     "Account can sign out every other session.",

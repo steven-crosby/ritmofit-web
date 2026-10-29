@@ -65,6 +65,12 @@
       "ref": "https://github.com/steven-crosby/ritmofit-web/pull/659",
       "summary": "Owner iPhone Safari Live on production Worker 2a302ce6 (main d81c0fc, SPA index-Cqjj6m_w.js), 2026-10-29, two runs reported in session. Run 1: class started and the song played; Next twice played songs 2 and 3; Previous worked. Run 2: Pause/Resume, a seek, and a song ending on its own with the next starting all worked with no bugs. Network for each run and Start delay not recorded.",
       "checkedOn": "2026-10-29"
+    },
+    {
+      "kind": "document",
+      "ref": "ritmofit_dev_plan/device-provider-matrix.md",
+      "summary": "Matrix row: iPhone iOS 27.0.1 Safari Apple Music on production Worker 2a302ce6 (SPA index-Cqjj6m_w.js), 2026-10-29: Pass for Start, Next, Previous, Pause/Resume, seek and auto-advance, owner-witnessed with no console changes reported.",
+      "checkedOn": "2026-10-29"
     }
   ],
   "resolution": "Passed 2026-10-29 on production Worker 2a302ce6 (SPA index-Cqjj6m_w.js) after RF-124: the owner heard Apple Music in iPhone Safari Live and verified Next, Previous, pause, resume, seek and auto-advance with no failures. Network per run and Start delay were not recorded; Start latency stays with RF-128 and Wi-Fi authorization with RF-125.",

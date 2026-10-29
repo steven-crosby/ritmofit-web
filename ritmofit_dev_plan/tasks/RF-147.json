@@ -1,0 +1,29 @@
+{
+  "schemaVersion": 1,
+  "id": "RF-147",
+  "title": "Apple Music adapter diagnostics and FairPlay flag handling match the legacy path RF-124 restored",
+  "kind": "task",
+  "status": "backlog",
+  "priority": "P3",
+  "parent": null,
+  "dependsOn": [],
+  "acceptance": [
+    "The playback-failed banner no longer appends a modern-access probe word that describes a path MusicKit does not use.",
+    "The unprefixed com.apple.fps probe no longer runs in play() on iOS, or a measured reason to keep it is recorded (coordinate with RF-128).",
+    "The stored mk-safari-modern-eme flag is cleared once at MusicKit load instead of at four call sites, and the flag log runs after the key session attaches, with accurate comments (including FAIRPLAY_KEY_SYSTEM).",
+    "The desktop test asserts only that the FairPlay key is not removed, not that no removeItem call happens.",
+    "Owner hears Start, Next and auto-advance in iPhone Safari Live after the change (provider code, CI cannot prove it)."
+  ],
+  "nextAction": "Cleanup items 3–9 from the #657 final review. Files: apps/web/src/lib/musickit.ts, musickit.test.ts, apps/web/src/lib/playback/apple-music-adapter.ts. Owner-gated (playback code). Bundle with RF-121 or RF-128 if either lands first.",
+  "blocker": null,
+  "evidence": [
+    {
+      "kind": "observation",
+      "ref": "https://github.com/steven-crosby/ritmofit-web/pull/657#issuecomment-6507823197",
+      "summary": "Final review of #657: no significant findings; nine non-blocking findings. Item 1 (MusicKit re-writing the flag) is answered by the owner's passing iPhone runs; item 2 (desktop Safari legacy path) is in RF-126.",
+      "checkedOn": "2026-10-29"
+    }
+  ],
+  "resolution": null,
+  "followUps": []
+}

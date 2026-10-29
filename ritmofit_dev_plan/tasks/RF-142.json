@@ -8,7 +8,7 @@
   "parent": null,
   "dependsOn": [],
   "acceptance": [
-    "\"Jump back in\" no longer repeats the Recents rows beside it.",
+    "\"Jump back in\" no longer repeats the Recents rows beside it; the fix keeps its [QA]-title filtering and four-item cap, or replaces them deliberately.",
     "Music rows drop the \"Playlist ·\"/\"Song ·\" prefixes, and the playlist dialog has one exit.",
     "Account shows identity once, Sign out sits outside the profile form, Security has a heading, and each section has an accessible name.",
     "The show-password toggle is at least 44px; the landing nav has a fallback below lg; the Classes tab sets its own document title; the \"Steven\" nav label is clearly an identity marker.",
