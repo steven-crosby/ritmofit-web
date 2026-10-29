@@ -29,4 +29,6 @@ Network column: name the kind of network (cellular, home Wi-Fi, other Wi-Fi), ne
 | Android (Galaxy tablet) | Chrome | Apple Music | Any | Not checked | Not checked | Not checked | — | Never tested |
 | Android (Galaxy tablet) | Chrome | Spotify | Any | Not checked | Not checked | Not checked | — | Same SDK question as iPhone |
 
+What each provider officially supports per platform, and the terms that apply: [provider capability matrix](./provider-capability-matrix.md).
+
 SoundCloud is not part of D25's wording; add rows if the owner extends it.
