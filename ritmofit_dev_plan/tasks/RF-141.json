@@ -1,0 +1,41 @@
+{
+  "schemaVersion": 1,
+  "id": "RF-141",
+  "title": "Instructor surfaces and screen-reader labels use plain words and the D17 effort words",
+  "kind": "task",
+  "status": "backlog",
+  "priority": "P2",
+  "parent": null,
+  "dependsOn": [],
+  "acceptance": [
+    "The meta and Open Graph descriptions match the canon: movement-first, Cycle, Pilates and HIIT, not \"spin\".",
+    "The landing page names the disciplines and the job in the first screen; the §12.4 subhead and \"See class shape\" label are used or the deviation is recorded.",
+    "Class Pulse accessible labels use Build, Push, Attack and All Out, and summarize the class (duration, peaks) instead of listing every track.",
+    "The jargon listed in run-decisions.md (\"provider truth\", \"pressure-safe view\", \"creative loop\", \"provider-authorized playback\", \"movement language\", \"separate capabilities\", \"Public widget ready\") is replaced with plain words, not helper text.",
+    "Sign-in copy: \"Invited? Create your account.\", a clear invitation-email line, and one \"Private beta\" mention."
+  ],
+  "nextAction": "One copy PR. Files: apps/web/index.html, MarketingPage.tsx, Login.tsx, ClassPulse.tsx, CreateClassDialog.tsx, Dashboard.tsx, providers.ts. Judgment items (core pain line, hero demo class) are proposed in the PR for the owner. Surface: web.",
+  "blocker": null,
+  "evidence": [
+    {
+      "kind": "source",
+      "ref": "apps/web/src/components/ClassPulse.tsx",
+      "summary": "EFFORT_LABEL uses easy/moderate/hard/all out for accessible labels while the legend uses EFFORT_ZONE_LABEL (Z1 Build...). Checked on main c9b89a7.",
+      "checkedOn": "2026-10-29"
+    },
+    {
+      "kind": "source",
+      "ref": "apps/web/index.html",
+      "summary": "Description and og:description say \"rhythm spin instructors\". Checked on main c9b89a7.",
+      "checkedOn": "2026-10-29"
+    },
+    {
+      "kind": "document",
+      "ref": "docs/audits/ux-audit-2026-10-28/README.md",
+      "summary": "2026-10-28 owner UX audit of production: Top priority 12, cross-cutting themes 3 and 4, and the Landing, Sign-in, Music and Account copy rows. Browser evidence; not re-observed at intake.",
+      "checkedOn": "2026-10-29"
+    }
+  ],
+  "resolution": null,
+  "followUps": []
+}

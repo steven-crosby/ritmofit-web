@@ -1,0 +1,41 @@
+{
+  "schemaVersion": 1,
+  "id": "RF-140",
+  "title": "Account Security lets an instructor change her password, sign out other sessions and delete her account",
+  "kind": "task",
+  "status": "backlog",
+  "priority": "P1",
+  "parent": null,
+  "dependsOn": [],
+  "acceptance": [
+    "A signed-in email account can change its password from Account without signing out.",
+    "Account can sign out every other session.",
+    "Self-service account deletion exists before the beta expands (D22), including provider-token and metadata purge.",
+    "The Security copy says plainly what Ritmo owns for email accounts and what Apple owns for Sign in with Apple.",
+    "Any new auth or deletion endpoint is registered in OpenAPI; the iOS snapshot refresh is a separate iOS PR."
+  ],
+  "nextAction": "Plan after RF-116 (password reset revokes old sessions), which shares the session code. Deletion is likely its own child record with schema and purge design. Files: apps/api auth routes and Better Auth config, apps/web Dashboard Account section. Owner-gated (auth): the PR needs owner-approved. Surface: both (auth API).",
+  "blocker": null,
+  "evidence": [
+    {
+      "kind": "source",
+      "ref": "apps/web/src/components/Dashboard.tsx",
+      "summary": "The account-security section is one paragraph and a privacy link; no password, session or deletion control. Checked on main c9b89a7.",
+      "checkedOn": "2026-10-29"
+    },
+    {
+      "kind": "document",
+      "ref": "ritmofit_dev_plan/decisions.md",
+      "summary": "D22 privacy boundary: account deletion may be manual during the small beta; self-service deletion is required before expansion.",
+      "checkedOn": "2026-10-29"
+    },
+    {
+      "kind": "document",
+      "ref": "docs/audits/ux-audit-2026-10-28/README.md",
+      "summary": "2026-10-28 owner UX audit of production: Top priority 9 and the Account Security rows. Browser evidence; not re-observed at intake.",
+      "checkedOn": "2026-10-29"
+    }
+  ],
+  "resolution": null,
+  "followUps": []
+}

@@ -1,0 +1,48 @@
+{
+  "schemaVersion": 1,
+  "id": "RF-142",
+  "title": "Repeated elements are removed and the small layout and accessibility gaps are fixed",
+  "kind": "task",
+  "status": "backlog",
+  "priority": "P2",
+  "parent": null,
+  "dependsOn": [],
+  "acceptance": [
+    "\"Jump back in\" no longer repeats the Recents rows beside it.",
+    "Music rows drop the \"Playlist ·\"/\"Song ·\" prefixes, and the playlist dialog has one exit.",
+    "Account shows identity once, Sign out sits outside the profile form, Security has a heading, and each section has an accessible name.",
+    "The show-password toggle is at least 44px; the landing nav has a fallback below lg; the Classes tab sets its own document title; the \"Steven\" nav label is clearly an identity marker.",
+    "Browser checks done and recorded: Apple sign-in button logo, panel heading order, 10px badges, \"SoundC...\" and class-length truncation at 713 and 375px, Live sort label.",
+    "Optional, owner call: Exit from preflight returns focus to the card that opened it instead of the landmark H1 (#250)."
+  ],
+  "nextAction": "Can split into two PRs (Classes and Music; Account, Sign-in and Landing). Files: ClassesHome.tsx, library-shell.ts, music-library.ts, Dashboard.tsx, PasswordField.tsx, MarketingPage.tsx, Login.tsx. Surface: web.",
+  "blocker": null,
+  "evidence": [
+    {
+      "kind": "source",
+      "ref": "apps/web/src/components/PasswordField.tsx",
+      "summary": "The show/hide toggle uses min-h-9 (36px). Checked on main c9b89a7.",
+      "checkedOn": "2026-10-29"
+    },
+    {
+      "kind": "source",
+      "ref": "apps/web/src/components/MarketingPage.tsx",
+      "summary": "The marketing nav is hidden below lg with no menu button. Checked on main c9b89a7.",
+      "checkedOn": "2026-10-29"
+    },
+    {
+      "kind": "document",
+      "ref": "docs/audits/ux-audit-2026-10-28/run-decisions.md",
+      "summary": "Account headings partly contradicted at intake: Profile and Music connections have h3s; only Security lacks one.",
+      "checkedOn": "2026-10-29"
+    },
+    {
+      "kind": "document",
+      "ref": "docs/audits/ux-audit-2026-10-28/README.md",
+      "summary": "2026-10-28 owner UX audit of production: Cross-cutting theme 5 and the remaining Landing, Sign-in, Classes, Music, Live and Account rows. Browser evidence; not re-observed at intake.",
+      "checkedOn": "2026-10-29"
+    }
+  ],
+  "resolution": null,
+  "followUps": []
+}

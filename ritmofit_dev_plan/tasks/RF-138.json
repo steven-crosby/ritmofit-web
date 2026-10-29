@@ -1,0 +1,34 @@
+{
+  "schemaVersion": 1,
+  "id": "RF-138",
+  "title": "Instructors can preview, select and add single tracks from Music playlists and Songs",
+  "kind": "task",
+  "status": "backlog",
+  "priority": "P1",
+  "parent": null,
+  "dependsOn": [],
+  "acceptance": [
+    "Playlist detail and Songs rows offer preview and select, reusing the builder's TrackPreview path, and an \"Add selected\" or \"Start class from selected\" action (D21).",
+    "The playlist header shows a track count when the provider reports one, and the 15-song import limit is stated before Start class.",
+    "Preview plays only through the official provider SDK or widget; nothing is cached.",
+    "Keyboard and screen-reader access match the existing builder preview."
+  ],
+  "nextAction": "Design pass first: where selection lives and what it adds to (new class or an open class). Files: apps/web/src/components/Dashboard.tsx (Music song rows and playlist dialog), TrackPreview.tsx, PlaylistSongPicker.tsx. Owner-gated (playback): the PR needs owner-approved and a real-browser preview check. Surface: web.",
+  "blocker": null,
+  "evidence": [
+    {
+      "kind": "source",
+      "ref": "apps/web/src/components/Dashboard.tsx",
+      "summary": "Music song rows and playlist-detail rows render metadata only; the builder lazy-loads TrackPreview. Checked on main c9b89a7.",
+      "checkedOn": "2026-10-29"
+    },
+    {
+      "kind": "document",
+      "ref": "docs/audits/ux-audit-2026-10-28/README.md",
+      "summary": "2026-10-28 owner UX audit of production: Top priority 6 and the Music rows on preview, counts and the 15-song cap. Browser evidence; not re-observed at intake.",
+      "checkedOn": "2026-10-29"
+    }
+  ],
+  "resolution": null,
+  "followUps": []
+}

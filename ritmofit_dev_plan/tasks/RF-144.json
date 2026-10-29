@@ -1,0 +1,32 @@
+{
+  "schemaVersion": 1,
+  "id": "RF-144",
+  "title": "The design brief and D21 describe the provider capabilities and Account sections the product has",
+  "kind": "documentation",
+  "status": "backlog",
+  "priority": "P3",
+  "parent": null,
+  "dependsOn": [],
+  "acceptance": [
+    "ritmofit-design-system.md §9.8 no longer says Spotify and Apple Music are catalog-only; it matches D21, D24 and providerCapabilityTruth.",
+    "After the RF-131 Preferences decision, D21 names the Account sections; HISTORY.md stays as written."
+  ],
+  "nextAction": "Docs-only PR. The §9.8 fix can go now; the D21 line waits on RF-131 decision 5. Surface: docs (design canon, so iOS reads it too).",
+  "blocker": null,
+  "evidence": [
+    {
+      "kind": "source",
+      "ref": "ritmofit_design_system/ritmofit-design-system.md",
+      "summary": "§9.8 says \"Spotify and Apple Music support catalog search/import only.\" Checked on main c9b89a7.",
+      "checkedOn": "2026-10-29"
+    },
+    {
+      "kind": "document",
+      "ref": "docs/audits/ux-audit-2026-10-28/run-decisions.md",
+      "summary": "Intake correction 1: the Preferences list comes from HISTORY.md (2026-07-07 entry), not D21.",
+      "checkedOn": "2026-10-29"
+    }
+  ],
+  "resolution": null,
+  "followUps": []
+}
