@@ -69,7 +69,7 @@
     {
       "kind": "document",
       "ref": "ritmofit_dev_plan/device-provider-matrix.md",
-      "summary": "Matrix row: iPhone iOS 27.0.1 Safari Apple Music on production Worker 2a302ce6 (SPA index-Cqjj6m_w.js), 2026-10-29: Pass for Start, Next, Previous, Pause/Resume, seek and auto-advance, owner-witnessed with no console changes reported.",
+      "summary": "Matrix row recording the owner's two iPhone Safari Apple Music runs on Worker 2a302ce6 (SPA index-Cqjj6m_w.js), 2026-10-29, as reported in session: Start, Next, Previous, Pause/Resume, seek and auto-advance passed. Network and console state were not reported.",
       "checkedOn": "2026-10-29"
     }
   ],

@@ -14,7 +14,7 @@
     "The desktop test asserts only that the FairPlay key is not removed, not that no removeItem call happens.",
     "Owner hears Start, Next and auto-advance in iPhone Safari Live after the change (provider code, CI cannot prove it)."
   ],
-  "nextAction": "Cleanup items 3–9 from the #657 final review. Files: apps/web/src/lib/musickit.ts, musickit.test.ts, apps/web/src/lib/playback/apple-music-adapter.ts. Owner-gated (playback code). Bundle with RF-121 or RF-128 if either lands first.",
+  "nextAction": "Cleanup items 3–9 from the #657 final review, mapped to acceptance: item 3 → banner criterion; item 4 → probe criterion; items 5, 6, 7 and 8 → flag-clear, flag-log and comment criterion; item 9 → desktop test criterion. Files: apps/web/src/lib/musickit.ts, musickit.test.ts, apps/web/src/lib/playback/apple-music-adapter.ts. Owner-gated (playback code). Bundle with RF-121 or RF-128 if either lands first.",
   "blocker": null,
   "evidence": [
     {

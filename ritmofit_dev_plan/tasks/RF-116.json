@@ -4,7 +4,7 @@
   "title": "A password reset signs out old sessions, and Disconnect drops provider logins",
   "kind": "task",
   "status": "backlog",
-  "priority": "P2",
+  "priority": "P1",
   "parent": null,
   "dependsOn": [],
   "acceptance": [
@@ -26,6 +26,12 @@
       "ref": "docs/audits/codex-code-audit-2026-10-27-4e0b150/findings.md",
       "summary": "Ranked findings and challenge status from the 2026-10-27 Codex audit at 4e0b150.",
       "checkedOn": null
+    },
+    {
+      "kind": "observation",
+      "ref": "https://github.com/steven-crosby/ritmofit-web/pull/660",
+      "summary": "Raised from P2 to P1 on 2026-10-29 because P1 RF-140 depends on it (Phase 4 beta-expansion gate); review finding on #660.",
+      "checkedOn": "2026-10-29"
     }
   ],
   "resolution": null,

@@ -8,7 +8,7 @@
   "parent": null,
   "dependsOn": [],
   "acceptance": [
-    "The panel headline stays within the type scale (at most display-xl, 52px, per the audit) and does not outrank the form H1, or the panel is removed.",
+    "The panel headline is no larger than the form H1 (so at most display, 34px, and never display-xl), or the panel is removed.",
     "No class-shape artwork or campaign display type on sign-in.",
     "The form H1 is the strongest element on the surface, and screen readers reach it before the panel."
   ],

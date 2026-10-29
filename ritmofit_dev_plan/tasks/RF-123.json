@@ -11,7 +11,7 @@
     "When setQueue times out in apple-music-adapter.ts, the pending-queue lock for that instance no longer blocks the next prepare, so Retry playback can try again without a page reload.",
     "A test covers: setQueue never settles, prepare times out, the next prepare reaches setQueue instead of 'still finishing a previous queue request'."
   ],
-  "nextAction": "Implemented on PR #656 (fix/rf-124-resume-in-place), which must be rebased onto main after #657: drop its RF-124 and RF-29 edits (both Done on main), finalize RF-123 and its resume-in-place work in its own record(s), then ask for owner approval. Owner-gated (playback code).",
+  "nextAction": "Implemented on PR #656 (fix/rf-124-resume-in-place), not yet rebased. Rebase onto main: drop its RF-124 and RF-29 edits (both Done on main), finalize RF-123 and its resume-in-place work in its own record(s), then ask for owner approval. Owner-gated (playback code).",
   "blocker": null,
   "evidence": [
     {
@@ -19,6 +19,12 @@
       "ref": "ritmofit_dev_plan/tasks/RF-29.json",
       "summary": "Owner iPhone Safari 2026-10-28: after a hung setQueue, Retry playback and a fresh Start both showed 'The Apple Music player is still finishing a previous queue request for \"Break Stuff\"'. pendingQueueGenerations is cleared only in the setQueue promise's finally, which never runs when MusicKit never settles.",
       "checkedOn": "2026-10-28"
+    },
+    {
+      "kind": "pr",
+      "ref": "https://github.com/steven-crosby/ritmofit-web/pull/656",
+      "summary": "Open PR carrying the RF-123 lock fix and resume in place; needs a rebase after #657 merged (d81c0fc).",
+      "checkedOn": "2026-10-29"
     }
   ],
   "resolution": null,
