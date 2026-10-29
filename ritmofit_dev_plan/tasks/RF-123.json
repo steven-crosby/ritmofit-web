@@ -3,7 +3,7 @@
   "id": "RF-123",
   "title": "Apple Music retry is not blocked by a timed-out queue request",
   "kind": "task",
-  "status": "backlog",
+  "status": "ready",
   "priority": "P2",
   "parent": null,
   "dependsOn": [],
@@ -11,7 +11,7 @@
     "When setQueue times out in apple-music-adapter.ts, the pending-queue lock for that instance no longer blocks the next prepare, so Retry playback can try again without a page reload.",
     "A test covers: setQueue never settles, prepare times out, the next prepare reaches setQueue instead of 'still finishing a previous queue request'."
   ],
-  "nextAction": "Implemented on PR #656 (fix/rf-124-resume-in-place), not yet rebased. Rebase onto main: drop its RF-124 and RF-29 edits (both Done on main), finalize RF-123 and its resume-in-place work in its own record(s), then ask for owner approval. Owner-gated (playback code).",
+  "nextAction": "Owner moved to Ready on 2026-10-29 as Lane A of the next round. Lane A: rebase PR #656 (fix/rf-124-resume-in-place) onto main, drop its RF-124 and RF-29 edits (both Done on main), finalize RF-123 and resume in place in its own record(s), then continue with RF-128 and RF-147 in the same playback files. Owner-gated (playback code); ends with the owner's iPhone check.",
   "blocker": null,
   "evidence": [
     {
@@ -24,6 +24,12 @@
       "kind": "pr",
       "ref": "https://github.com/steven-crosby/ritmofit-web/pull/656",
       "summary": "Open PR carrying the RF-123 lock fix and resume in place; needs a rebase after #657 merged (d81c0fc).",
+      "checkedOn": "2026-10-29"
+    },
+    {
+      "kind": "observation",
+      "ref": "ritmofit_dev_plan/DEVELOPMENT_PLAN.md",
+      "summary": "Owner instruction in session, 2026-10-29: \"Yes move RF-123 and RF-132 to Ready and brief them as Lane A and Lane B after start-session\". Both are Phase 1 work.",
       "checkedOn": "2026-10-29"
     }
   ],
