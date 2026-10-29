@@ -1,19 +1,22 @@
 {
   "schemaVersion": 1,
   "id": "RF-124",
-  "title": "Apple Music setQueue runs inside the iOS Start gesture",
-  "kind": "investigation",
-  "status": "backlog",
-  "priority": "P2",
+  "title": "Apple Music Resume and Next play on iPhone Safari",
+  "kind": "task",
+  "status": "ready",
+  "priority": "P1",
   "parent": null,
   "dependsOn": [
     "RF-122"
   ],
   "acceptance": [
-    "On deployed iPhone Safari with RF-122 live, record whether a real Start tap reaches setQueue and play() reliably, or whether setQueue still hangs without a gesture.",
-    "If it hangs, propose a change that issues MusicKit setQueue/play within the Start tap (or a prepared-on-tap step) with its test plan; do not implement without owner approval."
+    "On iPhone Safari Live with Apple Music, Resume after Pause and Next both play audibly within 1 s of the tap, and auto-advance plays the next song with no tap.",
+    "Resume on the same song does not reload the queue (no release, prepare or setQueue); it continues the paused MusicKit item.",
+    "Track changes that need a new song keep MusicKit inside the user's tap or inside an already-playing session, chosen from an on-device probe recorded in evidence before code.",
+    "Unit tests cover resume-in-place, a seek while paused, and track change; desktop Chrome Apple Music and SoundCloud/Spotify transport do not regress.",
+    "Owner hears Start, Pause, Resume, Next, seek and auto-advance on the deployed bundle; RF-29 records it."
   ],
-  "nextAction": "Check during the RF-29 retry: if Break Stuff plays from a real Start tap, close this as not needed. Owner-gated (playback code).",
+  "nextAction": "Owner moved this to Ready on 2026-10-29. Planning: present the written plan (on-device probe first, then resume-in-place and track change, folding in RF-123) for owner confirmation before code. Owner-gated playback PR.",
   "blocker": null,
   "evidence": [
     {
@@ -21,6 +24,12 @@
       "ref": "ritmofit_dev_plan/tasks/RF-29.json",
       "summary": "Owner iPhone Safari 2026-10-28, console-driven: setQueue({songs:['1440754477']}) timed out at 20 s twice without Emulate User Gesture and resolved in 313 ms with it. runtime.ts awaits prepare (setQueue) before play().",
       "checkedOn": "2026-10-28"
+    },
+    {
+      "kind": "observation",
+      "ref": "ritmofit_dev_plan/tasks/RF-29.json",
+      "checkedOn": "2026-10-28",
+      "summary": "Owner iPhone Safari, 5G, Worker b41b99f9 (RF-122 live), screen recording 23:06: Start class played Break Stuff after about 5 s. Pause worked. Resume stuck on 'Waiting for music — Provider playback has not confirmed progress'. Next to Rollin' (Air Raid Vehicle) showed 'Playback stopped' with Playback error at class clock 2:47."
     }
   ],
   "resolution": null,

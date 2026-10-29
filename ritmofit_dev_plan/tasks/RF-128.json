@@ -1,0 +1,28 @@
+{
+  "schemaVersion": 1,
+  "id": "RF-128",
+  "title": "Apple Music Start class sounds within 1 s on iPhone Safari",
+  "kind": "task",
+  "status": "backlog",
+  "priority": "P2",
+  "parent": null,
+  "dependsOn": [
+    "RF-124"
+  ],
+  "acceptance": [
+    "On iPhone Safari Live, the first Apple Music song is audible within 1 s of tapping Start class on 5G.",
+    "Work that needs no gesture (load MusicKit, configure, check authorization) happens before Start; only setQueue/play run in the tap."
+  ],
+  "nextAction": "Measure where the 5 s goes during the RF-124 on-device probe (MusicKit load, config fetch, setQueue, play), then plan with RF-124. Owner-gated (playback code).",
+  "blocker": null,
+  "evidence": [
+    {
+      "kind": "observation",
+      "ref": "ritmofit_dev_plan/tasks/RF-29.json",
+      "checkedOn": "2026-10-28",
+      "summary": "Owner iPhone Safari, 5G, Worker b41b99f9 (RF-122 live), screen recording 23:06: Start class played Break Stuff after about 5 s. Pause worked. Resume stuck on 'Waiting for music — Provider playback has not confirmed progress'. Next to Rollin' (Air Raid Vehicle) showed 'Playback stopped' with Playback error at class clock 2:47."
+    }
+  ],
+  "resolution": null,
+  "followUps": []
+}
