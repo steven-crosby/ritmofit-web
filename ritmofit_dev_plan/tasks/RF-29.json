@@ -7,14 +7,15 @@
   "priority": "P1",
   "parent": null,
   "dependsOn": [
-    "RF-107"
+    "RF-107",
+    "RF-122"
   ],
   "acceptance": [
     "On the identified production bundle, Steven hears Apple Music in iPhone Safari Live, then verifies pause, resume, seek, and track advance.",
     "Record device/browser, bundle and Worker, audible outcome, and any exact failure. UI or SDK success alone does not pass."
   ],
-  "nextAction": "Wait for RF-107 to merge and for the owner to deploy it, then do the owner iPhone Safari retry on the deployed bundle and record modern-access: <word>. Do not retry on the current bundle: it still has the probe bug (AUD-002), so a retry would likely spend an Apple Music check before the subscription ends around 2026-11-27 without producing the diagnostic. This supersedes the retry instruction in handoffs/2026-10-27-iphone-fairplay.md. Do not implement or deploy from this task.",
-  "blocker": "The next iPhone check likely cannot yield its modern-access: diagnostic until the FairPlay probe bug (AUD-002) is fixed in RF-107 and deployed. The audit confirmed the bug in Chromium, not on iPhone, so this is likely rather than certain.",
+  "nextAction": "After RF-122 (#652) merges and the owner deploys it, retry Break Stuff once in iPhone Safari Live with Web Inspector open and record audible outcome, then pause, resume, seek and track advance. If audio plays, close RF-124 as not needed. Do not implement or deploy from this task.",
+  "blocker": "iPhone Safari's page CSP blocks Apple's HLS manifest (media-src), fixed by RF-122; needs merge and an owner deploy before the next device check.",
   "evidence": [
     {
       "kind": "source",
@@ -33,6 +34,12 @@
       "ref": "docs/audits/claude-code-audit-2026-10-28-4c344e2/findings.md",
       "summary": "AUD-002: the probe calls requestMediaKeySystemAccess unbound, so the previous next action rested on a false premise. Confirmed in real Chromium by the audit; not on iPhone.",
       "checkedOn": null
+    },
+    {
+      "kind": "observation",
+      "ref": "ritmofit_dev_plan/tasks/RF-122.json",
+      "summary": "2026-10-28 owner retry on Worker d092af3c-114f-416f-bbe5-cb112cb52306 / assets/index-BTdVQWvK.js (RF-107 deployed): banner 'Apple Music playback failed for \"Break Stuff\". modern-access: ok.', no audio, clock 0:00. FairPlay access is available; Web Inspector showed the CSP media-src refusal of aod-ssl.itunes.apple.com (RF-122). Console: 'Refused to load https://aod-ssl.itunes.apple.com/.../mzaf_A1440754477...m3u8 because it does not appear in the media-src directive of the Content Security Policy', then MusicKit mediaPlaybackError MEDIA_PLAYBACK 'Playback Error'. setQueue for song 1440754477 timed out (20 s, twice) without an emulated user gesture and resolved in 313 ms with one.",
+      "checkedOn": "2026-10-28"
     }
   ],
   "resolution": null,

@@ -1,0 +1,37 @@
+{
+  "schemaVersion": 1,
+  "id": "RF-122",
+  "title": "iPhone Safari CSP allows Apple Music HLS audio",
+  "kind": "task",
+  "status": "done",
+  "priority": "P1",
+  "parent": null,
+  "dependsOn": [],
+  "acceptance": [
+    "The page CSP in apps/web/public/_headers lists https://*.itunes.apple.com in media-src, matching connect-src, so iPhone Safari's <audio> element may load Apple's HLS manifest (aod-ssl.itunes.apple.com).",
+    "The _headers comment explains why media-src needs the host on iOS (native HLS) and not on desktop (MSE blob:).",
+    "No other directive changes; provider audio is still served by Apple to the official MusicKit player (no proxy, cache or derivation)."
+  ],
+  "nextAction": null,
+  "blocker": null,
+  "evidence": [
+    {
+      "kind": "observation",
+      "ref": "ritmofit_dev_plan/tasks/RF-29.json",
+      "summary": "Owner iPhone Safari with Mac Web Inspector, 2026-10-28, production Worker d092af3c-114f-416f-bbe5-cb112cb52306, bundle assets/index-BTdVQWvK.js. Console: 'Refused to load https://aod-ssl.itunes.apple.com/.../mzaf_A1440754477...m3u8 because it does not appear in the media-src directive of the Content Security Policy', then MusicKit mediaPlaybackError MEDIA_PLAYBACK 'Playback Error'. setQueue for song 1440754477 timed out (20 s, twice) without an emulated user gesture and resolved in 313 ms with one.",
+      "checkedOn": "2026-10-28"
+    },
+    {
+      "kind": "pr",
+      "ref": "https://github.com/steven-crosby/ritmofit-web/pull/652",
+      "summary": "Adds https://*.itunes.apple.com to media-src in apps/web/public/_headers. Owner-gated (security headers).",
+      "checkedOn": "2026-10-28"
+    }
+  ],
+  "resolution": "media-src now allows https://*.itunes.apple.com. Whether iPhone Safari plays audibly is verified separately in RF-29 after an owner deploy.",
+  "followUps": [
+    "RF-29",
+    "RF-123",
+    "RF-124"
+  ]
+}

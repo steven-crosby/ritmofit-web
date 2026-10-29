@@ -20,10 +20,13 @@
 #               (Apple serves audio from several *.itunes.apple.com hosts; without
 #               them playback fails with "Failed to fetch" / "Could not fetch
 #               manifest" — both blocks observed live during verification).
-#   media-src   'self' blob: — MusicKit plays via Media Source Extensions, so the
-#               <audio> element's source is a blob: MediaSource URL (segment bytes
-#               themselves are fetched over connect-src). Without this, default-src
-#               'self' governs media and blocks the blob source.
+#   media-src   'self' blob: https://*.itunes.apple.com — desktop MusicKit plays via
+#               Media Source Extensions, so the <audio> element's source is a blob:
+#               MediaSource URL (segment bytes are fetched over connect-src). iPhone
+#               Safari instead gives the <audio> element Apple's HLS manifest
+#               directly (aod-ssl.itunes.apple.com/…m3u8), which media-src governs;
+#               without the host, iOS reports MEDIA_PLAYBACK "Playback Error" and
+#               plays nothing (RF-122, observed in iPhone Web Inspector 2026-10-28).
 #   script-src  also allows js-cdn.music.apple.com (the MusicKit JS library, loaded
 #               on demand only when a user starts the Apple Music connect flow),
 #               w.soundcloud.com (the official SoundCloud Widget API, loaded only
@@ -45,7 +48,7 @@
 #   not inject a CSP-blocked inline challenge script into the SPA HTML.
 /*
   Cache-Control: public, max-age=0, must-revalidate, no-transform
-  Content-Security-Policy: default-src 'self'; script-src 'self' https://static.cloudflareinsights.com https://js-cdn.music.apple.com https://w.soundcloud.com https://sdk.scdn.co; style-src 'self' 'unsafe-inline'; font-src 'self'; img-src 'self' data: https:; media-src 'self' blob:; connect-src 'self' https://static.cloudflareinsights.com https://*.music.apple.com https://*.mzstatic.com https://*.itunes.apple.com https://api.spotify.com https://*.spotify.com wss://*.spotify.com https://*.scdn.co; frame-src https://authorize.music.apple.com https://idmsa.apple.com https://w.soundcloud.com https://sdk.scdn.co; frame-ancestors 'none'; base-uri 'self'; form-action 'self'; object-src 'none'
+  Content-Security-Policy: default-src 'self'; script-src 'self' https://static.cloudflareinsights.com https://js-cdn.music.apple.com https://w.soundcloud.com https://sdk.scdn.co; style-src 'self' 'unsafe-inline'; font-src 'self'; img-src 'self' data: https:; media-src 'self' blob: https://*.itunes.apple.com; connect-src 'self' https://static.cloudflareinsights.com https://*.music.apple.com https://*.mzstatic.com https://*.itunes.apple.com https://api.spotify.com https://*.spotify.com wss://*.spotify.com https://*.scdn.co; frame-src https://authorize.music.apple.com https://idmsa.apple.com https://w.soundcloud.com https://sdk.scdn.co; frame-ancestors 'none'; base-uri 'self'; form-action 'self'; object-src 'none'
   Strict-Transport-Security: max-age=31536000; includeSubDomains; preload
   X-Content-Type-Options: nosniff
   X-Frame-Options: DENY
