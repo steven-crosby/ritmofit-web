@@ -12,10 +12,11 @@
     "Music rows drop the \"Playlist ·\"/\"Song ·\" prefixes, and the playlist dialog has one exit.",
     "Account shows identity once, Sign out sits outside the profile form, Security has a heading, and each section has an accessible name.",
     "The show-password toggle is at least 44px; the landing nav has a fallback below lg; the Classes tab sets its own document title; the \"Steven\" nav label is clearly an identity marker.",
+    "Every Classes control's accessible name includes its visible text (WCAG 2.5.3 label in name; absorbed from RF-73), checked at desktop and phone widths with the keyboard.",
     "Browser checks done and recorded: Apple sign-in button logo, panel heading order, 10px badges, \"SoundC...\" and class-length truncation at 713 and 375px, Live sort label.",
     "Optional, owner call: Exit from preflight returns focus to the card that opened it instead of the landmark H1 (#250)."
   ],
-  "nextAction": "Can split into two PRs (Classes and Music; Account, Sign-in and Landing). Files: ClassesHome.tsx, library-shell.ts, music-library.ts, Dashboard.tsx, PasswordField.tsx, MarketingPage.tsx, Login.tsx. Surface: web.",
+  "nextAction": "Can split into two PRs (Classes and Music; Account, Sign-in and Landing). Files: ClassesHome.tsx, library-shell.ts, music-library.ts, Dashboard.tsx, PasswordField.tsx, MarketingPage.tsx, Login.tsx. Surface: web. Also covers RF-73's label-in-name check.",
   "blocker": null,
   "evidence": [
     {

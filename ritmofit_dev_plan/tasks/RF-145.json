@@ -1,0 +1,33 @@
+{
+  "schemaVersion": 1,
+  "id": "RF-145",
+  "title": "API tells a provider permission failure apart from a provider error",
+  "kind": "plan",
+  "status": "backlog",
+  "priority": "P2",
+  "parent": null,
+  "dependsOn": [],
+  "acceptance": [
+    "A design names the API signal for each provider state the UI must show (unavailable, disconnected, expired, permission, provider error) and which ones the backend cannot yet tell apart.",
+    "The design says whether it needs a shared-contract or OpenAPI change and how iOS would consume it.",
+    "No UI state is added before the backend signal it depends on exists."
+  ],
+  "nextAction": "Read the SPC-09 row and PROVIDER-TRUTH group in the Studio Pulse Check ledger, map today's ProviderError codes to the five states, then propose the signal design for owner approval. Coordinate with RF-134 (labels say what they checked). Surface: both.",
+  "blocker": null,
+  "evidence": [
+    {
+      "kind": "document",
+      "ref": "docs/audits/studio-pulse-check-2026-09-13/run-decisions.md",
+      "summary": "SPC-09: the UI models four of six provider states; permission and provider error need distinct backend signals first. Owner-blocked since 2026-09-17.",
+      "checkedOn": "2026-10-29"
+    },
+    {
+      "kind": "document",
+      "ref": "ritmofit_dev_plan/DEVELOPMENT_PLAN.md",
+      "checkedOn": "2026-10-29",
+      "summary": "Moved from the plan's Backlog prose into a record; Phase 2 of the owner-approved phased plan (2026-10-29)."
+    }
+  ],
+  "resolution": null,
+  "followUps": []
+}

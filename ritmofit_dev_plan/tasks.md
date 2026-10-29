@@ -12,7 +12,7 @@ owner's queue: any agent may execute a Ready task. Publishing follows AGENTS.md 
 Evidence marked **recorded** is a carried-forward claim, not fresh verification.
 A checked PR proves its GitHub state, not product acceptance or production behavior.
 
-140 tasks. backlog: 43 · ready: 2 · in_progress: 0 · blocked: 2 · review: 7 · done: 86 · cancelled: 0.
+142 tasks. backlog: 44 · ready: 2 · in_progress: 0 · blocked: 2 · review: 7 · done: 86 · cancelled: 1.
 
 ## In progress
 
@@ -70,8 +70,9 @@ A checked PR proves its GitHub state, not product acceptance or production behav
 | [RF-123](tasks/RF-123.json) Apple Music retry is not blocked by a timed-out queue request | P2 / task | — | Folded into the RF-124 plan (same file, same failure path). Owner-gated (playback code). | checked 2026-10-28 |
 | [RF-128](tasks/RF-128.json) Apple Music Start class sounds within 1 s on iPhone Safari | P2 / task | needs RF-124 | Measure where the 5 s goes during the RF-124 on-device probe (MusicKit load, config fetch, setQueue, play), then plan with RF-124. Owner-gated (playback code). | checked 2026-10-28 |
 | [RF-141](tasks/RF-141.json) Instructor surfaces and screen-reader labels use plain words and the D17 effort words | P2 / task | — | One copy PR. Files: apps/web/index.html, MarketingPage.tsx, Login.tsx, ClassPulse.tsx, CreateClassDialog.tsx, Dashboard.tsx, providers.ts. Judgment items (core pain line, hero demo class) are proposed in the PR for the owner. Surface: web. | checked 2026-10-29 |
-| [RF-142](tasks/RF-142.json) Repeated elements are removed and the small layout and accessibility gaps are fixed | P2 / task | — | Can split into two PRs (Classes and Music; Account, Sign-in and Landing). Files: ClassesHome.tsx, library-shell.ts, music-library.ts, Dashboard.tsx, PasswordField.tsx, MarketingPage.tsx, Login.tsx. Surface: web. | checked 2026-10-29 |
+| [RF-142](tasks/RF-142.json) Repeated elements are removed and the small layout and accessibility gaps are fixed | P2 / task | — | Can split into two PRs (Classes and Music; Account, Sign-in and Landing). Files: ClassesHome.tsx, library-shell.ts, music-library.ts, Dashboard.tsx, PasswordField.tsx, MarketingPage.tsx, Login.tsx. Surface: web. Also covers RF-73's label-in-name check. | checked 2026-10-29 |
 | [RF-143](tasks/RF-143.json) The sign-in brand panel stays within the type scale and quiet, per §3.6 and OD-01 | P2 / task | — | Judgment-heavy: propose two options with screenshots in the PR. Files: apps/web/src/components/Login.tsx. Surface: web. | checked 2026-10-29 |
+| [RF-145](tasks/RF-145.json) API tells a provider permission failure apart from a provider error | P2 / plan | — | Read the SPC-09 row and PROVIDER-TRUTH group in the Studio Pulse Check ledger, map today's ProviderError codes to the five states, then propose the signal design for owner approval. Coordinate with RF-134 (labels say what they checked). Surface: both. | checked 2026-10-29 |
 | [RF-101](tasks/RF-101.json) Owner-gate route authz call sites and CI-config files | P3 / task | needs RF-98 | Owner decides whether to gate route and CI-config files, given every merge already needs per-PR permission. | checked 2026-10-27; recorded |
 | [RF-102](tasks/RF-102.json) Owner approval binds only to a commit the owner actually saw | P3 / task | needs RF-98 | Owner decides whether to harden further (for example, bind to the reviewed SHA named in the approval) given per-PR merge permission is the backstop. | checked 2026-10-27 |
 | [RF-103](tasks/RF-103.json) Task claims stay visible from claim to merge | P3 / task | needs RF-98 | Design a claim signal that survives the draft-to-ready transition (for example, any open PR whose head changes the task record) and update start-session and delegate-task. | checked 2026-10-27 |
@@ -91,8 +92,8 @@ A checked PR proves its GitHub state, not product acceptance or production behav
 | [RF-121](tasks/RF-121.json) Apple Music held-error and probe state are hardened after RF-107 | P3 / task | — | Do with or just before RF-108, which reworks apple-music-adapter.ts. Owner-gated (playback code). | checked 2026-10-28 |
 | [RF-127](tasks/RF-127.json) Playback CSP docs describe iOS native HLS under media-src | P3 / documentation | — | One-line comment fix in _headers; owner-gated path (security headers), so batch it with the next _headers change. The planning doc was fixed in the follow-up docs PR. | checked 2026-10-28 |
 | [RF-144](tasks/RF-144.json) The design brief and D21 describe the provider capabilities and Account sections the product has | P3 / documentation | — | Docs-only PR. The §9.8 fix can go now; the D21 line waits on RF-131 decision 5. Surface: docs (design canon, so iOS reads it too). | checked 2026-10-29 |
-| [RF-73](tasks/RF-73.json) Classes buttons fail WCAG 2.5.3 label in name | untriaged / task | — | Reproduce affected controls, propose the smallest label-in-name correction, then seek implementation approval. | recorded |
-| [RF-74](tasks/RF-74.json) Spotify playlist dialog offers Try again where retry cannot help | untriaged / task | — | Review the error/action mapping. Spotify reopened by the owner on 2026-10-28; Apple work comes first until about 2026-11-27. Resume risk: the Spotify developer app rejects the connected account ("The user is not registered for this application"), so Web API calls return 403. | recorded; checked 2026-10-28 |
+| [RF-146](tasks/RF-146.json) Instructor benchmark gaps from 2026-09-29 are triaged into records | P3 / plan | — | Walk the gap list in DEVELOPMENT_PLAN.md › Backlog › Instructor benchmark gaps against open records, propose the mapping, and file only what the owner accepts. Schema-changing gaps (cue plus per-cue note) need their own plan. | checked 2026-10-29 |
+| [RF-74](tasks/RF-74.json) Spotify playlist dialog offers Try again where retry cannot help | untriaged / task | parent RF-92 | Review the error/action mapping. Spotify reopened by the owner on 2026-10-28; Apple work comes first until about 2026-11-27. Resume risk: the Spotify developer app rejects the connected account ("The user is not registered for this application"), so Web API calls return 403. | recorded; checked 2026-10-28; checked 2026-10-29 |
 
 ## Done
 
@@ -189,4 +190,4 @@ A checked PR proves its GitHub state, not product acceptance or production behav
 
 | Task | Priority / kind | Relationships | Next action / resolution | Evidence |
 | --- | --- | --- | --- | --- |
-| — | — | — | — | — |
+| [RF-73](tasks/RF-73.json) Classes buttons fail WCAG 2.5.3 label in name | untriaged / task | — | Duplicated by RF-142, which now carries the WCAG 2.5.3 label-in-name check for Classes controls (owner-approved board cleanup, 2026-10-29). | recorded; checked 2026-10-29 |

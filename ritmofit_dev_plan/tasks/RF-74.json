@@ -5,7 +5,7 @@
   "kind": "task",
   "status": "backlog",
   "priority": "untriaged",
-  "parent": null,
+  "parent": "RF-92",
   "dependsOn": [],
   "acceptance": [
     "Identify each unretryable playlist error and its actionable recovery.",
@@ -25,6 +25,12 @@
       "ref": "https://github.com/steven-crosby/ritmofit-web/pull/646",
       "summary": "Owner decision in session on 2026-10-28: Spotify work is reopened (the family now has Spotify Family). The Apple Music subscription ends around 2026-11-27, so Apple hardening and Apple device checks come first in that window.",
       "checkedOn": "2026-10-28"
+    },
+    {
+      "kind": "document",
+      "ref": "ritmofit_dev_plan/DEVELOPMENT_PLAN.md",
+      "checkedOn": "2026-10-29",
+      "summary": "Owner-approved phased plan (2026-10-29) groups RF-74 under RF-92 in Phase 3 (Spotify)."
     }
   ],
   "resolution": null,
