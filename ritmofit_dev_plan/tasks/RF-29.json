@@ -15,7 +15,7 @@
     "On the identified production bundle, Steven hears Apple Music in iPhone Safari Live, then verifies pause, resume, seek, and track advance.",
     "Record device/browser, bundle and Worker, audible outcome, and any exact failure. UI or SDK success alone does not pass."
   ],
-  "nextAction": "After RF-124 is deployed, repeat in iPhone Safari Live on 5G: Start, Pause, Resume, Next, seek and auto-advance, recording the audible outcome of each and the Start delay (RF-128). Do not implement or deploy from this task.",
+  "nextAction": "After RF-124 is deployed, retry in iPhone Safari Live on 5G with Web Inspector attached. First clear the service worker and caches (or reload) and note the bundle hash. Then record the audible outcome of Start (and its delay, RF-128), Pause, Resume, Next, seek and auto-advance. If anything hangs or shows a banner, capture the console and the exact banner text, and reload before a second try. Do not implement or deploy from this task.",
   "blocker": "Audible on iPhone 5G after RF-122, but Resume and Next fail (RF-124).",
   "evidence": [
     {
@@ -44,9 +44,9 @@
     },
     {
       "kind": "observation",
-      "ref": "ritmofit_dev_plan/tasks/RF-29.json",
+      "ref": "ritmofit_dev_plan/device-provider-matrix.md",
       "checkedOn": "2026-10-28",
-      "summary": "Owner iPhone Safari, 5G, Worker b41b99f9 (RF-122 live), screen recording 23:06: Start class played Break Stuff after about 5 s. Pause worked. Resume stuck on 'Waiting for music — Provider playback has not confirmed progress'. Next to Rollin' (Air Raid Vehicle) showed 'Playback stopped' with Playback error at class clock 2:47."
+      "summary": "Owner iPhone Safari, 5G, Worker b41b99f9 (RF-122 live), screen recording 2026-10-28 23:06 (not in the repo; bundle hash not captured): Start class played Break Stuff after about 5 s. Pause worked. Resume stuck on 'Waiting for music — Provider playback has not confirmed progress'. Next to Rollin' (Air Raid Vehicle) showed 'Playback stopped' with Playback error at class clock 2:47."
     }
   ],
   "resolution": null,

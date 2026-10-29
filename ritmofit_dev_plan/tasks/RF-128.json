@@ -19,8 +19,8 @@
     {
       "kind": "observation",
       "ref": "ritmofit_dev_plan/tasks/RF-29.json",
-      "checkedOn": "2026-10-28",
-      "summary": "Owner iPhone Safari, 5G, Worker b41b99f9 (RF-122 live), screen recording 23:06: Start class played Break Stuff after about 5 s. Pause worked. Resume stuck on 'Waiting for music — Provider playback has not confirmed progress'. Next to Rollin' (Air Raid Vehicle) showed 'Playback stopped' with Playback error at class clock 2:47."
+      "checkedOn": null,
+      "summary": "Transport results from the owner's 2026-10-28 iPhone 5G recording; the observation is recorded once in RF-29."
     }
   ],
   "resolution": null,

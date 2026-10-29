@@ -10,15 +10,21 @@
     "RF-122"
   ],
   "acceptance": [
-    "On iPhone Safari Live with Apple Music, Resume after Pause and Next both play audibly within 1 s of the tap, and auto-advance plays the next song with no tap.",
+    "On iPhone Safari Live with Apple Music, Resume after Pause and Next both play audibly with no extra queue load after the tap, and auto-advance plays the next song with no tap. Start latency itself is RF-128.",
     "Resume on the same song does not reload the queue (no release, prepare or setQueue); it continues the paused MusicKit item.",
     "Track changes that need a new song keep MusicKit inside the user's tap or inside an already-playing session, chosen from an on-device probe recorded in evidence before code.",
     "Unit tests cover resume-in-place, a seek while paused, and track change; desktop Chrome Apple Music and SoundCloud/Spotify transport do not regress.",
     "Owner hears Start, Pause, Resume, Next, seek and auto-advance on the deployed bundle; RF-29 records it."
   ],
-  "nextAction": "Steps 1 (Resume in place) and 3 (RF-123) are on draft PR #656. Next: the owner's on-device probe on iPhone Safari with Web Inspector (pause/play, setQueue while playing, multi-song queue skip, Start timing for RF-128), then step 2 (Next, seek and auto-advance) in the same PR. Owner-gated playback PR.",
+  "nextAction": "Steps 1 (Resume in place) and 3 (RF-123) are on draft PR #656. Next: the owner's on-device probe on iPhone Safari with Web Inspector (pause/play, setQueue while playing, multi-song queue skip, Start timing for RF-128), then step 2 (Next, seek and auto-advance) in the same PR. Owner-gated playback PR. Coordinate with RF-108 and RF-121, which also change apple-music-adapter.ts.",
   "blocker": null,
   "evidence": [
+    {
+      "kind": "observation",
+      "ref": "ritmofit_dev_plan/tasks/RF-29.json",
+      "checkedOn": null,
+      "summary": "Investigation outcome (original scope, 'setQueue runs inside the Start gesture'): a real Start tap did play on 5G, so Start needed no change. Resume and Next failed instead, so the owner re-scoped this task to the fix and moved it to Ready in session on 2026-10-29."
+    },
     {
       "kind": "observation",
       "ref": "ritmofit_dev_plan/tasks/RF-29.json",
@@ -28,8 +34,8 @@
     {
       "kind": "observation",
       "ref": "ritmofit_dev_plan/tasks/RF-29.json",
-      "checkedOn": "2026-10-28",
-      "summary": "Owner iPhone Safari, 5G, Worker b41b99f9 (RF-122 live), screen recording 23:06: Start class played Break Stuff after about 5 s. Pause worked. Resume stuck on 'Waiting for music — Provider playback has not confirmed progress'. Next to Rollin' (Air Raid Vehicle) showed 'Playback stopped' with Playback error at class clock 2:47."
+      "checkedOn": null,
+      "summary": "Transport results from the owner's 2026-10-28 iPhone 5G recording; the observation is recorded once in RF-29."
     },
     {
       "kind": "pr",
