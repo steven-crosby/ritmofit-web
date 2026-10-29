@@ -3,7 +3,7 @@
   "id": "RF-124",
   "title": "Apple Music Resume and Next play on iPhone Safari",
   "kind": "task",
-  "status": "ready",
+  "status": "in_progress",
   "priority": "P1",
   "parent": null,
   "dependsOn": [
@@ -16,7 +16,7 @@
     "Unit tests cover resume-in-place, a seek while paused, and track change; desktop Chrome Apple Music and SoundCloud/Spotify transport do not regress.",
     "Owner hears Start, Pause, Resume, Next, seek and auto-advance on the deployed bundle; RF-29 records it."
   ],
-  "nextAction": "Owner moved this to Ready on 2026-10-29. Planning: present the written plan (on-device probe first, then resume-in-place and track change, folding in RF-123) for owner confirmation before code. Owner-gated playback PR.",
+  "nextAction": "Steps 1 (Resume in place) and 3 (RF-123) are on draft PR #656. Next: the owner's on-device probe on iPhone Safari with Web Inspector (pause/play, setQueue while playing, multi-song queue skip, Start timing for RF-128), then step 2 (Next, seek and auto-advance) in the same PR. Owner-gated playback PR.",
   "blocker": null,
   "evidence": [
     {
@@ -30,6 +30,12 @@
       "ref": "ritmofit_dev_plan/tasks/RF-29.json",
       "checkedOn": "2026-10-28",
       "summary": "Owner iPhone Safari, 5G, Worker b41b99f9 (RF-122 live), screen recording 23:06: Start class played Break Stuff after about 5 s. Pause worked. Resume stuck on 'Waiting for music — Provider playback has not confirmed progress'. Next to Rollin' (Air Raid Vehicle) showed 'Playback stopped' with Playback error at class clock 2:47."
+    },
+    {
+      "kind": "pr",
+      "ref": "https://github.com/steven-crosby/ritmofit-web/pull/656",
+      "checkedOn": "2026-10-29",
+      "summary": "Draft PR: runtime resumes a paused same-track job in place (play first, inside the tap); Apple adapter releases a timed-out queue lock."
     }
   ],
   "resolution": null,

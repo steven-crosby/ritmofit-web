@@ -3,7 +3,7 @@
   "id": "RF-123",
   "title": "Apple Music retry is not blocked by a timed-out queue request",
   "kind": "task",
-  "status": "backlog",
+  "status": "done",
   "priority": "P2",
   "parent": null,
   "dependsOn": [],
@@ -11,7 +11,7 @@
     "When setQueue times out in apple-music-adapter.ts, the pending-queue lock for that instance no longer blocks the next prepare, so Retry playback can try again without a page reload.",
     "A test covers: setQueue never settles, prepare times out, the next prepare reaches setQueue instead of 'still finishing a previous queue request'."
   ],
-  "nextAction": "Folded into the RF-124 plan (same file, same failure path). Owner-gated (playback code).",
+  "nextAction": null,
   "blocker": null,
   "evidence": [
     {
@@ -19,8 +19,14 @@
       "ref": "ritmofit_dev_plan/tasks/RF-29.json",
       "summary": "Owner iPhone Safari 2026-10-28: after a hung setQueue, Retry playback and a fresh Start both showed 'The Apple Music player is still finishing a previous queue request for \"Break Stuff\"'. pendingQueueGenerations is cleared only in the setQueue promise's finally, which never runs when MusicKit never settles.",
       "checkedOn": "2026-10-28"
+    },
+    {
+      "kind": "pr",
+      "ref": "https://github.com/steven-crosby/ritmofit-web/pull/656",
+      "checkedOn": "2026-10-29",
+      "summary": "Timeout releases the queue lock; test: setQueue never settles, prepare times out, retry prepare reaches setQueue (fails without the fix)."
     }
   ],
-  "resolution": null,
+  "resolution": "apple-music-adapter.ts releases the pending-queue lock when setQueue times out, so the next prepare reaches setQueue. Unit test added. On-device confirmation rides on RF-29.",
   "followUps": []
 }

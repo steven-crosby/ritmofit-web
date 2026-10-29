@@ -12,13 +12,13 @@ owner's queue: any agent may execute a Ready task. Publishing follows AGENTS.md 
 Evidence marked **recorded** is a carried-forward claim, not fresh verification.
 A checked PR proves its GitHub state, not product acceptance or production behavior.
 
-126 tasks. backlog: 29 · ready: 2 · in_progress: 0 · blocked: 2 · review: 7 · done: 86 · cancelled: 0.
+126 tasks. backlog: 28 · ready: 1 · in_progress: 1 · blocked: 2 · review: 7 · done: 87 · cancelled: 0.
 
 ## In progress
 
 | Task | Priority / kind | Relationships | Next action / resolution | Evidence |
 | --- | --- | --- | --- | --- |
-| — | — | — | — | — |
+| [RF-124](tasks/RF-124.json) Apple Music Resume and Next play on iPhone Safari | P1 / task | needs RF-122 | Steps 1 (Resume in place) and 3 (RF-123) are on draft PR #656. Next: the owner's on-device probe on iPhone Safari with Web Inspector (pause/play, setQueue while playing, multi-song queue skip, Start timing for RF-128), then step 2 (Next, seek and auto-advance) in the same PR. Owner-gated playback PR. | checked 2026-10-28; checked 2026-10-29 |
 
 ## Blocked / waiting
 
@@ -43,7 +43,6 @@ A checked PR proves its GitHub state, not product acceptance or production behav
 
 | Task | Priority / kind | Relationships | Next action / resolution | Evidence |
 | --- | --- | --- | --- | --- |
-| [RF-124](tasks/RF-124.json) Apple Music Resume and Next play on iPhone Safari | P1 / task | needs RF-122 | Owner moved this to Ready on 2026-10-29. Planning: present the written plan (on-device probe first, then resume-in-place and track change, folding in RF-123) for owner confirmation before code. Owner-gated playback PR. | checked 2026-10-28 |
 | [RF-100](tasks/RF-100.json) Label changes rerun only the PR gates, not the full CI job | P3 / task | needs RF-98 | Owner set Ready on 2026-10-28. Design a gate-only path for labeled/unlabeled events (separate job or workflow) that keeps the required check name meaningful, so a label edit re-evaluates only the owner gate. Also key the concurrency group per PR (for example ci-${{ github.event.pull_request.number &#124;&#124; github.ref }}) so a label edit on a merged PR cannot cancel main's push run (acceptance 3). Until fixed, agents remove ready-to-merge before merging, never after. Owner-gated: the change edits .github/workflows/ci.yml. | checked 2026-10-27; checked 2026-10-28 |
 
 ## Backlog
@@ -57,7 +56,6 @@ A checked PR proves its GitHub state, not product acceptance or production behav
 | [RF-108](tasks/RF-108.json) Scrubbing or pausing Live during a track start keeps music playing | P2 / task | needs RF-107 | Parked from the owner's Ready queue on 2026-10-28 while RF-107 was not Done. RF-107 is now Done (#649, 9166826, deployed 2026-10-28), so the owner can re-promote it. Then: Lane A's second PR, a bounded settle wait in apps/web/src/lib/playback/. The Spotify adapter half is in scope now that Spotify is reopened (owner, 2026-10-28). Owner-gated; device check owed. It rebases over RF-107's apple-music-adapter.ts change. Fold in RF-121's held-error attempt token and coordinate with RF-123 (queue lock) in the same file. | recorded; checked 2026-10-28 |
 | [RF-115](tasks/RF-115.json) Import attaches the recording the instructor asked for | P2 / task | — | Await owner Ready. C-23 and C-26 may ride along if they stay in attachProviderId and importTrackFromCandidate. Do not mix with RF-92. Split out of RF-94 at intake. Owner-gated paths: the PR needs owner-approved. | recorded |
 | [RF-116](tasks/RF-116.json) A password reset signs out old sessions, and Disconnect drops provider logins | P2 / task | — | Await owner Ready. Split out of RF-94 at intake. Owner-gated paths: the PR needs owner-approved. | recorded |
-| [RF-123](tasks/RF-123.json) Apple Music retry is not blocked by a timed-out queue request | P2 / task | — | Folded into the RF-124 plan (same file, same failure path). Owner-gated (playback code). | checked 2026-10-28 |
 | [RF-128](tasks/RF-128.json) Apple Music Start class sounds within 1 s on iPhone Safari | P2 / task | needs RF-124 | Measure where the 5 s goes during the RF-124 on-device probe (MusicKit load, config fetch, setQueue, play), then plan with RF-124. Owner-gated (playback code). | checked 2026-10-28 |
 | [RF-101](tasks/RF-101.json) Owner-gate route authz call sites and CI-config files | P3 / task | needs RF-98 | Owner decides whether to gate route and CI-config files, given every merge already needs per-PR permission. | checked 2026-10-27; recorded |
 | [RF-102](tasks/RF-102.json) Owner approval binds only to a commit the owner actually saw | P3 / task | needs RF-98 | Owner decides whether to harden further (for example, bind to the reviewed SHA named in the approval) given per-PR merge permission is the backstop. | checked 2026-10-27 |
@@ -93,6 +91,7 @@ A checked PR proves its GitHub state, not product acceptance or production behav
 | [RF-89](tasks/RF-89.json) Review core workflow regression coverage PR #625 | P2 / task | — | Reviewed against current main on 2026-10-27: web 171, Spotify 49 and D1 integration 4 tests passed on the merged tree. Squash-merged as 0065eaf. Tests only; its handoff, whose sole action was this merge, is retired. | recorded; checked 2026-10-27 |
 | [RF-95](tasks/RF-95.json) Implement the repository-owned RF task system | P2 / task | — | Repository-owned task tooling and migration completed; all acceptance checks passed locally. PR #640 publishes this result once merged. No deployment is required. | checked 2026-10-27 |
 | [RF-97](tasks/RF-97.json) Align session prompts with the canonical RF task lifecycle | P2 / task | follow-ups RF-98 | Codex's six corrections were reviewed and carried into the RF-98 branch from main on 2026-10-27 with their substance intact. Their 'permissions already granted' wording now resolves to the standing grant in AGENTS.md › Delegation And Merge Policy. Publication is tracked by RF-98. | checked 2026-10-27 |
+| [RF-123](tasks/RF-123.json) Apple Music retry is not blocked by a timed-out queue request | P2 / task | — | apple-music-adapter.ts releases the pending-queue lock when setQueue times out, so the next prepare reaches setQueue. Unit test added. On-device confirmation rides on RF-29. | checked 2026-10-28; checked 2026-10-29 |
 | [RF-1](tasks/RF-1.json) Desktop hold, BPM, and effort recorded on the QA cycle song | untriaged / task | — | Recorded complete on the imported board; product behavior was not re-tested during task migration. | recorded |
 | [RF-2](tasks/RF-2.json) Teaching-screen deploy record on main | untriaged / documentation | — | Recorded complete on the imported board; product behavior was not re-tested during task migration. | recorded; checked 2026-10-27 |
 | [RF-3](tasks/RF-3.json) Teaching screen live | untriaged / task | — | Recorded complete on the imported board; product behavior was not re-tested during task migration. | recorded; checked 2026-10-27 |
