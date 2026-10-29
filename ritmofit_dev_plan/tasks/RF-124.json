@@ -2,17 +2,27 @@
   "schemaVersion": 1,
   "id": "RF-124",
   "title": "Apple Music setQueue runs inside the iOS Start gesture",
-  "kind": "task",
+  "kind": "investigation",
   "status": "backlog",
-  "priority": "untriaged",
+  "priority": "P2",
   "parent": null,
-  "dependsOn": [],
-  "acceptance": [
-    "Replace with a concrete observable acceptance check before starting work."
+  "dependsOn": [
+    "RF-122"
   ],
-  "nextAction": "Define scope and acceptance criteria; obtain any required owner approval.",
+  "acceptance": [
+    "On deployed iPhone Safari with RF-122 live, record whether a real Start tap reaches setQueue and play() reliably, or whether setQueue still hangs without a gesture.",
+    "If it hangs, propose a change that issues MusicKit setQueue/play within the Start tap (or a prepared-on-tap step) with its test plan; do not implement without owner approval."
+  ],
+  "nextAction": "Check during the RF-29 retry: if Break Stuff plays from a real Start tap, close this as not needed. Owner-gated (playback code).",
   "blocker": null,
-  "evidence": [],
+  "evidence": [
+    {
+      "kind": "observation",
+      "ref": "ritmofit_dev_plan/tasks/RF-29.json",
+      "summary": "Owner iPhone Safari 2026-10-28, console-driven: setQueue({songs:['1440754477']}) timed out at 20 s twice without Emulate User Gesture and resolved in 313 ms with it. runtime.ts awaits prepare (setQueue) before play().",
+      "checkedOn": "2026-10-28"
+    }
+  ],
   "resolution": null,
   "followUps": []
 }

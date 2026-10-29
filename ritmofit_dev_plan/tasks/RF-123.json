@@ -4,15 +4,23 @@
   "title": "Apple Music retry is not blocked by a timed-out queue request",
   "kind": "task",
   "status": "backlog",
-  "priority": "untriaged",
+  "priority": "P2",
   "parent": null,
   "dependsOn": [],
   "acceptance": [
-    "Replace with a concrete observable acceptance check before starting work."
+    "When setQueue times out in apple-music-adapter.ts, the pending-queue lock for that instance no longer blocks the next prepare, so Retry playback can try again without a page reload.",
+    "A test covers: setQueue never settles, prepare times out, the next prepare reaches setQueue instead of 'still finishing a previous queue request'."
   ],
-  "nextAction": "Define scope and acceptance criteria; obtain any required owner approval.",
+  "nextAction": "Plan with RF-121/RF-108, which also touch apple-music-adapter.ts. Owner-gated (playback code).",
   "blocker": null,
-  "evidence": [],
+  "evidence": [
+    {
+      "kind": "observation",
+      "ref": "ritmofit_dev_plan/tasks/RF-29.json",
+      "summary": "Owner iPhone Safari 2026-10-28: after a hung setQueue, Retry playback and a fresh Start both showed 'The Apple Music player is still finishing a previous queue request for \"Break Stuff\"'. pendingQueueGenerations is cleared only in the setQueue promise's finally, which never runs when MusicKit never settles.",
+      "checkedOn": "2026-10-28"
+    }
+  ],
   "resolution": null,
   "followUps": []
 }
