@@ -268,6 +268,12 @@ beforeEach(() => {
     },
   );
   vi.mocked(api.listClassPlanBlocks).mockResolvedValue([]);
+  // Liked songs load in pages (RF-132). Tests that stub `listLikes` with one array
+  // get it as a single last page; paging tests stub `listLikesPage` directly.
+  vi.mocked(api.listLikesPage).mockImplementation(async (provider) => {
+    const rows = await api.listLikes(provider);
+    return { items: Array.isArray(rows) ? rows : [], nextCursor: null };
+  });
 });
 
 afterEach(() => {
@@ -4838,5 +4844,188 @@ describe('Dashboard loading and load-error states', () => {
     expect((await screen.findAllByText(/No classes with tracks yet/)).length).toBeGreaterThan(0);
     expect(screen.queryByRole('alert')).toBeNull();
     expect(api.listClasses).toHaveBeenCalledTimes(2);
+  });
+});
+
+describe('Music Songs paging and search (RF-132)', () => {
+  const song = (id: string, title = `Song ${id}`, provider: Provider = 'spotify') => ({
+    provider,
+    providerTrackId: id,
+    providerUri: null,
+    title,
+    artist: 'Artist',
+    albumArtUrl: null,
+    durationMs: 180000,
+  });
+
+  async function openSongs(service: string) {
+    renderDashboard();
+    fireEvent.click(await screen.findByRole('button', { name: 'Music' }));
+    await selectMusicService(service);
+    fireEvent.click(screen.getByRole('button', { name: 'Songs' }));
+  }
+
+  it('labels the provider-order sort "Library order", not Recents', async () => {
+    vi.mocked(api.listClasses).mockResolvedValue(page([]));
+    vi.mocked(api.listConnections).mockResolvedValue([spotifyConnection()]);
+    vi.mocked(api.listLikes).mockResolvedValue([song('1', 'Levels')]);
+
+    await openSongs('Spotify');
+    const sort = await screen.findByRole('group', { name: 'Sort' });
+    expect(within(sort).getByRole('button', { name: 'Library order' })).toBeTruthy();
+    expect(within(sort).queryByRole('button', { name: 'Recents' })).toBeNull();
+    expect(
+      within(sort).getByRole('button', { name: 'Library order' }).getAttribute('aria-pressed'),
+    ).toBe('true');
+  });
+
+  it('loads the next page with the provider cursor and appends it', async () => {
+    vi.mocked(api.listClasses).mockResolvedValue(page([]));
+    vi.mocked(api.listConnections).mockResolvedValue([spotifyConnection()]);
+    vi.mocked(api.listLikesPage).mockImplementation(async (_provider, options = {}) =>
+      options.cursor === 'cursor-1'
+        ? { items: [song('2', 'Second Page Song')], nextCursor: null }
+        : { items: [song('1', 'First Page Song')], nextCursor: 'cursor-1' },
+    );
+
+    await openSongs('Spotify');
+    expect(await screen.findByText('First Page Song')).toBeTruthy();
+    fireEvent.click(screen.getByRole('button', { name: 'Load more songs' }));
+
+    expect(await screen.findByText('Second Page Song')).toBeTruthy();
+    expect(screen.getByText('First Page Song')).toBeTruthy();
+    expect(api.listLikesPage).toHaveBeenCalledWith('spotify', { cursor: 'cursor-1' });
+    await waitFor(() =>
+      expect(screen.queryByRole('button', { name: 'Load more songs' })).toBeNull(),
+    );
+  });
+
+  it('keeps loaded songs and offers a retry when loading more fails', async () => {
+    vi.mocked(api.listClasses).mockResolvedValue(page([]));
+    vi.mocked(api.listConnections).mockResolvedValue([spotifyConnection()]);
+    vi.mocked(api.listLikesPage).mockImplementation(async (_provider, options = {}) => {
+      if (options.cursor) throw new Error('Spotify is busy');
+      return { items: [song('1', 'First Page Song')], nextCursor: 'cursor-1' };
+    });
+
+    await openSongs('Spotify');
+    fireEvent.click(await screen.findByRole('button', { name: 'Load more songs' }));
+
+    expect(await screen.findByText('Couldn’t load more songs: Spotify is busy')).toBeTruthy();
+    expect(screen.getByText('First Page Song')).toBeTruthy();
+    expect(screen.getByRole('button', { name: 'Load more songs' })).toBeTruthy();
+  });
+
+  it('searches the whole Apple Music library on the server', async () => {
+    vi.mocked(api.listClasses).mockResolvedValue(page([]));
+    vi.mocked(api.listConnections).mockResolvedValue([
+      { ...spotifyConnection(), provider: 'apple_music' },
+    ]);
+    vi.mocked(api.listPlaylists).mockResolvedValue([]);
+    vi.mocked(api.listLikesPage).mockImplementation(async (_provider, options = {}) =>
+      options.q
+        ? { items: [song('deep', 'Deep Cut Past Page One', 'apple_music')], nextCursor: null }
+        : { items: [song('a', 'A.F.U.', 'apple_music')], nextCursor: 'apple-cursor' },
+    );
+
+    await openSongs('Apple Music');
+    expect(await screen.findByText('A.F.U.')).toBeTruthy();
+    fireEvent.change(screen.getByRole('searchbox', { name: 'Search songs' }), {
+      target: { value: 'deep cut' },
+    });
+
+    expect(await screen.findByText('Deep Cut Past Page One')).toBeTruthy();
+    expect(api.listLikesPage).toHaveBeenCalledWith('apple_music', { q: 'deep cut' });
+    expect(screen.queryByText('A.F.U.')).toBeNull();
+    // A server search is not paged, so it offers no "Load more".
+    expect(screen.queryByRole('button', { name: 'Load more songs' })).toBeNull();
+  });
+
+  it('falls back to loaded songs with a note when the Apple library search fails', async () => {
+    vi.mocked(api.listClasses).mockResolvedValue(page([]));
+    vi.mocked(api.listConnections).mockResolvedValue([
+      { ...spotifyConnection(), provider: 'apple_music' },
+    ]);
+    vi.mocked(api.listPlaylists).mockResolvedValue([]);
+    vi.mocked(api.listLikesPage).mockImplementation(async (_provider, options = {}) => {
+      if (options.q) throw new Error('Too many requests');
+      return { items: [song('a', 'Angel', 'apple_music')], nextCursor: null };
+    });
+
+    await openSongs('Apple Music');
+    expect(await screen.findByText('Angel')).toBeTruthy();
+    fireEvent.change(screen.getByRole('searchbox', { name: 'Search songs' }), {
+      target: { value: 'angel' },
+    });
+
+    expect(
+      await screen.findByText(
+        'Couldn’t search your whole Apple Music library. Showing matches in loaded songs.',
+      ),
+    ).toBeTruthy();
+    expect(screen.getByText('Angel')).toBeTruthy();
+  });
+
+  it('keeps loading pages while searching, stops at 1,000 songs, then offers Keep loading', async () => {
+    vi.mocked(api.listClasses).mockResolvedValue(page([]));
+    vi.mocked(api.listConnections).mockResolvedValue([spotifyConnection()]);
+    let calls = 0;
+    vi.mocked(api.listLikesPage).mockImplementation(async () => {
+      const from = calls * 200;
+      calls += 1;
+      return {
+        items: Array.from({ length: 200 }, (_, i) => song(`s${from + i}`)),
+        nextCursor: `cursor-${calls}`,
+      };
+    });
+
+    await openSongs('Spotify');
+    expect(await screen.findByText('Song s0')).toBeTruthy();
+    fireEvent.change(screen.getByRole('searchbox', { name: 'Search songs' }), {
+      target: { value: 'not in the first thousand' },
+    });
+
+    expect(await screen.findByText('Searched your first 1,000 liked songs.')).toBeTruthy();
+    expect(calls).toBe(5);
+    expect(screen.getByText('No matches.')).toBeTruthy();
+
+    fireEvent.click(screen.getByRole('button', { name: 'Keep loading' }));
+    await waitFor(() => expect(calls).toBeGreaterThan(5));
+  });
+
+  it('says when "Create class from liked songs" used a subset of the library', async () => {
+    vi.mocked(api.listClasses).mockResolvedValue(page([]));
+    vi.mocked(api.listConnections).mockResolvedValue([spotifyConnection()]);
+    vi.mocked(api.listLikesPage).mockResolvedValue({
+      items: [song('1', 'Levels'), song('2', 'Wake Me Up')],
+      nextCursor: 'cursor-1',
+    });
+
+    renderDashboard();
+    fireEvent.click(await screen.findByRole('button', { name: 'Music' }));
+    await openLikedSongs('Spotify');
+
+    const dialog = await screen.findByRole('dialog', { name: 'Browse Spotify likes' });
+    expect(
+      within(dialog).getByText(
+        'Using your first 2 liked songs. Load more on Music › Songs to choose from more.',
+      ),
+    ).toBeTruthy();
+  });
+
+  it('does not claim a subset when every liked song is loaded', async () => {
+    vi.mocked(api.listClasses).mockResolvedValue(page([]));
+    vi.mocked(api.listConnections).mockResolvedValue([spotifyConnection()]);
+    vi.mocked(api.listLikesPage).mockResolvedValue({
+      items: [song('1', 'Levels')],
+      nextCursor: null,
+    });
+
+    renderDashboard();
+    fireEvent.click(await screen.findByRole('button', { name: 'Music' }));
+    await openLikedSongs('Spotify');
+
+    const dialog = await screen.findByRole('dialog', { name: 'Browse Spotify likes' });
+    expect(within(dialog).queryByText(/Using your first/)).toBeNull();
   });
 });

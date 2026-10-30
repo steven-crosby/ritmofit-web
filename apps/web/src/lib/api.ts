@@ -271,9 +271,37 @@ export const getClassShelfPayload = (classId: string) => getRunPayload(classId);
 /** Provider search candidates (server serves the live adapter or the dev mock). */
 export const searchProvider = (provider: Provider, q: string) =>
   api<TrackSearchResult[]>(`/providers/${provider}/search?q=${encodeURIComponent(q)}`);
-/** The caller's liked tracks at a provider — spends their stored OAuth token. */
+/** The caller's liked tracks at a provider — spends their stored OAuth token. First page only. */
 export const listLikes = (provider: Provider) =>
   api<TrackSearchResult[]>(`/providers/${provider}/likes`);
+
+/** One page of liked/library songs plus the opaque cursor for the next page (RF-132). */
+export interface LikesPage {
+  items: TrackSearchResult[];
+  nextCursor: string | null;
+}
+
+/**
+ * A page of the caller's liked tracks. `cursor` continues from a previous page's
+ * `nextCursor`; `q` (Apple Music only) searches the library server-side instead.
+ * The body is the same bare array as `listLikes`; the cursor rides in the
+ * `X-RitmoFit-Next-Cursor` header, absent on the last page.
+ */
+export const listLikesPage = async (
+  provider: Provider,
+  options: { cursor?: string; q?: string } = {},
+): Promise<LikesPage> => {
+  const params = new URLSearchParams();
+  if (options.cursor) params.set('cursor', options.cursor);
+  if (options.q) params.set('q', options.q);
+  const query = params.toString();
+  const res = await apiResponse(`/providers/${provider}/likes${query ? `?${query}` : ''}`);
+  const body = (await res.json()) as unknown;
+  return {
+    items: Array.isArray(body) ? (body as TrackSearchResult[]) : [],
+    nextCursor: res.headers.get(CLASS_LIST_NEXT_CURSOR_HEADER),
+  };
+};
 /** The caller's saved playlists at a provider (where integrated). */
 export const listPlaylists = (provider: Provider) =>
   api<ProviderPlaylistSummary[]>(`/providers/${provider}/playlists`);

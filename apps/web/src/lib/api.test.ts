@@ -5,7 +5,7 @@ vi.mock('./auth-client.js', () => ({
   authClient: { signOut: vi.fn() },
 }));
 
-import { ApiError, NETWORK_ERROR_MESSAGE, deleteClass, getClass } from './api.js';
+import { ApiError, NETWORK_ERROR_MESSAGE, deleteClass, getClass, listLikesPage } from './api.js';
 
 afterEach(() => {
   vi.unstubAllGlobals();
@@ -47,5 +47,39 @@ describe('api response handling', () => {
     vi.stubGlobal('fetch', vi.fn().mockRejectedValue(abort));
 
     await expect(getClass('class-1')).rejects.toBe(abort);
+  });
+});
+
+describe('listLikesPage (RF-132)', () => {
+  const row = { provider: 'apple_music', providerTrackId: '1', title: 'A', artist: 'B' };
+
+  it('reads the next cursor from the response header and keeps the array body', async () => {
+    const fetchMock = vi
+      .fn()
+      .mockResolvedValue(Response.json([row], { headers: { 'X-RitmoFit-Next-Cursor': 'next-1' } }));
+    vi.stubGlobal('fetch', fetchMock);
+
+    await expect(listLikesPage('apple_music')).resolves.toEqual({
+      items: [row],
+      nextCursor: 'next-1',
+    });
+    expect(fetchMock.mock.calls[0]?.[0]).toBe('http://api.test/api/v1/providers/apple_music/likes');
+  });
+
+  it('passes cursor and q as query parameters and reports the last page as null', async () => {
+    const fetchMock = vi.fn().mockImplementation(async () => Response.json([]));
+    vi.stubGlobal('fetch', fetchMock);
+
+    await expect(listLikesPage('soundcloud', { cursor: 'a+b/c' })).resolves.toEqual({
+      items: [],
+      nextCursor: null,
+    });
+    await listLikesPage('apple_music', { q: 'angel of mine' });
+    expect(fetchMock.mock.calls[0]?.[0]).toBe(
+      'http://api.test/api/v1/providers/soundcloud/likes?cursor=a%2Bb%2Fc',
+    );
+    expect(fetchMock.mock.calls[1]?.[0]).toBe(
+      'http://api.test/api/v1/providers/apple_music/likes?q=angel+of+mine',
+    );
   });
 });

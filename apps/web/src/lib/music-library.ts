@@ -6,10 +6,17 @@
  * Album shelves are omitted on purpose: no provider lists albums through an
  * existing API, and a chip with nothing behind it would be a dead end.
  *
- * Recents keeps the order the service returned. Playlist and like payloads have
- * no recency timestamp, so the tab does not invent one.
+ * "Library order" keeps the order the service returned. It is not recency: Apple
+ * Music documents no date-added sort for library songs (its order is near
+ * alphabetical), SoundCloud documents no like date, and playlist payloads carry
+ * no timestamp, so the tab does not invent one (RF-132).
+ *
+ * Liked/library songs arrive in pages (`listLikesPage`). Search on Songs reaches
+ * past the loaded pages: Apple Music searches the library server-side; the other
+ * services keep loading pages while a query is typed, up to
+ * `SONG_SEARCH_AUTOLOAD_BOUND` songs, then say so and offer to keep loading.
  */
-import { providerCapabilities, type Provider } from '@ritmofit/shared';
+import { providerCapabilities, type Provider, type TrackSearchResult } from '@ritmofit/shared';
 import type { ProviderConnectionState } from './providers.js';
 import { formatDuration } from './class-summary.js';
 
@@ -113,7 +120,82 @@ export function musicConnectionNotice(input: {
   return null;
 }
 
-export type LibrarySort = 'recents' | 'name';
+export type LibrarySort = 'library' | 'name';
+
+/** Sort toggle labels, in display order. */
+export const LIBRARY_SORT_OPTIONS: readonly (readonly [LibrarySort, string])[] = [
+  ['library', 'Library order'],
+  ['name', 'Name'],
+];
+
+/** Songs a typed search may load without asking: 5 pages of about 200 (owner, 2026-10-29). */
+export const SONG_SEARCH_AUTOLOAD_BOUND = 1000;
+
+/** Which Songs search a service supports: Apple searches the library server-side. */
+export function songSearchMode(provider: Provider): 'server' | 'loaded' {
+  return provider === 'apple_music' ? 'server' : 'loaded';
+}
+
+/** Append a page of songs, dropping any song already loaded (pages can overlap). */
+export function appendSongPage(
+  loaded: readonly TrackSearchResult[],
+  page: readonly TrackSearchResult[],
+): TrackSearchResult[] {
+  const seen = new Set(loaded.map((row) => `${row.provider}:${row.providerTrackId}`));
+  const out = [...loaded];
+  for (const row of page) {
+    const key = `${row.provider}:${row.providerTrackId}`;
+    if (seen.has(key)) continue;
+    seen.add(key);
+    out.push(row);
+  }
+  return out;
+}
+
+/** True while a typed search on a "loaded" service should fetch another page by itself. */
+export function shouldAutoLoadForSearch(input: {
+  query: string;
+  hasMore: boolean;
+  loading: boolean;
+  failed: boolean;
+  loadedCount: number;
+  bound: number;
+}): boolean {
+  return (
+    input.query.trim() !== '' &&
+    input.hasMore &&
+    !input.loading &&
+    !input.failed &&
+    input.loadedCount < input.bound
+  );
+}
+
+/**
+ * The line under a Songs search on a "loaded" service: what was searched, and
+ * whether more of the library is left unsearched.
+ */
+export function songSearchScopeNote(input: {
+  query: string;
+  hasMore: boolean;
+  loading: boolean;
+  loadedCount: number;
+  bound: number;
+}): string | null {
+  if (!input.query.trim() || !input.hasMore) return null;
+  if (input.loading || input.loadedCount < input.bound) {
+    return `Searching your liked songs… ${input.loadedCount.toLocaleString('en-US')} loaded so far.`;
+  }
+  return `Searched your first ${input.loadedCount.toLocaleString('en-US')} liked songs.`;
+}
+
+/**
+ * The note in "Create class from liked songs" when more songs exist than were
+ * loaded, so the instructor knows the class draws from a subset.
+ */
+export function likesSubsetNote(loadedCount: number, hasMore: boolean): string | null {
+  if (!hasMore) return null;
+  return `Using your first ${loadedCount.toLocaleString('en-US')} liked songs. Load more on Music › Songs to choose from more.`;
+}
 
 export function musicChipBadge(input: {
   fetchStatus: 'loading' | 'ready' | 'error';
@@ -180,7 +262,7 @@ export function orderLibrary<T>(
   sort: LibrarySort,
   label: (row: T) => string,
 ): T[] {
-  if (sort === 'recents') return [...rows];
+  if (sort === 'library') return [...rows];
   return [...rows].sort((a, b) =>
     label(a).localeCompare(label(b), undefined, { sensitivity: 'base' }),
   );

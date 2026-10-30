@@ -1,5 +1,12 @@
 import { describe, expect, it } from 'vitest';
 import {
+  appendSongPage,
+  LIBRARY_SORT_OPTIONS,
+  likesSubsetNote,
+  shouldAutoLoadForSearch,
+  SONG_SEARCH_AUTOLOAD_BOUND,
+  songSearchMode,
+  songSearchScopeNote,
   defaultLibraryKind,
   filterLibrary,
   libraryFailureExplainsItself,
@@ -118,9 +125,9 @@ describe('library rows', () => {
     expect(songMetaLine('Avicii', null)).toBe('Song · Avicii');
   });
 
-  it('keeps service order for Recents and sorts Name without inventing dates', () => {
+  it('keeps service order for Library order and sorts Name without inventing dates', () => {
     const rows = [{ name: 'Cooldown' }, { name: 'Warmup' }];
-    expect(orderLibrary(rows, 'recents', (row) => row.name)).toEqual(rows);
+    expect(orderLibrary(rows, 'library', (row) => row.name)).toEqual(rows);
     expect(orderLibrary(rows, 'name', (row) => row.name).map((row) => row.name)).toEqual([
       'Cooldown',
       'Warmup',
@@ -179,5 +186,72 @@ describe('musicConnectionNotice', () => {
     expect(
       musicConnectionNotice({ ...base, libraryKind: 'catalog', scopeGap: 'playback' }),
     ).toMatchObject({ action: 'reconnect', message: 'Reconnect Spotify to play songs in Ritmo.' });
+  });
+});
+
+describe('Songs paging and search (RF-132)', () => {
+  const song = (id: string, provider: 'apple_music' | 'soundcloud' = 'soundcloud') => ({
+    provider,
+    providerTrackId: id,
+    providerUri: null,
+    title: `Song ${id}`,
+    artist: 'Artist',
+    albumArtUrl: null,
+    durationMs: null,
+  });
+
+  it('labels the provider-order sort "Library order", not Recents', () => {
+    expect(LIBRARY_SORT_OPTIONS).toEqual([
+      ['library', 'Library order'],
+      ['name', 'Name'],
+    ]);
+  });
+
+  it('searches Apple Music server-side and the other services by loading pages', () => {
+    expect(songSearchMode('apple_music')).toBe('server');
+    expect(songSearchMode('soundcloud')).toBe('loaded');
+    expect(songSearchMode('spotify')).toBe('loaded');
+  });
+
+  it('appends a page without duplicating songs already loaded', () => {
+    const out = appendSongPage([song('1'), song('2')], [song('2'), song('3'), song('3')]);
+    expect(out.map((row) => row.providerTrackId)).toEqual(['1', '2', '3']);
+    // Same id on another service is a different song.
+    expect(appendSongPage([song('1')], [song('1', 'apple_music')])).toHaveLength(2);
+  });
+
+  it('auto-loads for a typed search only until the 1,000-song bound', () => {
+    const base = {
+      query: 'angel',
+      hasMore: true,
+      loading: false,
+      failed: false,
+      loadedCount: 800,
+      bound: SONG_SEARCH_AUTOLOAD_BOUND,
+    };
+    expect(SONG_SEARCH_AUTOLOAD_BOUND).toBe(1000);
+    expect(shouldAutoLoadForSearch(base)).toBe(true);
+    expect(shouldAutoLoadForSearch({ ...base, loadedCount: 1000 })).toBe(false);
+    expect(shouldAutoLoadForSearch({ ...base, query: '  ' })).toBe(false);
+    expect(shouldAutoLoadForSearch({ ...base, hasMore: false })).toBe(false);
+    expect(shouldAutoLoadForSearch({ ...base, loading: true })).toBe(false);
+    expect(shouldAutoLoadForSearch({ ...base, failed: true })).toBe(false);
+  });
+
+  it('says what a loaded-pages search covered', () => {
+    const base = { query: 'angel', hasMore: true, loading: false, loadedCount: 1000, bound: 1000 };
+    expect(songSearchScopeNote(base)).toBe('Searched your first 1,000 liked songs.');
+    expect(songSearchScopeNote({ ...base, loading: true, loadedCount: 600 })).toBe(
+      'Searching your liked songs… 600 loaded so far.',
+    );
+    expect(songSearchScopeNote({ ...base, hasMore: false })).toBeNull();
+    expect(songSearchScopeNote({ ...base, query: '' })).toBeNull();
+  });
+
+  it('tells "Create class from liked songs" when it used a subset', () => {
+    expect(likesSubsetNote(200, true)).toBe(
+      'Using your first 200 liked songs. Load more on Music › Songs to choose from more.',
+    );
+    expect(likesSubsetNote(42, false)).toBeNull();
   });
 });

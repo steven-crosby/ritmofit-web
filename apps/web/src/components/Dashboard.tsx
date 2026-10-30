@@ -53,7 +53,7 @@ import {
   getClass,
   markClassOpened,
   listConnections,
-  listLikes,
+  listLikesPage,
   listPlaylists,
   listPlaylistTracks,
   searchProvider,
@@ -123,8 +123,15 @@ import {
   providerLabel,
 } from '../lib/providers.js';
 import {
+  appendSongPage,
   defaultLibraryKind,
   filterLibrary,
+  LIBRARY_SORT_OPTIONS,
+  likesSubsetNote,
+  shouldAutoLoadForSearch,
+  SONG_SEARCH_AUTOLOAD_BOUND,
+  songSearchMode,
+  songSearchScopeNote,
   musicChipBadge,
   musicChipOffersReconnect,
   musicConnectionNotice,
@@ -288,6 +295,8 @@ export function Dashboard({
   const [likesBrowse, setLikesBrowse] = useState<{
     provider: Provider;
     tracks: TrackSearchResult[];
+    /** More liked songs exist than were loaded: the dialog says it used a subset. */
+    hasMore: boolean;
   } | null>(null);
   const [onboardingVideoOpen, setOnboardingVideoOpen] = useState(false);
   const [oauthResult, setOauthResult] = useState<{ connected?: string; error?: string } | null>(
@@ -994,6 +1003,7 @@ export function Dashboard({
           <LikesBrowserDialog
             provider={likesBrowse.provider}
             tracks={likesBrowse.tracks}
+            hasMore={likesBrowse.hasMore}
             onClose={() => setLikesBrowse(null)}
             onCreateClass={handleCreateClassFromLikes}
           />
@@ -1214,7 +1224,9 @@ export function Dashboard({
               onOpenPlaylist={(provider, playlists, playlistId) =>
                 setPlaylistBrowse({ provider, playlists, playlistId })
               }
-              onBrowseLikes={(provider, tracks) => setLikesBrowse({ provider, tracks })}
+              onBrowseLikes={(provider, tracks, hasMore) =>
+                setLikesBrowse({ provider, tracks, hasMore })
+              }
               onCreateClass={handleCreateClassFromLikes}
             />
           ) : destination === 'live' ? (
@@ -1694,6 +1706,14 @@ function useProviderBrowseState(connectionRevision = 0) {
   const [likes, setLikes] = useState<Partial<Record<Provider, TrackSearchResult[]>>>({});
   const [likesLoading, setLikesLoading] = useState<Partial<Record<Provider, boolean>>>({});
   const [likesError, setLikesError] = useState<Partial<Record<Provider, ShelfFailure>>>({});
+  // Paging (RF-132): the provider's next-page cursor (null on the last page), a
+  // "Load more" in flight, and a "Load more" failure that keeps the loaded rows.
+  const [likesNext, setLikesNext] = useState<Partial<Record<Provider, string | null>>>({});
+  const [likesLoadingMore, setLikesLoadingMore] = useState<Partial<Record<Provider, boolean>>>({});
+  const [likesMoreError, setLikesMoreError] = useState<Partial<Record<Provider, string>>>({});
+  const likesNextRef = useRef<Partial<Record<Provider, string | null>>>({});
+  const likesMoreInFlight = useRef<Set<Provider>>(new Set());
+  const likesGeneration = useRef(0);
   const connectedProvidersRef = useRef<ReadonlySet<Provider>>(new Set());
 
   useEffect(() => {
@@ -1723,6 +1743,13 @@ function useProviderBrowseState(connectionRevision = 0) {
         setLikes((prev) => retainConnectedProviderState(prev, connectedProviders));
         setLikesLoading((prev) => retainConnectedProviderState(prev, connectedProviders));
         setLikesError((prev) => retainConnectedProviderState(prev, connectedProviders));
+        setLikesNext((prev) => retainConnectedProviderState(prev, connectedProviders));
+        likesNextRef.current = retainConnectedProviderState(
+          likesNextRef.current,
+          connectedProviders,
+        );
+        setLikesLoadingMore((prev) => retainConnectedProviderState(prev, connectedProviders));
+        setLikesMoreError((prev) => retainConnectedProviderState(prev, connectedProviders));
         setConnections(rows);
         setConnectionsStatus('ready');
       } catch {
@@ -1772,6 +1799,8 @@ function useProviderBrowseState(connectionRevision = 0) {
   // shelf can show a live count and open the likes browser from the resting state.
   useEffect(() => {
     let alive = true;
+    // A fresh first page invalidates any "Load more" still in flight.
+    const generation = ++likesGeneration.current;
     for (const provider of PROVIDER_ORDER) {
       if (!providerCapabilities[provider].userLikes) continue;
       const state = providerConnectionState(
@@ -1783,9 +1812,14 @@ function useProviderBrowseState(connectionRevision = 0) {
       setLikesLoading((prev) => ({ ...prev, [provider]: true }));
       void (async () => {
         try {
-          const rows = await listLikes(provider);
+          const page = await listLikesPage(provider);
           if (!alive || !connectedProvidersRef.current.has(provider)) return;
-          setLikes((prev) => ({ ...prev, [provider]: Array.isArray(rows) ? rows : [] }));
+          const rows = Array.isArray(page?.items) ? page.items : [];
+          const next = page?.nextCursor ?? null;
+          likesNextRef.current = { ...likesNextRef.current, [provider]: next };
+          setLikes((prev) => ({ ...prev, [provider]: rows }));
+          setLikesNext((prev) => ({ ...prev, [provider]: next }));
+          setLikesMoreError((prev) => ({ ...prev, [provider]: undefined }));
           setLikesError((prev) => ({ ...prev, [provider]: undefined }));
         } catch (e) {
           if (!alive || !connectedProvidersRef.current.has(provider)) return;
@@ -1799,8 +1833,38 @@ function useProviderBrowseState(connectionRevision = 0) {
     }
     return () => {
       alive = false;
+      if (likesGeneration.current === generation) likesGeneration.current += 1;
     };
   }, [connections]);
+
+  /** Load the next page of `provider`'s liked songs with its own cursor (RF-132). */
+  const loadMoreLikes = useCallback(async (provider: Provider) => {
+    const cursor = likesNextRef.current[provider];
+    if (!cursor || likesMoreInFlight.current.has(provider)) return;
+    const generation = likesGeneration.current;
+    likesMoreInFlight.current.add(provider);
+    setLikesLoadingMore((prev) => ({ ...prev, [provider]: true }));
+    setLikesMoreError((prev) => ({ ...prev, [provider]: undefined }));
+    const current = () =>
+      generation === likesGeneration.current && connectedProvidersRef.current.has(provider);
+    try {
+      const page = await listLikesPage(provider, { cursor });
+      if (!current()) return;
+      const next = page.nextCursor ?? null;
+      likesNextRef.current = { ...likesNextRef.current, [provider]: next };
+      setLikes((prev) => ({
+        ...prev,
+        [provider]: appendSongPage(prev[provider] ?? [], page.items),
+      }));
+      setLikesNext((prev) => ({ ...prev, [provider]: next }));
+    } catch (e) {
+      if (!current()) return;
+      setLikesMoreError((prev) => ({ ...prev, [provider]: shelfFailure(e).message }));
+    } finally {
+      likesMoreInFlight.current.delete(provider);
+      setLikesLoadingMore((prev) => ({ ...prev, [provider]: false }));
+    }
+  }, []);
 
   return {
     connections,
@@ -1818,6 +1882,10 @@ function useProviderBrowseState(connectionRevision = 0) {
     likes,
     likesLoading,
     likesError,
+    likesNext,
+    likesLoadingMore,
+    likesMoreError,
+    loadMoreLikes,
   };
 }
 
@@ -1876,7 +1944,7 @@ function MusicWorkspace({
     playlists: ProviderPlaylistSummary[],
     playlistId: string,
   ) => void;
-  onBrowseLikes: (provider: Provider, tracks: TrackSearchResult[]) => void;
+  onBrowseLikes: (provider: Provider, tracks: TrackSearchResult[], hasMore: boolean) => void;
   onCreateClass: (
     tracks: TrackSearchResult[],
     title: string,
@@ -1893,6 +1961,10 @@ function MusicWorkspace({
     likes,
     likesLoading,
     likesError,
+    likesNext,
+    likesLoadingMore,
+    likesMoreError,
+    loadMoreLikes,
   } = useProviderBrowseState(connectionRevision);
   const flow = useProviderConnect({
     onConnected: retryConnections,
@@ -1902,7 +1974,18 @@ function MusicWorkspace({
   const [selectedProvider, setSelectedProvider] = useState<Provider>(PROVIDER_ORDER[0]!);
   const [libraryKind, setLibraryKind] = useState<MusicLibraryKind>('catalog');
   const [libraryQuery, setLibraryQuery] = useState('');
-  const [sort, setSort] = useState<LibrarySort>('recents');
+  const [sort, setSort] = useState<LibrarySort>('library');
+  // Songs search past the loaded pages (RF-132). Apple Music: a debounced library
+  // search on the server. Others: keep loading pages while a query is typed, up to
+  // `songSearchBound` songs; "Keep loading" raises the bound by another 1,000.
+  const [songSearchBound, setSongSearchBound] = useState(SONG_SEARCH_AUTOLOAD_BOUND);
+  const [librarySearch, setLibrarySearch] = useState<{
+    provider: Provider;
+    query: string;
+    results: TrackSearchResult[] | null;
+    failed: boolean;
+  } | null>(null);
+  const librarySearchId = useRef(0);
   const typeTouched = useRef(false);
   const [query, setQuery] = useState('');
   const [results, setResults] = useState<TrackSearchResult[] | null>(null);
@@ -1957,6 +2040,61 @@ function MusicWorkspace({
     }, 300);
     return () => window.clearTimeout(timeout);
   }, [selectedProvider, query, searchRetryKey]);
+
+  // Apple Music: search the whole library on the server as the instructor types.
+  useEffect(() => {
+    const trimmed = libraryQuery.trim();
+    if (libraryKind !== 'songs' || songSearchMode(selectedProvider) !== 'server' || !trimmed) {
+      librarySearchId.current += 1;
+      return;
+    }
+    const connection = connections.find((row) => row.provider === selectedProvider);
+    if (providerConnectionState(selectedProvider, connection, Date.now()) !== 'connected') return;
+    const id = ++librarySearchId.current;
+    const provider = selectedProvider;
+    const timeout = window.setTimeout(() => {
+      void listLikesPage(provider, { q: trimmed })
+        .then((page) => {
+          if (id !== librarySearchId.current) return;
+          setLibrarySearch({ provider, query: trimmed, results: page.items, failed: false });
+        })
+        .catch(() => {
+          if (id !== librarySearchId.current) return;
+          setLibrarySearch({ provider, query: trimmed, results: null, failed: true });
+        });
+    }, 300);
+    return () => window.clearTimeout(timeout);
+  }, [selectedProvider, libraryKind, libraryQuery, connections]);
+
+  // Other services: keep loading pages while a query is typed, up to the bound.
+  const autoLoadLikedTracks = likes[selectedProvider];
+  useEffect(() => {
+    if (libraryKind !== 'songs' || songSearchMode(selectedProvider) !== 'loaded') return;
+    if (
+      shouldAutoLoadForSearch({
+        query: libraryQuery,
+        hasMore: Boolean(likesNext[selectedProvider]),
+        loading:
+          Boolean(likesLoadingMore[selectedProvider]) || Boolean(likesLoading[selectedProvider]),
+        failed: Boolean(likesMoreError[selectedProvider]),
+        loadedCount: autoLoadLikedTracks?.length ?? 0,
+        bound: songSearchBound,
+      })
+    ) {
+      void loadMoreLikes(selectedProvider);
+    }
+  }, [
+    libraryKind,
+    selectedProvider,
+    libraryQuery,
+    likesNext,
+    likesLoadingMore,
+    likesLoading,
+    likesMoreError,
+    autoLoadLikedTracks,
+    songSearchBound,
+    loadMoreLikes,
+  ]);
 
   const selectedKeys = useMemo(
     () => new Set(selectedTracks.map(sourceCandidateKey)),
@@ -2042,6 +2180,21 @@ function MusicWorkspace({
   );
   const savedPlaylists = playlists[selectedProvider] ?? null;
   const likedTracks = likes[selectedProvider] ?? null;
+  const likesHasMore = Boolean(likesNext[selectedProvider]);
+  const loadingMoreLikes = Boolean(likesLoadingMore[selectedProvider]);
+  const loadMoreLikesError = likesMoreError[selectedProvider] ?? null;
+  const songQuery = libraryQuery.trim();
+  const songSearch = songSearchMode(selectedProvider);
+  const serverSearch =
+    libraryKind === 'songs' &&
+    songSearch === 'server' &&
+    songQuery !== '' &&
+    librarySearch?.provider === selectedProvider &&
+    librarySearch.query === songQuery
+      ? librarySearch
+      : null;
+  const serverSearchPending =
+    libraryKind === 'songs' && songSearch === 'server' && songQuery !== '' && !serverSearch;
   const playlistRows = orderLibrary(
     filterLibrary(
       savedPlaylists ?? [],
@@ -2052,15 +2205,41 @@ function MusicWorkspace({
     (row) => row.name,
   );
   const songRows = orderLibrary(
-    filterLibrary(likedTracks ?? [], libraryQuery, (row) => `${row.title} ${row.artist}`),
+    serverSearch?.results && !serverSearch.failed
+      ? serverSearch.results
+      : filterLibrary(likedTracks ?? [], libraryQuery, (row) => `${row.title} ${row.artist}`),
     sort,
     (row) => row.title,
   );
+  // A search is still reaching songs, so "No matches." would be premature.
+  const songSearchInFlight =
+    serverSearchPending ||
+    (songSearch === 'loaded' &&
+      libraryKind === 'songs' &&
+      songQuery !== '' &&
+      likesHasMore &&
+      !loadMoreLikesError &&
+      (likedTracks?.length ?? 0) < songSearchBound);
+  const songNote =
+    songSearch === 'server'
+      ? serverSearchPending
+        ? `Searching your ${label} library…`
+        : serverSearch?.failed
+          ? `Couldn’t search your whole ${label} library. Showing matches in loaded songs.`
+          : null
+      : songSearchScopeNote({
+          query: songQuery,
+          hasMore: likesHasMore,
+          loading: loadingMoreLikes,
+          loadedCount: likedTracks?.length ?? 0,
+          bound: songSearchBound,
+        });
   const chooseProvider = (provider: Provider) => {
     if (flow.operation && flow.operation.provider !== provider) flow.cancel();
     if (provider !== selectedProvider) {
       typeTouched.current = false;
       setLibraryQuery('');
+      setSongSearchBound(SONG_SEARCH_AUTOLOAD_BOUND);
       setLibraryKind(libraryKindFor(provider));
     }
     setSelectedProvider(provider);
@@ -2224,17 +2403,15 @@ function MusicWorkspace({
                 id="music-library-search"
                 type="search"
                 value={libraryQuery}
-                onChange={(event) => setLibraryQuery(event.target.value)}
+                onChange={(event) => {
+                  setLibraryQuery(event.target.value);
+                  if (!event.target.value.trim()) setSongSearchBound(SONG_SEARCH_AUTOLOAD_BOUND);
+                }}
                 className="mt-2 min-h-11 w-full rounded-control border border-interactive/30 bg-bg-base px-3 font-ui text-sm text-text-primary rf-focus-ring sm:rounded-pill"
               />
             </label>
             <div role="group" aria-label="Sort" className="flex gap-2">
-              {(
-                [
-                  ['recents', 'Recents'],
-                  ['name', 'Name'],
-                ] as const
-              ).map(([value, sortLabel]) => (
+              {LIBRARY_SORT_OPTIONS.map(([value, sortLabel]) => (
                 <button
                   key={value}
                   type="button"
@@ -2280,9 +2457,26 @@ function MusicWorkspace({
           onRetry={retryConnections}
           rows={songRows}
           filtered={libraryQuery.trim() !== ''}
+          searching={songSearchInFlight}
+          note={songNote}
+          loadMore={
+            likesHasMore && !serverSearch && !serverSearchPending
+              ? {
+                  label: songQuery && songSearch === 'loaded' ? 'Keep loading' : 'Load more songs',
+                  loading: loadingMoreLikes,
+                  error: loadMoreLikesError,
+                  onLoadMore: () => {
+                    if (songQuery && songSearch === 'loaded') {
+                      setSongSearchBound((likedTracks?.length ?? 0) + SONG_SEARCH_AUTOLOAD_BOUND);
+                    }
+                    void loadMoreLikes(selectedProvider);
+                  },
+                }
+              : null
+          }
           onCreateClass={
             likedTracks && likedTracks.length > 0
-              ? () => onBrowseLikes(selectedProvider, likedTracks)
+              ? () => onBrowseLikes(selectedProvider, likedTracks, likesHasMore)
               : null
           }
         />
@@ -2550,6 +2744,9 @@ function SongShelf({
   onRetry,
   rows,
   filtered,
+  searching = false,
+  note = null,
+  loadMore = null,
   onCreateClass,
 }: {
   label: string;
@@ -2560,8 +2757,45 @@ function SongShelf({
   onRetry: () => void;
   rows: TrackSearchResult[];
   filtered: boolean;
+  /** A library search is in flight, so "No matches." would be premature. */
+  searching?: boolean;
+  /** What a search covered, or that it is still loading (RF-132). */
+  note?: string | null;
+  /** The next page of liked songs, when the provider has more (RF-132). */
+  loadMore?: {
+    label: string;
+    loading: boolean;
+    error: string | null;
+    onLoadMore: () => void;
+  } | null;
   onCreateClass: (() => void) | null;
 }) {
+  const footer =
+    note || loadMore ? (
+      <div className="flex flex-col items-start gap-2">
+        {note && (
+          <p role="status" className="font-ui text-xs text-text-secondary">
+            {note}
+          </p>
+        )}
+        {loadMore?.error && (
+          <p role="alert" className="font-ui text-xs text-state-danger">
+            Couldn’t load more songs: {loadMore.error}
+          </p>
+        )}
+        {loadMore && (
+          <button
+            type="button"
+            onClick={loadMore.onLoadMore}
+            disabled={loadMore.loading}
+            aria-busy={loadMore.loading}
+            className="min-h-11 rounded-control border border-interactive/35 px-3 font-ui text-sm font-semibold text-interactive rf-focus-ring disabled:opacity-50"
+          >
+            {loadMore.loading ? 'Loading more songs…' : loadMore.label}
+          </button>
+        )}
+      </div>
+    ) : null;
   if (!connected) {
     if (!statusMark) return null;
     return (
@@ -2590,10 +2824,14 @@ function SongShelf({
     );
   }
   if (rows.length === 0) {
+    if (searching) return footer;
     return (
-      <p role="status" className="font-ui text-sm text-text-secondary">
-        {filtered ? 'No matches.' : 'No liked songs'}
-      </p>
+      <div className="flex flex-col gap-2">
+        <p role="status" className="font-ui text-sm text-text-secondary">
+          {filtered ? 'No matches.' : 'No liked songs'}
+        </p>
+        {footer}
+      </div>
     );
   }
   return (
@@ -2632,6 +2870,7 @@ function SongShelf({
           </li>
         ))}
       </ul>
+      {footer}
     </div>
   );
 }
@@ -3889,11 +4128,14 @@ function PlaylistBrowserDialog({
 function LikesBrowserDialog({
   provider,
   tracks,
+  hasMore = false,
   onClose,
   onCreateClass,
 }: {
   provider: Provider;
   tracks: TrackSearchResult[];
+  /** More liked songs exist than were loaded: say the class draws from a subset. */
+  hasMore?: boolean;
   onClose: () => void;
   onCreateClass: (
     tracks: TrackSearchResult[],
@@ -4029,6 +4271,12 @@ function LikesBrowserDialog({
       {error && (
         <p role="alert" className="mb-3 font-ui text-sm text-state-danger">
           {error}
+        </p>
+      )}
+
+      {likesSubsetNote(tracks.length, hasMore) && (
+        <p role="note" className="mb-3 font-ui text-xs text-text-secondary">
+          {likesSubsetNote(tracks.length, hasMore)}
         </p>
       )}
 
