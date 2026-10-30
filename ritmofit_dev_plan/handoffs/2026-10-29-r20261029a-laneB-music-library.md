@@ -3,7 +3,7 @@ date: 2026-10-29
 tool: Claude Code (local)
 lane: lane-b-music-library
 branch: feat/rf-132-music-library
-head: b837b6e
+head: f5a05d3
 base: a1fafa9
 prs: ['#665 (open, owner-gated)']
 status: open
@@ -37,9 +37,12 @@ status: open
   `apps/api/src/index.ts` already exposes, so no frozen file changed.
 - SoundCloud cursors must be on the API origin with no credentials and a likes-tracks path
   (`/me/likes/tracks`, or `/users/{id|soundcloud:users:id}/likes/tracks`). SoundCloud's pagination
-  post says `next_href` keeps the request path; an off-path `next_href` is treated as drift (502).
-  Apple cursors must be `/v1/me/library/songs?…` subpaths and search follows only
-  `/v1/me/library/search?…` (both allow `' ( ) ! *`, reject `..`); an off-path `next` is drift.
+  post says `next_href` keeps the request path. Apple cursors must be `/v1/me/library/songs?…`
+  subpaths and search follows only `/v1/me/library/search?…` (both allow `' ( ) ! *`, reject `..`).
+  A client cursor off these paths is a 422. A server-returned `next` off them (SoundCloud likes,
+  Apple songs, Apple search) keeps the pages read and ends the list (third review, 2026-10-30).
+- Apple Songs search shows Apple's library-search matches (up to 100) merged with matches among
+  the loaded songs, without duplicates, and keeps Load more.
 - Final review on 0492619 (PR comment) found items 1–6 and 8; all fixed in `2c9cfdd` with a
   regression test each. Item 7 (reuse `sourceCandidateKey`) was not done: it lives in a component
   module that `lib/` should not import. Item 9 (neutral header constant) is a shared-zone change left
@@ -50,16 +53,16 @@ status: open
   because a state-only counter missed increments between autoload renders in testing.
 - Second final review on d92e215 (PR comment): items 1–3 fixed with regression tests, plus 4, 6
   and 7, in `b837b6e`. Apple library search now stops at the last good page on an off-path
-  `next`; the songs list still treats one as drift. Items 5, 8, 9 and 10 are logged on the PR.
+  `next` (the third review extended this to the songs lists). Items 5, 8, 9 and 10 are logged on the PR.
 - After deploy, the owner checks on real accounts: Apple Music Songs shows Load more past 200 and
   finds a song past "Angel" by search; SoundCloud Songs loads more. Spotify stays RF-148.
 
 ## Verification
 
-- Run on the `b837b6e` tree (heavy gates under the shared gate lock):
+- Run on the `f5a05d3` tree (heavy gates under the shared gate lock):
   `format:check`, `owner-gate:test`, `rf-trace:test`, `tasks:test`, `tasks:check` pass;
   `pnpm -r typecheck` pass (after typing the test mocks); `pnpm lint` pass; design-system verify and
-  theme-classes (with selftest) pass; `pnpm test` pass (music 30, web 1558, api 632);
+  theme-classes (with selftest) pass; `pnpm test` pass (music 30, web 1559, api 636);
   `test:integration` pass (247 tests); web build pass (entry 176.50 kB gzip, budget 180);
   `openapi` then `git diff --exit-code` clean; `contract-parity` pass; `audit:ci` pass (ignored
   advisories only).
