@@ -3,7 +3,7 @@
   "id": "RF-123",
   "title": "Apple Music retry is not blocked by a timed-out queue request",
   "kind": "task",
-  "status": "ready",
+  "status": "in_progress",
   "priority": "P2",
   "parent": null,
   "dependsOn": [],
@@ -11,7 +11,7 @@
     "When setQueue times out in apple-music-adapter.ts, the pending-queue lock for that instance no longer blocks the next prepare, so Retry playback can try again without a page reload.",
     "A test covers: setQueue never settles, prepare times out, the next prepare reaches setQueue instead of 'still finishing a previous queue request'."
   ],
-  "nextAction": "Owner moved to Ready on 2026-10-29 as Lane A, scoped by the owner to the queue-lock fix only. Draft PR #656 (fix/rf-124-resume-in-place) holds the work: the lane claims this record In progress on that PR at start and retitles #656 for RF-123. Rebase #656 onto main and keep only the apple-music-adapter.ts lock release and its test. Revert the runtime.ts resume-in-place change and its tests: it was written for RF-124, which #657 fixed another way and the owner verified on iPhone (Pause/Resume included), so it has no Ready. Drop #656's RF-124, RF-29, RF-108 and RF-128 record edits and its device-provider-matrix.md and tasks.md edits (main has since reworked those). If resume in place is wanted later (for example Resume speed under RF-128), it gets its own record and its own Ready. RF-128 and RF-147 share these playback files but need their own Ready before the lane touches them. Owner-gated (playback code): the PR needs owner-approved and the owner's iPhone check.",
+  "nextAction": "Lane A of round 20261029a (Claude Code) is executing this on branch fix/rf-123-apple-queue-lock, cut from origin/main 4206c8c, as a new draft PR; owner decision 2026-10-29: new branch and PR, #656 is not force-pushed and the orchestrator closes it as superseded. Restart: on that branch, add #656's test 'a timed-out queue request does not block the next prepare (RF-123)' to apple-music-adapter.test.ts and show it fails, then wrap setQueue()'s withTimeout in apple-music-adapter.ts in a try/catch that deletes this generation's pendingQueueGenerations entry on timeout, and run the gates. Scope is the queue-lock fix only: no runtime.ts resume in place, no destroy() change, no RF-124, RF-29, RF-108 or RF-128 edits. Owner-gated (playback code): the PR needs owner-approved and the owner's iPhone check.",
   "blocker": null,
   "evidence": [
     {
