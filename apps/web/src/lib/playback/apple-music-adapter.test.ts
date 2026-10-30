@@ -354,6 +354,21 @@ describe('AppleMusicAdapter', () => {
     await expect(adapter.prepare(makeEntry(), WINDOW_ZERO)).rejects.toThrow(/timed out/i);
   });
 
+  it('a timed-out queue request does not block the next prepare (RF-123)', async () => {
+    const instance = new FakeInstance(true);
+    instance.setQueueBehavior = () => new Promise<never>(() => {}); // MusicKit never settles
+    const first = makeAdapter(instance, { preconfigured: true, prepareTimeoutMs: 5 }).adapter;
+    await expect(first.prepare(makeEntry(), WINDOW_ZERO)).rejects.toThrow(/timed out/i);
+    first.destroy();
+
+    instance.setQueueBehavior = () => Promise.resolve(undefined);
+    const retry = makeAdapter(instance, { preconfigured: true, prepareTimeoutMs: 5 }).adapter;
+    await expect(retry.prepare(makeEntry(), WINDOW_ZERO)).resolves.toMatchObject({
+      provider: 'apple_music',
+    });
+    expect(instance.calls.filter((call) => call.startsWith('setQueue:'))).toHaveLength(2);
+  });
+
   it('rejects prepare after the authorization (consent) timeout', async () => {
     const instance = new FakeInstance(false);
     instance.authorizeBehavior = () => new Promise<never>(() => {}); // consent never returns
