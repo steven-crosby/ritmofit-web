@@ -19,6 +19,8 @@ import {
   type SelectionOptions,
 } from './coordinator.js';
 import type { LivenessObserver } from './liveness.js';
+import { raceTimer } from './race-timer.js';
+import { startTimer } from './start-timing.js';
 import type {
   AdapterRegistry,
   PlaybackAdapter,
@@ -178,7 +180,10 @@ export class RuntimePlaybackCoordinator {
   /** rAF ticks since the last sample; zero means the host loop stalled too. */
   private hostTicksSinceSample = 0;
   /** Destroyed adapters whose SDK calls are still in flight; see `retire`. */
-  private readonly settling = new Map<PlaybackAdapter, Promise<void>>();
+  private readonly settling = new Map<
+    PlaybackAdapter,
+    { provider: Provider; done: Promise<void> }
+  >();
 
   constructor(
     private readonly payload: RunPayload,
@@ -375,8 +380,13 @@ export class RuntimePlaybackCoordinator {
     this.setStatus({ kind: 'preparing', index, provider: selection.provider });
     // Let a cancelled start's SDK calls settle first, bounded, then re-check
     // the epoch: another seek or tap during the wait supersedes this start.
-    if (this.settling.size > 0) {
-      await this.awaitSettled();
+    // The wait gets its own debug timing line (RF-128), since the adapter's
+    // timer only starts at prepare.
+    if ([...this.settling.values()].some((entry) => entry.provider === selection.provider)) {
+      const timer = startTimer(`[ritmo playback ${selection.provider}]`);
+      timer.mark('settle-wait');
+      await this.awaitSettled(selection.provider);
+      timer.mark('settle-wait-done');
       if (epoch !== this.epoch) return;
     }
     let authorizationAt: number | null = null;
@@ -498,23 +508,39 @@ export class RuntimePlaybackCoordinator {
       idle = null;
     }
     if (!idle) return;
-    const tracked: Promise<void> = idle
-      .catch(() => undefined)
-      .then(() => {
-        if (this.settling.get(adapter) === tracked) this.settling.delete(adapter);
-      });
-    this.settling.set(adapter, tracked);
+    // The entry expires after the settle bound even if the adapter never
+    // reports idle, so one hung SDK call cannot make every later start wait
+    // (review #668, finding 1).
+    const done: Promise<void> = raceTimer(
+      idle.catch(() => undefined),
+      this.settleWaitMs(),
+      () => undefined,
+    ).then(() => {
+      if (this.settling.get(adapter)?.done === done) this.settling.delete(adapter);
+    });
+    this.settling.set(adapter, { provider: adapter.provider, done });
   }
 
-  private async awaitSettled(): Promise<void> {
-    let timer: ReturnType<typeof setTimeout> | undefined;
-    await Promise.race([
-      Promise.all(this.settling.values()),
-      new Promise<void>((resolve) => {
-        timer = setTimeout(resolve, this.options.settleWaitMs ?? DEFAULT_SETTLE_WAIT_MS);
-      }),
-    ]);
-    clearTimeout(timer);
+  private settleWaitMs(): number {
+    return this.options.settleWaitMs ?? DEFAULT_SETTLE_WAIT_MS;
+  }
+
+  /**
+   * Wait, bounded, for retired adapters of the same provider only: a
+   * SoundCloud or Spotify start never pays for a pending MusicKit call
+   * (review #668, finding 2). Each provider has one page-level SDK, so the
+   * provider is the shared resource.
+   */
+  private async awaitSettled(provider: Provider): Promise<void> {
+    const pending = [...this.settling.values()]
+      .filter((entry) => entry.provider === provider)
+      .map((entry) => entry.done);
+    if (pending.length === 0) return;
+    await raceTimer(
+      Promise.all(pending).then(() => undefined),
+      this.settleWaitMs(),
+      () => undefined,
+    );
   }
 
   /**

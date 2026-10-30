@@ -254,18 +254,18 @@ async function runSafariModernAccessProbe(generation: number): Promise<string | 
 }
 
 /**
- * One audio-only FairPlay probe for this page on iOS Safari, including iOS 27
- * where `WebKitMediaKeys` is absent. Legacy WebKit still probes too.
- * Resolves within `SAFARI_MODERN_ACCESS_TIMEOUT_MS` to `"ok"`, a DOMException
- * or built-in error name, `"other"`, or `"timeout"`; null when the API is
- * missing. A second call reuses the first result and does not request again.
- * Returns null (not a promise) on other browsers. Callers start it after
- * MusicKit's `play()`, never before, so it cannot use up the iOS user gesture.
- * The playback adapter no longer calls it on iOS (RF-147), only on legacy
- * desktop WebKit, and its word goes to the console, not the banner.
+ * One audio-only FairPlay probe for this page on legacy desktop WebKit (a
+ * browser exposing `WebKitMediaKeys` that is not iOS Safari). It never runs on
+ * iOS Safari (RF-147): MusicKit uses legacy FairPlay there, and the probe only
+ * added a second key-system request. Resolves within
+ * `SAFARI_MODERN_ACCESS_TIMEOUT_MS` to `"ok"`, a DOMException or built-in
+ * error name, `"other"`, or `"timeout"`; null when the API is missing. A
+ * second call reuses the first result and does not request again. Returns null
+ * (not a promise) on every other browser. Callers start it after MusicKit's
+ * `play()`, never before. Its word goes to the console, not the banner.
  */
 export function probeSafariModernFairPlayAccess(): Promise<string | null> | null {
-  if (!webKitMediaKeys() && !isIosSafari()) return null;
+  if (!webKitMediaKeys() || isIosSafari()) return null;
   if (!modernAccessProbe) {
     const generation = modernAccessGeneration;
     // A probe failure must not become "would not play". Remember the word, or null.

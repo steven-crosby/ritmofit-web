@@ -245,8 +245,7 @@ describe('Safari modern FairPlay', () => {
     const { loadMusicKit } = await import('./musickit.js');
     const pending = loadMusicKit();
     expect(setItem).not.toHaveBeenCalledWith(MUSICKIT_SAFARI_MODERN_EME_KEY, '1');
-    // RF-147: assert only that the FairPlay key is not removed.
-    expect(removeItem).not.toHaveBeenCalledWith(MUSICKIT_SAFARI_MODERN_EME_KEY);
+    expect(removeItem).not.toHaveBeenCalled();
     window.MusicKit = {} as MusicKitGlobal;
     document.dispatchEvent(new Event('musickitloaded'));
     await pending;
@@ -326,7 +325,8 @@ describe('Safari modern FairPlay access probe', () => {
   });
 
   it('calls a receiver-checked requestMediaKeySystemAccess as a navigator method and resolves ok', async () => {
-    const userAgent = vi.spyOn(navigator, 'userAgent', 'get').mockReturnValue(IOS_SAFARI_UA);
+    const userAgent = vi.spyOn(navigator, 'userAgent', 'get').mockReturnValue(DESKTOP_SAFARI_UA);
+    webKitWindow.WebKitMediaKeys = {};
     const calls = vi.fn(async () => ({ createMediaKeys: vi.fn() }));
     installRequest(calls);
     const info = vi.spyOn(console, 'info').mockImplementation(() => {});
@@ -356,35 +356,26 @@ describe('Safari modern FairPlay access probe', () => {
     }
   });
 
-  it('probes com.apple.fps on iOS Safari when WebKitMediaKeys is gone', async () => {
+  it('never probes on iOS Safari, with or without WebKitMediaKeys (RF-147)', async () => {
     const userAgent = vi.spyOn(navigator, 'userAgent', 'get').mockReturnValue(IOS_SAFARI_UA);
-    localStorage.setItem(MUSICKIT_SAFARI_MODERN_EME_KEY, '1');
-    const createSession = vi.fn();
-    const createMediaKeys = vi.fn(async () => ({ createSession }));
-    const request = vi.fn(async () => ({ createMediaKeys }));
+    const request = vi.fn(async () => ({ createMediaKeys: vi.fn() }));
     installRequest(request);
-    const info = vi.spyOn(console, 'info').mockImplementation(() => {});
     try {
-      const { probeSafariModernFairPlayAccess } = await import('./musickit.js');
-      const first = probeSafariModernFairPlayAccess();
-      const second = probeSafariModernFairPlayAccess();
-      await expect(first).resolves.toBe('ok');
-      await expect(second).resolves.toBe('ok');
-      expect(first).toBe(second);
-      expect(request).toHaveBeenCalledTimes(1);
-      expect(request).toHaveBeenCalledWith('com.apple.fps', FAIRPLAY_AUDIO_ONLY);
-      expect(createMediaKeys).not.toHaveBeenCalled();
-      expect(createSession).not.toHaveBeenCalled();
-      // The flag line moved to logSafariModernEmeFlagOnce, after play (RF-147).
-      expect(info).not.toHaveBeenCalled();
+      const { probeSafariModernFairPlayAccess, safariModernAccessInFlight } =
+        await import('./musickit.js');
+      expect(probeSafariModernFairPlayAccess()).toBeNull();
+      webKitWindow.WebKitMediaKeys = {};
+      expect(probeSafariModernFairPlayAccess()).toBeNull();
+      expect(safariModernAccessInFlight()).toBeNull();
+      expect(request).not.toHaveBeenCalled();
     } finally {
-      info.mockRestore();
       userAgent.mockRestore();
     }
   });
 
-  it('remembers the DOMException name on iOS Safari without logging it', async () => {
-    const userAgent = vi.spyOn(navigator, 'userAgent', 'get').mockReturnValue(IOS_SAFARI_UA);
+  it('remembers the DOMException name on desktop Safari without logging it', async () => {
+    const userAgent = vi.spyOn(navigator, 'userAgent', 'get').mockReturnValue(DESKTOP_SAFARI_UA);
+    webKitWindow.WebKitMediaKeys = {};
     const request = vi.fn(async () => {
       throw new DOMException('music-user-token SECRETVALUE', 'NotSupportedError');
     });

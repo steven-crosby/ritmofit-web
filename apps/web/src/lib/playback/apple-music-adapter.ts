@@ -27,7 +27,6 @@ import type { AppleMusicClientConfig, RunPayloadTrackEntry } from '@ritmofit/sha
 import { getAppleMusicConfig } from '../api.js';
 import {
   configureMusicKit,
-  isIosSafari,
   loadMusicKit,
   logSafariModernEmeFlagOnce,
   probeSafariModernFairPlayAccess,
@@ -38,6 +37,7 @@ import {
   type MusicKitPlaybackEvent,
   type MusicKitSetQueueOptions,
 } from '../musickit.js';
+import { raceTimer } from './race-timer.js';
 import { NO_START_TIMER, startTimer, type StartTimer } from './start-timing.js';
 import type {
   AdapterEvents,
@@ -88,6 +88,10 @@ export function appleMusicPlaybackFailedMessage(title: string): string {
 export const appleMusicCancelledPlayStuckMessage = (seconds: number): string =>
   `Apple Music did not finish a cancelled play request within ${seconds} s. Retry playback.`;
 
+/** A late, superseded MusicKit call replaced the playing queue and the re-cue failed. */
+export const appleMusicQueueReplacedMessage = (title: string): string =>
+  `Apple Music switched away from "${title}" after a cancelled request finished late. Retry playback.`;
+
 const msToSeconds = (ms: number): number => ms / 1000;
 
 /**
@@ -119,6 +123,14 @@ interface SdkLease {
   readonly generation: number | null;
   /** Resolves once the SDK call has settled (play: after any teardown stop). Never rejects. */
   readonly settled: Promise<void>;
+  /**
+   * Resolves once the call no longer holds anything up: it settled, its
+   * request timed out (the instance was freed), or it was abandoned and the
+   * settle bound passed. `whenIdle()` waits on this, so a call MusicKit never
+   * answers cannot keep the adapter busy forever (review #668, finding 1).
+   */
+  readonly idle: Promise<void>;
+  readonly markIdle: () => void;
   readonly release: () => void;
   /** When the owner was destroyed with the call still pending; null while live. */
   abandonedAt: number | null;
@@ -155,8 +167,24 @@ function currentQueueGeneration(instance: MusicKitInstance): number {
  */
 const lateSettles = new WeakMap<MusicKitInstance, number>();
 
+/**
+ * Record a late settle, then let the adapter that owns the transport check
+ * that MusicKit's queue still holds its song. A late settle that lands after a
+ * newer track started would otherwise replace the playing queue unnoticed
+ * (review #668, finding 4).
+ */
 function noteLateSettle(instance: MusicKitInstance): void {
   lateSettles.set(instance, (lateSettles.get(instance) ?? 0) + 1);
+  transportOwners.get(instance)?.recoverFromLateSettle(instance);
+}
+
+/** The ids MusicKit gives its cued item: catalog id, play-params id and catalog id. */
+function nowPlayingIds(instance: MusicKitInstance): string[] {
+  const item = instance.nowPlayingItem;
+  if (!item) return [];
+  return [item.id, item.playParams?.id, item.playParams?.catalogId].filter(
+    (id): id is string => typeof id === 'string' && id.length > 0,
+  );
 }
 
 function lateSettleCount(instance: MusicKitInstance): number {
@@ -167,13 +195,6 @@ type LeaseState =
   | { kind: 'free' }
   | { kind: 'live'; lease: SdkLease }
   | { kind: 'expired'; lease: SdkLease };
-
-function leaseState(lease: SdkLease | undefined, settleMs: number): LeaseState {
-  if (!lease) return { kind: 'free' };
-  if (lease.abandonedAt !== null && Date.now() - lease.abandonedAt >= settleMs)
-    return { kind: 'expired', lease };
-  return { kind: 'live', lease };
-}
 
 /**
  * Wait, bounded, while an abandoned lease settles. A free instance or a live
@@ -187,17 +208,11 @@ async function awaitLease(
 ): Promise<LeaseState> {
   for (;;) {
     const lease = leases.get(instance);
-    if (!lease || lease.abandonedAt === null) return leaseState(lease, settleMs);
+    if (!lease) return { kind: 'free' };
+    if (lease.abandonedAt === null) return { kind: 'live', lease };
     const remaining = lease.abandonedAt + settleMs - Date.now();
     if (remaining <= 0) return { kind: 'expired', lease };
-    let timer: ReturnType<typeof setTimeout> | undefined;
-    await Promise.race([
-      lease.settled,
-      new Promise<void>((resolve) => {
-        timer = setTimeout(resolve, remaining);
-      }),
-    ]);
-    clearTimeout(timer);
+    await raceTimer(lease.settled, remaining, () => undefined);
   }
 }
 
@@ -231,8 +246,14 @@ export class AppleMusicAdapter implements PlaybackAdapter {
   private finishedReading: TransportReading | null = null;
   /** In-flight MusicKit calls this adapter started; see `whenIdle`. */
   private readonly leases = new Set<SdkLease>();
-  /** `lateSettles` for the instance when this adapter's last cue resolved. */
+  /**
+   * `lateSettles` for the instance when this adapter's last cue was *sent*.
+   * Snapshotted before the request, so a superseded request that settles while
+   * this cue is still in flight counts as unseen (review #668, finding 3).
+   */
   private cuedLateSettles = 0;
+  /** A late-settle recovery re-cue is running; see `recoverFromLateSettle`. */
+  private recovering = false;
   /**
    * Bumped by prepare, stop, and destroy (RF-121 criterion 0, folded into
    * RF-108). A held playback error is delivered only while this still matches
@@ -405,20 +426,29 @@ export class AppleMusicAdapter implements PlaybackAdapter {
     instance: MusicKitInstance,
     generation: number | null,
   ): SdkLease {
-    let resolve!: () => void;
+    let resolveSettled!: () => void;
     const settled = new Promise<void>((done) => {
-      resolve = done;
+      resolveSettled = done;
+    });
+    let resolveIdle!: () => void;
+    const idle = new Promise<void>((done) => {
+      resolveIdle = done;
     });
     const lease: SdkLease = {
       owner: this,
       instance,
       generation,
       settled,
+      idle,
+      markIdle: () => {
+        this.leases.delete(lease);
+        resolveIdle();
+      },
       release: () => {
         // Delete before resolving, so a waiter that wakes sees the lease gone.
         if (leases.get(instance) === lease) leases.delete(instance);
-        this.leases.delete(lease);
-        resolve();
+        lease.markIdle();
+        resolveSettled();
       },
       abandonedAt: null,
     };
@@ -427,10 +457,14 @@ export class AppleMusicAdapter implements PlaybackAdapter {
     return lease;
   }
 
-  /** Resolves once every MusicKit call this adapter started has settled (RF-108). */
+  /**
+   * Resolves once every MusicKit call this adapter started has stopped holding
+   * anything up (RF-108): settled, timed out, or abandoned past the settle
+   * bound. A call MusicKit never answers therefore cannot keep it busy forever.
+   */
   whenIdle(): Promise<void> | null {
     if (this.leases.size === 0) return null;
-    return Promise.all([...this.leases].map((lease) => lease.settled)).then(() => undefined);
+    return Promise.all([...this.leases].map((lease) => lease.idle)).then(() => undefined);
   }
 
   /**
@@ -439,51 +473,115 @@ export class AppleMusicAdapter implements PlaybackAdapter {
    * the item keeps today's behaviour.
    */
   private nowPlayingMismatch(instance: MusicKitInstance): boolean {
-    const item = instance.nowPlayingItem;
-    if (!item || !this.songId) return false;
-    const ids = [item.id, item.playParams?.id, item.playParams?.catalogId].filter(
-      (id): id is string => typeof id === 'string' && id.length > 0,
-    );
-    return ids.length > 0 && !ids.includes(this.songId);
+    const ids = nowPlayingIds(instance);
+    return !!this.songId && ids.length > 0 && !ids.includes(this.songId);
+  }
+
+  /** True only when MusicKit's cued item positively names this adapter's song. */
+  private nowPlayingMatches(instance: MusicKitInstance): boolean {
+    return !!this.songId && nowPlayingIds(instance).includes(this.songId);
+  }
+
+  /**
+   * Called (through `noteLateSettle`) when a superseded MusicKit call settles
+   * while this adapter owns the transport. Once this track has started, such a
+   * settle may have replaced the playing queue, so re-cue this song at the last
+   * observed playhead and play it. If that fails, report a recoverable playback
+   * error, so the instructor sees Retry instead of the wrong song (review #668,
+   * finding 4). Before start, play() handles it with its own re-cue check.
+   */
+  recoverFromLateSettle(instance: MusicKitInstance): void {
+    if (!this.started || this.destroyed || this.instance !== instance || !this.songId) return;
+    if (this.recovering || this.nowPlayingMatches(instance)) return;
+    this.recovering = true;
+    this.timer.mark('late-settle-recue');
+    const songId = this.songId;
+    const title = this.trackTitle;
+    const attempt = this.attempt;
+    const seconds =
+      this.lastPositionMs != null ? msToSeconds(this.lastPositionMs) : this.windowStartSeconds;
+    void (async () => {
+      try {
+        await this.setQueue(instance, { songs: [songId], startTime: seconds }, title);
+        if (attempt !== this.attempt || this.destroyed) return;
+        await this.withTimeout(
+          instance.play(),
+          this.host.prepareTimeoutMs ?? DEFAULT_PREPARE_TIMEOUT_MS,
+          `The Apple Music player timed out restarting "${title}".`,
+        );
+      } catch {
+        if (attempt === this.attempt && !this.destroyed && this.started)
+          this.events.onError?.({ message: appleMusicQueueReplacedMessage(title) });
+      } finally {
+        this.recovering = false;
+      }
+    })();
+  }
+
+  /**
+   * Get MusicKit cued with this song and no cancelled play in the way, then
+   * return. Loops because each wait can let another late settle land: a
+   * cancelled play's teardown stop, or a superseded queue request. Bounded to a
+   * few rounds; every wait inside is itself bounded.
+   */
+  private async readyToPlay(instance: MusicKitInstance): Promise<void> {
+    for (let round = 0; ; round++) {
+      if (playLeases.has(instance)) {
+        // After a re-cue too, a cancelled play is waited for, not refused
+        // (review #668, finding 5).
+        await this.awaitPlayLease(instance);
+        if (this.destroyed) throw new Error('Apple Music play was cancelled.');
+      }
+      // A late, superseded setQueue (or a cancelled play's teardown stop) may
+      // have replaced MusicKit's queue since this adapter's cue was sent.
+      // Re-cue when the queue may hold another song (RF-108, RF-147).
+      if (
+        !this.cueDirty &&
+        this.songId &&
+        (lateSettleCount(instance) !== this.cuedLateSettles || this.nowPlayingMismatch(instance))
+      ) {
+        this.timer.mark('re-cue-before-play');
+        this.cueDirty = true;
+      }
+      if (!this.cueDirty && !playLeases.has(instance)) return;
+      if (round >= 3)
+        throw new Error(
+          `Apple Music kept replacing its queue before "${this.trackTitle}" could start. Retry playback.`,
+        );
+      // A pre-play seek (mid-track entry) also re-cues here, since seekToTime
+      // has no now-playing item to seek until playback has started. Bounded
+      // like the prepare-time cue so a hung queue-load can't wedge the start.
+      if (this.cueDirty && this.songId) {
+        await this.setQueue(
+          instance,
+          { songs: [this.songId], startTime: this.cueSeconds },
+          this.trackTitle,
+        );
+        this.cueDirty = false;
+      }
+      if (this.destroyed) throw new Error('Apple Music play was cancelled.');
+    }
   }
 
   async play(): Promise<void> {
     const instance = this.requireInstance();
-    if (playLeases.has(instance)) {
-      await this.awaitPlayLease(instance);
-      if (this.destroyed) throw new Error('Apple Music play was cancelled.');
-    }
-    // A late, superseded setQueue (or a cancelled play's teardown stop) may
-    // have replaced MusicKit's queue since this adapter cued. Check before
-    // playing and re-cue when the queue may hold another song, so a late
-    // settle can never make this adapter play the old song (RF-108, RF-147).
+    // Common path: no cancelled play and a fresh cue, so readyToPlay returns
+    // without yielding before MusicKit's play().
     if (
-      !this.cueDirty &&
-      this.songId &&
-      (lateSettleCount(instance) !== this.cuedLateSettles || this.nowPlayingMismatch(instance))
+      playLeases.has(instance) ||
+      this.cueDirty ||
+      lateSettleCount(instance) !== this.cuedLateSettles ||
+      this.nowPlayingMismatch(instance)
     ) {
-      this.timer.mark('re-cue-before-play');
-      this.cueDirty = true;
-    }
-    // A pre-play seek (mid-track entry) re-cues here, since seekToTime has no
-    // now-playing item to seek until playback has started. Bounded like the
-    // prepare-time cue so a hung queue-load can't wedge the transition.
-    if (this.cueDirty && this.songId) {
-      await this.setQueue(
-        instance,
-        { songs: [this.songId], startTime: this.cueSeconds },
-        this.trackTitle,
-      );
-      this.cueDirty = false;
+      await this.readyToPlay(instance);
     }
     if (this.destroyed) throw new Error('Apple Music play was cancelled.');
-    if (playLeases.has(instance))
-      throw new Error('Apple Music is still finishing a previous play request.');
     this.starting = true;
     this.clearEndpoint();
     const lease = this.openLease(playLeases, instance, null);
     transportOwners.set(instance, this);
     let stoppedLate = false;
+    const lateBeforePlay = lateSettleCount(instance);
     try {
       try {
         // MusicKit's play() first, with no yield before it: a caller that
@@ -491,11 +589,10 @@ export class AppleMusicAdapter implements PlaybackAdapter {
         // and on iOS the call must keep the user gesture.
         this.timer.mark('play-call');
         const played = instance.play();
-        // Then, once per page on legacy desktop WebKit only, the FairPlay
-        // probe: a console diagnostic that never rejects and is never awaited
-        // here. It no longer runs on iOS Safari (RF-147), where MusicKit uses
-        // legacy FairPlay and the probe only added a second key-system request.
-        if (!isIosSafari()) void probeSafariModernFairPlayAccess();
+        // Then the FairPlay probe: a console diagnostic that never rejects and
+        // is never awaited here. It returns null on iOS Safari (RF-147) and on
+        // browsers without legacy WebKitMediaKeys.
+        void probeSafariModernFairPlayAccess();
         await played;
         this.timer.mark('play-resolved');
         // The player has attached its key session by now (RF-147).
@@ -513,6 +610,9 @@ export class AppleMusicAdapter implements PlaybackAdapter {
       }
       if (this.destroyed) throw new Error('Apple Music play was cancelled.');
       this.started = true;
+      // A late settle that landed while MusicKit's play was pending found this
+      // adapter not yet started; check the queue now that it has.
+      if (lateSettleCount(instance) !== lateBeforePlay) this.recoverFromLateSettle(instance);
     } finally {
       if (this.destroyed && transportOwners.get(instance) === this) {
         stoppedLate = true;
@@ -652,7 +752,13 @@ export class AppleMusicAdapter implements PlaybackAdapter {
     // generation is superseded here, so its late result never counts as a cue.
     const abandonedAt = Date.now();
     for (const lease of this.leases) {
-      lease.abandonedAt ??= abandonedAt;
+      if (lease.abandonedAt === null) {
+        lease.abandonedAt = abandonedAt;
+        // Past the settle bound a newer request supersedes or releases this
+        // call, so it stops counting as busy then even if MusicKit never
+        // answers (review #668, finding 1).
+        setTimeout(lease.markIdle, this.settleMs());
+      }
       if (lease.generation !== null && currentQueueGeneration(lease.instance) === lease.generation)
         claimQueueGeneration(lease.instance);
     }
@@ -746,11 +852,16 @@ export class AppleMusicAdapter implements PlaybackAdapter {
         () => undefined,
       )
       .then(() => {
-        if (lease.abandonedAt !== null || currentQueueGeneration(instance) !== generation)
-          noteLateSettle(instance);
+        const late = lease.abandonedAt !== null || currentQueueGeneration(instance) !== generation;
+        // Release first, so a recovery re-cue started by noteLateSettle does not
+        // find this finished request still holding the queue.
         lease.release();
+        if (late) noteLateSettle(instance);
       });
 
+    // Snapshot before awaiting MusicKit: a superseded request that settles
+    // while this cue is in flight must count as unseen (review #668, finding 3).
+    const lateAtSend = lateSettleCount(instance);
     let settledInTime = false;
     try {
       await this.withTimeout(
@@ -762,30 +873,26 @@ export class AppleMusicAdapter implements PlaybackAdapter {
       if (this.destroyed || currentQueueGeneration(instance) !== generation) {
         throw new Error(`The Apple Music queue request for "${title}" was superseded.`);
       }
-      this.cuedLateSettles = lateSettleCount(instance);
+      this.cuedLateSettles = lateAtSend;
       this.timer.mark('set-queue-resolved');
     } finally {
       if (!settledInTime) {
         // Timed out or rejected. MusicKit's setQueue can hang without ever
         // settling (iPhone Safari, RF-123), so supersede this generation and
-        // free the instance now: Retry playback can queue again, and a late
-        // settle neither counts as a cue nor goes unnoticed by play().
+        // free the instance now: Retry playback can queue again, a late settle
+        // neither counts as a cue nor goes unnoticed, and whenIdle() no longer
+        // waits on it (review #668, finding 1).
         if (currentQueueGeneration(instance) === generation) claimQueueGeneration(instance);
         if (queueLeases.get(instance) === lease) queueLeases.delete(instance);
+        lease.markIdle();
       }
     }
   }
 
-  private async withTimeout<T>(work: Promise<T>, timeoutMs: number, message: string): Promise<T> {
-    let timer: ReturnType<typeof setTimeout> | undefined;
-    const timeout = new Promise<never>((_resolve, reject) => {
-      timer = setTimeout(() => reject(new Error(message)), timeoutMs);
+  private withTimeout<T>(work: Promise<T>, timeoutMs: number, message: string): Promise<T> {
+    return raceTimer(work, timeoutMs, () => {
+      throw new Error(message);
     });
-    try {
-      return await Promise.race([work, timeout]);
-    } finally {
-      clearTimeout(timer);
-    }
   }
 }
 
