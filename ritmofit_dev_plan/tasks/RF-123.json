@@ -11,7 +11,7 @@
     "When setQueue times out in apple-music-adapter.ts, the pending-queue lock for that instance no longer blocks the next prepare, so Retry playback can try again without a page reload.",
     "A test covers: setQueue never settles, prepare times out, the next prepare reaches setQueue instead of 'still finishing a previous queue request'."
   ],
-  "nextAction": "Owner moved to Ready on 2026-10-29 as Lane A. Draft PR #656 (fix/rf-124-resume-in-place) already holds the work: the lane claims this record In progress on that PR at start. Rebase #656 onto main, drop its RF-124 and RF-29 edits (both Done on main), finalize RF-123 and its resume-in-place work in its own record(s), then ask for owner approval. Ready covers RF-123 only: RF-128 and RF-147 share these playback files but need their own Ready before the lane touches them. Owner-gated (playback code): the PR needs owner-approved and the owner's iPhone check.",
+  "nextAction": "Owner moved to Ready on 2026-10-29 as Lane A, scoped by the owner to the queue-lock fix only. Draft PR #656 (fix/rf-124-resume-in-place) holds the work: the lane claims this record In progress on that PR at start and retitles #656 for RF-123. Rebase #656 onto main and keep only the apple-music-adapter.ts lock release and its test. Revert the runtime.ts resume-in-place change and its tests: it was written for RF-124, which #657 fixed another way and the owner verified on iPhone (Pause/Resume included), so it has no Ready. Drop #656's RF-124, RF-29, RF-108 and RF-128 record edits. If resume in place is wanted later (for example Resume speed under RF-128), it gets its own record and its own Ready. RF-128 and RF-147 share these playback files but need their own Ready before the lane touches them. Owner-gated (playback code): the PR needs owner-approved and the owner's iPhone check.",
   "blocker": null,
   "evidence": [
     {
@@ -27,9 +27,9 @@
       "checkedOn": "2026-10-29"
     },
     {
-      "kind": "pr",
+      "kind": "observation",
       "ref": "https://github.com/steven-crosby/ritmofit-web/pull/662",
-      "summary": "Owner instruction in session, 2026-10-29: \"Yes move RF-123 and RF-132 to Ready and brief them as Lane A and Lane B after start-session\". RF-123 is Lane A (Apple playback, Phase 1).",
+      "summary": "Owner instruction in session, 2026-10-29, published by PR #662: \"Yes move RF-123 and RF-132 to Ready and brief them as Lane A and Lane B after start-session\". RF-123 is Lane A (Apple playback, Phase 1). The owner then confirmed Lane A ships the queue-lock fix only, with resume in place dropped.",
       "checkedOn": "2026-10-29"
     }
   ],
