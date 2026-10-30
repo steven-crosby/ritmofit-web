@@ -12,13 +12,13 @@ owner's queue: any agent may execute a Ready task. Publishing follows AGENTS.md 
 Evidence marked **recorded** is a carried-forward claim, not fresh verification.
 A checked PR proves its GitHub state, not product acceptance or production behavior.
 
-145 tasks. backlog: 44 · ready: 2 · in_progress: 1 · blocked: 1 · review: 7 · done: 88 · cancelled: 2.
+145 tasks. backlog: 44 · ready: 2 · in_progress: 0 · blocked: 1 · review: 7 · done: 89 · cancelled: 2.
 
 ## In progress
 
 | Task | Priority / kind | Relationships | Next action / resolution | Evidence |
 | --- | --- | --- | --- | --- |
-| [RF-123](tasks/RF-123.json) Apple Music retry is not blocked by a timed-out queue request | P2 / task | — | Lane A of round 20261029a (Claude Code) is executing this on branch fix/rf-123-apple-queue-lock, cut from origin/main 4206c8c, as a new draft PR; owner decision 2026-10-29: new branch and PR, #656 is not force-pushed and the orchestrator closes it as superseded. Restart: on that branch, add #656's test 'a timed-out queue request does not block the next prepare (RF-123)' to apple-music-adapter.test.ts and show it fails, then wrap setQueue()'s withTimeout in apple-music-adapter.ts in a try/catch that deletes this generation's pendingQueueGenerations entry on timeout, and run the gates. Scope is the queue-lock fix only: no runtime.ts resume in place, no destroy() change, no RF-124, RF-29, RF-108 or RF-128 edits. Owner-gated (playback code): the PR needs owner-approved and the owner's iPhone check. | checked 2026-10-28; checked 2026-10-29 |
+| — | — | — | — | — |
 
 ## Blocked / waiting
 
@@ -109,6 +109,7 @@ A checked PR proves its GitHub state, not product acceptance or production behav
 | [RF-89](tasks/RF-89.json) Review core workflow regression coverage PR #625 | P2 / task | — | Reviewed against current main on 2026-10-27: web 171, Spotify 49 and D1 integration 4 tests passed on the merged tree. Squash-merged as 0065eaf. Tests only; its handoff, whose sole action was this merge, is retired. | recorded; checked 2026-10-27 |
 | [RF-95](tasks/RF-95.json) Implement the repository-owned RF task system | P2 / task | — | Repository-owned task tooling and migration completed; all acceptance checks passed locally. PR #640 publishes this result once merged. No deployment is required. | checked 2026-10-27 |
 | [RF-97](tasks/RF-97.json) Align session prompts with the canonical RF task lifecycle | P2 / task | follow-ups RF-98 | Codex's six corrections were reviewed and carried into the RF-98 branch from main on 2026-10-27 with their substance intact. Their 'permissions already granted' wording now resolves to the standing grant in AGENTS.md › Delegation And Merge Policy. Publication is tracked by RF-98. | checked 2026-10-27 |
+| [RF-123](tasks/RF-123.json) Apple Music retry is not blocked by a timed-out queue request | P2 / task | — | Fixed in PR #664 (fix/rf-123-apple-queue-lock): setQueue() in apple-music-adapter.ts now deletes this generation's pendingQueueGenerations entry when its timeout fires, so a MusicKit setQueue that never settles no longer blocks Retry playback or a fresh Start. The regression test 'a timed-out queue request does not block the next prepare (RF-123)' failed on main with 'still finishing a previous queue request' and passes with the fix. Known trade-off, not in scope: if the hung request settles after the retry's, MusicKit's own queue may hold the late request (same song for Retry); the generation guard rejects its result. The owner's iPhone Safari check after a deploy is owed and is not part of this acceptance. #656 is superseded for RF-123 and is left for the orchestrator to close. | checked 2026-10-28; checked 2026-10-29 |
 | [RF-1](tasks/RF-1.json) Desktop hold, BPM, and effort recorded on the QA cycle song | untriaged / task | — | Recorded complete on the imported board; product behavior was not re-tested during task migration. | recorded |
 | [RF-2](tasks/RF-2.json) Teaching-screen deploy record on main | untriaged / documentation | — | Recorded complete on the imported board; product behavior was not re-tested during task migration. | recorded; checked 2026-10-27 |
 | [RF-3](tasks/RF-3.json) Teaching screen live | untriaged / task | — | Recorded complete on the imported board; product behavior was not re-tested during task migration. | recorded; checked 2026-10-27 |
