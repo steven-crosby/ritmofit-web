@@ -3,21 +3,22 @@
   "id": "RF-108",
   "title": "Scrubbing or pausing Live during a track start keeps music playing",
   "kind": "task",
-  "status": "in_progress",
+  "status": "review",
   "priority": "P2",
   "parent": null,
   "dependsOn": [
     "RF-107"
   ],
   "acceptance": [
-    "A seek, skip, or pause then resume during an in-flight Apple or Spotify start ends playing or buffering at the new position (lane repro CM-01 passes).",
+    "A seek, skip, or pause then resume during an in-flight Apple start ends playing or buffering at the new position (lane repro CM-01 passes for Apple). The Spotify half of CM-01 is RF-158.",
     "Each singleton adapter exposes a settle signal (for example whenIdle()); runtime.enterTrack awaits it, bounded to about 3 s, and re-checks the epoch before prepare.",
     "A never-settling previous call ends in a bounded, clearly worded error; existing runtime supersession tests still pass, and one new runtime test uses a real adapter with a lease.",
-    "Owner device check: audible scrub, pause and resume on iPhone Safari (Apple) and desktop Chrome.",
+    "Owner device check: audible scrub, pause and resume on iPhone Safari (Apple). The desktop Chrome check moved to RF-158 with the Spotify half.",
     "Owner device check on iPhone Safari includes RF-123's owed check: when setQueue hangs, Retry playback recovers without a reload and without \"still finishing a previous queue request\".",
-    "Owner device check on iPhone Safari: tapping three timeline tracks within about 4 s ends playing the last tapped track, with neither \"still finishing a cancelled play request\" nor \"still finishing a previous queue request\"."
+    "Owner device check on iPhone Safari: tapping three timeline tracks within about 4 s ends playing the last tapped track, with neither \"still finishing a cancelled play request\" nor \"still finishing a previous queue request\".",
+    "The held Apple Music playback error (apple-music-adapter.ts onPlaybackError) carries an attempt token captured when the error fires and is delivered only if prepare, stop or destroy have not started a new attempt, with a test that a held error is dropped after destroy then prepare (RF-121 criterion 0)."
   ],
-  "nextAction": "In progress 2026-10-30: Apple hardening lane (Claude Code subagent), branch fix/rf-108-apple-hardening, draft PR claims RF-108, RF-128 and RF-147. Restart: check out that branch, read ritmofit_dev_plan/handoffs/2026-10-30-apple-hardening.md once it exists, and continue in apps/web/src/lib/playback/ and apps/web/src/lib/musickit.ts. Owner-gated (playback code).",
+  "nextAction": "Code for criteria 0-2 and 6 is in PR #668 (fix/rf-108-apple-hardening), owner-gated and awaiting the owner's owner-approved label. After merge and a deploy, the owner runs the iPhone Safari device check for criteria 3-5: iPhone Safari, Live, an Apple Music class with 5+ tracks, on production after deploy: (1) open the app with ?playback-timing=1 and Safari Web Inspector attached from a Mac, tap Start class once, and record the \"[ritmo apple-music] timing\" lines and when the first song is audible (RF-128); (2) tap the class timeline to tracks 3, 4 and 5 within about 4 s: the last tapped track plays, with neither \"still finishing a cancelled play request\" nor \"still finishing a previous queue request\"; (3) scrub within a song, Pause and Resume, Next and let one song auto-advance, all audible; (4) if a \"did not finish a cancelled play request\" or \"timed out loading\" banner ever shows, tap Retry playback and confirm it plays without a reload. Pass: move to Done with that evidence. Fail: record the timing and banner text here and reopen. Spotify adapter settle work is RF-158 (after RF-92).",
   "blocker": null,
   "evidence": [
     {
@@ -61,8 +62,22 @@
       "ref": "https://github.com/steven-crosby/ritmofit-web/pull/667",
       "summary": "Owner set Ready in session on 2026-10-30 (\"Yes, option 1, Apple hardening\"): RF-108, RF-128 and RF-147 as one Apple hardening lane.",
       "checkedOn": "2026-10-30"
+    },
+    {
+      "kind": "pr",
+      "ref": "https://github.com/steven-crosby/ritmofit-web/pull/668",
+      "summary": "Apple hardening PR: SDK leases in apple-music-adapter.ts (a live owner's overlapping request still fails at once; a cancelled owner's setQueue/play is waited for, bounded 3 s from the cancel, then superseded (queue) or released with \"did not finish a cancelled play request within 3 s. Retry playback.\" (play)); whenIdle() on the adapter contract; runtime.enterTrack waits for retired adapters, bounded 3 s, and re-checks the epoch before prepare; held-error attempt token.",
+      "checkedOn": "2026-10-30"
+    },
+    {
+      "kind": "test",
+      "ref": "apps/web/src/lib/playback/apple-music-adapter.test.ts",
+      "summary": "New tests, all failing on main 5dd324a and passing on the PR: runtime with real adapters and leases (\"taps to tracks 2 and 3 during a pending start end playing track 3 with no lock error\"; \"a start whose cancelled play never settles fails clearly, and Retry recovers without a reload\"), lease tests for wait/supersede/release, and \"drops a held playback error after destroy then prepare\". \"rejects an overlapping queue request while an older one is still pending\" and the runtime supersession tests in runtime.test.ts pass unchanged. Mock MusicKit only; not audible playback.",
+      "checkedOn": "2026-10-30"
     }
   ],
   "resolution": null,
-  "followUps": []
+  "followUps": [
+    "RF-158"
+  ]
 }

@@ -1380,6 +1380,49 @@ describe('Apple Music quick timeline taps through the runtime (RF-108)', () => {
     }
   });
 
+  it('CM-01 (Apple half): pause then resume during an in-flight setQueue ends buffering, not in error', async () => {
+    // The audit repro (docs/audits/claude-code-audit-2026-10-28-4c344e2/repro/c-music-playback-repro.test.ts)
+    // asserted this exact sequence lands in "still finishing a previous queue request".
+    const instance = new FakeInstance();
+    const queueGate = deferred();
+    let queueCalls = 0;
+    instance.setQueueBehavior = () => (queueCalls++ === 0 ? queueGate.promise : Promise.resolve());
+    const { music } = makeMusicKit(instance, { preconfigured: true });
+    const errors: string[] = [];
+    const coordinator = new RuntimePlaybackCoordinator(
+      threeTrackPayload(),
+      [{ provider: 'apple_music', expiresAt: null, scope: null }],
+      {
+        now: Date.now(),
+        onPosition: () => {},
+        onError: (error) => errors.push(error.message),
+        adapters: {
+          apple_music: (events) =>
+            new AppleMusicAdapter(events, {
+              loadMusicKit: async () => music,
+              requirePreauthorization: true,
+            }),
+        },
+      },
+    );
+    try {
+      void coordinator.start(0);
+      await flush();
+      expect(queueCalls).toBe(1);
+      await coordinator.pause();
+      const resumed = coordinator.resume(0);
+      await flush();
+      expect(coordinator.getStatus().kind).toBe('preparing');
+      queueGate.resolve(undefined);
+      await resumed;
+      expect(errors).toEqual([]);
+      expect(coordinator.getStatus()).toMatchObject({ kind: 'buffering', index: 0 });
+      expect(queueCalls).toBe(2);
+    } finally {
+      coordinator.destroy();
+    }
+  });
+
   it('a start whose cancelled play never settles fails clearly, and Retry recovers without a reload', async () => {
     const instance = new FakeInstance();
     instance.tracksQueue = true;

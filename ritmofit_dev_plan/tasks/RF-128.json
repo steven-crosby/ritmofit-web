@@ -3,7 +3,7 @@
   "id": "RF-128",
   "title": "Apple Music Start class sounds within 1 s on iPhone Safari",
   "kind": "task",
-  "status": "in_progress",
+  "status": "review",
   "priority": "P2",
   "parent": null,
   "dependsOn": [
@@ -13,7 +13,7 @@
     "On iPhone Safari Live, the first Apple Music song is audible within 1 s of tapping Start class on 5G.",
     "Work that needs no gesture (load MusicKit, configure, check authorization) happens before Start; only setQueue/play run in the tap."
   ],
-  "nextAction": "In progress 2026-10-30: Apple hardening lane (Claude Code subagent), branch fix/rf-108-apple-hardening, draft PR claims RF-108, RF-128 and RF-147. Restart: check out that branch, read ritmofit_dev_plan/handoffs/2026-10-30-apple-hardening.md once it exists, and continue in apps/web/src/lib/playback/ and apps/web/src/lib/musickit.ts. Owner-gated (playback code).",
+  "nextAction": "PR #668 adds debug-only Start timing (\"[ritmo apple-music] timing <step> +<ms>ms\" for prepare, musickit-ready, config-fetched/configured when it runs, authorized, set-queue-call/-resolved, play-call, play-resolved, first-playing-state) behind ?playback-timing=1. Criterion 1 (Live's authorization check before Start loads, configures and checks MusicKit; the tap runs only setQueue and play) holds on main and is unchanged. After merge and deploy, the owner times one Start on iPhone Safari on 5G with Safari Web Inspector attached and records the lines here. If audible start is over 1 s and set-queue dominates, the next step is the open question in PR #668 (cue the first song before Start).",
   "blocker": null,
   "evidence": [
     {
@@ -32,6 +32,18 @@
       "kind": "observation",
       "ref": "https://github.com/steven-crosby/ritmofit-web/pull/667",
       "summary": "Owner set Ready in session on 2026-10-30 (\"Yes, option 1, Apple hardening\"): RF-108, RF-128 and RF-147 as one Apple hardening lane.",
+      "checkedOn": "2026-10-30"
+    },
+    {
+      "kind": "pr",
+      "ref": "https://github.com/steven-crosby/ritmofit-web/pull/668",
+      "summary": "Debug-only timing module apps/web/src/lib/playback/start-timing.ts (off unless ?playback-timing=1 or localStorage ritmo-playback-timing=1; logs step names only) wired through the Apple adapter. No pre-gesture work moved: LiveMode.tsx already gates Start on the \"Check Apple Music authorization\" step, which runs prepareAppleMusic (load + configure) and requires isAuthorized, so the tap path reuses the configured singleton.",
+      "checkedOn": "2026-10-30"
+    },
+    {
+      "kind": "test",
+      "ref": "apps/web/src/lib/playback/start-timing.test.ts",
+      "summary": "Timing is off by default and logs nothing; turns on from the URL flag and localStorage; blocked storage keeps it off. Existing adapter test \"reuses the page singleton without re-configuring or re-fetching the token\" covers the tap path skipping configure.",
       "checkedOn": "2026-10-30"
     }
   ],

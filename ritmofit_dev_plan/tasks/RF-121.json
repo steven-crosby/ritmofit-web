@@ -13,7 +13,7 @@
     "The probe's word is written in one place (one settle handler) and the module keeps one probe record instead of three globals plus a test-only generation counter; built-in error constructors are computed once.",
     "Existing RF-107 probe and adapter tests stay green."
   ],
-  "nextAction": "Acceptance 0 (held-error attempt token) is folded into RF-108, which the owner moved to Ready on 2026-10-30; the RF-108 PR should cite RF-121 for it. Criteria 1–3 stay here in Backlog until the owner sets Ready. Owner-gated (playback code).",
+  "nextAction": "Acceptance 0 (held-error attempt token) is folded into RF-108 and implemented in PR #668, which cites RF-121; RF-108 owns its acceptance and test. Criteria 1-3 stay here in Backlog until the owner sets Ready. Owner-gated (playback code).",
   "blocker": null,
   "evidence": [
     {
@@ -21,6 +21,12 @@
       "ref": "https://github.com/steven-crosby/ritmofit-web/pull/649",
       "summary": "Final review of #649 on 82bffde: non-significant findings logged 2026-10-28. The held-error staleness is not reachable today because runtime.ts builds a fresh adapter per track and drops stale onError by epoch and adapter identity; the attempt token is defense in depth.",
       "checkedOn": "2026-10-28"
+    },
+    {
+      "kind": "pr",
+      "ref": "https://github.com/steven-crosby/ritmofit-web/pull/668",
+      "summary": "Criterion 0 implemented under RF-108: onPlaybackError captures an attempt token that prepare, stop and destroy bump; test \"drops a held playback error after destroy then prepare (RF-121 attempt token, RF-108)\". Criteria 1-3 untouched.",
+      "checkedOn": "2026-10-30"
     }
   ],
   "resolution": null,
