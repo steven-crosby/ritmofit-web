@@ -23,7 +23,7 @@
     },
     {
       "kind": "observation",
-      "ref": "ritmofit_dev_plan/handoffs/2026-10-28-r20261028a-orchestrator.md",
+      "ref": "https://github.com/steven-crosby/ritmofit-web/blob/d888d28115e94447a1e2e548783fb5a95b5686c7/ritmofit_dev_plan/handoffs/2026-10-28-r20261028a-orchestrator.md",
       "summary": "Round 20261028a, 2026-10-28: two lane worktrees ran pnpm e2e in parallel with E2E_PORT=8798 and E2E_PORT=8799 and per-worktree e2e/.state, with no port or state collision.",
       "checkedOn": "2026-10-28"
     }

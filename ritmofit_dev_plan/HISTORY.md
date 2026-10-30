@@ -13,6 +13,38 @@ detail). Current focus and `main` vs production live in the "Now" block of
 
 ## Deploy and session log (newest first)
 
+> **Session 2026-10-30 — round r20261029a close and device results (docs only).** Two web lanes ran
+> under one orchestrator, partitioned by file: Lane A owned `apple-music-adapter.ts` and its test
+> (RF-123); Lane B owned `packages/music/`, `apps/api/src/lib/music/`, `routes/providers.ts`, the
+> likes OpenAPI entries and the Music workspace (RF-132), as the round's only editor of
+> `providers.ts` and `openapi.json`. [#664](https://github.com/steven-crosby/ritmofit-web/pull/664)
+> merged as `a1fafa9` (RF-123: release the Apple queue lock when `setQueue` times out). #656 was
+> closed unmerged as superseded, and its resume-in-place change did not ship.
+> [#665](https://github.com/steven-crosby/ritmofit-web/pull/665) merged as `d888d28` after four final
+> reviews (RF-132: Load more and whole-library search for Apple Music and SoundCloud; "Library
+> order"; Spotify verification in RF-148, TrackSearch in RF-149). Owner device checks on production,
+> 2026-10-30. Mac Chrome: Apple Music Load more went past 200 (about 5 s per batch, RF-150); search
+> found Garden Grove; the sort reads "Library order"; SoundCloud, after a reconnect, showed its 2
+> likes and no Load more (paging past 200 untested, RF-154); "Create class from liked songs" said
+> "Using your first 200 liked songs" and built a 15-song Cycle class, which is left in the owner's
+> account. The owner asked for song selection in the Songs list itself (RF-151). iPhone Safari:
+> Start, Pause, Next and Previous worked; quick timeline jumps showed "Playback stopped" until Retry
+> playback, with no reload (RF-108). Review items logged on #664 and #665 are now RF-147, RF-108 and
+> RF-152–RF-154. Correction to the entry below: four of #662's seven review items were folded then,
+> not all; #663's review logged the rest, and this close resolves them (Phases markers removed, RF-108
+> and RF-123 wording, the partition above). No code, deploy or migration.
+
+> **Deploy 2026-10-30 — RF-123 and RF-132 on main `d888d28`.** `scripts/deploy.sh` from a clean
+> detached worktree at `origin/main` `d888d28`
+> ([#664](https://github.com/steven-crosby/ritmofit-web/pull/664), RF-123;
+> [#665](https://github.com/steven-crosby/ritmofit-web/pull/665), RF-132). Remote D1: none to apply.
+> New Worker `765c9424-6007-480c-9b52-1e71426f0f18`; rollback
+> `2a302ce6-7665-47d2-8f79-68d6822450b1` (`d81c0fc`). SPA `assets/index-BAVpF1uf.js` (was
+> `assets/index-Cqjj6m_w.js`); three cache-busted fetches agree. `/` and `/api/v1/health` 200;
+> `/classes`, `/explore`, `/teams` and the likes route 401 signed out; security
+> headers present. Not done: the five-minute tail watch and the authed smoke (QA token still
+> expired). The owner's device results are in the session entry above.
+
 > **Session 2026-10-29 (second close) — Lanes A/B set up (docs only).** The owner moved RF-123 and
 > RF-132 to Ready as Lane A and Lane B for the next session
 > ([#662](https://github.com/steven-crosby/ritmofit-web/pull/662), merged `3592c82`). The owner then

@@ -1,0 +1,37 @@
+{
+  "schemaVersion": 1,
+  "kind": "task",
+  "status": "backlog",
+  "parent": null,
+  "dependsOn": [],
+  "blocker": null,
+  "resolution": null,
+  "followUps": [],
+  "id": "RF-152",
+  "title": "Music Songs search and Load more behave cleanly at the edges (RF-132 review follow-ups)",
+  "priority": "P3",
+  "acceptance": [
+    "Clearing and retyping several searches within a minute does not end in \"Couldn't load more songs\" from the provider-likes limiter: search autoload keeps a client-side per-minute budget or its own limiter.",
+    "Whitespace-only edits do not start a new search (the trimmed query is compared).",
+    "An autoload tick that sends no request does not count against the 5-request budget, and a Keep loading grant does not reset during its round.",
+    "After an account switch, the previous account's songs are hidden until the new account's first page arrives.",
+    "Retyping a query after clearing it does not briefly show a stale Apple search result or failure.",
+    "The owner decides whether the first search's 1,000-song bound counts songs already loaded (today it does, matching the 2026-10-29 ruling) or is relative.",
+    "Each changed behavior has a Dashboard or music-library test."
+  ],
+  "nextAction": "Logged items from the #665 (RF-132) final reviews: round 4 items 1, 2, 4, 5 and 6, and round 3 items 4 and 5. Code: apps/web/src/components/Dashboard.tsx (Music Songs likes state and autoload) and apps/web/src/lib/music-library.ts. Not owner-gated unless it touches provider code. Agent-created: Backlog until the owner sets Ready.",
+  "evidence": [
+    {
+      "kind": "observation",
+      "ref": "https://github.com/steven-crosby/ritmofit-web/pull/665#issuecomment-6516374583",
+      "summary": "Final review of #665 on 42da99c: no significant findings; items 1, 2, 4, 5 and 6 logged for Backlog.",
+      "checkedOn": "2026-10-30"
+    },
+    {
+      "kind": "observation",
+      "ref": "https://github.com/steven-crosby/ritmofit-web/pull/665#issuecomment-6516001951",
+      "summary": "Final review of #665 on 0a66217: logged items 4 (re-search on whitespace-only edits) and 5 (Keep loading counts a request that never fires and can reset during a round).",
+      "checkedOn": "2026-10-30"
+    }
+  ]
+}

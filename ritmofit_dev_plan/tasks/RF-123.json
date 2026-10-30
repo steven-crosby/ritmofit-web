@@ -23,7 +23,7 @@
     {
       "kind": "pr",
       "ref": "https://github.com/steven-crosby/ritmofit-web/pull/656",
-      "summary": "Open PR carrying the RF-123 lock fix and a resume-in-place change in runtime.ts; needs a rebase after #657 merged (d81c0fc). Resume in place is out of scope since 2026-10-29 and is reverted at the rebase.",
+      "summary": "PR carrying the RF-123 lock fix plus a resume-in-place change in runtime.ts, based before #657. Closed unmerged as superseded by #664 on 2026-10-30; its runtime.ts change did not ship.",
       "checkedOn": "2026-10-29"
     },
     {
@@ -43,8 +43,14 @@
       "ref": "https://github.com/steven-crosby/ritmofit-web/pull/664",
       "summary": "Owner decision in session, 2026-10-29, relayed by the round orchestrator: \"Yes, new branch and PR\". Lane A ships RF-123 on a new branch and PR from main instead of force-pushing #656; #656 is left untouched for the orchestrator to close as superseded.",
       "checkedOn": "2026-10-29"
+    },
+    {
+      "kind": "observation",
+      "ref": "https://github.com/steven-crosby/ritmofit-web/pull/666",
+      "summary": "Owner iPhone Safari Live on production d888d28 (Worker 765c9424, SPA index-BAVpF1uf.js), two screen recordings shared in session 2026-10-30, network not recorded. Start, Pause, Next and Previous worked. Tapping the class timeline to tracks 3, 4 and 5 within about 4 s showed \"Playback stopped\": first \"Apple Music is still finishing a cancelled play request. Retry after it finishes, or reload.\", then \"The Apple Music player is still finishing a previous queue request for \"Nookie\".\" Retry playback played Nookie about 2 s later, with no reload. Recordings are not stored in the repo.",
+      "checkedOn": "2026-10-30"
     }
   ],
-  "resolution": "Fixed in PR #664 (fix/rf-123-apple-queue-lock): setQueue() in apple-music-adapter.ts now deletes this generation's pendingQueueGenerations entry when its timeout fires, so a MusicKit setQueue that never settles no longer blocks Retry playback or a fresh Start. The regression test 'a timed-out queue request does not block the next prepare (RF-123)' failed on main with 'still finishing a previous queue request' and passes with the fix. Known trade-off, not in scope: if the hung request settles after the retry's, MusicKit's own queue may hold the late request (same song for Retry); the generation guard rejects its result. The owner's iPhone Safari check after a deploy is owed and is not part of this acceptance. #656 is superseded for RF-123 and is left for the orchestrator to close.",
+  "resolution": "Fixed in PR #664 (fix/rf-123-apple-queue-lock): setQueue() in apple-music-adapter.ts now deletes this generation's pendingQueueGenerations entry when its timeout fires, so a MusicKit setQueue that never settles no longer blocks Retry playback or a fresh Start once that timeout fires (before it fires, the lock still holds). The regression test 'a timed-out queue request does not block the next prepare (RF-123)' failed on main with 'still finishing a previous queue request' and passes with the fix. Known trade-off, not in scope: if the hung request settles after the retry's, MusicKit's own queue may hold the late request (same song for Retry); the generation guard rejects its result. #656 was closed as superseded. Deployed 2026-10-30 (Worker 765c9424); the owner's iPhone run that day recovered from the queue lock with Retry playback and no reload; whether the timeout path itself ran is not visible.",
   "followUps": []
 }
