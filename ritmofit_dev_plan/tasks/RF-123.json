@@ -23,7 +23,7 @@
     {
       "kind": "pr",
       "ref": "https://github.com/steven-crosby/ritmofit-web/pull/656",
-      "summary": "Open PR carrying the RF-123 lock fix and resume in place; needs a rebase after #657 merged (d81c0fc).",
+      "summary": "Open PR carrying the RF-123 lock fix and a resume-in-place change in runtime.ts; needs a rebase after #657 merged (d81c0fc). Resume in place is out of scope since 2026-10-29 and is reverted at the rebase.",
       "checkedOn": "2026-10-29"
     },
     {
