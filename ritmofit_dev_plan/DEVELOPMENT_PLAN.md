@@ -54,7 +54,6 @@ direct ask before starting one.
 | 5. Polish | fill-in | [RF-141](./tasks/RF-141.json), [RF-142](./tasks/RF-142.json) (absorbs RF-73), [RF-143](./tasks/RF-143.json), [RF-144](./tasks/RF-144.json), [RF-146](./tasks/RF-146.json) | Copy, accessibility, benchmark triage |
 | Background | between phases | [RF-100](./tasks/RF-100.json) (Ready), [RF-87](./tasks/RF-87.json), RF-101–RF-106, RF-109–RF-115, RF-117–RF-120, [RF-127](./tasks/RF-127.json) | Small hardening (mostly P3; RF-87 and RF-115 are P2) |
 
-
 ---
 
 ## Legacy focus context

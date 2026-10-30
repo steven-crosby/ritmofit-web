@@ -1,15 +1,12 @@
 {
   "schemaVersion": 1,
-  "kind": "task",
-  "status": "backlog",
-  "parent": null,
-  "dependsOn": [],
-  "blocker": null,
-  "resolution": null,
-  "followUps": [],
   "id": "RF-152",
   "title": "Music Songs search and Load more behave cleanly at the edges (RF-132 review follow-ups)",
+  "kind": "task",
+  "status": "backlog",
   "priority": "P3",
+  "parent": null,
+  "dependsOn": [],
   "acceptance": [
     "Clearing and retyping several searches within a minute does not end in \"Couldn't load more songs\" from the provider-likes limiter: search autoload keeps a client-side per-minute budget or its own limiter.",
     "Whitespace-only edits do not start a new search (the trimmed query is compared).",
@@ -20,6 +17,7 @@
     "Each changed behavior has a Dashboard or music-library test."
   ],
   "nextAction": "Logged items from the #665 (RF-132) final reviews: round 4 items 1, 2, 4, 5 and 6, and round 3 items 4 and 5. Code: apps/web/src/components/Dashboard.tsx (Music Songs likes state and autoload) and apps/web/src/lib/music-library.ts. Not owner-gated unless it touches provider code. Agent-created: Backlog until the owner sets Ready.",
+  "blocker": null,
   "evidence": [
     {
       "kind": "observation",
@@ -33,5 +31,7 @@
       "summary": "Final review of #665 on 0a66217: logged items 4 (re-search on whitespace-only edits) and 5 (Keep loading counts a request that never fires and can reset during a round).",
       "checkedOn": "2026-10-30"
     }
-  ]
+  ],
+  "resolution": null,
+  "followUps": []
 }

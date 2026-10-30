@@ -1,15 +1,12 @@
 {
   "schemaVersion": 1,
-  "kind": "task",
-  "status": "backlog",
-  "parent": null,
-  "dependsOn": [],
-  "blocker": null,
-  "resolution": null,
-  "followUps": [],
   "id": "RF-154",
   "title": "SoundCloud likes paging accepts encoded user URNs and binds the cursor to the caller",
+  "kind": "task",
+  "status": "backlog",
   "priority": "P3",
+  "parent": null,
+  "dependsOn": [],
   "acceptance": [
     "A server-returned SoundCloud next_href on a percent-encoded URN path (/users/soundcloud%3Ausers%3A<id>/likes/tracks?…) continues paging instead of ending the list at about 200 songs.",
     "A client-supplied likes cursor that names a different SoundCloud user than the connected account is rejected with the existing 422, so a hand-made cursor cannot page another user's likes.",
@@ -17,6 +14,7 @@
     "Owner or agent check with a SoundCloud account of more than 200 likes shows Load more past 200."
   ],
   "nextAction": "From the #665 (RF-132) reviews: round 4 item 3 (an encoded URN next_href ends the list with no error) and round 3 item 10 (a hand-made cursor can read another user's public likes with the caller's own token; low impact, those likes are public). The owner's SoundCloud account has 2 likes (2026-10-30), so the 200+ check needs another account. Files: packages/music/src/soundcloud.ts and apps/api/src/lib/music/likes-cursor.ts. Owner-gated (provider code). Agent-created: Backlog until the owner sets Ready.",
+  "blocker": null,
   "evidence": [
     {
       "kind": "observation",
@@ -36,5 +34,7 @@
       "summary": "Owner Mac Chrome check on production d888d28, 2026-10-30: after reconnecting SoundCloud, Music › Songs showed the account's 2 liked songs and no Load more, which is correct for that account; paging past 200 is untested.",
       "checkedOn": "2026-10-30"
     }
-  ]
+  ],
+  "resolution": null,
+  "followUps": []
 }

@@ -16,7 +16,8 @@ detail). Current focus and `main` vs production live in the "Now" block of
 > **Session 2026-10-30 — round r20261029a close and device results (docs only).** Two web lanes ran
 > under one orchestrator, partitioned by file: Lane A owned `apple-music-adapter.ts` and its test
 > (RF-123); Lane B owned `packages/music/`, `apps/api/src/lib/music/`, `routes/providers.ts`, the
-> likes OpenAPI entries and the Music workspace (RF-132), as the round's only editor of
+> likes OpenAPI entries, the Music workspace and the likes client in `apps/web/src/lib/api.ts`
+> (RF-132), as the round's only editor of
 > `providers.ts` and `openapi.json`. [#664](https://github.com/steven-crosby/ritmofit-web/pull/664)
 > merged as `a1fafa9` (RF-123: release the Apple queue lock when `setQueue` times out). #656 was
 > closed unmerged as superseded, and its resume-in-place change did not ship.
@@ -30,7 +31,7 @@ detail). Current focus and `main` vs production live in the "Now" block of
 > account. The owner asked for song selection in the Songs list itself (RF-151). iPhone Safari:
 > Start, Pause, Next and Previous worked; quick timeline jumps showed "Playback stopped" until Retry
 > playback, with no reload (RF-108). Review items logged on #664 and #665 are now RF-147, RF-108 and
-> RF-152–RF-154. Correction to the entry below: four of #662's seven review items were folded then,
+> RF-152–RF-154, and the skipped authed smoke is RF-155. Correction to the entry below: four of #662's seven review items were folded then,
 > not all; #663's review logged the rest, and this close resolves them (Phases markers removed, RF-108
 > and RF-123 wording, the partition above). No code, deploy or migration.
 
@@ -43,7 +44,7 @@ detail). Current focus and `main` vs production live in the "Now" block of
 > `assets/index-Cqjj6m_w.js`); three cache-busted fetches agree. `/` and `/api/v1/health` 200;
 > `/classes`, `/explore`, `/teams` and the likes route 401 signed out; security
 > headers present. Not done: the five-minute tail watch and the authed smoke (QA token still
-> expired). The owner's device results are in the session entry above.
+> expired; renewing it is RF-155). The owner's device results are in the session entry above.
 
 > **Session 2026-10-29 (second close) — Lanes A/B set up (docs only).** The owner moved RF-123 and
 > RF-132 to Ready as Lane A and Lane B for the next session
