@@ -12,7 +12,7 @@ owner's queue: any agent may execute a Ready task. Publishing follows AGENTS.md 
 Evidence marked **recorded** is a carried-forward claim, not fresh verification.
 A checked PR proves its GitHub state, not product acceptance or production behavior.
 
-147 tasks. backlog: 46 · ready: 1 · in_progress: 0 · blocked: 1 · review: 7 · done: 90 · cancelled: 2.
+148 tasks. backlog: 47 · ready: 1 · in_progress: 0 · blocked: 1 · review: 7 · done: 90 · cancelled: 2.
 
 ## In progress
 
@@ -93,6 +93,7 @@ A checked PR proves its GitHub state, not product acceptance or production behav
 | [RF-144](tasks/RF-144.json) The design brief and D21 describe the provider capabilities and Account sections the product has | P3 / documentation | needs RF-131 | Docs-only PR. The §9.8 fix can ship first as its own child record if wanted; the D21 line waits on RF-131 decision 5. Surface: docs (design canon, so iOS reads it too). | checked 2026-10-29 |
 | [RF-146](tasks/RF-146.json) Instructor benchmark gaps from 2026-09-29 are triaged into records | P3 / plan | — | Walk the gap list in DEVELOPMENT_PLAN.md › Backlog › Instructor benchmark gaps against open records, propose the mapping, and file only what the owner accepts. Schema-changing gaps (cue plus per-cue note) need their own plan. | checked 2026-10-29 |
 | [RF-147](tasks/RF-147.json) Apple Music adapter diagnostics and FairPlay flag handling match the legacy path RF-124 restored | P3 / task | — | Cleanup items 3–9 from the #657 final review, mapped to acceptance: item 3 → banner criterion; item 4 → probe criterion; items 5, 6, 7 and 8 → flag-clear, flag-log and comment criterion; item 9 → desktop test criterion. Files: apps/web/src/lib/musickit.ts, musickit.test.ts, apps/web/src/lib/playback/apple-music-adapter.ts. Owner-gated (playback code). Bundle with RF-121 or RF-128 if either lands first. | checked 2026-10-29 |
+| [RF-150](tasks/RF-150.json) Music Songs Load more shows the next Apple Music songs after one provider request | P3 / task | — | Owner, 2026-10-30: "open a Backlog record suggesting the first 100 show sooner." Each likes page targets LIKES_PAGE_TARGET = 200 songs (apps/api/src/lib/music/user-likes.ts), and Apple returns at most LIBRARY_PAGE_LIMIT = 100 per request (packages/music/src/apple-music.ts), so one Load more makes two Apple requests in sequence. Options: a 100-song target for Apple, or a smaller first page. Weigh the 30-per-minute provider-likes-search limiter and the 5-request autoload budget before choosing. Agent-created: Backlog until the owner sets Ready. | checked 2026-10-30 |
 | [RF-74](tasks/RF-74.json) Spotify playlist dialog offers Try again where retry cannot help | untriaged / task | parent RF-92 | Review the error/action mapping. Spotify reopened by the owner on 2026-10-28; Apple work comes first until about 2026-11-27. Resume risk: the Spotify developer app rejects the connected account ("The user is not registered for this application"), so Web API calls return 403. | recorded; checked 2026-10-28; checked 2026-10-29 |
 
 ## Done
