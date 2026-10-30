@@ -3,8 +3,11 @@ import {
   appendSongPage,
   LIBRARY_SORT_OPTIONS,
   likesSubsetNote,
+  serverSongSearchState,
   shouldAutoLoadForSearch,
   SONG_SEARCH_AUTOLOAD_BOUND,
+  SONG_SEARCH_AUTOLOAD_REQUESTS,
+  songSearchAutoLoadSpent,
   songSearchMode,
   songSearchScopeNote,
   defaultLibraryKind,
@@ -228,6 +231,7 @@ describe('Songs paging and search (RF-132)', () => {
       failed: false,
       loadedCount: 800,
       bound: SONG_SEARCH_AUTOLOAD_BOUND,
+      requests: 3,
     };
     expect(SONG_SEARCH_AUTOLOAD_BOUND).toBe(1000);
     expect(shouldAutoLoadForSearch(base)).toBe(true);
@@ -238,14 +242,73 @@ describe('Songs paging and search (RF-132)', () => {
     expect(shouldAutoLoadForSearch({ ...base, failed: true })).toBe(false);
   });
 
+  // Regression (#665 review item 5): pages that add no new songs never move
+  // loadedCount, so the song bound alone let one query request without end.
+  it('stops auto-loading after 5 requests for a query even when no songs were added', () => {
+    const base = {
+      query: 'angel',
+      hasMore: true,
+      loading: false,
+      failed: false,
+      loadedCount: 200,
+      bound: SONG_SEARCH_AUTOLOAD_BOUND,
+      requests: 0,
+    };
+    expect(SONG_SEARCH_AUTOLOAD_REQUESTS).toBe(5);
+    expect(shouldAutoLoadForSearch({ ...base, requests: 4 })).toBe(true);
+    expect(shouldAutoLoadForSearch({ ...base, requests: 5 })).toBe(false);
+    expect(songSearchAutoLoadSpent({ loadedCount: 200, bound: 1000, requests: 5 })).toBe(true);
+    expect(songSearchScopeNote({ ...base, requests: 5 })).toBe(
+      'Searched your first 200 liked songs.',
+    );
+  });
+
+  // Regression (#665 review item 4): a server search that is never sent (Apple not
+  // connected) must not read as "Searching…" forever.
+  it('reports no pending server search when the connection is not connected', () => {
+    const base = {
+      onSongs: true,
+      mode: 'server' as const,
+      query: 'angel',
+      connected: true,
+      result: null,
+    };
+    expect(serverSongSearchState(base)).toBe('pending');
+    expect(serverSongSearchState({ ...base, connected: false })).toBe('off');
+    expect(serverSongSearchState({ ...base, query: '  ' })).toBe('off');
+    expect(serverSongSearchState({ ...base, mode: 'loaded' })).toBe('off');
+    expect(serverSongSearchState({ ...base, onSongs: false })).toBe('off');
+    expect(serverSongSearchState({ ...base, result: { query: 'angel', failed: false } })).toBe(
+      'done',
+    );
+    expect(serverSongSearchState({ ...base, result: { query: 'angel', failed: true } })).toBe(
+      'failed',
+    );
+    expect(serverSongSearchState({ ...base, result: { query: 'ange', failed: false } })).toBe(
+      'pending',
+    );
+  });
+
   it('says what a loaded-pages search covered', () => {
-    const base = { query: 'angel', hasMore: true, loading: false, loadedCount: 1000, bound: 1000 };
+    const base = {
+      query: 'angel',
+      hasMore: true,
+      loading: false,
+      failed: false,
+      loadedCount: 1000,
+      bound: 1000,
+      requests: 4,
+    };
     expect(songSearchScopeNote(base)).toBe('Searched your first 1,000 liked songs.');
     expect(songSearchScopeNote({ ...base, loading: true, loadedCount: 600 })).toBe(
       'Searching your liked songs… 600 loaded so far.',
     );
     expect(songSearchScopeNote({ ...base, hasMore: false })).toBeNull();
     expect(songSearchScopeNote({ ...base, query: '' })).toBeNull();
+    // A failed page ends the automatic search; the note says what was covered.
+    expect(songSearchScopeNote({ ...base, loadedCount: 400, failed: true })).toBe(
+      'Searched your first 400 liked songs.',
+    );
   });
 
   it('tells "Create class from liked songs" when it used a subset', () => {

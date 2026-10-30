@@ -130,10 +130,35 @@ export const LIBRARY_SORT_OPTIONS: readonly (readonly [LibrarySort, string])[] =
 
 /** Songs a typed search may load without asking: 5 pages of about 200 (owner, 2026-10-29). */
 export const SONG_SEARCH_AUTOLOAD_BOUND = 1000;
+/**
+ * Page requests one typed query may make without asking (owner: 1,000 songs or 5
+ * calls). Bounds the requests even when pages add no new songs, so a search cannot
+ * spend the per-user likes budget.
+ */
+export const SONG_SEARCH_AUTOLOAD_REQUESTS = 5;
 
 /** Which Songs search a service supports: Apple searches the library server-side. */
 export function songSearchMode(provider: Provider): 'server' | 'loaded' {
   return provider === 'apple_music' ? 'server' : 'loaded';
+}
+
+/**
+ * Where an Apple Music library search stands for the current query. `off` when no
+ * server search applies (another tab, a "loaded" service, a blank query, or a
+ * connection that is not connected, so the effect never sends it); `pending` until
+ * the result for this exact query arrives; then `done` or `failed`.
+ */
+export function serverSongSearchState(input: {
+  onSongs: boolean;
+  mode: 'server' | 'loaded';
+  query: string;
+  connected: boolean;
+  result: { query: string; failed: boolean } | null;
+}): 'off' | 'pending' | 'done' | 'failed' {
+  const query = input.query.trim();
+  if (!input.onSongs || input.mode !== 'server' || !query || !input.connected) return 'off';
+  if (!input.result || input.result.query !== query) return 'pending';
+  return input.result.failed ? 'failed' : 'done';
 }
 
 /** Append a page of songs, dropping any song already loaded (pages can overlap). */
@@ -141,32 +166,44 @@ export function appendSongPage(
   loaded: readonly TrackSearchResult[],
   page: readonly TrackSearchResult[],
 ): TrackSearchResult[] {
-  const seen = new Set(loaded.map((row) => `${row.provider}:${row.providerTrackId}`));
+  const key = (row: TrackSearchResult) => `${row.provider}:${row.providerTrackId}`;
+  const seen = new Set(loaded.map(key));
   const out = [...loaded];
   for (const row of page) {
-    const key = `${row.provider}:${row.providerTrackId}`;
-    if (seen.has(key)) continue;
-    seen.add(key);
+    if (seen.has(key(row))) continue;
+    seen.add(key(row));
     out.push(row);
   }
   return out;
 }
 
-/** True while a typed search on a "loaded" service should fetch another page by itself. */
-export function shouldAutoLoadForSearch(input: {
-  query: string;
-  hasMore: boolean;
-  loading: boolean;
-  failed: boolean;
+/** A typed search's autoload budget: songs it may reach and requests it may make. */
+export interface SongSearchAutoLoad {
   loadedCount: number;
   bound: number;
-}): boolean {
+  requests: number;
+}
+
+/** True once a typed search has used its autoload budget (songs or requests). */
+export function songSearchAutoLoadSpent(budget: SongSearchAutoLoad): boolean {
+  return budget.loadedCount >= budget.bound || budget.requests >= SONG_SEARCH_AUTOLOAD_REQUESTS;
+}
+
+/** True while a typed search on a "loaded" service should fetch another page by itself. */
+export function shouldAutoLoadForSearch(
+  input: SongSearchAutoLoad & {
+    query: string;
+    hasMore: boolean;
+    loading: boolean;
+    failed: boolean;
+  },
+): boolean {
   return (
     input.query.trim() !== '' &&
     input.hasMore &&
     !input.loading &&
     !input.failed &&
-    input.loadedCount < input.bound
+    !songSearchAutoLoadSpent(input)
   );
 }
 
@@ -174,18 +211,20 @@ export function shouldAutoLoadForSearch(input: {
  * The line under a Songs search on a "loaded" service: what was searched, and
  * whether more of the library is left unsearched.
  */
-export function songSearchScopeNote(input: {
-  query: string;
-  hasMore: boolean;
-  loading: boolean;
-  loadedCount: number;
-  bound: number;
-}): string | null {
+export function songSearchScopeNote(
+  input: SongSearchAutoLoad & {
+    query: string;
+    hasMore: boolean;
+    loading: boolean;
+    failed: boolean;
+  },
+): string | null {
   if (!input.query.trim() || !input.hasMore) return null;
-  if (input.loading || input.loadedCount < input.bound) {
-    return `Searching your liked songs… ${input.loadedCount.toLocaleString('en-US')} loaded so far.`;
+  const count = input.loadedCount.toLocaleString('en-US');
+  if (input.loading || (!input.failed && !songSearchAutoLoadSpent(input))) {
+    return `Searching your liked songs… ${count} loaded so far.`;
   }
-  return `Searched your first ${input.loadedCount.toLocaleString('en-US')} liked songs.`;
+  return `Searched your first ${count} liked songs.`;
 }
 
 /**

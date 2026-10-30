@@ -4,6 +4,7 @@ import {
   fetchSoundCloudLikes,
   fetchSoundCloudLikesPage,
   InvalidProviderCursorError,
+  ProviderError,
   fetchSoundCloudPlaylistTracks,
   fetchSoundCloudPlaylists,
   SoundCloudUnauthorizedError,
@@ -870,8 +871,13 @@ describe('fetchSoundCloudLikesPage (RF-132 paging)', () => {
     'http://api.test/me/likes/tracks?cursor=x',
     '/me/likes/tracks?cursor=x',
     'not a url',
+    // Regression (#665 review item 6): same origin, but not a likes-tracks path.
+    'https://api.test/collection?page_size=10&cursor=1234567',
+    'https://api.test/me/tracks?cursor=x',
+    'https://api.test/me/likes/tracks/../../me/connections?cursor=x',
+    'https://api.test/users/abc/likes/tracks?cursor=x',
   ])(
-    'rejects a cursor off the SoundCloud API origin (%s) before sending the token',
+    'rejects a cursor off the SoundCloud API origin or likes path (%s) before sending the token',
     async (cursor) => {
       const fetchImpl = vi.fn<FetchLike>();
       await expect(
@@ -880,6 +886,32 @@ describe('fetchSoundCloudLikesPage (RF-132 paging)', () => {
       expect(fetchImpl).not.toHaveBeenCalled();
     },
   );
+
+  it.each([
+    `${API_BASE}/me/likes/tracks?cursor=c9&limit=50`,
+    `${API_BASE}/users/soundcloud:users:123/likes/tracks?cursor=c9`,
+    `${API_BASE}/users/123/likes/tracks?cursor=c9`,
+  ])('follows a likes-tracks continuation (%s)', async (cursor) => {
+    const { fetchImpl, calls } = pages({ [cursor]: { collection: rows(0, 1) } });
+    const out = await fetchSoundCloudLikesPage({
+      accessToken: 't',
+      fetchImpl,
+      apiBase: API_BASE,
+      cursor,
+    });
+    expect(out.tracks).toHaveLength(1);
+    expect(calls[0]?.url).toBe(cursor);
+  });
+
+  it('treats a next_href off the likes path as drift instead of following it', async () => {
+    const { fetchImpl, calls } = pages({
+      [FIRST]: { collection: rows(0, 50), next_href: `${API_BASE}/me/connections?cursor=x` },
+    });
+    await expect(
+      fetchSoundCloudLikesPage({ accessToken: 't', fetchImpl, apiBase: API_BASE }),
+    ).rejects.toBeInstanceOf(ProviderError);
+    expect(calls).toHaveLength(1);
+  });
 
   it('throws SoundCloudUnauthorizedError on 401 so the caller can refresh', async () => {
     const fetchImpl: FetchLike = async () => ({

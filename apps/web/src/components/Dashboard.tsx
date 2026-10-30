@@ -128,8 +128,10 @@ import {
   filterLibrary,
   LIBRARY_SORT_OPTIONS,
   likesSubsetNote,
+  serverSongSearchState,
   shouldAutoLoadForSearch,
   SONG_SEARCH_AUTOLOAD_BOUND,
+  songSearchAutoLoadSpent,
   songSearchMode,
   songSearchScopeNote,
   musicChipBadge,
@@ -1681,6 +1683,15 @@ function retainConnectedProviderState<T>(
 
 type ShelfFailure = { message: string; code?: string };
 
+/**
+ * Which library a provider's loaded likes belong to: the connection row and the
+ * provider account. A re-fetched connection list, or a server-side token refresh
+ * (which bumps `updatedAt`), keeps it; a new connection or another account changes it.
+ */
+function likesConnectionKey(connection: MusicConnectionView): string {
+  return `${connection.id}:${connection.providerUserId ?? ''}`;
+}
+
 function shelfFailure(error: unknown): ShelfFailure {
   const code =
     typeof error === 'object' &&
@@ -1713,7 +1724,13 @@ function useProviderBrowseState(connectionRevision = 0) {
   const [likesMoreError, setLikesMoreError] = useState<Partial<Record<Provider, string>>>({});
   const likesNextRef = useRef<Partial<Record<Provider, string | null>>>({});
   const likesMoreInFlight = useRef<Set<Provider>>(new Set());
-  const likesGeneration = useRef(0);
+  // Per provider: a token bumped by every first-page read (an older read or a
+  // "Load more" started before it no longer applies), and the connection key the
+  // loaded pages belong to (or that a first-page read is fetching), so a
+  // `connections` refresh only reloads a provider whose connection changed.
+  const likesToken = useRef<Partial<Record<Provider, number>>>({});
+  const likesLoadedKey = useRef<Partial<Record<Provider, string>>>({});
+  const likesRequestKey = useRef<Partial<Record<Provider, string>>>({});
   const connectedProvidersRef = useRef<ReadonlySet<Provider>>(new Set());
 
   useEffect(() => {
@@ -1798,55 +1815,69 @@ function useProviderBrowseState(connectionRevision = 0) {
   // Liked tracks per connected provider — mirrors the playlist load above so the
   // shelf can show a live count and open the likes browser from the resting state.
   useEffect(() => {
-    let alive = true;
-    // A fresh first page invalidates any "Load more" still in flight.
-    const generation = ++likesGeneration.current;
     for (const provider of PROVIDER_ORDER) {
       if (!providerCapabilities[provider].userLikes) continue;
-      const state = providerConnectionState(
-        provider,
-        connections.find((row) => row.provider === provider),
-        Date.now(),
-      );
-      if (state !== 'connected') continue;
+      const connection = connections.find((row) => row.provider === provider);
+      const state = providerConnectionState(provider, connection, Date.now());
+      if (state !== 'connected' || !connection) {
+        // Disconnected: forget its pages so a reconnect starts from page 1.
+        delete likesLoadedKey.current[provider];
+        delete likesRequestKey.current[provider];
+        likesToken.current[provider] = (likesToken.current[provider] ?? 0) + 1;
+        continue;
+      }
+      // Keep pages already loaded (Load more, search autoload) while this
+      // provider's connection is unchanged; a refresh of another provider or a
+      // re-fetched connection list must not reset it to page 1.
+      const key = likesConnectionKey(connection);
+      if (likesLoadedKey.current[provider] === key || likesRequestKey.current[provider] === key) {
+        continue;
+      }
+      const token = (likesToken.current[provider] ?? 0) + 1;
+      likesToken.current[provider] = token;
+      likesRequestKey.current[provider] = key;
+      const current = () =>
+        likesToken.current[provider] === token && connectedProvidersRef.current.has(provider);
       setLikesLoading((prev) => ({ ...prev, [provider]: true }));
       void (async () => {
         try {
           const page = await listLikesPage(provider);
-          if (!alive || !connectedProvidersRef.current.has(provider)) return;
+          if (!current()) return;
           const rows = Array.isArray(page?.items) ? page.items : [];
           const next = page?.nextCursor ?? null;
           likesNextRef.current = { ...likesNextRef.current, [provider]: next };
+          likesLoadedKey.current[provider] = key;
           setLikes((prev) => ({ ...prev, [provider]: rows }));
           setLikesNext((prev) => ({ ...prev, [provider]: next }));
           setLikesMoreError((prev) => ({ ...prev, [provider]: undefined }));
           setLikesError((prev) => ({ ...prev, [provider]: undefined }));
         } catch (e) {
-          if (!alive || !connectedProvidersRef.current.has(provider)) return;
+          if (!current()) return;
+          // A failed first page is retried by the next connections refresh.
+          delete likesLoadedKey.current[provider];
           setLikesError((prev) => ({ ...prev, [provider]: shelfFailure(e) }));
         } finally {
-          if (alive && connectedProvidersRef.current.has(provider)) {
-            setLikesLoading((prev) => ({ ...prev, [provider]: false }));
+          if (likesToken.current[provider] === token) {
+            delete likesRequestKey.current[provider];
+            if (connectedProvidersRef.current.has(provider)) {
+              setLikesLoading((prev) => ({ ...prev, [provider]: false }));
+            }
           }
         }
       })();
     }
-    return () => {
-      alive = false;
-      if (likesGeneration.current === generation) likesGeneration.current += 1;
-    };
   }, [connections]);
 
   /** Load the next page of `provider`'s liked songs with its own cursor (RF-132). */
   const loadMoreLikes = useCallback(async (provider: Provider) => {
     const cursor = likesNextRef.current[provider];
     if (!cursor || likesMoreInFlight.current.has(provider)) return;
-    const generation = likesGeneration.current;
+    const token = likesToken.current[provider];
     likesMoreInFlight.current.add(provider);
     setLikesLoadingMore((prev) => ({ ...prev, [provider]: true }));
     setLikesMoreError((prev) => ({ ...prev, [provider]: undefined }));
     const current = () =>
-      generation === likesGeneration.current && connectedProvidersRef.current.has(provider);
+      likesToken.current[provider] === token && connectedProvidersRef.current.has(provider);
     try {
       const page = await listLikesPage(provider, { cursor });
       if (!current()) return;
@@ -1977,8 +2008,11 @@ function MusicWorkspace({
   const [sort, setSort] = useState<LibrarySort>('library');
   // Songs search past the loaded pages (RF-132). Apple Music: a debounced library
   // search on the server. Others: keep loading pages while a query is typed, up to
-  // `songSearchBound` songs; "Keep loading" raises the bound by another 1,000.
-  const [songSearchBound, setSongSearchBound] = useState(SONG_SEARCH_AUTOLOAD_BOUND);
+  // 1,000 songs or 5 requests for that query; "Keep loading" grants another round.
+  // The budget lives in a ref so the effect counts every request synchronously;
+  // the state copy only re-renders the note.
+  const songAutoLoadRef = useRef({ key: '', bound: SONG_SEARCH_AUTOLOAD_BOUND, requests: 0 });
+  const [songAutoLoad, setSongAutoLoad] = useState(songAutoLoadRef.current);
   const [librarySearch, setLibrarySearch] = useState<{
     provider: Provider;
     query: string;
@@ -2066,10 +2100,20 @@ function MusicWorkspace({
     return () => window.clearTimeout(timeout);
   }, [selectedProvider, libraryKind, libraryQuery, connections]);
 
-  // Other services: keep loading pages while a query is typed, up to the bound.
+  // Other services: keep loading pages while a query is typed, within the
+  // per-query budget (songs and requests), so it can't spend the likes limit.
   const autoLoadLikedTracks = likes[selectedProvider];
+  const songAutoLoadKey = `${selectedProvider}\u0000${libraryQuery.trim()}`;
+  const songAutoLoadNow =
+    songAutoLoad.key === songAutoLoadKey
+      ? songAutoLoad
+      : { key: songAutoLoadKey, bound: SONG_SEARCH_AUTOLOAD_BOUND, requests: 0 };
   useEffect(() => {
     if (libraryKind !== 'songs' || songSearchMode(selectedProvider) !== 'loaded') return;
+    const budget =
+      songAutoLoadRef.current.key === songAutoLoadKey
+        ? songAutoLoadRef.current
+        : { key: songAutoLoadKey, bound: SONG_SEARCH_AUTOLOAD_BOUND, requests: 0 };
     if (
       shouldAutoLoadForSearch({
         query: libraryQuery,
@@ -2078,9 +2122,13 @@ function MusicWorkspace({
           Boolean(likesLoadingMore[selectedProvider]) || Boolean(likesLoading[selectedProvider]),
         failed: Boolean(likesMoreError[selectedProvider]),
         loadedCount: autoLoadLikedTracks?.length ?? 0,
-        bound: songSearchBound,
+        bound: budget.bound,
+        requests: budget.requests,
       })
     ) {
+      const next = { ...budget, requests: budget.requests + 1 };
+      songAutoLoadRef.current = next;
+      setSongAutoLoad(next);
       void loadMoreLikes(selectedProvider);
     }
   }, [
@@ -2092,7 +2140,8 @@ function MusicWorkspace({
     likesLoading,
     likesMoreError,
     autoLoadLikedTracks,
-    songSearchBound,
+    songAutoLoadKey,
+    songAutoLoad,
     loadMoreLikes,
   ]);
 
@@ -2185,16 +2234,18 @@ function MusicWorkspace({
   const loadMoreLikesError = likesMoreError[selectedProvider] ?? null;
   const songQuery = libraryQuery.trim();
   const songSearch = songSearchMode(selectedProvider);
-  const serverSearch =
-    libraryKind === 'songs' &&
-    songSearch === 'server' &&
-    songQuery !== '' &&
-    librarySearch?.provider === selectedProvider &&
-    librarySearch.query === songQuery
-      ? librarySearch
-      : null;
-  const serverSearchPending =
-    libraryKind === 'songs' && songSearch === 'server' && songQuery !== '' && !serverSearch;
+  const serverSearchState = serverSongSearchState({
+    onSongs: libraryKind === 'songs',
+    mode: songSearch,
+    query: songQuery,
+    connected: connectionState === 'connected',
+    result:
+      librarySearch?.provider === selectedProvider
+        ? { query: librarySearch.query, failed: librarySearch.failed }
+        : null,
+  });
+  const serverSearchResults =
+    serverSearchState === 'done' ? (librarySearch?.results ?? null) : null;
   const playlistRows = orderLibrary(
     filterLibrary(
       savedPlaylists ?? [],
@@ -2205,41 +2256,45 @@ function MusicWorkspace({
     (row) => row.name,
   );
   const songRows = orderLibrary(
-    serverSearch?.results && !serverSearch.failed
-      ? serverSearch.results
+    serverSearchResults
+      ? serverSearchResults
       : filterLibrary(likedTracks ?? [], libraryQuery, (row) => `${row.title} ${row.artist}`),
     sort,
     (row) => row.title,
   );
+  const songAutoLoadBudget = {
+    loadedCount: likedTracks?.length ?? 0,
+    bound: songAutoLoadNow.bound,
+    requests: songAutoLoadNow.requests,
+  };
   // A search is still reaching songs, so "No matches." would be premature.
   const songSearchInFlight =
-    serverSearchPending ||
+    serverSearchState === 'pending' ||
     (songSearch === 'loaded' &&
       libraryKind === 'songs' &&
       songQuery !== '' &&
       likesHasMore &&
       !loadMoreLikesError &&
-      (likedTracks?.length ?? 0) < songSearchBound);
+      (loadingMoreLikes || !songSearchAutoLoadSpent(songAutoLoadBudget)));
   const songNote =
     songSearch === 'server'
-      ? serverSearchPending
+      ? serverSearchState === 'pending'
         ? `Searching your ${label} library…`
-        : serverSearch?.failed
+        : serverSearchState === 'failed'
           ? `Couldn’t search your whole ${label} library. Showing matches in loaded songs.`
           : null
       : songSearchScopeNote({
+          ...songAutoLoadBudget,
           query: songQuery,
           hasMore: likesHasMore,
           loading: loadingMoreLikes,
-          loadedCount: likedTracks?.length ?? 0,
-          bound: songSearchBound,
+          failed: Boolean(loadMoreLikesError),
         });
   const chooseProvider = (provider: Provider) => {
     if (flow.operation && flow.operation.provider !== provider) flow.cancel();
     if (provider !== selectedProvider) {
       typeTouched.current = false;
       setLibraryQuery('');
-      setSongSearchBound(SONG_SEARCH_AUTOLOAD_BOUND);
       setLibraryKind(libraryKindFor(provider));
     }
     setSelectedProvider(provider);
@@ -2403,10 +2458,7 @@ function MusicWorkspace({
                 id="music-library-search"
                 type="search"
                 value={libraryQuery}
-                onChange={(event) => {
-                  setLibraryQuery(event.target.value);
-                  if (!event.target.value.trim()) setSongSearchBound(SONG_SEARCH_AUTOLOAD_BOUND);
-                }}
+                onChange={(event) => setLibraryQuery(event.target.value)}
                 className="mt-2 min-h-11 w-full rounded-control border border-interactive/30 bg-bg-base px-3 font-ui text-sm text-text-primary rf-focus-ring sm:rounded-pill"
               />
             </label>
@@ -2460,14 +2512,22 @@ function MusicWorkspace({
           searching={songSearchInFlight}
           note={songNote}
           loadMore={
-            likesHasMore && !serverSearch && !serverSearchPending
+            // A failed Apple search falls back to loaded songs, so Load more stays.
+            likesHasMore && serverSearchState !== 'pending' && serverSearchState !== 'done'
               ? {
                   label: songQuery && songSearch === 'loaded' ? 'Keep loading' : 'Load more songs',
                   loading: loadingMoreLikes,
                   error: loadMoreLikesError,
                   onLoadMore: () => {
                     if (songQuery && songSearch === 'loaded') {
-                      setSongSearchBound((likedTracks?.length ?? 0) + SONG_SEARCH_AUTOLOAD_BOUND);
+                      // Another round: 1,000 more songs or 5 more requests (this one counts).
+                      const next = {
+                        key: songAutoLoadKey,
+                        bound: (likedTracks?.length ?? 0) + SONG_SEARCH_AUTOLOAD_BOUND,
+                        requests: 1,
+                      };
+                      songAutoLoadRef.current = next;
+                      setSongAutoLoad(next);
                     }
                     void loadMoreLikes(selectedProvider);
                   },
@@ -4145,6 +4205,7 @@ function LikesBrowserDialog({
   ) => Promise<void>;
 }) {
   const label = providerLabel(provider);
+  const subsetNote = likesSubsetNote(tracks.length, hasMore);
   const [template, setTemplate] = useState<ClassTemplate>('cycle');
   const [title, setTitle] = useState(`${label} likes`);
   const [creating, setCreating] = useState(false);
@@ -4274,9 +4335,9 @@ function LikesBrowserDialog({
         </p>
       )}
 
-      {likesSubsetNote(tracks.length, hasMore) && (
+      {subsetNote && (
         <p role="note" className="mb-3 font-ui text-xs text-text-secondary">
-          {likesSubsetNote(tracks.length, hasMore)}
+          {subsetNote}
         </p>
       )}
 

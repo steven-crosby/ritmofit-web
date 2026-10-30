@@ -389,11 +389,18 @@ export async function fetchSoundCloudLikes(cfg: {
 }
 
 /**
- * True when `url` is a continuation we may follow with the user's token: an
- * absolute URL on the SoundCloud API origin, with no embedded credentials. The
- * path is not pinned: SoundCloud's own `next_href` examples use more than one path
- * form (`/me/...`, `/collection?...`), and pinning one would strand "Load more".
- * The origin check is what keeps the token from going anywhere but SoundCloud.
+ * Paths a liked-tracks continuation may name. SoundCloud documents that a
+ * `next_href` keeps the request's path and swaps the query for a `cursor`
+ * (developers.soundcloud.com/blog/pagination-updates-on-our-api), so ours is
+ * `/me/likes/tracks`; `/users/{user_urn}/likes/tracks` is the same resource in the
+ * public OpenAPI spec, allowed in case SoundCloud resolves `/me` to the user.
+ */
+const LIKES_CONTINUATION_PATH = /^\/(me|users\/(soundcloud:users:)?[0-9]+)\/likes\/tracks$/;
+
+/**
+ * True when `url` is a liked-tracks continuation we may follow with the user's
+ * token: an absolute URL on the SoundCloud API origin, no embedded credentials,
+ * and a likes-tracks path.
  */
 function isLikesContinuation(url: string, base: string): boolean {
   let parsed: InstanceType<typeof URL>;
@@ -405,7 +412,8 @@ function isLikesContinuation(url: string, base: string): boolean {
     return false;
   }
   if (parsed.origin !== api.origin) return false;
-  return !parsed.username && !parsed.password;
+  if (parsed.username || parsed.password) return false;
+  return LIKES_CONTINUATION_PATH.test(parsed.pathname);
 }
 
 /**
@@ -441,6 +449,7 @@ export async function fetchSoundCloudLikesPage(
     cap: Number.POSITIVE_INFINITY,
     targetRows: cfg.targetTracks ?? 200,
     maxPages: cfg.maxPages ?? 8,
+    isContinuation: (url) => isLikesContinuation(url, base),
   });
   return {
     tracks: rows.map((item) => toCandidate(item)).filter((r): r is TrackSearchResult => r !== null),
@@ -561,6 +570,8 @@ async function readSoundCloudPages(
     shouldStop?: (rows: unknown[]) => boolean;
     targetRows?: number;
     maxPages?: number;
+    /** When set, a `next_href` this rejects is upstream drift and throws. */
+    isContinuation?: (url: string) => boolean;
   },
 ): Promise<{ rows: unknown[]; nextUrl: string | null }> {
   const out: unknown[] = [];
@@ -595,6 +606,12 @@ async function readSoundCloudPages(
     if (page.rows.length === 0) {
       nextUrl = null;
       break;
+    }
+    if (page.nextUrl !== null && cfg.isContinuation && !cfg.isContinuation(page.nextUrl)) {
+      throw new ProviderError(
+        'soundcloud',
+        `SoundCloud returned an unexpected pagination link for ${cfg.errorPath}.`,
+      );
     }
     nextUrl = page.nextUrl;
     if (cfg.shouldStop?.(out)) break;
