@@ -1,0 +1,46 @@
+{
+  "schemaVersion": 1,
+  "id": "RF-153",
+  "title": "Likes paging code cleanups from the RF-132 reviews, with no behavior change",
+  "kind": "task",
+  "status": "backlog",
+  "priority": "P3",
+  "parent": null,
+  "dependsOn": [],
+  "acceptance": [
+    "Dead and duplicated code from RF-132 is removed: the unused onUnexpectedNext 'throw' branch and the stale readAppleLibraryPages doc, the unused array-returning adapter wrappers, the likes cursor codec duplicated with class-list pagination, the paging helper duplicated with listClasses, and the repeated page-size and invalid-cursor 422 constants.",
+    "Dashboard likes state is simpler: likesSubsetNote and the selected connection state are computed once, the autoload budget is stored once, the autoload effect depends on the fields it reads rather than whole per-provider records, and sourceCandidateKey is reused only if it moves to apps/web/src/lib first (it lives in a component module, and lib/ must not import components; that is why Lane B skipped it).",
+    "The likes cursor header uses a neutral constant name instead of CLASS_LIST_NEXT_CURSOR_HEADER; the header value X-RitmoFit-Next-Cursor and OpenAPI stay unchanged.",
+    "The full CI gate passes with no test expectation changed except imports."
+  ],
+  "nextAction": "Logged cleanups from the #665 (RF-132) final reviews: round 1 items 7, 9 and 10; round 2 items 8, 9 and 10; round 3 items 6, 7, 8 and 9; round 4 items 7–10. Files: packages/music/src/apple-music.ts, soundcloud.ts, apps/api/src/lib/music/likes-cursor.ts, apps/api/src/routes/providers.ts, apps/web/src/lib/api.ts, Dashboard.tsx. The header constant is shared with class-list pagination, so coordinate it as a shared-zone change. Owner-gated where it touches provider code. Agent-created: Backlog until the owner sets Ready.",
+  "blocker": null,
+  "evidence": [
+    {
+      "kind": "observation",
+      "ref": "https://github.com/steven-crosby/ritmofit-web/pull/665#issuecomment-6514903477",
+      "summary": "Final review of #665 on 0492619: logged items 7, 9 and 10 (sourceCandidateKey, header constant, repeated page-size constants and likesSubsetNote).",
+      "checkedOn": "2026-10-30"
+    },
+    {
+      "kind": "observation",
+      "ref": "https://github.com/steven-crosby/ritmofit-web/pull/665#issuecomment-6515604709",
+      "summary": "Final review of #665 on d92e215: logged items 8, 9 and 10 (unused wrappers, budget stored three times, route repeats the 422 and its length constant).",
+      "checkedOn": "2026-10-30"
+    },
+    {
+      "kind": "observation",
+      "ref": "https://github.com/steven-crosby/ritmofit-web/pull/665#issuecomment-6516001951",
+      "summary": "Final review of #665 on 0a66217: logged items 6–9 (autoload effect dependencies, connection state computed twice, paging helper duplicated with listClasses, header constant name).",
+      "checkedOn": "2026-10-30"
+    },
+    {
+      "kind": "observation",
+      "ref": "https://github.com/steven-crosby/ritmofit-web/pull/665#issuecomment-6516374583",
+      "summary": "Final review of #665 on 42da99c: logged items 7–10 (dead throw branch and stale doc, duplicated cursor codec, sourceCandidateKey, header constant name).",
+      "checkedOn": "2026-10-30"
+    }
+  ],
+  "resolution": null,
+  "followUps": []
+}

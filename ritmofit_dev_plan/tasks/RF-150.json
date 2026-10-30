@@ -1,0 +1,33 @@
+{
+  "schemaVersion": 1,
+  "id": "RF-150",
+  "title": "Music Songs Load more shows the next Apple Music songs after one provider request",
+  "kind": "task",
+  "status": "backlog",
+  "priority": "P3",
+  "parent": null,
+  "dependsOn": [],
+  "acceptance": [
+    "On Apple Music, pressing Load more songs adds the next songs to the Music workspace Songs list after one Apple library request (up to 100 songs), instead of waiting for two sequential requests to fill a 200-song page.",
+    "The X-RitmoFit-Next-Cursor contract is unchanged: the list still reaches the end of the library, the 1,000-song search autoload budget still holds, and SoundCloud paging is unaffected.",
+    "Tests cover a one-request Apple page and the cursor it returns."
+  ],
+  "nextAction": "Owner, 2026-10-30: \"open a Backlog record suggesting the first 100 show sooner.\" Each likes page targets LIKES_PAGE_TARGET = 200 songs (apps/api/src/lib/music/user-likes.ts), and Apple returns at most LIBRARY_PAGE_LIMIT = 100 per request (packages/music/src/apple-music.ts), so one Load more makes two Apple requests in sequence. Options: a 100-song target for Apple, or a smaller first page. A 100-song target doubles /likes calls per 200 songs, so weigh the limiters first: Load more without a query goes through likesLimiter (provider-likes, 20 per minute), and only searches with q use likesSearchLimiter (30 per minute), both in apps/api/src/routes/providers.ts; also the 5-request autoload budget and RF-152's limiter item. Agent-created: Backlog until the owner sets Ready.",
+  "blocker": null,
+  "evidence": [
+    {
+      "kind": "observation",
+      "ref": "https://github.com/steven-crosby/ritmofit-web/pull/665",
+      "summary": "Owner's Mac Chrome check on production d888d28 (Worker 765c9424): Apple Music Load more songs took about 5 seconds to add the next batch; the list advanced past the first page (Angel → Back Door, alphabetical). Owner screenshots shared in session; not stored in the repo.",
+      "checkedOn": "2026-10-30"
+    },
+    {
+      "kind": "source",
+      "ref": "apps/api/src/lib/music/user-likes.ts",
+      "summary": "LIKES_PAGE_TARGET = 200 with up to 8 provider pages per likes page; Apple LIBRARY_PAGE_LIMIT = 100 in packages/music/src/apple-music.ts. Checked on main d888d28.",
+      "checkedOn": "2026-10-30"
+    }
+  ],
+  "resolution": null,
+  "followUps": []
+}

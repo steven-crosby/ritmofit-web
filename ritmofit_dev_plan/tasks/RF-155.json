@@ -1,0 +1,33 @@
+{
+  "schemaVersion": 1,
+  "id": "RF-155",
+  "title": "Post-deploy authed production smoke runs again with a renewed QA session",
+  "kind": "task",
+  "status": "backlog",
+  "priority": "P2",
+  "parent": null,
+  "dependsOn": [],
+  "acceptance": [
+    "The owner renews the QA beta account session and stores it only in the ignored apps/api/.qa-beta-token (never committed or printed), per deployment-runbook.md › Authed production smoke.",
+    "pnpm --filter @ritmofit/api exec tsx scripts/authed-production-smoke.ts exits 0 against production, and the next deploy entry in HISTORY records that it ran.",
+    "The runbook says what to do when the token has expired (who renews it, and that the deploy entry names the skip), so an expired token is not silently skipped deploy after deploy."
+  ],
+  "nextAction": "The authed smoke has been skipped on every deploy since 2026-10-28 because the QA token expired (HISTORY deploy entries for b6af93e, 04e695f, d81c0fc and d888d28). Renewing the session needs the owner (a sign-in on the QA account; agents never enter passwords). Then run the script and update the runbook. Agent-created: Backlog until the owner sets Ready.",
+  "blocker": null,
+  "evidence": [
+    {
+      "kind": "document",
+      "ref": "ritmofit_dev_plan/HISTORY.md",
+      "summary": "Deploy entries for 2026-10-28, 2026-10-29 and 2026-10-30 each record the authed smoke as skipped or failing with 401 because the QA token expired.",
+      "checkedOn": "2026-10-30"
+    },
+    {
+      "kind": "document",
+      "ref": "ritmofit_dev_plan/deployment-runbook.md",
+      "summary": "Authed production smoke section: the token lives only in apps/api/.qa-beta-token and the script must return 200 for its checks.",
+      "checkedOn": "2026-10-30"
+    }
+  ],
+  "resolution": null,
+  "followUps": []
+}

@@ -12,9 +12,10 @@
     "The unprefixed com.apple.fps probe no longer runs in play() on iOS, or a measured reason to keep it is recorded (coordinate with RF-128).",
     "The stored mk-safari-modern-eme flag is cleared once at MusicKit load instead of at four call sites, and the flag log runs after the key session attaches, with accurate comments (including FAIRPLAY_KEY_SYSTEM).",
     "The desktop test asserts only that the FairPlay key is not removed, not that no removeItem call happens.",
-    "Owner hears Start, Next and auto-advance in iPhone Safari Live after the change (provider code, CI cannot prove it)."
+    "Owner hears Start, Next and auto-advance in iPhone Safari Live after the change (provider code, CI cannot prove it).",
+    "The #664 review items are handled: on a setQueue timeout the timed-out generation is superseded (claimQueueGeneration), MusicKit's nowPlayingItem is checked before play so a late-settling request cannot play the old song, setQueue uses one try/finally, and a test covers a late settle and the not-destroyed path."
   ],
-  "nextAction": "Cleanup items 3–9 from the #657 final review, mapped to acceptance: item 3 → banner criterion; item 4 → probe criterion; items 5, 6, 7 and 8 → flag-clear, flag-log and comment criterion; item 9 → desktop test criterion. Files: apps/web/src/lib/musickit.ts, musickit.test.ts, apps/web/src/lib/playback/apple-music-adapter.ts. Owner-gated (playback code). Bundle with RF-121 or RF-128 if either lands first.",
+  "nextAction": "Cleanup items 3–9 from the #657 final review, mapped to acceptance: item 3 → banner criterion; item 4 → probe criterion; items 5, 6, 7 and 8 → flag-clear, flag-log and comment criterion; item 9 → desktop test criterion. Files: apps/web/src/lib/musickit.ts, musickit.test.ts, apps/web/src/lib/playback/apple-music-adapter.ts. Owner-gated (playback code). Bundle with RF-121 or RF-128 if either lands first. Also #664 review items 1, 3, 4 and 5 (late-settle overlap, generation not superseded on timeout, missing late-settle test, try/finally simplification), mapped to the last criterion added 2026-10-30.",
   "blocker": null,
   "evidence": [
     {
@@ -22,6 +23,12 @@
       "ref": "https://github.com/steven-crosby/ritmofit-web/pull/657#issuecomment-6507823197",
       "summary": "Final review of #657: no significant findings; nine non-blocking findings. Item 1 (MusicKit re-writing the flag) is answered by the owner's passing iPhone runs; item 2 (desktop Safari legacy path) is in RF-126.",
       "checkedOn": "2026-10-29"
+    },
+    {
+      "kind": "observation",
+      "ref": "https://github.com/steven-crosby/ritmofit-web/pull/664#issuecomment-6514478737",
+      "summary": "Final review of #664 (RF-123): no significant findings; logged items 1, 3, 4 and 5 are adapter hardening and cleanup in apple-music-adapter.ts setQueue().",
+      "checkedOn": "2026-10-30"
     }
   ],
   "resolution": null,
