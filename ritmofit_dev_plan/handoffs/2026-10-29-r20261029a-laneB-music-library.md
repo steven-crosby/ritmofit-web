@@ -3,7 +3,7 @@ date: 2026-10-29
 tool: Claude Code (local)
 lane: lane-b-music-library
 branch: feat/rf-132-music-library
-head: 2c9cfdd
+head: b837b6e
 base: a1fafa9
 prs: ['#665 (open, owner-gated)']
 status: open
@@ -44,18 +44,23 @@ status: open
   regression test each. Item 7 (reuse `sourceCandidateKey`) was not done: it lives in a component
   module that `lib/` should not import. Item 9 (neutral header constant) is a shared-zone change left
   for later.
-- Search autoload is bounded per query by 5 requests and 1,000 songs; its budget is held in a ref
+- Search autoload is debounced (300 ms) and bounded per search session (provider plus a non-empty
+  query) by 5 requests and 1,000 songs; refining the query keeps the budget and any Keep loading
+  grant, and clearing it or switching service starts a new session. The budget is held in a ref
   because a state-only counter missed increments between autoload renders in testing.
+- Second final review on d92e215 (PR comment): items 1–3 fixed with regression tests, plus 4, 6
+  and 7, in `b837b6e`. Apple library search now stops at the last good page on an off-path
+  `next`; the songs list still treats one as drift. Items 5, 8, 9 and 10 are logged on the PR.
 - After deploy, the owner checks on real accounts: Apple Music Songs shows Load more past 200 and
   finds a song past "Angel" by search; SoundCloud Songs loads more. Spotify stays RF-148.
 
 ## Verification
 
-- Run on the `2c9cfdd` tree (heavy gates under the shared gate lock):
+- Run on the `b837b6e` tree (heavy gates under the shared gate lock):
   `format:check`, `owner-gate:test`, `rf-trace:test`, `tasks:test`, `tasks:check` pass;
   `pnpm -r typecheck` pass (after typing the test mocks); `pnpm lint` pass; design-system verify and
-  theme-classes (with selftest) pass; `pnpm test` pass (music 30, web 1556, api 631);
-  `test:integration` pass (247 tests); web build pass (entry 176.44 kB gzip, budget 180);
+  theme-classes (with selftest) pass; `pnpm test` pass (music 30, web 1558, api 632);
+  `test:integration` pass (247 tests); web build pass (entry 176.50 kB gzip, budget 180);
   `openapi` then `git diff --exit-code` clean; `contract-parity` pass; `audit:ci` pass (ignored
   advisories only).
 - Skipped: `pnpm --filter @ritmofit/e2e e2e` (with `E2E_PORT=8799`) could not launch, because the
