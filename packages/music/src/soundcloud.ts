@@ -570,7 +570,10 @@ async function readSoundCloudPages(
     shouldStop?: (rows: unknown[]) => boolean;
     targetRows?: number;
     maxPages?: number;
-    /** When set, a `next_href` this rejects is upstream drift and throws. */
+    /**
+     * When set, a `next_href` this rejects ends the read: the rows already read are
+     * kept and `nextUrl` is null, so one odd link never costs the whole shelf.
+     */
     isContinuation?: (url: string) => boolean;
   },
 ): Promise<{ rows: unknown[]; nextUrl: string | null }> {
@@ -608,10 +611,8 @@ async function readSoundCloudPages(
       break;
     }
     if (page.nextUrl !== null && cfg.isContinuation && !cfg.isContinuation(page.nextUrl)) {
-      throw new ProviderError(
-        'soundcloud',
-        `SoundCloud returned an unexpected pagination link for ${cfg.errorPath}.`,
-      );
+      nextUrl = null;
+      break;
     }
     nextUrl = page.nextUrl;
     if (cfg.shouldStop?.(out)) break;

@@ -2291,10 +2291,17 @@ function MusicWorkspace({
     sort,
     (row) => row.name,
   );
+  const loadedSongMatches = filterLibrary(
+    likedTracks ?? [],
+    libraryQuery,
+    (row) => `${row.title} ${row.artist}`,
+  );
+  // Apple's library search returns at most 100 matches; keep loaded matches past
+  // those too, without duplicates.
   const songRows = orderLibrary(
     serverSearchResults
-      ? serverSearchResults
-      : filterLibrary(likedTracks ?? [], libraryQuery, (row) => `${row.title} ${row.artist}`),
+      ? appendSongPage(serverSearchResults, loadedSongMatches)
+      : loadedSongMatches,
     sort,
     (row) => row.title,
   );
@@ -2548,8 +2555,8 @@ function MusicWorkspace({
           searching={songSearchInFlight}
           note={songNote}
           loadMore={
-            // A failed Apple search falls back to loaded songs, so Load more stays.
-            likesHasMore && serverSearchState !== 'pending' && serverSearchState !== 'done'
+            // Search results include loaded matches, so Load more can still add some.
+            likesHasMore && serverSearchState !== 'pending'
               ? {
                   label: songQuery && songSearch === 'loaded' ? 'Keep loading' : 'Load more songs',
                   loading: loadingMoreLikes,

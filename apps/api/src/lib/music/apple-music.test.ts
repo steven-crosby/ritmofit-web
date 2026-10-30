@@ -447,14 +447,31 @@ describe('fetchAppleMusicLibrarySongsPage (RF-132 paging)', () => {
     expect(fetchImpl).not.toHaveBeenCalled();
   });
 
-  it('treats a library-songs next off /v1/me/library/songs as drift instead of following it', async () => {
+  // Regression (#665 third review item 2): an unexpected server next threw a 502
+  // and broke the whole Songs shelf. Keep the pages read and end the list instead.
+  it.each([
+    '/v1/me/storefront?offset=1',
+    '/v1/me/library/songs?offset=100&include=catalog,albums&fields[library-songs]=name,artistName',
+  ])('keeps the songs read and stops when Apple’s next is unexpected (%s)', async (next) => {
     const { fetchImpl, calls } = fakeFetch({
-      [`${LIBRARY_URL}?limit=100`]: { data: page(0, 1), next: '/v1/me/storefront?offset=1' },
+      [`${LIBRARY_URL}?limit=100`]: { data: page(0, 100), next },
     });
-    await expect(fetchAppleMusicLibrarySongsPage({ ...base, fetchImpl })).rejects.toBeInstanceOf(
-      ProviderError,
-    );
+    const out = await fetchAppleMusicLibrarySongsPage({ ...base, fetchImpl });
+    expect(out.tracks).toHaveLength(100);
+    expect(out.next).toBeNull();
     expect(calls).toHaveLength(1);
+  });
+
+  it('still rejects such a next as a client cursor', async () => {
+    const fetchImpl = vi.fn<FetchLike>();
+    await expect(
+      fetchAppleMusicLibrarySongsPage({
+        ...base,
+        fetchImpl,
+        cursor: '/v1/me/library/songs?offset=100&include=catalog,albums',
+      }),
+    ).rejects.toBeInstanceOf(InvalidProviderCursorError);
+    expect(fetchImpl).not.toHaveBeenCalled();
   });
 
   it("accepts a cursor carrying ' ( ) ! * (left raw by encodeURIComponent)", async () => {

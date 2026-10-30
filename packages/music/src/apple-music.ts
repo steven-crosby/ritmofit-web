@@ -403,9 +403,9 @@ interface AppleLibraryCollection {
   noun: string;
   continuation: RegExp;
   /**
-   * What to do with a `next` off the collection's path: `throw` (upstream drift,
-   * for a list whose `next` becomes a client cursor) or `stop` (keep the pages
-   * already read, for a one-shot search that is never resumed).
+   * What to do with a server-returned `next` off the collection's path: `throw`
+   * (upstream drift) or `stop` (keep the pages already read and end the list).
+   * Client-supplied cursors are checked separately and always rejected (422).
    */
   onUnexpectedNext: 'throw' | 'stop';
   parse(json: unknown): { data: unknown[]; next: string | null } | null;
@@ -415,7 +415,7 @@ const LIBRARY_SONGS: AppleLibraryCollection = {
   endpoint: '/me/library/songs',
   noun: 'library song',
   continuation: LIBRARY_SONGS_CONTINUATION,
-  onUnexpectedNext: 'throw',
+  onUnexpectedNext: 'stop',
   parse: (json) => {
     const parsed = amLibraryPageSchema.safeParse(json);
     return parsed.success ? { data: parsed.data.data ?? [], next: parsed.data.next ?? null } : null;

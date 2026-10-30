@@ -4943,8 +4943,8 @@ describe('Music Songs paging and search (RF-132)', () => {
     expect(await screen.findByText('Deep Cut Past Page One')).toBeTruthy();
     expect(api.listLikesPage).toHaveBeenCalledWith('apple_music', { q: 'deep cut' });
     expect(screen.queryByText('A.F.U.')).toBeNull();
-    // A server search is not paged, so it offers no "Load more".
-    expect(screen.queryByRole('button', { name: 'Load more songs' })).toBeNull();
+    // Results include loaded matches too, so Load more can still add some.
+    expect(screen.getByRole('button', { name: 'Load more songs' })).toBeTruthy();
   });
 
   it('falls back to loaded songs with a note when the Apple library search fails', async () => {
@@ -5188,6 +5188,43 @@ describe('Music Songs paging and search (RF-132)', () => {
     reload.resolve({ items: [song('b1', 'New Account Song')], nextCursor: null });
     expect(await screen.findByText('New Account Song')).toBeTruthy();
     expect(screen.queryByText('Old Account Page Two')).toBeNull();
+  });
+
+  // Regression (#665 third review item 3): Apple's search (at most 100 matches)
+  // replaced the local filter, hiding loaded matches beyond those 100.
+  it('merges Apple library search matches with loaded matches, without duplicates', async () => {
+    vi.mocked(api.listClasses).mockResolvedValue(page([]));
+    vi.mocked(api.listConnections).mockResolvedValue([
+      { ...spotifyConnection(), provider: 'apple_music' },
+    ]);
+    vi.mocked(api.listPlaylists).mockResolvedValue([]);
+    // 600 loaded songs; 300 of them match "love".
+    const loaded = Array.from({ length: 600 }, (_, i) =>
+      song(`l${i}`, i < 300 ? `Love ${i}` : `Other ${i}`, 'apple_music'),
+    );
+    // 100 server matches: 50 already loaded, 50 not loaded yet.
+    const server = [
+      ...loaded.slice(0, 50),
+      ...Array.from({ length: 50 }, (_, i) => song(`s${i}`, `Love deep ${i}`, 'apple_music')),
+    ];
+    vi.mocked(api.listLikesPage).mockImplementation(
+      async (_provider: Provider, options: LikesQuery = {}) =>
+        options.q
+          ? { items: server, nextCursor: null }
+          : { items: loaded, nextCursor: 'apple-cursor' },
+    );
+
+    await openSongs('Apple Music');
+    expect(await screen.findByText('Other 599')).toBeTruthy();
+    fireEvent.change(screen.getByRole('searchbox', { name: 'Search songs' }), {
+      target: { value: 'love' },
+    });
+
+    expect(await screen.findByText('Love deep 0')).toBeTruthy();
+    const list = screen.getByRole('list', { name: 'Liked songs' });
+    expect(within(list).getAllByRole('listitem')).toHaveLength(350);
+    expect(within(list).getByText('Love 299')).toBeTruthy();
+    expect(screen.getByRole('button', { name: 'Load more songs' })).toBeTruthy();
   });
 
   it('says when "Create class from liked songs" used a subset of the library', async () => {

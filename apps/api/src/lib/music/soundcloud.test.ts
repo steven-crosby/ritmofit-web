@@ -4,7 +4,6 @@ import {
   fetchSoundCloudLikes,
   fetchSoundCloudLikesPage,
   InvalidProviderCursorError,
-  ProviderError,
   fetchSoundCloudPlaylistTracks,
   fetchSoundCloudPlaylists,
   SoundCloudUnauthorizedError,
@@ -903,14 +902,32 @@ describe('fetchSoundCloudLikesPage (RF-132 paging)', () => {
     expect(calls[0]?.url).toBe(cursor);
   });
 
-  it('treats a next_href off the likes path as drift instead of following it', async () => {
+  // Regression (#665 third review item 1): an unexpected next_href threw a 502 and
+  // dropped the rows already read. Keep them and end the list instead.
+  it.each([
+    `${API_BASE}/me/connections?cursor=x`,
+    `${API_BASE}/users/soundcloud%3Ausers%3A123/likes/tracks?cursor=x&limit=50`,
+  ])('keeps the rows read and stops when next_href is off the likes path (%s)', async (next) => {
     const { fetchImpl, calls } = pages({
-      [FIRST]: { collection: rows(0, 50), next_href: `${API_BASE}/me/connections?cursor=x` },
+      [FIRST]: { collection: rows(0, 50), next_href: next },
     });
-    await expect(
-      fetchSoundCloudLikesPage({ accessToken: 't', fetchImpl, apiBase: API_BASE }),
-    ).rejects.toBeInstanceOf(ProviderError);
+    const out = await fetchSoundCloudLikesPage({ accessToken: 't', fetchImpl, apiBase: API_BASE });
+    expect(out.tracks).toHaveLength(50);
+    expect(out.next).toBeNull();
     expect(calls).toHaveLength(1);
+  });
+
+  it('still rejects that link as a client cursor', async () => {
+    const fetchImpl = vi.fn<FetchLike>();
+    await expect(
+      fetchSoundCloudLikesPage({
+        accessToken: 't',
+        fetchImpl,
+        apiBase: API_BASE,
+        cursor: `${API_BASE}/users/soundcloud%3Ausers%3A123/likes/tracks?cursor=x`,
+      }),
+    ).rejects.toBeInstanceOf(InvalidProviderCursorError);
+    expect(fetchImpl).not.toHaveBeenCalled();
   });
 
   it('throws SoundCloudUnauthorizedError on 401 so the caller can refresh', async () => {
