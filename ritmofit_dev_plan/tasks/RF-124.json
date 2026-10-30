@@ -60,6 +60,6 @@
       "checkedOn": "2026-10-29"
     }
   ],
-  "resolution": "Fixed by #657 (stop forcing modern FairPlay; clear a stored mk-safari-modern-eme). The owner heard Start, Next to songs 2 and 3, Previous, Pause/Resume, seek and auto-advance in iPhone Safari Live on the deployed build on 2026-10-29. Desktop Safari on the legacy path stays with RF-126; resume in place and the RF-123 lock fix stay on PR #656; review follow-ups are in the #657 PR comment.",
+  "resolution": "Fixed by #657 (stop forcing modern FairPlay; clear a stored mk-safari-modern-eme). The owner heard Start, Next to songs 2 and 3, Previous, Pause/Resume, seek and auto-advance in iPhone Safari Live on the deployed build on 2026-10-29. Desktop Safari on the legacy path stays with RF-126; the RF-123 lock fix stays on PR #656 (resume in place was dropped on 2026-10-29: owner decision recorded in RF-123); review follow-ups are in the #657 PR comment.",
   "followUps": []
 }
