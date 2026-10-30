@@ -31,7 +31,7 @@ detail). Current focus and `main` vs production live in the "Now" block of
 > account. The owner asked for song selection in the Songs list itself (RF-151). iPhone Safari:
 > Start, Pause, Next and Previous worked; quick timeline jumps showed "Playback stopped" until Retry
 > playback, with no reload (RF-108). Review items logged on #664 and #665 are now RF-147, RF-108 and
-> RF-152–RF-154, and the skipped authed smoke is RF-155. Correction to the entry below: four of #662's seven review items were folded then,
+> RF-152–RF-154, and the skipped authed smoke is RF-155. Correction to the 2026-10-29 session entry for #662 further down: four of #662's seven review items were folded then,
 > not all; #663's review logged the rest, and this close resolves them (Phases markers removed, RF-108
 > and RF-123 wording, the partition above). No code, deploy or migration.
 

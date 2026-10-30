@@ -12,7 +12,7 @@
     "pnpm --filter @ritmofit/api exec tsx scripts/authed-production-smoke.ts exits 0 against production, and the next deploy entry in HISTORY records that it ran.",
     "The runbook says what to do when the token has expired (who renews it, and that the deploy entry names the skip), so an expired token is not silently skipped deploy after deploy."
   ],
-  "nextAction": "The authed smoke has been skipped on every deploy since 2026-10-28 because the QA token expired (HISTORY deploy entries for b6af93e, 04e695f, d81c0fc and d888d28). Renewing the session needs the owner (a sign-in on the QA account; agents never enter passwords). Then run the script and update the runbook. Agent-created: Backlog until the owner sets Ready.",
+  "nextAction": "The authed smoke has not passed since at least 2026-10-26 because the QA session expired: it failed with 401 on the c07bba3 and 7163d71 deploys (2026-10-26) and on b6af93e (2026-10-28), was not recorded on the 2026-10-27 deploys, and was skipped on 04e695f, d81c0fc and d888d28 (HISTORY). Renewing the session needs the owner (a sign-in on the QA account; agents never enter passwords). Then run the script and update the runbook. Agent-created: Backlog until the owner sets Ready.",
   "blocker": null,
   "evidence": [
     {

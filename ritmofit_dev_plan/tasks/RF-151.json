@@ -14,10 +14,10 @@
     "The selection survives search, Load more and sort changes within the same provider. Switching provider, disconnecting, or a different account's list clears it.",
     "\"Create a class\" opens a short sheet that asks only for the class name and the template (Cycle, Pilates or HIIT), with the selected songs already chosen, then creates the class with those songs as its blocks. There is no second song picker.",
     "The separate \"Create class from liked songs\" button and its song-picker step are removed from Music › Songs. Playlist import keeps its own flow.",
-    "It works the same for Apple Music, SoundCloud and Spotify likes, at 1440 and 390 wide, with no horizontal overflow and axe WCAG 2.2 AA clean.",
+    "It works the same for Apple Music and SoundCloud likes, at 1440 and 390 wide, with no horizontal overflow and axe WCAG 2.2 AA clean.",
     "Component tests cover selection, the 15 cap, persistence across Load more and search, clearing on provider switch, and the create sheet. The e2e smoke covers creating a class from selected songs."
   ],
-  "nextAction": "Owner, 2026-10-30, after using \"Create class from liked songs\" on production: the 15-song limit is a good gut check, but the separate button is lazy; songs on Music › Songs should have checkboxes, up to 15, and a \"Create a class\" button once some are selected. Owner chose option A for what follows the button: a sheet with class name and template only. Today the button is in apps/web/src/components/Dashboard.tsx (around line 2948), its note comes from apps/web/src/lib/music-library.ts, and the 15-song picker pattern is apps/web/src/components/PlaylistSongPicker.tsx. Song order in the class: follow the list order the user sees unless the owner decides otherwise at Ready. Agent-created: Backlog until the owner sets Ready.",
+  "nextAction": "Owner, 2026-10-30, after using \"Create class from liked songs\" on production: the 15-song limit is a good gut check, but the separate button is lazy; songs on Music › Songs should have checkboxes, up to 15, and a \"Create a class\" button once some are selected. Owner chose option A for what follows the button: a sheet with class name and template only. Today the button is in apps/web/src/components/Dashboard.tsx (around line 2948), its note comes from apps/web/src/lib/music-library.ts, and the 15-song picker pattern is apps/web/src/components/PlaylistSongPicker.tsx. Song order in the class: follow the list order the user sees unless the owner decides otherwise at Ready. Agent-created: Backlog until the owner sets Ready. Spotify likes are RF-157, which waits on RF-92 (Spotify Web API 403), so this record can reach Ready and Done without Spotify.",
   "blocker": null,
   "evidence": [
     {
@@ -34,5 +34,7 @@
     }
   ],
   "resolution": null,
-  "followUps": []
+  "followUps": [
+    "RF-157"
+  ]
 }

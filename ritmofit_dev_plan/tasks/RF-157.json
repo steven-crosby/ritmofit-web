@@ -1,0 +1,28 @@
+{
+  "schemaVersion": 1,
+  "id": "RF-157",
+  "title": "Song selection on Music › Songs works for Spotify likes",
+  "kind": "task",
+  "status": "backlog",
+  "priority": "P3",
+  "parent": null,
+  "dependsOn": [
+    "RF-92"
+  ],
+  "acceptance": [
+    "With Spotify connected and its Web API answering, the RF-151 checkboxes, 15-song cap, selection bar and \"Create a class\" sheet work for Spotify likes as they do for Apple Music and SoundCloud, at 1440 and 390 wide.",
+    "Selection clears on switching to or from Spotify, and a component or e2e test covers the Spotify likes list with the mock provider."
+  ],
+  "nextAction": "Split from RF-151 on 2026-10-30 (#667 final review) so RF-151 does not wait on Spotify. No parent on purpose: an open child would block RF-151 from Done. Start after RF-92 and RF-151 are Done. Agent-created: Backlog until the owner sets Ready.",
+  "blocker": null,
+  "evidence": [
+    {
+      "kind": "pr",
+      "ref": "https://github.com/steven-crosby/ritmofit-web/pull/667",
+      "summary": "Final review of #667, item 1: RF-151 depending on RF-92 would block its Apple and SoundCloud work.",
+      "checkedOn": "2026-10-30"
+    }
+  ],
+  "resolution": null,
+  "followUps": []
+}

@@ -1,0 +1,26 @@
+{
+  "schemaVersion": 1,
+  "id": "RF-156",
+  "title": "iOS web-contract snapshot picks up the RF-132 likes paging and search contract",
+  "kind": "task",
+  "status": "backlog",
+  "priority": "P3",
+  "parent": null,
+  "dependsOn": [],
+  "acceptance": [
+    "An iOS PR re-copies apps/api/openapi/openapi.json and the api, schema, authorization and conventions docs from ritmofit_dev_plan/ on ritmofit-web main into ritmofit-ios/web-contract/ using the refresh block in web-contract/README.md and updates its provenance line; the snapshots then document the likes ?cursor= and ?q= parameters and the X-RitmoFit-Next-Cursor header.",
+    "The iOS cross-repo parity check passes on that PR, and any iOS wire model that decodes the likes response is reconciled or confirmed unaffected."
+  ],
+  "nextAction": "Owed since RF-132 merged (#665, d888d28) changed the likes contract; found by the #666 final review. Separate iOS PR per the workspace rule (web first, then the iOS snapshot). Agent-created: Backlog until the owner sets Ready.",
+  "blocker": null,
+  "evidence": [
+    {
+      "kind": "pr",
+      "ref": "https://github.com/steven-crosby/ritmofit-web/pull/666#issuecomment-6531593005",
+      "summary": "Final review of #666, item 1: no open RF record owned the iOS snapshot refresh after RF-132.",
+      "checkedOn": "2026-10-30"
+    }
+  ],
+  "resolution": null,
+  "followUps": []
+}
