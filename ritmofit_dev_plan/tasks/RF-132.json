@@ -3,7 +3,7 @@
   "id": "RF-132",
   "title": "Music shows an instructor's whole library song list, and library search reaches all of it",
   "kind": "task",
-  "status": "backlog",
+  "status": "ready",
   "priority": "P0",
   "parent": null,
   "dependsOn": [],
@@ -15,7 +15,7 @@
     "GET /providers/:provider/likes changes are registered in generate-openapi.ts and the OpenAPI drift and contract-parity checks pass; the iOS snapshot refresh is a separate iOS PR.",
     "No provider audio or derived data is cached; any paging cursor is the provider's own."
   ],
-  "nextAction": "Plan first: choose client paging vs server search per provider (Apple, Spotify and SoundCloud expose different library APIs) and re-verify each provider API before coding. Files: packages/music/src/{apple-music,spotify,soundcloud}.ts, apps/api/src/lib/music/user-likes.ts, apps/api/src/routes/providers.ts, apps/web Music workspace. Owner-gated (provider code): the PR needs owner-approved. Surface: both (API contract).",
+  "nextAction": "Owner moved to Ready on 2026-10-29 as Lane B, Apple Music first. Plan first: choose client paging vs server search per provider (Apple, Spotify and SoundCloud expose different library APIs) and re-verify each provider API before coding. Files: packages/music/src/{apple-music,spotify,soundcloud}.ts, apps/api/src/lib/music/user-likes.ts, apps/api/src/routes/providers.ts, apps/web Music workspace (including Create class from liked songs and the Recents label). Spotify cannot be verified while its Web API returns 403 (RF-92); ship Apple and SoundCloud and leave the Spotify criterion open rather than closing on untested code. Owner-gated (provider code): the PR needs owner-approved. Surface: both (API contract): OpenAPI regenerates here and the iOS snapshot refresh is a separate iOS PR. Spotify remainder: do not reword the Ready criteria. In the PR, propose to the owner that RF-132 closes on Apple and SoundCloud, with the Spotify part moved to a new Backlog record (no parent, dependsOn RF-92) listed in followUps; until the owner approves that narrowing, RF-132 stays in Review. AGENTS.md freezes shared OpenAPI and routes across parallel lanes: Lane B owns apps/api/src/routes/providers.ts and openapi.json this round. RF-141 edits apps/web/src/lib/providers.ts, not the API route; if Lane B's Music workspace needs that web file, coordinate with RF-141 first.",
   "blocker": null,
   "evidence": [
     {
@@ -34,6 +34,12 @@
       "kind": "document",
       "ref": "docs/audits/ux-audit-2026-10-28/README.md",
       "summary": "2026-10-28 owner UX audit of production: Top priority 1 (P0) and Music rows on the 200-song cap, search and Recents. Browser evidence; not re-observed at intake.",
+      "checkedOn": "2026-10-29"
+    },
+    {
+      "kind": "observation",
+      "ref": "https://github.com/steven-crosby/ritmofit-web/pull/662",
+      "summary": "Owner instruction in session, 2026-10-29, published by PR #662: \"Yes move RF-123 and RF-132 to Ready and brief them as Lane A and Lane B after start-session\". RF-132 is Lane B (Music library, Phase 1).",
       "checkedOn": "2026-10-29"
     }
   ],
