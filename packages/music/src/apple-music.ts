@@ -402,6 +402,12 @@ interface AppleLibraryCollection {
   /** Noun for the invalid-page error, e.g. `library song`. */
   noun: string;
   continuation: RegExp;
+  /**
+   * What to do with a `next` off the collection's path: `throw` (upstream drift,
+   * for a list whose `next` becomes a client cursor) or `stop` (keep the pages
+   * already read, for a one-shot search that is never resumed).
+   */
+  onUnexpectedNext: 'throw' | 'stop';
   parse(json: unknown): { data: unknown[]; next: string | null } | null;
 }
 
@@ -409,6 +415,7 @@ const LIBRARY_SONGS: AppleLibraryCollection = {
   endpoint: '/me/library/songs',
   noun: 'library song',
   continuation: LIBRARY_SONGS_CONTINUATION,
+  onUnexpectedNext: 'throw',
   parse: (json) => {
     const parsed = amLibraryPageSchema.safeParse(json);
     return parsed.success ? { data: parsed.data.data ?? [], next: parsed.data.next ?? null } : null;
@@ -419,6 +426,7 @@ const LIBRARY_SEARCH_SONGS: AppleLibraryCollection = {
   endpoint: '/me/library/search',
   noun: 'library search',
   continuation: LIBRARY_SEARCH_CONTINUATION,
+  onUnexpectedNext: 'stop',
   parse: (json) => {
     const parsed = amLibrarySearchSchema.safeParse(json);
     if (!parsed.success) return null;
@@ -486,6 +494,10 @@ async function readAppleLibraryPages(
       break;
     }
     if (page.next !== null && !isContinuation(collection.continuation, page.next)) {
+      if (collection.onUnexpectedNext === 'stop') {
+        path = null;
+        break;
+      }
       throw new ProviderError(
         'apple_music',
         `Apple Music returned an unexpected ${collection.noun} pagination path.`,

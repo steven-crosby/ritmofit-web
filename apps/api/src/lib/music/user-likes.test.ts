@@ -609,3 +609,22 @@ describe('fetchUserLikes — paging cursor and Apple library search (RF-132)', (
     vi.mocked(searchMockCatalog).mockReturnValue([{ mock: true }] as never);
   });
 });
+
+describe('fetchUserLikes — unintegrated provider (RF-132 second review item 6)', () => {
+  it('returns 501 before decoding the cursor or checking q', async () => {
+    const { providerCapabilities } = await import('@ritmofit/shared');
+    const caps = providerCapabilities.soundcloud as { userLikes: boolean };
+    const original = caps.userLikes;
+    caps.userLikes = false;
+    try {
+      const { db } = makeDb(null);
+      for (const request of [{ cursor: 'not-a-cursor' }, { q: 'angel' }]) {
+        await expect(
+          fetchUserLikes(db, soundcloudEnv, 'user-1', 'soundcloud', request),
+        ).rejects.toMatchObject({ status: 501, code: 'NOT_IMPLEMENTED' });
+      }
+    } finally {
+      caps.userLikes = original;
+    }
+  });
+});

@@ -122,6 +122,11 @@ export async function fetchUserLikes(
   provider: Provider,
   request: LikesRequest = {},
 ): Promise<LikesPage> {
+  // An unintegrated provider is a 501 whatever the cursor or q (the mock seam
+  // stands in for every provider).
+  if (env.MOCK_PROVIDERS !== 'true' && !providerCapabilities[provider].userLikes) {
+    throw new HttpError(501, 'NOT_IMPLEMENTED', `Provider '${provider}' is not yet integrated.`);
+  }
   const q = request.q?.trim() ?? '';
   if (q && provider !== 'apple_music') {
     throw new HttpError(
@@ -139,9 +144,6 @@ export async function fetchUserLikes(
   // Dev seam: the provider's catalog stands in for the user's likes.
   if (env.MOCK_PROVIDERS === 'true') {
     return mockLikesPage(provider, q, continuation);
-  }
-  if (!providerCapabilities[provider].userLikes) {
-    throw new HttpError(501, 'NOT_IMPLEMENTED', `Provider '${provider}' is not yet integrated.`);
   }
   // Apple Music's user flow has no OAuth refresh (the Music-User-Token is re-minted
   // by MusicKit in the browser, not refreshed server-side), so it takes its own path

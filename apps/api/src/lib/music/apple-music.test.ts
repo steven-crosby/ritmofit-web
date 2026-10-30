@@ -536,14 +536,15 @@ describe('searchAppleMusicLibrarySongs (RF-132 server-side library search)', () 
     '/v1/me/library/search?offset=25&term=..%2F..%2Fstorefront',
     '/v1/me/library/search/../../storefronts?offset=25',
   ])(
-    'treats a search next off /v1/me/library/search (%s) as drift, not a silent end',
+    'stops at the last good page when a search next is off /v1/me/library/search (%s)',
     async (next) => {
+      // Regression (#665 second review item 3): this threw a 502 and dropped the
+      // matches already found. A search is never resumed from a client cursor.
       const { fetchImpl, calls } = fakeFetch({
         [SEARCH_URL]: { results: { 'library-songs': { data: [song('a')], next } } },
       });
-      await expect(
-        searchAppleMusicLibrarySongs({ ...base, fetchImpl, query: 'a' }),
-      ).rejects.toBeInstanceOf(ProviderError);
+      const out = await searchAppleMusicLibrarySongs({ ...base, fetchImpl, query: 'a' });
+      expect(out.map((t) => t.providerTrackId)).toEqual(['c-a']);
       expect(calls).toHaveLength(1);
     },
   );
