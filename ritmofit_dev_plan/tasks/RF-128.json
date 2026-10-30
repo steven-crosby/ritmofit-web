@@ -27,6 +27,12 @@
       "ref": "ritmofit_dev_plan/device-provider-matrix.md",
       "summary": "RF-124 closed 2026-10-29; the owner's passing iPhone runs did not time Start, so the 5 s figure from 2026-10-28 is still the only measurement.",
       "checkedOn": "2026-10-29"
+    },
+    {
+      "kind": "observation",
+      "ref": "https://github.com/steven-crosby/ritmofit-web/pull/667",
+      "summary": "Owner set Ready in session on 2026-10-30 (\"Yes, option 1, Apple hardening\"): RF-108, RF-128 and RF-147 as one Apple hardening lane.",
+      "checkedOn": "2026-10-30"
     }
   ],
   "resolution": null,

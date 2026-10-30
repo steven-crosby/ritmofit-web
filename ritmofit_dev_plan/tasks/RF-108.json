@@ -14,9 +14,10 @@
     "Each singleton adapter exposes a settle signal (for example whenIdle()); runtime.enterTrack awaits it, bounded to about 3 s, and re-checks the epoch before prepare.",
     "A never-settling previous call ends in a bounded, clearly worded error; existing runtime supersession tests still pass, and one new runtime test uses a real adapter with a lease.",
     "Owner device check: audible scrub, pause and resume on iPhone Safari (Apple) and desktop Chrome.",
-    "Owner device check on iPhone Safari includes RF-123's owed check: when setQueue hangs, Retry playback recovers without a reload and without \"still finishing a previous queue request\"."
+    "Owner device check on iPhone Safari includes RF-123's owed check: when setQueue hangs, Retry playback recovers without a reload and without \"still finishing a previous queue request\".",
+    "Owner device check on iPhone Safari: tapping three timeline tracks within about 4 s ends playing the last tapped track, with neither \"still finishing a cancelled play request\" nor \"still finishing a previous queue request\"."
   ],
-  "nextAction": "Owner moved this to Ready on 2026-10-30 (session; Apple hardening lane with RF-108, RF-128 and RF-147, before the Apple Music testing window ends ~2026-11-27). Scope: a bounded settle wait in apps/web/src/lib/playback/ so a seek, skip or Next during an in-flight start waits for the earlier request instead of showing \"Playback stopped\". The owner hit this on iPhone on 2026-10-30 by tapping timeline tracks quickly (see evidence). Include #664 review items 2 (destroy() leaves the queue lock in place during the timeout window; do not simply clear the lock in destroy(): Lane A left it on purpose, because that lets queue requests overlap and breaks the test \"rejects an overlapping queue request while an older one is still pending\"; supersede or wait instead) and 6 (pendingPlays around play() can hang the same way and needs a bounded release, perhaps a shared lock-with-timeout helper). Fold in RF-121's held-error attempt token. The Spotify adapter half is in scope. Owner-gated; device check owed. The device check also covers RF-123's leftover post-deploy check: with a setQueue that hangs, Retry playback recovers without a reload and without \"still finishing a previous queue request\" (not yet observed with the timeout path visibly firing). The user-visible \"still finishing a previous queue request\" error on quick timeline taps (2026-10-30) is in scope here, not only the settle wait.",
+  "nextAction": "Owner moved this to Ready on 2026-10-30 (session; Apple hardening lane with RF-108, RF-128 and RF-147, before the Apple Music testing window ends ~2026-11-27). Scope: a bounded settle wait in apps/web/src/lib/playback/ so a seek, skip or Next during an in-flight start waits for the earlier request instead of showing \"Playback stopped\". The owner hit this on iPhone on 2026-10-30 by tapping timeline tracks quickly (see evidence). Include #664 review items 2 (destroy() leaves the queue lock in place during the timeout window; do not simply clear the lock in destroy(): Lane A left it on purpose, because that lets queue requests overlap and breaks the test \"rejects an overlapping queue request while an older one is still pending\"; supersede or wait instead) and 6 (pendingPlays around play() can hang the same way and needs a bounded release, perhaps a shared lock-with-timeout helper). Fold in RF-121's held-error attempt token (RF-121 acceptance 0 only; its PR cites RF-121, which stays open for its other criteria). The Spotify adapter half is in scope. Owner-gated; device check owed. The device check also covers RF-123's leftover post-deploy check: with a setQueue that hangs, Retry playback recovers without a reload and without \"still finishing a previous queue request\" (not yet observed with the timeout path visibly firing). Both user-visible errors from the 2026-10-30 quick timeline taps are in scope, not only the settle wait: \"still finishing a cancelled play request\" (pendingPlays) and \"still finishing a previous queue request\" (setQueue). RF-108 owns the lock and supersession design for setQueue and play(); RF-147's #664 criterion is met by this design, in the same change.",
   "blocker": null,
   "evidence": [
     {
@@ -53,6 +54,12 @@
       "kind": "observation",
       "ref": "https://github.com/steven-crosby/ritmofit-web/pull/664#issuecomment-6514478737",
       "summary": "Final review of #664 (RF-123), logged items 2 and 6: destroy() does not release the queue lock, and pendingPlays has the same never-settles shape as the queue lock before RF-123.",
+      "checkedOn": "2026-10-30"
+    },
+    {
+      "kind": "observation",
+      "ref": "https://github.com/steven-crosby/ritmofit-web/pull/667",
+      "summary": "Owner set Ready in session on 2026-10-30 (\"Yes, option 1, Apple hardening\"): RF-108, RF-128 and RF-147 as one Apple hardening lane.",
       "checkedOn": "2026-10-30"
     }
   ],
