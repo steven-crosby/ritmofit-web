@@ -270,7 +270,7 @@ beforeEach(() => {
   vi.mocked(api.listClassPlanBlocks).mockResolvedValue([]);
   // Liked songs load in pages (RF-132). Tests that stub `listLikes` with one array
   // get it as a single last page; paging tests stub `listLikesPage` directly.
-  vi.mocked(api.listLikesPage).mockImplementation(async (provider) => {
+  vi.mocked(api.listLikesPage).mockImplementation(async (provider: Provider) => {
     const rows = await api.listLikes(provider);
     return { items: Array.isArray(rows) ? rows : [], nextCursor: null };
   });
@@ -4847,6 +4847,8 @@ describe('Dashboard loading and load-error states', () => {
   });
 });
 
+type LikesQuery = { cursor?: string; q?: string };
+
 describe('Music Songs paging and search (RF-132)', () => {
   const song = (id: string, title = `Song ${id}`, provider: Provider = 'spotify') => ({
     provider,
@@ -4882,10 +4884,11 @@ describe('Music Songs paging and search (RF-132)', () => {
   it('loads the next page with the provider cursor and appends it', async () => {
     vi.mocked(api.listClasses).mockResolvedValue(page([]));
     vi.mocked(api.listConnections).mockResolvedValue([spotifyConnection()]);
-    vi.mocked(api.listLikesPage).mockImplementation(async (_provider, options = {}) =>
-      options.cursor === 'cursor-1'
-        ? { items: [song('2', 'Second Page Song')], nextCursor: null }
-        : { items: [song('1', 'First Page Song')], nextCursor: 'cursor-1' },
+    vi.mocked(api.listLikesPage).mockImplementation(
+      async (_provider: Provider, options: LikesQuery = {}) =>
+        options.cursor === 'cursor-1'
+          ? { items: [song('2', 'Second Page Song')], nextCursor: null }
+          : { items: [song('1', 'First Page Song')], nextCursor: 'cursor-1' },
     );
 
     await openSongs('Spotify');
@@ -4903,10 +4906,12 @@ describe('Music Songs paging and search (RF-132)', () => {
   it('keeps loaded songs and offers a retry when loading more fails', async () => {
     vi.mocked(api.listClasses).mockResolvedValue(page([]));
     vi.mocked(api.listConnections).mockResolvedValue([spotifyConnection()]);
-    vi.mocked(api.listLikesPage).mockImplementation(async (_provider, options = {}) => {
-      if (options.cursor) throw new Error('Spotify is busy');
-      return { items: [song('1', 'First Page Song')], nextCursor: 'cursor-1' };
-    });
+    vi.mocked(api.listLikesPage).mockImplementation(
+      async (_provider: Provider, options: LikesQuery = {}) => {
+        if (options.cursor) throw new Error('Spotify is busy');
+        return { items: [song('1', 'First Page Song')], nextCursor: 'cursor-1' };
+      },
+    );
 
     await openSongs('Spotify');
     fireEvent.click(await screen.findByRole('button', { name: 'Load more songs' }));
@@ -4922,10 +4927,11 @@ describe('Music Songs paging and search (RF-132)', () => {
       { ...spotifyConnection(), provider: 'apple_music' },
     ]);
     vi.mocked(api.listPlaylists).mockResolvedValue([]);
-    vi.mocked(api.listLikesPage).mockImplementation(async (_provider, options = {}) =>
-      options.q
-        ? { items: [song('deep', 'Deep Cut Past Page One', 'apple_music')], nextCursor: null }
-        : { items: [song('a', 'A.F.U.', 'apple_music')], nextCursor: 'apple-cursor' },
+    vi.mocked(api.listLikesPage).mockImplementation(
+      async (_provider: Provider, options: LikesQuery = {}) =>
+        options.q
+          ? { items: [song('deep', 'Deep Cut Past Page One', 'apple_music')], nextCursor: null }
+          : { items: [song('a', 'A.F.U.', 'apple_music')], nextCursor: 'apple-cursor' },
     );
 
     await openSongs('Apple Music');
@@ -4947,10 +4953,12 @@ describe('Music Songs paging and search (RF-132)', () => {
       { ...spotifyConnection(), provider: 'apple_music' },
     ]);
     vi.mocked(api.listPlaylists).mockResolvedValue([]);
-    vi.mocked(api.listLikesPage).mockImplementation(async (_provider, options = {}) => {
-      if (options.q) throw new Error('Too many requests');
-      return { items: [song('a', 'Angel', 'apple_music')], nextCursor: null };
-    });
+    vi.mocked(api.listLikesPage).mockImplementation(
+      async (_provider: Provider, options: LikesQuery = {}) => {
+        if (options.q) throw new Error('Too many requests');
+        return { items: [song('a', 'Angel', 'apple_music')], nextCursor: null };
+      },
+    );
 
     await openSongs('Apple Music');
     expect(await screen.findByText('Angel')).toBeTruthy();
