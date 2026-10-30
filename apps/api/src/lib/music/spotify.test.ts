@@ -4,6 +4,8 @@ import {
   fetchSpotifyPlaylistTracks,
   fetchSpotifySavedPlaylists,
   fetchSpotifySavedTracks,
+  fetchSpotifySavedTracksPage,
+  InvalidProviderCursorError,
   SpotifyUnauthorizedError,
   SpotifyForbiddenError,
   SpotifyDevelopmentModeError,
@@ -1021,4 +1023,62 @@ describe('Spotify 429 handling', () => {
       }),
     ).rejects.toBeInstanceOf(SpotifyPlaylistAccessDeniedError);
   });
+});
+
+describe('fetchSpotifySavedTracksPage (RF-132 paging, mock-tested only: RF-92)', () => {
+  const SAVED_URL = `${API_BASE}/me/tracks`;
+  const items = (from: number, count: number) =>
+    Array.from({ length: count }, (_, i) => ({
+      track: { ...SP_TRACK, id: `t${from + i}`, uri: `spotify:track:t${from + i}` },
+    }));
+
+  it('reads whole 50-track pages to the target and returns Spotify’s next offset', async () => {
+    const { fetchImpl, calls } = fakeFetch({
+      [`${SAVED_URL}?limit=50&offset=0`]: { items: items(0, 50), total: 120 },
+      [`${SAVED_URL}?limit=50&offset=50`]: { items: items(50, 50), total: 120 },
+      [`${SAVED_URL}?limit=50&offset=100`]: { items: items(100, 20), total: 120 },
+    });
+    const first = await fetchSpotifySavedTracksPage({
+      accessToken: 't',
+      fetchImpl,
+      apiBase: API_BASE,
+      targetTracks: 100,
+    });
+    expect(first.tracks).toHaveLength(100);
+    expect(first.next).toBe('100');
+    expect(calls).toHaveLength(2);
+
+    const second = await fetchSpotifySavedTracksPage({
+      accessToken: 't',
+      fetchImpl,
+      apiBase: API_BASE,
+      cursor: first.next,
+    });
+    expect(second.tracks.map((t) => t.providerTrackId)[0]).toBe('t100');
+    expect(second.tracks).toHaveLength(20);
+    expect(second.next).toBeNull();
+  });
+
+  it('returns no next when an empty page arrives before the reported total', async () => {
+    const { fetchImpl } = fakeFetch({
+      [`${SAVED_URL}?limit=50&offset=0`]: { items: [], total: 10 },
+    });
+    const out = await fetchSpotifySavedTracksPage({
+      accessToken: 't',
+      fetchImpl,
+      apiBase: API_BASE,
+    });
+    expect(out).toEqual({ tracks: [], next: null });
+  });
+
+  it.each(['-1', '1.5', 'abc', '01', 'https://api.spotify.com/v1/me/tracks?offset=50', ''])(
+    'rejects a non-offset cursor (%s) before any request',
+    async (cursor) => {
+      const fetchImpl = vi.fn<FetchLike>();
+      await expect(
+        fetchSpotifySavedTracksPage({ accessToken: 't', fetchImpl, apiBase: API_BASE, cursor }),
+      ).rejects.toBeInstanceOf(InvalidProviderCursorError);
+      expect(fetchImpl).not.toHaveBeenCalled();
+    },
+  );
 });

@@ -11,11 +11,14 @@ export type {
   PlaylistImportRef,
   PlaylistReadOptions,
   ProviderAbortSignal,
+  ProviderTrackPage,
+  LibraryPageOptions,
 } from './provider.js';
 export { providerTrackIdAliases } from './identity.js';
 export { parsePlaylistUrl, type ParsedPlaylistUrl } from './playlist-url.js';
 export {
   ProviderError,
+  InvalidProviderCursorError,
   ProviderQuotaExceededError,
   PlaylistOverLimitError,
   abortError,
@@ -24,6 +27,7 @@ export {
 export {
   createSoundCloudProvider,
   fetchSoundCloudLikes,
+  fetchSoundCloudLikesPage,
   fetchSoundCloudPlaylists,
   fetchSoundCloudPlaylistTracks,
   SoundCloudUnauthorizedError,
@@ -38,6 +42,7 @@ export {
 export {
   createSpotifyProvider,
   fetchSpotifySavedTracks,
+  fetchSpotifySavedTracksPage,
   fetchSpotifySavedPlaylists,
   fetchSpotifyPlaylistTracks,
   SpotifyUnauthorizedError,
@@ -57,6 +62,8 @@ export {
 export {
   createAppleMusicProvider,
   fetchAppleMusicLibrarySongs,
+  fetchAppleMusicLibrarySongsPage,
+  searchAppleMusicLibrarySongs,
   fetchAppleMusicLibraryPlaylists,
   fetchAppleMusicLibraryPlaylistTracks,
   AppleMusicUnauthorizedError,

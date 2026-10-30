@@ -13,6 +13,7 @@
  */
 import { Hono } from 'hono';
 import {
+  CLASS_LIST_NEXT_CURSOR_HEADER,
   providerSchema,
   importProviderTrackSchema,
   type ProviderPlaylistSummary,
@@ -20,6 +21,7 @@ import {
 } from '@ritmofit/shared';
 import type { AppEnv } from '../lib/types.js';
 import { requireSession } from '../middleware/auth.js';
+import { createMiddleware } from 'hono/factory';
 import { rateLimit } from '../lib/rate-limit.js';
 import { createDb } from '../lib/db.js';
 import { HttpError } from '../lib/errors.js';
@@ -58,6 +60,21 @@ const likesLimiter = rateLimit({
   max: 20,
   key: (c) => c.get('userId'),
 });
+// Apple Music library search (`/likes?q=`) fires as the instructor types (debounced
+// in the client), so it gets its own budget, matching catalog search, instead of
+// spending the page budget that "Load more" uses.
+const likesSearchLimiter = rateLimit({
+  keyPrefix: 'provider-likes-search',
+  windowMs: 60_000,
+  max: 30,
+  key: (c) => c.get('userId'),
+});
+/** Route a `/likes` request to the search or the page budget. */
+const likesRateLimit = createMiddleware<AppEnv>(async (c, next) =>
+  (c.req.query('q') ?? '').trim() ? likesSearchLimiter(c, next) : likesLimiter(c, next),
+);
+/** Longest `/likes` cursor accepted before decoding (a provider continuation is ≤ 2 kB). */
+const MAX_LIKES_CURSOR_LEN = 4096;
 const playlistsLimiter = rateLimit({
   keyPrefix: 'provider-playlists',
   windowMs: 60_000,
@@ -89,11 +106,23 @@ providerRoutes.get('/providers/:provider/search', searchLimiter, async (c) => {
   return c.json(results);
 });
 
-/** GET /providers/:provider/likes — the caller's liked tracks (spends their token). */
-providerRoutes.get('/providers/:provider/likes', likesLimiter, async (c) => {
+/**
+ * GET /providers/:provider/likes — one page of the caller's liked tracks (spends
+ * their token). The body stays a bare `TrackSearchResult[]`; when more remain the
+ * opaque cursor for the next page is in `X-RitmoFit-Next-Cursor` (pass it back as
+ * `?cursor=`). `?q=` (Apple Music only) searches the user's library server-side.
+ */
+providerRoutes.get('/providers/:provider/likes', likesRateLimit, async (c) => {
   const provider = parseProvider(c.req.param('provider'));
+  const cursor = c.req.query('cursor');
+  if (cursor !== undefined && (cursor.length === 0 || cursor.length > MAX_LIKES_CURSOR_LEN)) {
+    throw new HttpError(422, 'VALIDATION_ERROR', 'Invalid likes cursor.');
+  }
+  const q = (c.req.query('q') ?? '').slice(0, MAX_QUERY_LEN);
   const db = createDb(c.env);
-  const results: TrackSearchResult[] = await fetchUserLikes(db, c.env, c.get('userId'), provider);
+  const page = await fetchUserLikes(db, c.env, c.get('userId'), provider, { cursor, q });
+  if (page.nextCursor) c.header(CLASS_LIST_NEXT_CURSOR_HEADER, page.nextCursor);
+  const results: TrackSearchResult[] = page.tracks;
   return c.json(results);
 });
 

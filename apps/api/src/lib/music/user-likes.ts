@@ -13,18 +13,26 @@
  * Tokens are never logged or returned to clients (conventions.md). With
  * `MOCK_PROVIDERS=true` this serves the mock catalog so the flow runs with zero
  * credentials, like the rest of M2.
+ *
+ * Paging (RF-132): each call returns one bounded page (`LIKES_PAGE_TARGET` songs,
+ * whole provider pages) plus an opaque cursor wrapping the provider's own
+ * continuation. Nothing is cached: the next page is read live when asked for.
+ * Apple Music also answers `q` with a server-side search of the user's library.
  */
 import { and, eq } from 'drizzle-orm';
 import {
-  fetchSoundCloudLikes,
+  fetchSoundCloudLikesPage,
   refreshSoundCloudToken,
   SoundCloudUnauthorizedError,
-  fetchSpotifySavedTracks,
+  fetchSpotifySavedTracksPage,
   refreshSpotifyToken,
   SpotifyUnauthorizedError,
-  fetchAppleMusicLibrarySongs,
+  fetchAppleMusicLibrarySongsPage,
+  searchAppleMusicLibrarySongs,
   AppleMusicUnauthorizedError,
+  InvalidProviderCursorError,
   type OAuthTokens,
+  type ProviderTrackPage,
 } from '@ritmofit/music';
 import { providerCapabilities, type Provider, type TrackSearchResult } from '@ritmofit/shared';
 import type { Db } from '../db.js';
@@ -41,11 +49,29 @@ import {
 import { throwIfSpotifyDevelopmentMode } from './spotify-development-mode.js';
 import { searchMockCatalog } from '../mock-catalog.js';
 import { musicConnections } from '../../db/schema.js';
+import { decodeLikesCursor, encodeLikesCursor, invalidLikesCursor } from './likes-cursor.js';
 
 // Refresh a little early so a token that expires mid-request doesn't 401.
 const EXPIRY_SKEW_MS = 60_000;
 
 type Creds = { clientId: string; clientSecret: string };
+
+/** Songs per `/likes` page: the first provider page boundary at or past this. */
+export const LIKES_PAGE_TARGET = 200;
+/** Upstream pages one `/likes` call may read, so a page can't fan out unbounded. */
+const LIKES_PAGE_MAX_PROVIDER_PAGES = 8;
+
+/** One `/likes` page: songs plus the opaque cursor for the next page, or null. */
+export interface LikesPage {
+  tracks: TrackSearchResult[];
+  nextCursor: string | null;
+}
+
+/** `cursor` continues a previous page; `q` (Apple Music only) searches the library. */
+export interface LikesRequest {
+  cursor?: string;
+  q?: string;
+}
 
 /** Per-provider wiring behind the `userLikes` capability flag. */
 interface LikesAdapter {
@@ -54,7 +80,10 @@ interface LikesAdapter {
   fetchLikes(cfg: {
     accessToken: string;
     fetchImpl: typeof boundFetch;
-  }): Promise<TrackSearchResult[]>;
+    cursor: string | null;
+    targetTracks: number;
+    maxPages: number;
+  }): Promise<ProviderTrackPage>;
   refreshToken(cfg: {
     clientId: string;
     clientSecret: string;
@@ -68,38 +97,59 @@ const LIKES_ADAPTERS: Partial<Record<Provider, LikesAdapter>> = {
   soundcloud: {
     label: 'SoundCloud',
     creds: soundcloudCreds,
-    fetchLikes: fetchSoundCloudLikes,
+    fetchLikes: fetchSoundCloudLikesPage,
     refreshToken: refreshSoundCloudToken,
     isUnauthorized: (err) => err instanceof SoundCloudUnauthorizedError,
   },
   spotify: {
     label: 'Spotify',
     creds: spotifyCreds,
-    fetchLikes: fetchSpotifySavedTracks,
+    fetchLikes: fetchSpotifySavedTracksPage,
     refreshToken: refreshSpotifyToken,
     isUnauthorized: (err) => err instanceof SpotifyUnauthorizedError,
   },
 };
 
-/** Return the caller's liked tracks at `provider`, mapped to the shared contract. */
+/**
+ * Return one page of the caller's liked tracks at `provider`, mapped to the shared
+ * contract, with the cursor for the next page. With `q` (Apple Music only) return
+ * the library-search matches instead, unpaged.
+ */
 export async function fetchUserLikes(
   db: Db,
   env: Env,
   userId: string,
   provider: Provider,
-): Promise<TrackSearchResult[]> {
+  request: LikesRequest = {},
+): Promise<LikesPage> {
+  // An unintegrated provider is a 501 whatever the cursor or q (the mock seam
+  // stands in for every provider).
+  if (env.MOCK_PROVIDERS !== 'true' && !providerCapabilities[provider].userLikes) {
+    throw new HttpError(501, 'NOT_IMPLEMENTED', `Provider '${provider}' is not yet integrated.`);
+  }
+  const q = request.q?.trim() ?? '';
+  if (q && provider !== 'apple_music') {
+    throw new HttpError(
+      422,
+      'VALIDATION_ERROR',
+      'Library search is only available for Apple Music.',
+    );
+  }
+  if (q && request.cursor) {
+    throw new HttpError(422, 'VALIDATION_ERROR', 'Use either q or cursor, not both.');
+  }
+  // Decode before any DB read or provider call: a bad cursor is a client error.
+  const continuation = request.cursor ? decodeLikesCursor(provider, request.cursor) : null;
+
   // Dev seam: the provider's catalog stands in for the user's likes.
   if (env.MOCK_PROVIDERS === 'true') {
-    return searchMockCatalog('', provider);
-  }
-  if (!providerCapabilities[provider].userLikes) {
-    throw new HttpError(501, 'NOT_IMPLEMENTED', `Provider '${provider}' is not yet integrated.`);
+    return mockLikesPage(provider, q, continuation);
   }
   // Apple Music's user flow has no OAuth refresh (the Music-User-Token is re-minted
   // by MusicKit in the browser, not refreshed server-side), so it takes its own path
   // rather than the OAuth-shaped adapter below.
   if (provider === 'apple_music') {
-    return fetchAppleMusicLikes(db, env, userId);
+    return fetchAppleMusicLikes(db, env, userId, { q, continuation });
   }
   const adapter = LIKES_ADAPTERS[provider];
   if (!adapter) {
@@ -117,6 +167,18 @@ export async function fetchUserLikes(
     throw new HttpError(409, 'NOT_CONNECTED', `Connect your ${adapter.label} account first.`);
   }
 
+  const read = async (accessToken: string): Promise<LikesPage> =>
+    toLikesPage(
+      provider,
+      await adapter.fetchLikes({
+        accessToken,
+        fetchImpl: boundFetch,
+        cursor: continuation,
+        targetTracks: LIKES_PAGE_TARGET,
+        maxPages: LIKES_PAGE_MAX_PROVIDER_PAGES,
+      }),
+    );
+
   // Proactively refresh an access token that's expired (or about to).
   const expired = conn.expiresAt !== null && Date.now() > conn.expiresAt - EXPIRY_SKEW_MS;
   let refreshed = expired;
@@ -125,8 +187,9 @@ export async function fetchUserLikes(
     : await decryptSecret(conn.accessTokenEncrypted, key);
 
   try {
-    return await adapter.fetchLikes({ accessToken, fetchImpl: boundFetch });
+    return await read(accessToken);
   } catch (err) {
+    throwIfInvalidCursor(err);
     throwIfSpotifyDevelopmentMode(err);
     if (!adapter.isUnauthorized(err)) throw err;
     // The provider rejected the token. If we already refreshed once this request,
@@ -138,15 +201,45 @@ export async function fetchUserLikes(
     refreshed = true;
     accessToken = await refreshAndPersist(db, key, adapter, creds, conn);
     try {
-      return await adapter.fetchLikes({ accessToken, fetchImpl: boundFetch });
+      return await read(accessToken);
     } catch (retryErr) {
       // A 401 on the freshly-refreshed token means the grant is dead — reconnect,
       // don't leak the raw provider error as a 500/502. Anything else propagates.
+      throwIfInvalidCursor(retryErr);
       throwIfSpotifyDevelopmentMode(retryErr);
       if (!adapter.isUnauthorized(retryErr)) throw retryErr;
       throw new HttpError(409, 'REAUTH_REQUIRED', `Reconnect your ${adapter.label} account.`);
     }
   }
+}
+
+/** Wrap the provider's own continuation in the opaque, provider-bound cursor. */
+function toLikesPage(provider: Provider, page: ProviderTrackPage): LikesPage {
+  return {
+    tracks: page.tracks,
+    nextCursor: page.next ? encodeLikesCursor(provider, page.next) : null,
+  };
+}
+
+/** An adapter refused a continuation (wrong host/path): a client error, not a 502. */
+function throwIfInvalidCursor(err: unknown): void {
+  if (err instanceof InvalidProviderCursorError) throw invalidLikesCursor();
+}
+
+/**
+ * Mock seam: the provider's mock catalog, paged by offset like a real provider
+ * (`LIKES_PAGE_TARGET` per page) so the cursor contract runs with no credentials.
+ */
+function mockLikesPage(provider: Provider, q: string, continuation: string | null): LikesPage {
+  if (q) return { tracks: searchMockCatalog(q, provider), nextCursor: null };
+  if (continuation !== null && !/^\d{1,7}$/.test(continuation)) throw invalidLikesCursor();
+  const offset = continuation === null ? 0 : Number(continuation);
+  const all = searchMockCatalog('', provider);
+  const end = offset + LIKES_PAGE_TARGET;
+  return {
+    tracks: all.slice(offset, end),
+    nextCursor: end < all.length ? encodeLikesCursor(provider, String(end)) : null,
+  };
 }
 
 /**
@@ -197,14 +290,16 @@ async function refreshAndPersist(
 
 /**
  * Apple Music likes: read the connected user's **library** songs with the app's
- * developer token (Bearer) + the stored Music-User-Token. No refresh — a rejected
- * token means the user must reconnect via MusicKit (409 REAUTH_REQUIRED).
+ * developer token (Bearer) + the stored Music-User-Token, one page at a time, or
+ * search the library server-side when `q` is set. No refresh — a rejected token
+ * means the user must reconnect via MusicKit (409 REAUTH_REQUIRED).
  */
 async function fetchAppleMusicLikes(
   db: Db,
   env: Env,
   userId: string,
-): Promise<TrackSearchResult[]> {
+  request: { q: string; continuation: string | null },
+): Promise<LikesPage> {
   const key = requireEncryptionKey(env);
   const { developerToken } = await appleMusicCreds(env);
   const conn = await db
@@ -217,12 +312,28 @@ async function fetchAppleMusicLikes(
   }
   const musicUserToken = await decryptSecret(conn.accessTokenEncrypted, key);
   try {
-    return await fetchAppleMusicLibrarySongs({
-      developerToken,
-      musicUserToken,
-      fetchImpl: boundFetch,
-    });
+    if (request.q) {
+      const tracks = await searchAppleMusicLibrarySongs({
+        developerToken,
+        musicUserToken,
+        fetchImpl: boundFetch,
+        query: request.q,
+      });
+      return { tracks, nextCursor: null };
+    }
+    return toLikesPage(
+      'apple_music',
+      await fetchAppleMusicLibrarySongsPage({
+        developerToken,
+        musicUserToken,
+        fetchImpl: boundFetch,
+        cursor: request.continuation,
+        targetTracks: LIKES_PAGE_TARGET,
+        maxPages: LIKES_PAGE_MAX_PROVIDER_PAGES,
+      }),
+    );
   } catch (err) {
+    throwIfInvalidCursor(err);
     if (err instanceof AppleMusicUnauthorizedError) {
       throw new HttpError(409, 'REAUTH_REQUIRED', 'Reconnect your Apple Music account.');
     }

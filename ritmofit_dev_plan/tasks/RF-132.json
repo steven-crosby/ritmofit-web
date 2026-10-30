@@ -3,7 +3,7 @@
   "id": "RF-132",
   "title": "Music shows an instructor's whole library song list, and library search reaches all of it",
   "kind": "task",
-  "status": "ready",
+  "status": "done",
   "priority": "P0",
   "parent": null,
   "dependsOn": [],
@@ -15,7 +15,7 @@
     "GET /providers/:provider/likes changes are registered in generate-openapi.ts and the OpenAPI drift and contract-parity checks pass; the iOS snapshot refresh is a separate iOS PR.",
     "No provider audio or derived data is cached; any paging cursor is the provider's own."
   ],
-  "nextAction": "Owner moved to Ready on 2026-10-29 as Lane B, Apple Music first. Plan first: choose client paging vs server search per provider (Apple, Spotify and SoundCloud expose different library APIs) and re-verify each provider API before coding. Files: packages/music/src/{apple-music,spotify,soundcloud}.ts, apps/api/src/lib/music/user-likes.ts, apps/api/src/routes/providers.ts, apps/web Music workspace (including Create class from liked songs and the Recents label). Spotify cannot be verified while its Web API returns 403 (RF-92); ship Apple and SoundCloud and leave the Spotify criterion open rather than closing on untested code. Owner-gated (provider code): the PR needs owner-approved. Surface: both (API contract): OpenAPI regenerates here and the iOS snapshot refresh is a separate iOS PR. Spotify remainder: do not reword the Ready criteria. In the PR, propose to the owner that RF-132 closes on Apple and SoundCloud, with the Spotify part moved to a new Backlog record (no parent, dependsOn RF-92) listed in followUps; until the owner approves that narrowing, RF-132 stays in Review. AGENTS.md freezes shared OpenAPI and routes across parallel lanes, so the orchestrator assigns apps/api/src/routes/providers.ts and openapi.json in the lane briefs. RF-141 edits apps/web/src/lib/providers.ts, not the API route; if Lane B's Music workspace needs that web file, coordinate with RF-141 first.",
+  "nextAction": null,
   "blocker": null,
   "evidence": [
     {
@@ -41,8 +41,125 @@
       "ref": "https://github.com/steven-crosby/ritmofit-web/pull/662",
       "summary": "Owner instruction in session, 2026-10-29, published by PR #662: \"Yes move RF-123 and RF-132 to Ready and brief them as Lane A and Lane B after start-session\". RF-132 is Lane B (Music library, Phase 1).",
       "checkedOn": "2026-10-29"
+    },
+    {
+      "kind": "observation",
+      "ref": "https://github.com/steven-crosby/ritmofit-web/pull/665",
+      "summary": "Owner decision in session, 2026-10-29, on the Lane B plan's Spotify question: \"Yes recommended\". RF-132 may close Done on Apple Music and SoundCloud; live Spotify paging verification moves to Backlog RF-148 (dependsOn RF-92). Relayed to Lane B by the orchestrator; recorded on the PR that implements it.",
+      "checkedOn": "2026-10-29"
+    },
+    {
+      "kind": "observation",
+      "ref": "https://github.com/steven-crosby/ritmofit-web/pull/665",
+      "summary": "Owner decision in session, 2026-10-29: \"Recents\" becomes \"Library order\" on both Playlists and Songs: \"Yes recommendation\". Relayed to Lane B by the orchestrator; recorded on the PR that implements it.",
+      "checkedOn": "2026-10-29"
+    },
+    {
+      "kind": "observation",
+      "ref": "https://github.com/steven-crosby/ritmofit-web/pull/665",
+      "summary": "Owner decision in session, 2026-10-29: SoundCloud/Spotify search auto-loads up to 1,000 songs (5 calls), then says so and offers to keep loading: \"Yes 1,000\". Relayed to Lane B by the orchestrator; recorded on the PR that implements it.",
+      "checkedOn": "2026-10-29"
+    },
+    {
+      "kind": "observation",
+      "ref": "https://github.com/steven-crosby/ritmofit-web/pull/665",
+      "summary": "Owner decision in session, 2026-10-29: \"Yes, both\" (implementation authority for the Lane B plan scope; branch, commit, push and draft PR under the standing grant; no merge or deploy). Relayed to Lane B by the orchestrator; recorded on the PR that implements it.",
+      "checkedOn": "2026-10-29"
+    },
+    {
+      "kind": "pr",
+      "ref": "https://github.com/steven-crosby/ritmofit-web/pull/665",
+      "summary": "Pages GET /providers/:provider/likes with the provider's own cursor (X-RitmoFit-Next-Cursor, bare-array body), adds Apple Music server-side library search (?q=), Load more and 1,000-song search auto-load on Music Songs, the Create class subset note, and the Library order label; OpenAPI and api.md updated. CI on the final head is the merge check.",
+      "checkedOn": "2026-10-29"
+    },
+    {
+      "kind": "document",
+      "ref": "https://developer.apple.com/documentation/applemusicapi/get-all-library-songs",
+      "summary": "Re-verified 2026-10-29: GET /v1/me/library/songs takes limit, offset, include, l and extend; no sort parameter; library-song attributes have no date-added field. Paging via the response's next subpath (Fetching Resources by Page).",
+      "checkedOn": "2026-10-29"
+    },
+    {
+      "kind": "document",
+      "ref": "https://developer.apple.com/documentation/applemusicapi/search-for-library-resources",
+      "summary": "Re-verified 2026-10-29: GET /v1/me/library/search needs term (words joined by +) and types (library-songs among them); limit default 5, maximum 25; results['library-songs'] has data and next.",
+      "checkedOn": "2026-10-29"
+    },
+    {
+      "kind": "document",
+      "ref": "https://developers.soundcloud.com/docs/api/explorer/open-api",
+      "summary": "Re-verified 2026-10-29 (spec 1.0.0): /me/likes/tracks takes limit 1-200 (default 50), access and linked_partitioning; response {collection, next_href}; no like date and no likes search documented.",
+      "checkedOn": "2026-10-29"
+    },
+    {
+      "kind": "document",
+      "ref": "https://developer.spotify.com/documentation/web-api/reference/get-users-saved-tracks",
+      "summary": "Re-verified 2026-10-29: GET /me/tracks limit default 20, max 50; offset; response has next, total and items[].added_at; order not stated. Not live-testable (RF-92).",
+      "checkedOn": "2026-10-29"
+    },
+    {
+      "kind": "test",
+      "ref": "apps/api/src/lib/music/apple-music.test.ts",
+      "summary": "fetchAppleMusicLibrarySongsPage resumes from Apple's next at page boundaries, bounds pages, rejects off-path cursors before any request; searchAppleMusicLibrarySongs follows next for terms with ' ( ) ! *, up to four pages, treats an off-path or .. next as drift, and maps 401/403. Passed locally 2026-10-29.",
+      "checkedOn": "2026-10-29"
+    },
+    {
+      "kind": "test",
+      "ref": "apps/api/src/lib/music/soundcloud.test.ts",
+      "summary": "fetchSoundCloudLikesPage resumes from next_href, defaults to 200 songs (four pages), rejects cursors off the SoundCloud API origin or the likes-tracks paths before sending the token, and treats an off-path next_href as drift. Passed locally 2026-10-29.",
+      "checkedOn": "2026-10-29"
+    },
+    {
+      "kind": "test",
+      "ref": "apps/api/src/lib/music/spotify.test.ts",
+      "summary": "fetchSpotifySavedTracksPage resumes from the offset cursor and rejects non-offset cursors (mock only; live Spotify is RF-148). Passed locally 2026-10-29.",
+      "checkedOn": "2026-10-29"
+    },
+    {
+      "kind": "test",
+      "ref": "apps/api/src/lib/music/user-likes.test.ts",
+      "summary": "Cursor round-trip, provider-bound and malformed cursors 422, adapter-refused continuation 422, Apple q search, q rejected for other providers and with cursor, mock paging. Passed locally 2026-10-29.",
+      "checkedOn": "2026-10-29"
+    },
+    {
+      "kind": "test",
+      "ref": "apps/api/test/provider-likes-paging.integration.test.ts",
+      "summary": "Mounted worker: bare-array body, header absent on last page, cursor page, 422 cases, Apple ?q=. Passed locally 2026-10-29 in the full integration run.",
+      "checkedOn": "2026-10-29"
+    },
+    {
+      "kind": "test",
+      "ref": "apps/web/src/components/Dashboard.test.tsx",
+      "summary": "Music Songs: Library order label, Load more appends with the cursor and survives a failure, loaded pages survive a connections refresh, Apple server search, Load more after a failed Apple search, 1,000-song and 5-request autoload bounds with Keep loading, Create class subset note. Passed locally 2026-10-29.",
+      "checkedOn": "2026-10-29"
+    },
+    {
+      "kind": "observation",
+      "ref": "https://github.com/steven-crosby/ritmofit-web/pull/665",
+      "summary": "Final review on 0492619 found significant findings (likes reset on connections refresh, Apple search continuation charset, Load more hidden after a failed Apple search, pending search when not connected, unbounded autoload requests) plus SoundCloud cursor path and the library-search .. guard. Fixed on the same branch with a regression test each; replies are on the PR.",
+      "checkedOn": "2026-10-29"
+    },
+    {
+      "kind": "document",
+      "ref": "https://developers.soundcloud.com/blog/pagination-updates-on-our-api",
+      "summary": "Checked 2026-10-29: SoundCloud's next_href keeps the request's path and swaps the query for a cursor. Basis for pinning likes cursors to /me/likes/tracks (and the spec's /users/{user_urn}/likes/tracks form of the same resource).",
+      "checkedOn": "2026-10-29"
+    },
+    {
+      "kind": "observation",
+      "ref": "https://github.com/steven-crosby/ritmofit-web/pull/665",
+      "summary": "Second final review on d92e215 found: Load more during a new-account reload used the old cursor; the autoload budget reset per keystroke and was not debounced; Apple library search returned 502 on an off-path next. Fixed on the same branch with a regression test each (plus the search-effect dependency, 501 ordering and an unmount guard); replies are on the PR.",
+      "checkedOn": "2026-10-29"
+    },
+    {
+      "kind": "observation",
+      "ref": "https://github.com/steven-crosby/ritmofit-web/pull/665",
+      "summary": "Third final review on 0a66217, owner approved one more round (\"Yes. Fix em\"): an unexpected server next on SoundCloud likes or Apple library songs now keeps the pages read and ends the list instead of a 502; Apple library search results are merged with loaded-song matches. A regression test each; replies are on the PR.",
+      "checkedOn": "2026-10-30"
     }
   ],
-  "resolution": null,
-  "followUps": []
+  "resolution": "Met for Apple Music and SoundCloud under the owner's 2026-10-29 narrowing. GET /providers/:provider/likes returns about 200 songs per page (whole provider pages) and the opaque next cursor (the provider's own continuation, provider-bound, never stored) in X-RitmoFit-Next-Cursor; the body stays a bare TrackSearchResult[]. Music › Songs has Load more. Songs search reaches past the first page: Apple Music searches the library server-side (?q=, Apple library search, up to 100 matches) and shows those merged with matches among loaded songs; SoundCloud and Spotify keep loading pages while a query is typed, up to 1,000 songs or 5 requests per search (debounced; refining the query keeps the same budget), then say \"Searched your first 1,000 liked songs\" and offer Keep loading. Create class from liked songs uses the same loaded pages and says when it used a subset. \"Recents\" is relabeled \"Library order\" on Playlists and Songs (no provider exposes a recency sort for these lists). OpenAPI registers cursor, q, the header and 422; drift and contract-parity pass. Nothing provider-derived is cached. Spotify paging ships mock-tested only; its live check is RF-148 (dependsOn RF-92). TrackSearch likes mode still reads the first page: RF-149. Real Apple and SoundCloud paging on the owner's accounts is a post-deploy check named in the PR; the iOS OpenAPI snapshot refresh is a separate iOS PR.",
+  "followUps": [
+    "RF-148",
+    "RF-149"
+  ]
 }

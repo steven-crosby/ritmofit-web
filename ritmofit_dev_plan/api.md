@@ -153,7 +153,7 @@ update/delete/attach are **owner-only** (a simple ownership check, *not* `requir
 | Method | Path | Purpose |
 |---|---|---|
 | GET | `/providers/:provider/search` | Search a connected/supported provider catalog for import candidates. |
-| GET | `/providers/:provider/likes` | Fetch liked/saved tracks when the provider supports it. |
+| GET | `/providers/:provider/likes` | Fetch one page of liked/saved tracks (library songs for Apple Music) when the provider supports it, in the provider's own order. The body stays `TrackSearchResult[]`; about 200 songs per page (whole provider pages), and when more remain the opaque next cursor is returned in `X-RitmoFit-Next-Cursor` (pass it back as `?cursor=`). The cursor wraps the provider's own continuation, is bound to the provider, is validated (host/path) before any token is sent, and is never stored. `?q=` (Apple Music only, not with `cursor`) searches the user's library server-side via Apple's library search (up to 100 matches, unpaged). Invalid or foreign cursors and unsupported `q` are 422. Page reads share the per-user `provider-likes` limit (20/min); `q` searches use `provider-likes-search` (30/min). RF-132. |
 | GET | `/providers/:provider/playlists` | List the caller's saved playlists for a connected provider (Spotify OAuth, SoundCloud OAuth, Apple Music Music-User-Token). Returns `ProviderPlaylistSummary[]`. Shipped 2026-07-06. |
 | GET | `/providers/:provider/playlists/:playlistId/tracks` | Drill into one saved playlist and return its tracks as `TrackSearchResult[]`. Shipped 2026-07-06. |
 | POST | `/providers/:provider/playlists/:playlistId/import` | Bulk-import a saved playlist into the caller's track library. Returns created/existing/failure counts; bounded and deduplicated server-side. |

@@ -2,6 +2,9 @@ import { describe, it, expect, vi } from 'vitest';
 import {
   createAppleMusicProvider,
   fetchAppleMusicLibrarySongs,
+  fetchAppleMusicLibrarySongsPage,
+  searchAppleMusicLibrarySongs,
+  InvalidProviderCursorError,
   fetchAppleMusicLibraryPlaylists,
   fetchAppleMusicLibraryPlaylistTracks,
   AppleMusicUnauthorizedError,
@@ -344,6 +347,272 @@ describe('fetchAppleMusicLibrarySongs', () => {
         }),
       ).rejects.toBeInstanceOf(AppleMusicUnauthorizedError);
     }
+  });
+});
+
+describe('fetchAppleMusicLibrarySongsPage (RF-132 paging)', () => {
+  const ORIGIN = 'https://am.test';
+  const LIBRARY_URL = `${ORIGIN}/v1/me/library/songs`;
+  const song = (index: number) => ({
+    id: `i.lib${index}`,
+    attributes: {
+      name: `Song ${index}`,
+      artistName: 'Artist',
+      playParams: { id: `i.lib${index}`, catalogId: `c${index}` },
+    },
+  });
+  const page = (from: number, count: number) =>
+    Array.from({ length: count }, (_, i) => song(from + i));
+  const base = { developerToken: 'devtok', musicUserToken: 'mut-1', apiBase: API_BASE };
+
+  it('stops at a page boundary at the target and returns Apple’s own next', async () => {
+    const { fetchImpl, calls } = fakeFetch({
+      [`${LIBRARY_URL}?limit=100`]: { data: page(0, 100), next: '/v1/me/library/songs?offset=100' },
+      [`${LIBRARY_URL}?offset=100`]: {
+        data: page(100, 100),
+        next: '/v1/me/library/songs?offset=200',
+      },
+      [`${LIBRARY_URL}?offset=200`]: { data: page(200, 5) },
+    });
+
+    const first = await fetchAppleMusicLibrarySongsPage({ ...base, fetchImpl, targetTracks: 200 });
+
+    expect(first.tracks).toHaveLength(200);
+    expect(first.next).toBe('/v1/me/library/songs?offset=200');
+    expect(calls).toHaveLength(2);
+
+    const second = await fetchAppleMusicLibrarySongsPage({
+      ...base,
+      fetchImpl,
+      cursor: first.next,
+    });
+    expect(second.tracks.map((t) => t.providerTrackId)).toEqual([
+      'c200',
+      'c201',
+      'c202',
+      'c203',
+      'c204',
+    ]);
+    expect(second.next).toBeNull();
+    expect(calls.at(-1)?.url).toBe(`${LIBRARY_URL}?offset=200`);
+    expect(calls.at(-1)?.init?.headers?.['Music-User-Token']).toBe('mut-1');
+  });
+
+  it('keeps whole pages when Apple pages are smaller than the target', async () => {
+    const { fetchImpl, calls } = fakeFetch({
+      [`${LIBRARY_URL}?limit=100`]: { data: page(0, 30), next: '/v1/me/library/songs?offset=30' },
+      [`${LIBRARY_URL}?offset=30`]: { data: page(30, 30), next: '/v1/me/library/songs?offset=60' },
+    });
+    const out = await fetchAppleMusicLibrarySongsPage({
+      ...base,
+      fetchImpl,
+      targetTracks: 50,
+    });
+    expect(out.tracks).toHaveLength(60);
+    expect(out.next).toBe('/v1/me/library/songs?offset=60');
+    expect(calls).toHaveLength(2);
+  });
+
+  it('bounds the provider pages one read may request', async () => {
+    const { fetchImpl, calls } = fakeFetch({
+      [`${LIBRARY_URL}?limit=100`]: { data: page(0, 1), next: '/v1/me/library/songs?offset=1' },
+      [`${LIBRARY_URL}?offset=1`]: { data: page(1, 1), next: '/v1/me/library/songs?offset=2' },
+    });
+    const out = await fetchAppleMusicLibrarySongsPage({ ...base, fetchImpl, maxPages: 2 });
+    expect(out.tracks).toHaveLength(2);
+    expect(out.next).toBe('/v1/me/library/songs?offset=2');
+    expect(calls).toHaveLength(2);
+  });
+
+  it('treats an empty page as the end of the library', async () => {
+    const { fetchImpl } = fakeFetch({
+      [`${LIBRARY_URL}?limit=100`]: { data: [], next: '/v1/me/library/songs?offset=0' },
+    });
+    const out = await fetchAppleMusicLibrarySongsPage({ ...base, fetchImpl });
+    expect(out).toEqual({ tracks: [], next: null });
+  });
+
+  it.each([
+    'https://evil.test/v1/me/library/songs?offset=100',
+    '//evil.test/v1/me/library/songs?offset=100',
+    '/v1/me/library/playlists?offset=100',
+    '/v1/me/library/songs/../../storefront?x=1',
+    '/v1/me/library/songs?offset=100#frag',
+    '/v1/me/library/songs',
+  ])('rejects a cursor outside /v1/me/library/songs (%s) before any request', async (cursor) => {
+    const fetchImpl = vi.fn<FetchLike>();
+    await expect(
+      fetchAppleMusicLibrarySongsPage({ ...base, fetchImpl, cursor }),
+    ).rejects.toBeInstanceOf(InvalidProviderCursorError);
+    expect(fetchImpl).not.toHaveBeenCalled();
+  });
+
+  // Regression (#665 third review item 2): an unexpected server next threw a 502
+  // and broke the whole Songs shelf. Keep the pages read and end the list instead.
+  it.each([
+    '/v1/me/storefront?offset=1',
+    '/v1/me/library/songs?offset=100&include=catalog,albums&fields[library-songs]=name,artistName',
+  ])('keeps the songs read and stops when Apple’s next is unexpected (%s)', async (next) => {
+    const { fetchImpl, calls } = fakeFetch({
+      [`${LIBRARY_URL}?limit=100`]: { data: page(0, 100), next },
+    });
+    const out = await fetchAppleMusicLibrarySongsPage({ ...base, fetchImpl });
+    expect(out.tracks).toHaveLength(100);
+    expect(out.next).toBeNull();
+    expect(calls).toHaveLength(1);
+  });
+
+  it('still rejects such a next as a client cursor', async () => {
+    const fetchImpl = vi.fn<FetchLike>();
+    await expect(
+      fetchAppleMusicLibrarySongsPage({
+        ...base,
+        fetchImpl,
+        cursor: '/v1/me/library/songs?offset=100&include=catalog,albums',
+      }),
+    ).rejects.toBeInstanceOf(InvalidProviderCursorError);
+    expect(fetchImpl).not.toHaveBeenCalled();
+  });
+
+  it("accepts a cursor carrying ' ( ) ! * (left raw by encodeURIComponent)", async () => {
+    const cursor = "/v1/me/library/songs?offset=200&l=en-US&x=(a)!*'";
+    const { fetchImpl, calls } = fakeFetch({ [`${ORIGIN}${cursor}`]: { data: page(200, 1) } });
+    const out = await fetchAppleMusicLibrarySongsPage({ ...base, fetchImpl, cursor });
+    expect(out.tracks).toHaveLength(1);
+    expect(calls[0]?.url).toBe(`${ORIGIN}${cursor}`);
+  });
+
+  it('throws AppleMusicUnauthorizedError on 401 for a later page', async () => {
+    const fetchImpl: FetchLike = async () => ({
+      ok: false,
+      status: 401,
+      json: async () => ({}),
+      text: async () => '',
+    });
+    await expect(
+      fetchAppleMusicLibrarySongsPage({
+        ...base,
+        fetchImpl,
+        cursor: '/v1/me/library/songs?offset=200',
+      }),
+    ).rejects.toBeInstanceOf(AppleMusicUnauthorizedError);
+  });
+});
+
+describe('searchAppleMusicLibrarySongs (RF-132 server-side library search)', () => {
+  const ORIGIN = 'https://am.test';
+  const SEARCH_URL = `${ORIGIN}/v1/me/library/search`;
+  const song = (id: string) => ({
+    id,
+    attributes: { name: `Song ${id}`, artistName: 'Artist', playParams: { catalogId: `c-${id}` } },
+  });
+  const base = { developerToken: 'devtok', musicUserToken: 'mut-1', apiBase: API_BASE };
+
+  it('searches library-songs with + between words, limit 25, and both tokens', async () => {
+    const { fetchImpl, calls } = fakeFetch({
+      [SEARCH_URL]: { results: { 'library-songs': { data: [song('a')] } } },
+    });
+    const out = await searchAppleMusicLibrarySongs({
+      ...base,
+      fetchImpl,
+      query: '  angel   of  mine&x ',
+    });
+    expect(out.map((t) => t.providerTrackId)).toEqual(['c-a']);
+    expect(calls[0]?.url).toBe(`${SEARCH_URL}?term=angel+of+mine%26x&types=library-songs&limit=25`);
+    expect(calls[0]?.init?.headers?.Authorization).toBe('Bearer devtok');
+    expect(calls[0]?.init?.headers?.['Music-User-Token']).toBe('mut-1');
+  });
+
+  it('follows Apple’s library-search next for up to four pages', async () => {
+    const next = (offset: number) =>
+      `/v1/me/library/search?offset=${offset}&term=love&types=library-songs`;
+    const pages: Record<string, unknown> = {
+      [`${SEARCH_URL}?term=love&types=library-songs&limit=25`]: {
+        results: { 'library-songs': { data: [song('0')], next: next(25) } },
+      },
+    };
+    for (const offset of [25, 50, 75]) {
+      pages[`${ORIGIN}${next(offset)}`] = {
+        results: { 'library-songs': { data: [song(String(offset))], next: next(offset + 25) } },
+      };
+    }
+    const calls: string[] = [];
+    const fetchImpl: FetchLike = async (url) => {
+      calls.push(url);
+      if (!(url in pages)) throw new Error(`Unexpected request ${url}`);
+      return { ok: true, status: 200, json: async () => pages[url], text: async () => '' };
+    };
+    const out = await searchAppleMusicLibrarySongs({ ...base, fetchImpl, query: 'love' });
+    expect(out).toHaveLength(4);
+    expect(calls).toHaveLength(4);
+  });
+
+  it.each([
+    'https://evil.test/x?y=1',
+    '/v1/me/library/songs?offset=25',
+    '/v1/me/library/search?offset=25&term=..%2F..%2Fstorefront',
+    '/v1/me/library/search/../../storefronts?offset=25',
+  ])(
+    'stops at the last good page when a search next is off /v1/me/library/search (%s)',
+    async (next) => {
+      // Regression (#665 second review item 3): this threw a 502 and dropped the
+      // matches already found. A search is never resumed from a client cursor.
+      const { fetchImpl, calls } = fakeFetch({
+        [SEARCH_URL]: { results: { 'library-songs': { data: [song('a')], next } } },
+      });
+      const out = await searchAppleMusicLibrarySongs({ ...base, fetchImpl, query: 'a' });
+      expect(out.map((t) => t.providerTrackId)).toEqual(['c-a']);
+      expect(calls).toHaveLength(1);
+    },
+  );
+
+  // Regression (#665 review item 2): encodeURIComponent leaves ' ( ) ! * raw, and
+  // Apple echoes the term into `next`; rejecting them stopped such searches at 25.
+  it.each([
+    ["don't stop", "don't+stop"],
+    ['(remix)', '(remix)'],
+    ['wow! *live*', 'wow!+*live*'],
+  ])('follows Apple’s next for a %s search past the first 25 matches', async (query, term) => {
+    const first = `${SEARCH_URL}?term=${term}&types=library-songs&limit=25`;
+    const next = `/v1/me/library/search?offset=25&term=${term}&types=library-songs`;
+    const pages: Record<string, unknown> = {
+      [first]: { results: { 'library-songs': { data: [song('1')], next } } },
+      [`${ORIGIN}${next}`]: { results: { 'library-songs': { data: [song('26')] } } },
+    };
+    const calls: string[] = [];
+    const fetchImpl: FetchLike = async (url) => {
+      calls.push(url);
+      if (!(url in pages)) throw new Error(`Unexpected request ${url}`);
+      return { ok: true, status: 200, json: async () => pages[url], text: async () => '' };
+    };
+    const out = await searchAppleMusicLibrarySongs({ ...base, fetchImpl, query });
+    expect(out.map((t) => t.providerTrackId)).toEqual(['c-1', 'c-26']);
+    expect(calls).toEqual([first, `${ORIGIN}${next}`]);
+  });
+
+  it('returns [] for no matches and for a blank query without calling Apple', async () => {
+    const { fetchImpl, calls } = fakeFetch({ [SEARCH_URL]: { results: {} } });
+    expect(await searchAppleMusicLibrarySongs({ ...base, fetchImpl, query: 'zzz' })).toEqual([]);
+    expect(await searchAppleMusicLibrarySongs({ ...base, fetchImpl, query: '   ' })).toEqual([]);
+    expect(calls).toHaveLength(1);
+  });
+
+  it('throws AppleMusicUnauthorizedError on 401/403 and ProviderError on a bad shape', async () => {
+    for (const status of [401, 403]) {
+      const fetchImpl: FetchLike = async () => ({
+        ok: false,
+        status,
+        json: async () => ({}),
+        text: async () => '',
+      });
+      await expect(
+        searchAppleMusicLibrarySongs({ ...base, fetchImpl, query: 'a' }),
+      ).rejects.toBeInstanceOf(AppleMusicUnauthorizedError);
+    }
+    const { fetchImpl } = fakeFetch({ [SEARCH_URL]: { results: 'nope' } });
+    await expect(
+      searchAppleMusicLibrarySongs({ ...base, fetchImpl, query: 'a' }),
+    ).rejects.toBeInstanceOf(ProviderError);
   });
 });
 

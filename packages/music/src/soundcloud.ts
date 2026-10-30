@@ -27,18 +27,29 @@ import {
 import { z } from 'zod';
 import type {
   FetchLike,
+  LibraryPageOptions,
   MusicProvider,
   PlaylistImportRef,
   PlaylistReadOptions,
+  ProviderTrackPage,
 } from './provider.js';
-import { abortError, PlaylistOverLimitError, ProviderError, readJson } from './errors.js';
+import {
+  abortError,
+  InvalidProviderCursorError,
+  PlaylistOverLimitError,
+  ProviderError,
+  readJson,
+} from './errors.js';
 import { AppTokenCache } from './app-token.js';
 import { fetchWithRetry, type RetryOptions } from './retry.js';
 
 // `URL` is available in the Workers runtime and Node ≥18 (vitest). Declared here
 // so the package needs no DOM/Workers ambient lib (same pattern as `btoa` in
 // app-token.ts). Only the members this module reads are declared.
-declare const URL: new (input: string, base?: string) => { pathname: string };
+declare const URL: new (
+  input: string,
+  base?: string,
+) => { pathname: string; origin: string; username: string; password: string };
 
 const DEFAULT_API_BASE = 'https://api.soundcloud.com';
 const DEFAULT_TOKEN_URL = 'https://secure.soundcloud.com/oauth/token';
@@ -377,6 +388,75 @@ export async function fetchSoundCloudLikes(cfg: {
   return rows.map((item) => toCandidate(item)).filter((r): r is TrackSearchResult => r !== null);
 }
 
+/**
+ * Paths a liked-tracks continuation may name. SoundCloud documents that a
+ * `next_href` keeps the request's path and swaps the query for a `cursor`
+ * (developers.soundcloud.com/blog/pagination-updates-on-our-api), so ours is
+ * `/me/likes/tracks`; `/users/{user_urn}/likes/tracks` is the same resource in the
+ * public OpenAPI spec, allowed in case SoundCloud resolves `/me` to the user.
+ */
+const LIKES_CONTINUATION_PATH = /^\/(me|users\/(soundcloud:users:)?[0-9]+)\/likes\/tracks$/;
+
+/**
+ * True when `url` is a liked-tracks continuation we may follow with the user's
+ * token: an absolute URL on the SoundCloud API origin, no embedded credentials,
+ * and a likes-tracks path.
+ */
+function isLikesContinuation(url: string, base: string): boolean {
+  let parsed: InstanceType<typeof URL>;
+  let api: InstanceType<typeof URL>;
+  try {
+    parsed = new URL(url);
+    api = new URL(base);
+  } catch {
+    return false;
+  }
+  if (parsed.origin !== api.origin) return false;
+  if (parsed.username || parsed.password) return false;
+  return LIKES_CONTINUATION_PATH.test(parsed.pathname);
+}
+
+/**
+ * Read one bounded page of the user's SoundCloud liked tracks, starting at
+ * `cursor` (SoundCloud's own `next_href` from a previous page) or at the first
+ * page. Returns whole SoundCloud pages, so `next` resumes exactly where this page
+ * stopped. A `cursor` on another host or path is rejected with
+ * `InvalidProviderCursorError` before the user's token is sent anywhere.
+ */
+export async function fetchSoundCloudLikesPage(
+  cfg: {
+    accessToken: string;
+    fetchImpl: FetchLike;
+    apiBase?: string;
+    cursor?: string | null;
+    /** Page size override for tests; defaults to 50. */
+    limit?: number;
+  } & LibraryPageOptions,
+): Promise<ProviderTrackPage> {
+  const base = cfg.apiBase ?? DEFAULT_API_BASE;
+  if (cfg.cursor != null && !isLikesContinuation(cfg.cursor, base)) {
+    throw new InvalidProviderCursorError('soundcloud');
+  }
+  const pageLimit = Math.min(cfg.limit ?? LIKES_LIMIT, SOUNDCLOUD_PAGE_LIMIT);
+  const { rows, nextUrl } = await readSoundCloudPages({
+    firstUrl:
+      cfg.cursor ??
+      `${base}/me/likes/tracks?limit=${pageLimit}` + '&linked_partitioning=true&access=playable',
+    accessToken: cfg.accessToken,
+    fetchImpl: cfg.fetchImpl,
+    parsePage: parseSoundCloudTrackPage,
+    errorPath: '/me/likes/tracks',
+    cap: Number.POSITIVE_INFINITY,
+    targetRows: cfg.targetTracks ?? 200,
+    maxPages: cfg.maxPages ?? 8,
+    isContinuation: (url) => isLikesContinuation(url, base),
+  });
+  return {
+    tracks: rows.map((item) => toCandidate(item)).filter((r): r is TrackSearchResult => r !== null),
+    next: nextUrl,
+  };
+}
+
 /** Read a connected user's SoundCloud playlists for browse shelves. */
 export async function fetchSoundCloudPlaylists(cfg: {
   accessToken: string;
@@ -459,26 +539,57 @@ export async function fetchSoundCloudPlaylistTracks(cfg: {
     .filter((row): row is TrackSearchResult => row !== null);
 }
 
-async function fetchSoundCloudPagedCollection(cfg: {
+async function fetchSoundCloudPagedCollection(
+  cfg: SoundCloudPageRead & {
+    allow404?: boolean;
+    /** After a full page, stop before requesting `next_href`. */
+    shouldStop?: (rows: unknown[]) => boolean;
+  },
+): Promise<unknown[]> {
+  return (await readSoundCloudPages(cfg)).rows;
+}
+
+interface SoundCloudPageRead {
   firstUrl: string;
   accessToken: string;
   fetchImpl: FetchLike;
   parsePage: (json: unknown) => { rows: unknown[]; nextUrl: string | null } | null;
   errorPath: string;
   cap: number;
-  allow404?: boolean;
-  /** After a full page, stop before requesting `next_href`. */
-  shouldStop?: (rows: unknown[]) => boolean;
-}): Promise<unknown[]> {
+}
+
+/**
+ * Follow SoundCloud's `next_href` from `firstUrl`. Stops on the first of: no
+ * `next_href`, an empty page, `cap` rows (truncating inside a page), `shouldStop`,
+ * or — at a page boundary — `targetRows` rows or `maxPages` pages. `nextUrl` is
+ * SoundCloud's own continuation for the page it did not read.
+ */
+async function readSoundCloudPages(
+  cfg: SoundCloudPageRead & {
+    allow404?: boolean;
+    shouldStop?: (rows: unknown[]) => boolean;
+    targetRows?: number;
+    maxPages?: number;
+    /**
+     * When set, a `next_href` this rejects ends the read: the rows already read are
+     * kept and `nextUrl` is null, so one odd link never costs the whole shelf.
+     */
+    isContinuation?: (url: string) => boolean;
+  },
+): Promise<{ rows: unknown[]; nextUrl: string | null }> {
   const out: unknown[] = [];
   let nextUrl: string | null = cfg.firstUrl;
+  const targetRows = cfg.targetRows ?? Number.POSITIVE_INFINITY;
+  const maxPages = cfg.maxPages ?? Number.POSITIVE_INFINITY;
+  let pages = 0;
 
   while (nextUrl && out.length < cfg.cap) {
+    if (out.length >= targetRows || pages >= maxPages) break;
     const res = await cfg.fetchImpl(nextUrl, {
       headers: { Authorization: `OAuth ${cfg.accessToken}`, Accept: 'application/json' },
     });
     if (res.status === 401) throw new SoundCloudUnauthorizedError();
-    if (cfg.allow404 && res.status === 404) return [];
+    if (cfg.allow404 && res.status === 404) return { rows: [], nextUrl: null };
     if (!res.ok)
       throw new ProviderError('soundcloud', `SoundCloud API ${res.status} for ${cfg.errorPath}`);
 
@@ -489,17 +600,25 @@ async function fetchSoundCloudPagedCollection(cfg: {
         `SoundCloud returned an invalid page for ${cfg.errorPath}.`,
       );
     }
+    pages += 1;
 
     for (const row of page.rows) {
       out.push(row);
       if (out.length >= cfg.cap) break;
     }
-    if (page.rows.length === 0) break;
-    if (cfg.shouldStop?.(out)) break;
+    if (page.rows.length === 0) {
+      nextUrl = null;
+      break;
+    }
+    if (page.nextUrl !== null && cfg.isContinuation && !cfg.isContinuation(page.nextUrl)) {
+      nextUrl = null;
+      break;
+    }
     nextUrl = page.nextUrl;
+    if (cfg.shouldStop?.(out)) break;
   }
 
-  return out;
+  return { rows: out, nextUrl };
 }
 
 function parseSoundCloudTrackPage(

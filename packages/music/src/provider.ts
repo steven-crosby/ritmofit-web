@@ -37,6 +37,25 @@ export interface PlaylistReadOptions {
   deadlineAt?: number;
 }
 
+/**
+ * One page of a connected user's liked/library songs. `next` is the provider's own
+ * continuation, returned as-is (Apple Music's relative `next` subpath, SoundCloud's
+ * `next_href`, Spotify's numeric `offset`), or `null` on the last page. Nothing is
+ * stored: the caller hands it back on the next request and the adapter validates it.
+ */
+export interface ProviderTrackPage {
+  tracks: TrackSearchResult[];
+  next: string | null;
+}
+
+/** Bounds for one liked-songs page read (`*Page` adapters). */
+export interface LibraryPageOptions {
+  /** Stop at the first provider page boundary at or past this many tracks. */
+  targetTracks?: number;
+  /** Never request more than this many provider pages in one read. */
+  maxPages?: number;
+}
+
 export interface MusicProvider {
   /** Which provider this adapter speaks for. */
   readonly provider: Provider;

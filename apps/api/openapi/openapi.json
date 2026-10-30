@@ -1741,6 +1741,29 @@
       ],
       "get": {
         "summary": "List the caller's liked tracks (M2; spends their per-user OAuth token)",
+        "description": "One bounded page (about 200 songs, whole provider pages) in the provider's own order. When more remain, the opaque cursor for the next page is in the X-RitmoFit-Next-Cursor response header; pass it back as ?cursor=. The cursor wraps the provider's own continuation and is not stored server-side.",
+        "parameters": [
+          {
+            "name": "cursor",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "string",
+              "maxLength": 4096
+            },
+            "description": "Opaque continuation cursor from the prior response header. Bound to the provider; another provider's cursor is rejected."
+          },
+          {
+            "name": "q",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "string",
+              "maxLength": 200
+            },
+            "description": "Apple Music only: search the user's library songs server-side (up to 100 matches, unpaged). Cannot be combined with cursor."
+          }
+        ],
         "responses": {
           "200": {
             "description": "Liked tracks",
@@ -1753,6 +1776,14 @@
                   }
                 }
               }
+            },
+            "headers": {
+              "X-RitmoFit-Next-Cursor": {
+                "description": "Opaque cursor for the next page; absent on the final page.",
+                "schema": {
+                  "type": "string"
+                }
+              }
             }
           },
           "403": {
@@ -1760,6 +1791,9 @@
           },
           "409": {
             "description": "Not connected / reconnect required"
+          },
+          "422": {
+            "description": "Invalid or foreign cursor, q on a provider without library search, or q with cursor"
           },
           "429": {
             "description": "PROVIDER_QUOTA_EXCEEDED — Spotify's usage limit for Ritmo is used up. Try again later. Not retried. No writes."
