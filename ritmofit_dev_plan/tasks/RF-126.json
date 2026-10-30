@@ -12,7 +12,7 @@
     "Every non-Pass cell links an RF task that owns its fix or explains why the provider offers no official path there.",
     "Rows record device, browser, network kind, date, Worker or bundle, and the exact observed outcome; UI or SDK success alone never passes."
   ],
-  "nextAction": "iPhone Safari Apple Music played on 2026-10-29 and again on 2026-10-30 (Worker 765c9424); network still not recorded, and quick track jumps hit a lock error (RF-108). Next: record the network kind on the next iPhone run, RF-125 home Wi-Fi authorization, and Mac Safari Apple Music, which now uses legacy FairPlay after RF-124 (review finding on #657). Fill other rows as owner checks happen on the MacBook, iPhone and Galaxy tablet. Windows and iPad have no test device yet. Research Spotify's official mobile-browser path before testing Spotify on phones and tablets. This task grants no implementation or deploy.",
+  "nextAction": "iPhone Safari Apple Music played on 2026-10-29; on 2026-10-30 (Worker 765c9424) the screen recordings show the playing state but audio was not confirmed by ear; network still not recorded, and quick track jumps hit a lock error (RF-108). Next: record the network kind on the next iPhone run, RF-125 home Wi-Fi authorization, and Mac Safari Apple Music, which now uses legacy FairPlay after RF-124 (review finding on #657). Fill other rows as owner checks happen on the MacBook, iPhone and Galaxy tablet. Windows and iPad have no test device yet. Research Spotify's official mobile-browser path before testing Spotify on phones and tablets. This task grants no implementation or deploy.",
   "blocker": null,
   "evidence": [
     {

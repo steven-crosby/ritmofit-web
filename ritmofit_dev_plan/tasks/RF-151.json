@@ -6,7 +6,9 @@
   "status": "backlog",
   "priority": "P2",
   "parent": null,
-  "dependsOn": [],
+  "dependsOn": [
+    "RF-92"
+  ],
   "acceptance": [
     "On Music › Songs, every song row has a labeled, keyboard-accessible checkbox. Ticking a song selects it; tapping the rest of the row keeps today's row behavior.",
     "At most 15 songs can be selected. At 15, the remaining checkboxes are disabled with a short note saying why.",
@@ -17,7 +19,7 @@
     "It works the same for Apple Music, SoundCloud and Spotify likes, at 1440 and 390 wide, with no horizontal overflow and axe WCAG 2.2 AA clean.",
     "Component tests cover selection, the 15 cap, persistence across Load more and search, clearing on provider switch, and the create sheet. The e2e smoke covers creating a class from selected songs."
   ],
-  "nextAction": "Owner, 2026-10-30, after using \"Create class from liked songs\" on production: the 15-song limit is a good gut check, but the separate button is lazy; songs on Music › Songs should have checkboxes, up to 15, and a \"Create a class\" button once some are selected. Owner chose option A for what follows the button: a sheet with class name and template only. Today the button is in apps/web/src/components/Dashboard.tsx (around line 2948), its note comes from apps/web/src/lib/music-library.ts, and the 15-song picker pattern is apps/web/src/components/PlaylistSongPicker.tsx. Song order in the class: follow the list order the user sees unless the owner decides otherwise at Ready. Agent-created: Backlog until the owner sets Ready.",
+  "nextAction": "Owner, 2026-10-30, after using \"Create class from liked songs\" on production: the 15-song limit is a good gut check, but the separate button is lazy; songs on Music › Songs should have checkboxes, up to 15, and a \"Create a class\" button once some are selected. Owner chose option A for what follows the button: a sheet with class name and template only. Today the button is in apps/web/src/components/Dashboard.tsx (around line 2948), its note comes from apps/web/src/lib/music-library.ts, and the 15-song picker pattern is apps/web/src/components/PlaylistSongPicker.tsx. Song order in the class: follow the list order the user sees unless the owner decides otherwise at Ready. Agent-created: Backlog until the owner sets Ready. The Spotify-likes criterion waits on RF-92 (Spotify Web API 403); if RF-92 is still open when the Apple and SoundCloud work is ready, the owner can split that criterion into a child record.",
   "blocker": null,
   "evidence": [
     {

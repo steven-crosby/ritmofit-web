@@ -3,7 +3,7 @@
   "id": "RF-108",
   "title": "Scrubbing or pausing Live during a track start keeps music playing",
   "kind": "task",
-  "status": "backlog",
+  "status": "ready",
   "priority": "P2",
   "parent": null,
   "dependsOn": [
@@ -16,7 +16,7 @@
     "Owner device check: audible scrub, pause and resume on iPhone Safari (Apple) and desktop Chrome.",
     "Owner device check on iPhone Safari includes RF-123's owed check: when setQueue hangs, Retry playback recovers without a reload and without \"still finishing a previous queue request\"."
   ],
-  "nextAction": "Parked from the owner's Ready queue on 2026-10-28; the owner can re-promote it (RF-107 is Done). Scope: a bounded settle wait in apps/web/src/lib/playback/ so a seek, skip or Next during an in-flight start waits for the earlier request instead of showing \"Playback stopped\". The owner hit this on iPhone on 2026-10-30 by tapping timeline tracks quickly (see evidence). Include #664 review items 2 (destroy() leaves the queue lock in place during the timeout window; do not simply clear the lock in destroy(): Lane A left it on purpose, because that lets queue requests overlap and breaks the test \"rejects an overlapping queue request while an older one is still pending\"; supersede or wait instead) and 6 (pendingPlays around play() can hang the same way and needs a bounded release, perhaps a shared lock-with-timeout helper). Fold in RF-121's held-error attempt token. The Spotify adapter half is in scope. Owner-gated; device check owed. The device check also covers RF-123's leftover post-deploy check: with a setQueue that hangs, Retry playback recovers without a reload and without \"still finishing a previous queue request\" (not yet observed with the timeout path visibly firing).",
+  "nextAction": "Owner moved this to Ready on 2026-10-30 (session; Apple hardening lane with RF-108, RF-128 and RF-147, before the Apple Music testing window ends ~2026-11-27). Scope: a bounded settle wait in apps/web/src/lib/playback/ so a seek, skip or Next during an in-flight start waits for the earlier request instead of showing \"Playback stopped\". The owner hit this on iPhone on 2026-10-30 by tapping timeline tracks quickly (see evidence). Include #664 review items 2 (destroy() leaves the queue lock in place during the timeout window; do not simply clear the lock in destroy(): Lane A left it on purpose, because that lets queue requests overlap and breaks the test \"rejects an overlapping queue request while an older one is still pending\"; supersede or wait instead) and 6 (pendingPlays around play() can hang the same way and needs a bounded release, perhaps a shared lock-with-timeout helper). Fold in RF-121's held-error attempt token. The Spotify adapter half is in scope. Owner-gated; device check owed. The device check also covers RF-123's leftover post-deploy check: with a setQueue that hangs, Retry playback recovers without a reload and without \"still finishing a previous queue request\" (not yet observed with the timeout path visibly firing). The user-visible \"still finishing a previous queue request\" error on quick timeline taps (2026-10-30) is in scope here, not only the settle wait.",
   "blocker": null,
   "evidence": [
     {

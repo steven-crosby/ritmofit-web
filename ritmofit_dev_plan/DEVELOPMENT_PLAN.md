@@ -14,6 +14,7 @@
 
 <!-- Claude Code, 2026-10-29: Rewrote Now around the phased plan after the 2026-10-28 UX audit intake; superseded text moved to HISTORY. -->
 <!-- Claude Code, 2026-10-30: Round r20261029a closed (#664, #665 deployed); Now points at the next round. -->
+<!-- Claude Code, 2026-10-30: Owner set the Apple hardening Ready set (RF-108, RF-128, RF-147). -->
 
 **Current actionable state:** [RF board](./tasks.md), backed by canonical [task records](./tasks/README.md).
 The order of work is [Phases](#phases) below; each phase lists RF records, not a second backlog.
@@ -23,16 +24,17 @@ RF-123 (#664) and RF-132 (#665) to RF-124, RF-107, RF-90 and RF-122. Rollback is
 `2a302ce6-7665-47d2-8f79-68d6822450b1`. Docs records after `d888d28` do not change runtime. See
 [HISTORY](./HISTORY.md).
 **In flight:** the D25 provider matrix (#654). Round r20261029a is closed: RF-123 and RF-132 are
-Done and deployed, and the owner's device checks on 2026-10-30 passed apart from a lock error on
-quick Apple track jumps, now evidence on [RF-108](./tasks/RF-108.json).
-**Next step:** the owner picks the next round's Ready set. Candidates: RF-131's six audit questions
-(they unblock RF-133 and RF-134), Apple hardening with RF-108, RF-128 and RF-147 while the
-subscription lasts, and [RF-151](./tasks/RF-151.json), the owner's song-selection design for Music ›
-Songs.
+Done and deployed. The owner's 2026-10-30 device checks found a lock error on quick Apple track
+jumps ([RF-108](./tasks/RF-108.json)) and about 5 s per Apple Load more batch
+([RF-150](./tasks/RF-150.json)), and left SoundCloud paging past 200 untested
+([RF-154](./tasks/RF-154.json)).
+**Next step:** Apple hardening as one web lane: [RF-108](./tasks/RF-108.json),
+[RF-128](./tasks/RF-128.json) and [RF-147](./tasks/RF-147.json), moved to Ready by the owner on
+2026-10-30. Owner-gated, with an iPhone Safari device check before the Apple window closes.
 **Window:** the Apple Music subscription ends around 2026-11-27, so anything that needs a live Apple
 account (Phase 1) goes first. Spotify is reopened (owner, 2026-10-28) but every Web API call returns
 `403` until the developer app accepts the connected account.
-**Open owner decisions:** RF-131's six questions; the next round's Ready set; the review queue
+**Open owner decisions:** RF-131's six questions; the review queue
 (RF-91, RF-93, RF-94, RF-96, RF-16, RF-23, RF-32); whether [RF-80](./tasks/RF-80.json) is cancelled or
 rescoped now that RF-124 found the playback root cause; Live finish placement (see Backlog).
 
