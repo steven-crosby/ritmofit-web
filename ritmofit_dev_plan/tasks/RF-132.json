@@ -99,13 +99,13 @@
     {
       "kind": "test",
       "ref": "apps/api/src/lib/music/apple-music.test.ts",
-      "summary": "fetchAppleMusicLibrarySongsPage resumes from Apple's next at page boundaries, bounds pages, and rejects off-path cursors before any request; searchAppleMusicLibrarySongs builds the term, follows next up to four pages and maps 401/403. Passed locally 2026-10-29.",
+      "summary": "fetchAppleMusicLibrarySongsPage resumes from Apple's next at page boundaries, bounds pages, rejects off-path cursors before any request; searchAppleMusicLibrarySongs follows next for terms with ' ( ) ! *, up to four pages, treats an off-path or .. next as drift, and maps 401/403. Passed locally 2026-10-29.",
       "checkedOn": "2026-10-29"
     },
     {
       "kind": "test",
       "ref": "apps/api/src/lib/music/soundcloud.test.ts",
-      "summary": "fetchSoundCloudLikesPage resumes from next_href, defaults to 200 songs (four pages), and rejects cursors off the SoundCloud API origin before sending the token. Passed locally 2026-10-29.",
+      "summary": "fetchSoundCloudLikesPage resumes from next_href, defaults to 200 songs (four pages), rejects cursors off the SoundCloud API origin or the likes-tracks paths before sending the token, and treats an off-path next_href as drift. Passed locally 2026-10-29.",
       "checkedOn": "2026-10-29"
     },
     {
@@ -129,11 +129,23 @@
     {
       "kind": "test",
       "ref": "apps/web/src/components/Dashboard.test.tsx",
-      "summary": "Music Songs: Library order label, Load more appends with the cursor and survives a failure, Apple server search and its fallback note, 1,000-song auto-load stop with Keep loading, Create class subset note. Passed locally 2026-10-29.",
+      "summary": "Music Songs: Library order label, Load more appends with the cursor and survives a failure, loaded pages survive a connections refresh, Apple server search, Load more after a failed Apple search, 1,000-song and 5-request autoload bounds with Keep loading, Create class subset note. Passed locally 2026-10-29.",
+      "checkedOn": "2026-10-29"
+    },
+    {
+      "kind": "observation",
+      "ref": "https://github.com/steven-crosby/ritmofit-web/pull/665",
+      "summary": "Final review on 0492619 found significant findings (likes reset on connections refresh, Apple search continuation charset, Load more hidden after a failed Apple search, pending search when not connected, unbounded autoload requests) plus SoundCloud cursor path and the library-search .. guard. Fixed on the same branch with a regression test each; replies are on the PR.",
+      "checkedOn": "2026-10-29"
+    },
+    {
+      "kind": "document",
+      "ref": "https://developers.soundcloud.com/blog/pagination-updates-on-our-api",
+      "summary": "Checked 2026-10-29: SoundCloud's next_href keeps the request's path and swaps the query for a cursor. Basis for pinning likes cursors to /me/likes/tracks (and the spec's /users/{user_urn}/likes/tracks form of the same resource).",
       "checkedOn": "2026-10-29"
     }
   ],
-  "resolution": "Met for Apple Music and SoundCloud under the owner's 2026-10-29 narrowing. GET /providers/:provider/likes returns about 200 songs per page (whole provider pages) and the opaque next cursor (the provider's own continuation, provider-bound, never stored) in X-RitmoFit-Next-Cursor; the body stays a bare TrackSearchResult[]. Music › Songs has Load more. Songs search reaches past the first page: Apple Music searches the library server-side (?q=, Apple library search); SoundCloud and Spotify keep loading pages while a query is typed up to 1,000 songs, then say \"Searched your first 1,000 liked songs\" and offer Keep loading. Create class from liked songs uses the same loaded pages and says when it used a subset. \"Recents\" is relabeled \"Library order\" on Playlists and Songs (no provider exposes a recency sort for these lists). OpenAPI registers cursor, q, the header and 422; drift and contract-parity pass. Nothing provider-derived is cached. Spotify paging ships mock-tested only; its live check is RF-148 (dependsOn RF-92). TrackSearch likes mode still reads the first page: RF-149. Real Apple and SoundCloud paging on the owner's accounts is a post-deploy check named in the PR; the iOS OpenAPI snapshot refresh is a separate iOS PR.",
+  "resolution": "Met for Apple Music and SoundCloud under the owner's 2026-10-29 narrowing. GET /providers/:provider/likes returns about 200 songs per page (whole provider pages) and the opaque next cursor (the provider's own continuation, provider-bound, never stored) in X-RitmoFit-Next-Cursor; the body stays a bare TrackSearchResult[]. Music › Songs has Load more. Songs search reaches past the first page: Apple Music searches the library server-side (?q=, Apple library search); SoundCloud and Spotify keep loading pages while a query is typed, up to 1,000 songs or 5 requests per query, then say \"Searched your first 1,000 liked songs\" and offer Keep loading. Create class from liked songs uses the same loaded pages and says when it used a subset. \"Recents\" is relabeled \"Library order\" on Playlists and Songs (no provider exposes a recency sort for these lists). OpenAPI registers cursor, q, the header and 422; drift and contract-parity pass. Nothing provider-derived is cached. Spotify paging ships mock-tested only; its live check is RF-148 (dependsOn RF-92). TrackSearch likes mode still reads the first page: RF-149. Real Apple and SoundCloud paging on the owner's accounts is a post-deploy check named in the PR; the iOS OpenAPI snapshot refresh is a separate iOS PR.",
   "followUps": [
     "RF-148",
     "RF-149"

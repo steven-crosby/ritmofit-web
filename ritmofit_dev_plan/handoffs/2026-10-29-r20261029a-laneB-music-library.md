@@ -3,8 +3,8 @@ date: 2026-10-29
 tool: Claude Code (local)
 lane: lane-b-music-library
 branch: feat/rf-132-music-library
-head: c390910
-base: 4206c8c
+head: 2c9cfdd
+base: a1fafa9
 prs: ['#665 (open, owner-gated)']
 status: open
 ---
@@ -35,19 +35,27 @@ status: open
   on RF-132: Spotify narrowing, "Library order", the 1,000-song bound, implementation authority.
 - The likes cursor reuses the class-list header name (`CLASS_LIST_NEXT_CURSOR_HEADER`), which
   `apps/api/src/index.ts` already exposes, so no frozen file changed.
-- SoundCloud cursor validation is origin-only (`api.soundcloud.com`, no credentials), not
-  path-pinned: SoundCloud's spec examples show more than one `next_href` path form. Apple cursors must
-  be `/v1/me/library/songs?…` subpaths, and Apple search follows only `/v1/me/library/search?…`.
+- SoundCloud cursors must be on the API origin with no credentials and a likes-tracks path
+  (`/me/likes/tracks`, or `/users/{id|soundcloud:users:id}/likes/tracks`). SoundCloud's pagination
+  post says `next_href` keeps the request path; an off-path `next_href` is treated as drift (502).
+  Apple cursors must be `/v1/me/library/songs?…` subpaths and search follows only
+  `/v1/me/library/search?…` (both allow `' ( ) ! *`, reject `..`); an off-path `next` is drift.
+- Final review on 0492619 (PR comment) found items 1–6 and 8; all fixed in `2c9cfdd` with a
+  regression test each. Item 7 (reuse `sourceCandidateKey`) was not done: it lives in a component
+  module that `lib/` should not import. Item 9 (neutral header constant) is a shared-zone change left
+  for later.
+- Search autoload is bounded per query by 5 requests and 1,000 songs; its budget is held in a ref
+  because a state-only counter missed increments between autoload renders in testing.
 - After deploy, the owner checks on real accounts: Apple Music Songs shows Load more past 200 and
   finds a song past "Angel" by search; SoundCloud Songs loads more. Spotify stays RF-148.
 
 ## Verification
 
-- Run on the `c390910` tree (heavy gates under the shared gate lock):
+- Run on the `2c9cfdd` tree (heavy gates under the shared gate lock):
   `format:check`, `owner-gate:test`, `rf-trace:test`, `tasks:test`, `tasks:check` pass;
   `pnpm -r typecheck` pass (after typing the test mocks); `pnpm lint` pass; design-system verify and
-  theme-classes (with selftest) pass; `pnpm test` pass (music 30, web 1550, api 615);
-  `test:integration` pass (43 files, 247 tests); web build pass (entry 176.09 kB gzip, budget 180);
+  theme-classes (with selftest) pass; `pnpm test` pass (music 30, web 1556, api 631);
+  `test:integration` pass (247 tests); web build pass (entry 176.44 kB gzip, budget 180);
   `openapi` then `git diff --exit-code` clean; `contract-parity` pass; `audit:ci` pass (ignored
   advisories only).
 - Skipped: `pnpm --filter @ritmofit/e2e e2e` (with `E2E_PORT=8799`) could not launch, because the
