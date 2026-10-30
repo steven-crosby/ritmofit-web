@@ -13,6 +13,16 @@ detail). Current focus and `main` vs production live in the "Now" block of
 
 ## Deploy and session log (newest first)
 
+> **Session 2026-10-29 (second close) — Lanes A/B set up (docs only).** The owner moved RF-123 and
+> RF-132 to Ready as Lane A and Lane B for the next session
+> ([#662](https://github.com/steven-crosby/ritmofit-web/pull/662), merged `3592c82`). The owner then
+> narrowed Lane A to the RF-123 queue-lock fix: #656's `runtime.ts` resume-in-place change is reverted
+> at its rebase, since #657 fixed RF-124 another way and the owner verified Pause/Resume on iPhone.
+> RF-132 leaves its Ready criteria unchanged; its PR asks the owner whether it closes on Apple and
+> SoundCloud with a Spotify follow-up (RF-92 `403`). Review items logged on #662 were folded into
+> this close (Now block, RF-108 wording, RF-123 evidence, RF-132 lane note); the RF-132 closing ruling
+> stays an owner call in its work PR. No code, deploy or migration.
+
 > **Deploy 2026-10-29 — RF-124 on main `d81c0fc`.** `scripts/deploy.sh` from a clean detached
 > worktree at `origin/main` `d81c0fc` ([#657](https://github.com/steven-crosby/ritmofit-web/pull/657),
 > RF-124: stop forcing modern FairPlay so iPhone Safari plays every song, plus RF-129/RF-130 records).

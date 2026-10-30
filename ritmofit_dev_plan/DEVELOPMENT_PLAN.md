@@ -13,6 +13,7 @@
 ## Now
 
 <!-- Claude Code, 2026-10-29: Rewrote Now around the phased plan after the 2026-10-28 UX audit intake; superseded text moved to HISTORY. -->
+<!-- Claude Code, 2026-10-29: Now names Lanes A/B; #656 is the RF-123 lock fix only. -->
 
 **Current actionable state:** [RF board](./tasks.md), backed by canonical [task records](./tasks/README.md).
 The order of work is [Phases](#phases) below; each phase lists RF records, not a second backlog.
@@ -20,10 +21,11 @@ The order of work is [Phases](#phases) below; each phase lists RF records, not a
 at main `d81c0fc`, SPA `assets/index-Cqjj6m_w.js`; it adds RF-124 (#657) to RF-107, RF-90 and RF-122.
 Rollback is `b41b99f9-8b93-4947-915c-ca18bd42d2d2`. Docs records after `d81c0fc` do not change runtime.
 See [HISTORY](./HISTORY.md).
-**In flight:** resume in place on #656 (rebase onto `main`, drop its RF-124/RF-29 edits; see
-[RF-123](./tasks/RF-123.json)); the D25 provider matrix (#654). Phase 0's playback fix is done: RF-124
+**In flight:** #656, to be cut down to the RF-123 queue-lock fix (resume in place dropped, owner
+2026-10-29; see [RF-123](./tasks/RF-123.json)); the D25 provider matrix (#654). Phase 0's playback fix is done: RF-124
 and RF-29 closed on 2026-10-29 after the owner heard every transport control in iPhone Safari Live.
-**Next step:** Phase 1 Apple hardening, starting with the #656 rebase; in parallel the owner answers
+**Next step:** Phase 1 as two web lanes after start-session: Lane A [RF-123](./tasks/RF-123.json)
+(#656 rebase) and Lane B [RF-132](./tasks/RF-132.json) (Music library, plan first); in parallel the owner answers
 the six audit questions in [RF-131](./tasks/RF-131.json), run rule first, which unblocks RF-133 and
 RF-134.
 **Window:** the Apple Music subscription ends around 2026-11-27, so anything that needs a live Apple
