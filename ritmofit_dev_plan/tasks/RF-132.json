@@ -44,26 +44,32 @@
     },
     {
       "kind": "observation",
-      "ref": "https://github.com/steven-crosby/ritmofit-web/pull/662",
-      "summary": "Owner decision in session, 2026-10-29, on the Lane B plan's Spotify question: \"Yes recommended\". RF-132 may close Done on Apple Music and SoundCloud; live Spotify paging verification moves to Backlog RF-148 (dependsOn RF-92). Ref is the PR that published the Ready move; the decision itself was given in session.",
+      "ref": "https://github.com/steven-crosby/ritmofit-web/pull/665",
+      "summary": "Owner decision in session, 2026-10-29, on the Lane B plan's Spotify question: \"Yes recommended\". RF-132 may close Done on Apple Music and SoundCloud; live Spotify paging verification moves to Backlog RF-148 (dependsOn RF-92). Relayed to Lane B by the orchestrator; recorded on the PR that implements it.",
       "checkedOn": "2026-10-29"
     },
     {
       "kind": "observation",
-      "ref": "https://github.com/steven-crosby/ritmofit-web/pull/662",
-      "summary": "Owner decision in session, 2026-10-29: \"Recents\" becomes \"Library order\" on both Playlists and Songs: \"Yes recommendation\". Given in session; ref is the Ready-move PR.",
+      "ref": "https://github.com/steven-crosby/ritmofit-web/pull/665",
+      "summary": "Owner decision in session, 2026-10-29: \"Recents\" becomes \"Library order\" on both Playlists and Songs: \"Yes recommendation\". Relayed to Lane B by the orchestrator; recorded on the PR that implements it.",
       "checkedOn": "2026-10-29"
     },
     {
       "kind": "observation",
-      "ref": "https://github.com/steven-crosby/ritmofit-web/pull/662",
-      "summary": "Owner decision in session, 2026-10-29: SoundCloud/Spotify search auto-loads up to 1,000 songs (5 calls), then says so and offers to keep loading: \"Yes 1,000\". Given in session; ref is the Ready-move PR.",
+      "ref": "https://github.com/steven-crosby/ritmofit-web/pull/665",
+      "summary": "Owner decision in session, 2026-10-29: SoundCloud/Spotify search auto-loads up to 1,000 songs (5 calls), then says so and offers to keep loading: \"Yes 1,000\". Relayed to Lane B by the orchestrator; recorded on the PR that implements it.",
       "checkedOn": "2026-10-29"
     },
     {
       "kind": "observation",
-      "ref": "https://github.com/steven-crosby/ritmofit-web/pull/662",
-      "summary": "Owner decision in session, 2026-10-29: \"Yes, both\" (implementation authority for the Lane B plan scope, and a Backlog follow-up for TrackSearch likes mode, RF-149). Given in session; ref is the Ready-move PR.",
+      "ref": "https://github.com/steven-crosby/ritmofit-web/pull/665",
+      "summary": "Owner decision in session, 2026-10-29: \"Yes, both\" (implementation authority for the Lane B plan scope; branch, commit, push and draft PR under the standing grant; no merge or deploy). Relayed to Lane B by the orchestrator; recorded on the PR that implements it.",
+      "checkedOn": "2026-10-29"
+    },
+    {
+      "kind": "pr",
+      "ref": "https://github.com/steven-crosby/ritmofit-web/pull/665",
+      "summary": "Draft PR claiming RF-132 on branch feat/rf-132-music-library.",
       "checkedOn": "2026-10-29"
     }
   ],

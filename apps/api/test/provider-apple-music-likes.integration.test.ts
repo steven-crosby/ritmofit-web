@@ -49,4 +49,16 @@ describe('Apple Music likes error contract (integration)', () => {
     const body = (await res.json()) as { error?: { code?: string } };
     expect(body.error?.code).toBe('NOT_CONNECTED');
   });
+
+  it('rejects a malformed likes cursor with 422 before reading the connection', async () => {
+    const res = await callProd('/api/v1/providers/apple_music/likes?cursor=bogus', user.cookie);
+    expect(res.status).toBe(422);
+    const body = (await res.json()) as { error?: { code?: string } };
+    expect(body.error?.code).toBe('VALIDATION_ERROR');
+  });
+
+  it('returns 409 NOT_CONNECTED for an Apple library search when Apple Music is not linked', async () => {
+    const res = await callProd('/api/v1/providers/apple_music/likes?q=angel', user.cookie);
+    expect(res.status).toBe(409);
+  });
 });

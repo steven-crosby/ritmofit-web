@@ -23,11 +23,19 @@ import {
 import { z } from 'zod';
 import type {
   FetchLike,
+  LibraryPageOptions,
   MusicProvider,
   PlaylistImportRef,
   PlaylistReadOptions,
+  ProviderTrackPage,
 } from './provider.js';
-import { abortError, PlaylistOverLimitError, ProviderError, readJson } from './errors.js';
+import {
+  abortError,
+  InvalidProviderCursorError,
+  PlaylistOverLimitError,
+  ProviderError,
+  readJson,
+} from './errors.js';
 import { fetchWithRetry, type RetryOptions } from './retry.js';
 
 const DEFAULT_API_BASE = 'https://api.music.apple.com/v1';
@@ -343,31 +351,60 @@ function toLibraryCandidate(raw: unknown): TrackSearchResult | null {
   return out.success ? out.data : null;
 }
 
-/**
- * Fetch the connected user's Apple Music **library** songs with the app's
- * developer token (Bearer) plus the user's Music-User-Token, mapped to the shared
- * contract — the "search my Apple Music" surface. Pure adapter: the caller owns the
- * token's decryption and the developer-token signing. Throws
- * `AppleMusicUnauthorizedError` on 401/403 (reconnect signal); throws on any other
- * non-ok. Paginates Apple's cursor (`next`).
- */
-export async function fetchAppleMusicLibrarySongs(cfg: {
+/** The relative path Apple's library-songs `next` continuation must stay on. */
+const LIBRARY_SONGS_CONTINUATION = /^\/v1\/me\/library\/songs\?[A-Za-z0-9=&%._~+-]+$/;
+/** The relative path Apple's library-search `next` continuation must stay on. */
+const LIBRARY_SEARCH_CONTINUATION = /^\/v1\/me\/library\/search\?[A-Za-z0-9=&%._~+-]+$/;
+/** Apple documents `limit` for library search as default 5, maximum 25. */
+const LIBRARY_SEARCH_PAGE_LIMIT = 25;
+/** Library search reads at most this many pages (100 songs) per query. */
+const LIBRARY_SEARCH_MAX_PAGES = 4;
+const DEFAULT_LIBRARY_PAGE_TARGET = 200;
+const DEFAULT_LIBRARY_PAGE_MAX_PAGES = 8;
+
+const amLibrarySearchSchema = z.object({
+  results: z
+    .object({
+      'library-songs': z
+        .object({ data: z.array(z.unknown()).optional(), next: z.string().optional() })
+        .optional(),
+    })
+    .optional(),
+});
+
+interface AppleLibraryRead {
   developerToken: string;
   musicUserToken: string;
   fetchImpl: FetchLike;
   apiBase?: string;
-  /** Stop after this many tracks so a huge library can't run unbounded. */
-  maxTracks?: number;
-}): Promise<TrackSearchResult[]> {
+}
+
+/** True when `path` is an Apple library-songs continuation we may follow. */
+function isLibrarySongsContinuation(path: string): boolean {
+  return LIBRARY_SONGS_CONTINUATION.test(path) && !path.includes('..');
+}
+
+/**
+ * Read library-song pages from `startPath`, following Apple's relative `next`.
+ * Stops on the first of: no `next`, an empty page, `cap` rows (truncating inside a
+ * page), or — at a page boundary — `targetTracks` rows or `maxPages` pages. Returns
+ * Apple's own continuation for the page it did not read.
+ */
+async function readLibrarySongPages(
+  cfg: AppleLibraryRead,
+  startPath: string,
+  bounds: { cap: number; targetTracks: number; maxPages: number },
+): Promise<ProviderTrackPage> {
   const base = cfg.apiBase ?? DEFAULT_API_BASE;
-  const cap = cfg.maxTracks ?? 200;
   const out: TrackSearchResult[] = [];
   // Apple returns a relative `next` path (e.g. `/v1/me/library/songs?offset=100`).
   const origin = base.replace(/\/v1$/, '');
-  let path: string | null = `/v1/me/library/songs?limit=${LIBRARY_PAGE_LIMIT}`;
+  let path: string | null = startPath;
+  let pages = 0;
   const visited = new Set<string>();
 
-  while (path && out.length < cap) {
+  while (path && out.length < bounds.cap) {
+    if (out.length >= bounds.targetTracks || pages >= bounds.maxPages) break;
     checkLibraryPaginationPath(path, visited);
     const res = await cfg.fetchImpl(`${origin}${path}`, {
       headers: {
@@ -382,18 +419,133 @@ export async function fetchAppleMusicLibrarySongs(cfg: {
     if (!parsed.success) {
       throw new ProviderError('apple_music', 'Apple Music returned an invalid library song page.');
     }
+    pages += 1;
     const page = parsed.data.data ?? [];
     for (const raw of page) {
       const candidate = toLibraryCandidate(raw);
       if (candidate) out.push(candidate);
-      if (out.length >= cap) break;
+      if (out.length >= bounds.cap) break;
     }
     // Guard against a non-advancing `next` cursor (e.g. a page that returns no
     // rows but still hands back a `next`): without this the `out.length < cap`
     // bound never trips and the loop would spin forever. Mirrors the Spotify
-    // adapter's empty-page break.
-    if (page.length === 0) break;
+    // adapter's empty-page break. An empty page is the end of the library.
+    if (page.length === 0) {
+      path = null;
+      break;
+    }
     path = parsed.data.next ?? null;
+  }
+  return { tracks: out, next: path };
+}
+
+/**
+ * Fetch the connected user's Apple Music **library** songs with the app's
+ * developer token (Bearer) plus the user's Music-User-Token, mapped to the shared
+ * contract — the "search my Apple Music" surface. Pure adapter: the caller owns the
+ * token's decryption and the developer-token signing. Throws
+ * `AppleMusicUnauthorizedError` on 401/403 (reconnect signal); throws on any other
+ * non-ok. Paginates Apple's cursor (`next`).
+ */
+export async function fetchAppleMusicLibrarySongs(
+  cfg: AppleLibraryRead & {
+    /** Stop after this many tracks so a huge library can't run unbounded. */
+    maxTracks?: number;
+  },
+): Promise<TrackSearchResult[]> {
+  const page = await readLibrarySongPages(cfg, `/v1/me/library/songs?limit=${LIBRARY_PAGE_LIMIT}`, {
+    cap: cfg.maxTracks ?? 200,
+    targetTracks: Number.POSITIVE_INFINITY,
+    maxPages: Number.POSITIVE_INFINITY,
+  });
+  return page.tracks;
+}
+
+/**
+ * Read one bounded page of the user's Apple Music library songs, starting at
+ * `cursor` (Apple's own relative `next` subpath, from a previous page) or at the
+ * start of the library. Returns whole Apple pages, so `next` resumes exactly where
+ * this page stopped. A `cursor` that is not an `/v1/me/library/songs?…` subpath is
+ * rejected with `InvalidProviderCursorError` before any request is made. Apple
+ * documents no recency sort for library songs, so the order is Apple's own.
+ */
+export async function fetchAppleMusicLibrarySongsPage(
+  cfg: AppleLibraryRead & LibraryPageOptions & { cursor?: string | null },
+): Promise<ProviderTrackPage> {
+  if (cfg.cursor != null && !isLibrarySongsContinuation(cfg.cursor)) {
+    throw new InvalidProviderCursorError('apple_music');
+  }
+  return readLibrarySongPages(
+    cfg,
+    cfg.cursor ?? `/v1/me/library/songs?limit=${LIBRARY_PAGE_LIMIT}`,
+    {
+      cap: Number.POSITIVE_INFINITY,
+      targetTracks: cfg.targetTracks ?? DEFAULT_LIBRARY_PAGE_TARGET,
+      maxPages: cfg.maxPages ?? DEFAULT_LIBRARY_PAGE_MAX_PAGES,
+    },
+  );
+}
+
+/** Apple library search wants words joined by `+`; each word is URL-encoded. */
+function libraryTerm(query: string): string {
+  return query
+    .trim()
+    .split(/\s+/)
+    .filter((word) => word.length > 0)
+    .map((word) => encodeURIComponent(word))
+    .join('+');
+}
+
+/**
+ * Search the user's own Apple Music library songs server-side
+ * (`GET /v1/me/library/search?types=library-songs`), so a song past the loaded
+ * pages is still findable. Reads up to four pages of 25 (Apple's documented
+ * maximum `limit`), following Apple's own `next`. Blank query → [] with no call.
+ */
+export async function searchAppleMusicLibrarySongs(
+  cfg: AppleLibraryRead & { query: string },
+): Promise<TrackSearchResult[]> {
+  const term = libraryTerm(cfg.query);
+  if (!term) return [];
+  const base = cfg.apiBase ?? DEFAULT_API_BASE;
+  const origin = base.replace(/\/v1$/, '');
+  const out: TrackSearchResult[] = [];
+  let path: string | null =
+    `/v1/me/library/search?term=${term}&types=library-songs&limit=${LIBRARY_SEARCH_PAGE_LIMIT}`;
+  const visited = new Set<string>();
+  let pages = 0;
+
+  while (path && pages < LIBRARY_SEARCH_MAX_PAGES) {
+    checkLibraryPaginationPath(path, visited);
+    const res = await cfg.fetchImpl(`${origin}${path}`, {
+      headers: {
+        Authorization: `Bearer ${cfg.developerToken}`,
+        'Music-User-Token': cfg.musicUserToken,
+      },
+    });
+    if (res.status === 401 || res.status === 403) throw new AppleMusicUnauthorizedError();
+    if (!res.ok)
+      throw new ProviderError(
+        'apple_music',
+        `Apple Music API ${res.status} for /me/library/search`,
+      );
+    const parsed = amLibrarySearchSchema.safeParse(await readJson(res, 'apple_music'));
+    if (!parsed.success) {
+      throw new ProviderError(
+        'apple_music',
+        'Apple Music returned an invalid library search page.',
+      );
+    }
+    pages += 1;
+    const songs = parsed.data.results?.['library-songs'];
+    const data = songs?.data ?? [];
+    for (const raw of data) {
+      const candidate = toLibraryCandidate(raw);
+      if (candidate) out.push(candidate);
+    }
+    const next = songs?.next ?? null;
+    // Follow only Apple's own library-search continuation; stop on anything else.
+    path = data.length > 0 && next && LIBRARY_SEARCH_CONTINUATION.test(next) ? next : null;
   }
   return out;
 }

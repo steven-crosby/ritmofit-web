@@ -18,6 +18,21 @@ export class ProviderError extends Error {
 }
 
 /**
+ * A paging cursor handed back by a client is not a continuation this adapter
+ * issued (wrong host, wrong path or malformed). A client request error, not an
+ * upstream failure: it deliberately does not extend `ProviderError` (502), and
+ * the adapter rejects it before any token is sent.
+ */
+export class InvalidProviderCursorError extends Error {
+  readonly provider: string;
+  constructor(provider: string) {
+    super(`Invalid ${provider} paging cursor.`);
+    this.name = 'InvalidProviderCursorError';
+    this.provider = provider;
+  }
+}
+
+/**
  * The provider's request quota for this app is spent (Spotify 429 with
  * `error.reason: "QUOTA_EXCEEDED"`). Retrying only spends more of the same quota,
  * so callers surface it instead of retrying.

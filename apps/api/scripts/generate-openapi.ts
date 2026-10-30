@@ -734,13 +734,48 @@ const doc = {
       ],
       get: {
         summary: "List the caller's liked tracks (M2; spends their per-user OAuth token)",
+        description:
+          "One bounded page (about 200 songs, whole provider pages) in the provider's own order. " +
+          'When more remain, the opaque cursor for the next page is in the ' +
+          `${CLASS_LIST_NEXT_CURSOR_HEADER} response header; pass it back as ?cursor=. ` +
+          "The cursor wraps the provider's own continuation and is not stored server-side.",
+        parameters: [
+          {
+            name: 'cursor',
+            in: 'query',
+            required: false,
+            schema: { type: 'string', maxLength: 4096 },
+            description:
+              "Opaque continuation cursor from the prior response header. Bound to the provider; another provider's cursor is rejected.",
+          },
+          {
+            name: 'q',
+            in: 'query',
+            required: false,
+            schema: { type: 'string', maxLength: 200 },
+            description:
+              "Apple Music only: search the user's library songs server-side (up to 100 matches, unpaged). Cannot be combined with cursor.",
+          },
+        ],
         responses: {
-          '200': arrayResp('TrackSearchResult', 'Liked tracks'),
+          '200': {
+            ...arrayResp('TrackSearchResult', 'Liked tracks'),
+            headers: {
+              [CLASS_LIST_NEXT_CURSOR_HEADER]: {
+                description: 'Opaque cursor for the next page; absent on the final page.',
+                schema: { type: 'string' },
+              },
+            },
+          },
           '403': {
             description:
               'SPOTIFY_DEVELOPMENT_MODE — this Spotify account is not on the app allowlist. Reconnect does not add it.',
           },
           '409': { description: 'Not connected / reconnect required' },
+          '422': {
+            description:
+              'Invalid or foreign cursor, q on a provider without library search, or q with cursor',
+          },
           '429': { description: SPOTIFY_QUOTA_429 },
           '501': { description: 'Provider not yet integrated' },
           '503': { description: 'Provider not configured' },

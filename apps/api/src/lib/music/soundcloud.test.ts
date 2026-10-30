@@ -2,6 +2,8 @@ import { describe, it, expect, vi } from 'vitest';
 import {
   createSoundCloudProvider,
   fetchSoundCloudLikes,
+  fetchSoundCloudLikesPage,
+  InvalidProviderCursorError,
   fetchSoundCloudPlaylistTracks,
   fetchSoundCloudPlaylists,
   SoundCloudUnauthorizedError,
@@ -801,5 +803,93 @@ describe('SoundCloudProvider.getPlaylist (URL import via /resolve)', () => {
     } finally {
       vi.useRealTimers();
     }
+  });
+});
+
+describe('fetchSoundCloudLikesPage (RF-132 paging)', () => {
+  const FIRST = `${API_BASE}/me/likes/tracks?limit=50&linked_partitioning=true&access=playable`;
+  const next = (n: number) => `${API_BASE}/me/likes/tracks?cursor=c${n}&limit=50`;
+  const rows = (from: number, count: number) =>
+    Array.from({ length: count }, (_, i) => ({ ...SC_TRACK, id: from + i }));
+
+  function pages(handlers: Record<string, unknown>) {
+    const calls: { url: string; init?: Parameters<FetchLike>[1] }[] = [];
+    const fetchImpl: FetchLike = async (url, init) => {
+      calls.push({ url, init });
+      if (!(url in handlers)) throw new Error(`Unexpected request ${url}`);
+      return { ok: true, status: 200, json: async () => handlers[url], text: async () => '' };
+    };
+    return { fetchImpl, calls };
+  }
+
+  it('reads whole pages to the target and returns SoundCloud’s own next_href', async () => {
+    const { fetchImpl, calls } = pages({
+      [FIRST]: { collection: rows(0, 50), next_href: next(1) },
+      [next(1)]: { collection: rows(50, 50), next_href: next(2) },
+      [next(2)]: { collection: rows(100, 3) },
+    });
+    const first = await fetchSoundCloudLikesPage({
+      accessToken: 'user-tok',
+      fetchImpl,
+      apiBase: API_BASE,
+      targetTracks: 100,
+    });
+    expect(first.tracks).toHaveLength(100);
+    expect(first.next).toBe(next(2));
+    expect(calls).toHaveLength(2);
+
+    const second = await fetchSoundCloudLikesPage({
+      accessToken: 'user-tok',
+      fetchImpl,
+      apiBase: API_BASE,
+      cursor: first.next,
+    });
+    expect(second.tracks.map((t) => t.providerTrackId)).toEqual(['100', '101', '102']);
+    expect(second.next).toBeNull();
+    expect(calls.at(-1)?.url).toBe(next(2));
+    expect(calls.at(-1)?.init?.headers?.Authorization).toBe('OAuth user-tok');
+  });
+
+  it('defaults to a 200-song target (four 50-row pages)', async () => {
+    const handlers: Record<string, unknown> = {
+      [FIRST]: { collection: rows(0, 50), next_href: next(1) },
+    };
+    for (const n of [1, 2, 3, 4]) {
+      handlers[next(n)] = { collection: rows(n * 50, 50), next_href: next(n + 1) };
+    }
+    const { fetchImpl, calls } = pages(handlers);
+    const out = await fetchSoundCloudLikesPage({ accessToken: 't', fetchImpl, apiBase: API_BASE });
+    expect(out.tracks).toHaveLength(200);
+    expect(out.next).toBe(next(4));
+    expect(calls).toHaveLength(4);
+  });
+
+  it.each([
+    'https://evil.test/me/likes/tracks?cursor=x',
+    'https://user:pw@api.test/me/likes/tracks?cursor=x',
+    'http://api.test/me/likes/tracks?cursor=x',
+    '/me/likes/tracks?cursor=x',
+    'not a url',
+  ])(
+    'rejects a cursor off the SoundCloud API origin (%s) before sending the token',
+    async (cursor) => {
+      const fetchImpl = vi.fn<FetchLike>();
+      await expect(
+        fetchSoundCloudLikesPage({ accessToken: 'secret', fetchImpl, apiBase: API_BASE, cursor }),
+      ).rejects.toBeInstanceOf(InvalidProviderCursorError);
+      expect(fetchImpl).not.toHaveBeenCalled();
+    },
+  );
+
+  it('throws SoundCloudUnauthorizedError on 401 so the caller can refresh', async () => {
+    const fetchImpl: FetchLike = async () => ({
+      ok: false,
+      status: 401,
+      json: async () => ({}),
+      text: async () => '',
+    });
+    await expect(
+      fetchSoundCloudLikesPage({ accessToken: 'stale', fetchImpl, apiBase: API_BASE }),
+    ).rejects.toBeInstanceOf(SoundCloudUnauthorizedError);
   });
 });

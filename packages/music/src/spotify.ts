@@ -24,12 +24,15 @@ import {
 import { z } from 'zod';
 import type {
   FetchLike,
+  LibraryPageOptions,
   MusicProvider,
   PlaylistImportRef,
   PlaylistReadOptions,
+  ProviderTrackPage,
 } from './provider.js';
 import {
   abortError,
+  InvalidProviderCursorError,
   isQuotaExceededBody,
   PlaylistOverLimitError,
   ProviderError,
@@ -321,29 +324,37 @@ export class SpotifyPlaylistAccessDeniedError extends Error {
   }
 }
 
-/**
- * Fetch the connected user's saved tracks with a **per-user** access token
- * (`music_connections`), mapped to the shared contract — the "search my Spotify"
- * surface. Stays a pure adapter: the caller owns the token's decryption, refresh,
- * and persistence. Throws `SpotifyUnauthorizedError` on 401 so the caller can
- * refresh + retry; throws on any other non-ok. Paginates the `total`-counted feed.
- */
-export async function fetchSpotifySavedTracks(cfg: {
+interface SpotifySavedRead {
   accessToken: string;
   fetchImpl: FetchLike;
   apiBase?: string;
-  /** Stop after this many tracks so a huge library can't run unbounded. */
-  maxTracks?: number;
   /** One retry on a transient 429/5xx by default; tests inject a no-op sleep. */
   retry?: RetryOptions;
-}): Promise<TrackSearchResult[]> {
-  const base = cfg.apiBase ?? DEFAULT_API_BASE;
-  const cap = cfg.maxTracks ?? 200;
-  const out: TrackSearchResult[] = [];
-  let offset = 0;
-  let total = Number.POSITIVE_INFINITY;
+}
 
-  while (offset < total && out.length < cap) {
+/** Spotify's saved-track offset continuation: a plain non-negative integer. */
+const SAVED_TRACKS_OFFSET_CURSOR = /^(0|[1-9][0-9]{0,6})$/;
+
+/**
+ * Read saved-track pages from `startOffset`. Stops on the first of: the reported
+ * `total`, an empty page, `cap` rows (truncating inside a page), or — at a page
+ * boundary — `targetTracks` rows or `maxPages` pages. `next` is Spotify's own
+ * `offset` for the first unread item, or null when none remain.
+ */
+async function readSpotifySavedPages(
+  cfg: SpotifySavedRead,
+  startOffset: number,
+  bounds: { cap: number; targetTracks: number; maxPages: number },
+): Promise<ProviderTrackPage> {
+  const base = cfg.apiBase ?? DEFAULT_API_BASE;
+  const out: TrackSearchResult[] = [];
+  let offset = startOffset;
+  let total = Number.POSITIVE_INFINITY;
+  let pages = 0;
+  let ended = false;
+
+  while (offset < total && out.length < bounds.cap) {
+    if (out.length >= bounds.targetTracks || pages >= bounds.maxPages) break;
     const res = await fetchWithRetry(
       cfg.fetchImpl,
       `${base}/me/tracks?limit=${SAVED_TRACKS_PAGE_LIMIT}&offset=${offset}`,
@@ -362,17 +373,62 @@ export async function fetchSpotifySavedTracks(cfg: {
     if (!parsed.success) {
       throw new ProviderError('spotify', 'Spotify returned an invalid saved-track page.');
     }
+    pages += 1;
     const pageItems = parsed.data.items;
     for (const item of pageItems) {
       const candidate = toSpotifyCandidate(item.track);
       if (candidate) out.push(candidate);
-      if (out.length >= cap) break;
+      if (out.length >= bounds.cap) break;
     }
     total = parsed.data.total;
-    if (pageItems.length === 0) break;
+    if (pageItems.length === 0) {
+      ended = true;
+      break;
+    }
     offset += pageItems.length;
   }
-  return out;
+  return { tracks: out, next: !ended && offset < total ? String(offset) : null };
+}
+
+/**
+ * Fetch the connected user's saved tracks with a **per-user** access token
+ * (`music_connections`), mapped to the shared contract — the "search my Spotify"
+ * surface. Stays a pure adapter: the caller owns the token's decryption, refresh,
+ * and persistence. Throws `SpotifyUnauthorizedError` on 401 so the caller can
+ * refresh + retry; throws on any other non-ok. Paginates the `total`-counted feed.
+ */
+export async function fetchSpotifySavedTracks(
+  cfg: SpotifySavedRead & {
+    /** Stop after this many tracks so a huge library can't run unbounded. */
+    maxTracks?: number;
+  },
+): Promise<TrackSearchResult[]> {
+  const page = await readSpotifySavedPages(cfg, 0, {
+    cap: cfg.maxTracks ?? 200,
+    targetTracks: Number.POSITIVE_INFINITY,
+    maxPages: Number.POSITIVE_INFINITY,
+  });
+  return page.tracks;
+}
+
+/**
+ * Read one bounded page of the user's Spotify saved tracks, starting at `cursor`
+ * (Spotify's own `offset`, from a previous page) or at 0. Saved order is
+ * Spotify's own. A `cursor` that is not a plain offset is rejected with
+ * `InvalidProviderCursorError` before any request is made. Mock-tested only while
+ * the Spotify Web API refuses the connected account (RF-92).
+ */
+export async function fetchSpotifySavedTracksPage(
+  cfg: SpotifySavedRead & LibraryPageOptions & { cursor?: string | null },
+): Promise<ProviderTrackPage> {
+  if (cfg.cursor != null && !SAVED_TRACKS_OFFSET_CURSOR.test(cfg.cursor)) {
+    throw new InvalidProviderCursorError('spotify');
+  }
+  return readSpotifySavedPages(cfg, cfg.cursor == null ? 0 : Number(cfg.cursor), {
+    cap: Number.POSITIVE_INFINITY,
+    targetTracks: cfg.targetTracks ?? 200,
+    maxPages: cfg.maxPages ?? 8,
+  });
 }
 
 /**
