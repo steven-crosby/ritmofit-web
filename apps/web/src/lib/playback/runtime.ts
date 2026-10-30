@@ -104,6 +104,16 @@ const DEFAULT_LIVENESS_INTERVAL_MS = 2_500;
  */
 const ENDPOINT_TOLERANCE_MS = 1_000;
 
+/**
+ * How long a new track start waits for adapters this run just cancelled to
+ * settle their in-flight SDK calls (RF-108). Page-singleton SDKs (MusicKit,
+ * Spotify's player) cannot cancel a queue or play request already sent, so a
+ * quick seek, skip or timeline tap waits briefly for the earlier request
+ * instead of colliding with it. Bounded: past it the start proceeds and the
+ * adapter's own lock decides.
+ */
+const DEFAULT_SETTLE_WAIT_MS = 3_000;
+
 export interface RuntimeCoordinatorOptions extends SelectionOptions {
   adapters: AdapterRegistry;
   onStatus?: (status: CoordinatorStatus) => void;
@@ -120,6 +130,8 @@ export interface RuntimeCoordinatorOptions extends SelectionOptions {
   /** Music-led runs publish confirmed class position here. Without a subscriber,
    * tick remains the legacy externally-clocked coordinator contract. */
   onPosition?: (classMs: number) => void;
+  /** Bound on waiting for cancelled adapters to settle before a start (RF-108). */
+  settleWaitMs?: number;
 }
 
 /** The currently prepared provider job. */
@@ -165,6 +177,8 @@ export class RuntimePlaybackCoordinator {
   private livenessProbeInFlight = false;
   /** rAF ticks since the last sample; zero means the host loop stalled too. */
   private hostTicksSinceSample = 0;
+  /** Destroyed adapters whose SDK calls are still in flight; see `retire`. */
+  private readonly settling = new Map<PlaybackAdapter, Promise<void>>();
 
   constructor(
     private readonly payload: RunPayload,
@@ -359,6 +373,12 @@ export class RuntimePlaybackCoordinator {
     }
 
     this.setStatus({ kind: 'preparing', index, provider: selection.provider });
+    // Let a cancelled start's SDK calls settle first, bounded, then re-check
+    // the epoch: another seek or tap during the wait supersedes this start.
+    if (this.settling.size > 0) {
+      await this.awaitSettled();
+      if (epoch !== this.epoch) return;
+    }
     let authorizationAt: number | null = null;
     const adapter = factory({
       // FINISH requires fresh endpoint evidence; a short stream is a mismatch.
@@ -458,11 +478,43 @@ export class RuntimePlaybackCoordinator {
     } catch {
       // A failing stop must not block the transition; destroy still runs.
     }
+    this.retire(job.adapter);
+  }
+
+  /**
+   * Destroy an adapter and, when it still has SDK calls in flight, remember it
+   * until they settle so the next start can wait for them (RF-108).
+   */
+  private retire(adapter: PlaybackAdapter): void {
     try {
-      job.adapter.destroy();
+      adapter.destroy();
     } catch {
       // Teardown is best-effort.
     }
+    let idle: Promise<void> | null | undefined;
+    try {
+      idle = adapter.whenIdle?.();
+    } catch {
+      idle = null;
+    }
+    if (!idle) return;
+    const tracked: Promise<void> = idle
+      .catch(() => undefined)
+      .then(() => {
+        if (this.settling.get(adapter) === tracked) this.settling.delete(adapter);
+      });
+    this.settling.set(adapter, tracked);
+  }
+
+  private async awaitSettled(): Promise<void> {
+    let timer: ReturnType<typeof setTimeout> | undefined;
+    await Promise.race([
+      Promise.all(this.settling.values()),
+      new Promise<void>((resolve) => {
+        timer = setTimeout(resolve, this.options.settleWaitMs ?? DEFAULT_SETTLE_WAIT_MS);
+      }),
+    ]);
+    clearTimeout(timer);
   }
 
   /**
@@ -475,11 +527,8 @@ export class RuntimePlaybackCoordinator {
     this.transitioningAdapter = null;
     this.transitionAbort?.abort();
     this.transitionAbort = null;
-    try {
-      adapter.destroy();
-    } catch {
-      // Cancellation must still settle the coordinator if teardown fails.
-    }
+    // Cancellation must still settle the coordinator if teardown fails.
+    this.retire(adapter);
   }
 
   /** A silent SDK promise must not hold preparation or teardown indefinitely. */

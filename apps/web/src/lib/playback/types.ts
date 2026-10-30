@@ -62,6 +62,15 @@ export interface PlaybackAdapter {
   getLiveness?(): Promise<LivenessReading | null>;
   /** Operational transport truth; unknown never permits teaching-time advance. */
   getTransport?(): Promise<TransportReading>;
+  /**
+   * Settle signal for adapters over a page-singleton SDK (RF-108). Apple's
+   * MusicKit, and Spotify's player, cannot cancel a `setQueue`/`play` already
+   * sent, so a destroyed adapter can still hold one in flight. Resolves once
+   * every such call has settled; never rejects; may never resolve, so callers
+   * bound the wait. Returns null when nothing is in flight. Optional: adapters
+   * with a per-track widget (SoundCloud) have nothing shared to settle.
+   */
+  whenIdle?(): Promise<void> | null;
 }
 
 /**

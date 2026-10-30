@@ -245,12 +245,54 @@ describe('Safari modern FairPlay', () => {
     const { loadMusicKit } = await import('./musickit.js');
     const pending = loadMusicKit();
     expect(setItem).not.toHaveBeenCalledWith(MUSICKIT_SAFARI_MODERN_EME_KEY, '1');
-    expect(removeItem).not.toHaveBeenCalled();
+    // RF-147: assert only that the FairPlay key is not removed.
+    expect(removeItem).not.toHaveBeenCalledWith(MUSICKIT_SAFARI_MODERN_EME_KEY);
     window.MusicKit = {} as MusicKitGlobal;
     document.dispatchEvent(new Event('musickitloaded'));
     await pending;
     setItem.mockRestore();
     removeItem.mockRestore();
+  });
+});
+
+describe('Safari modern FairPlay flag, once per page (RF-147)', () => {
+  it('clears the flag on the first MusicKit load only, so a tester can set it afterwards', async () => {
+    (window as Window & { WebKitMediaKeys?: object }).WebKitMediaKeys = {};
+    localStorage.setItem(MUSICKIT_SAFARI_MODERN_EME_KEY, '1');
+    const { loadMusicKit, configureMusicKit } = await import('./musickit.js');
+    const pending = loadMusicKit();
+    expect(localStorage.getItem(MUSICKIT_SAFARI_MODERN_EME_KEY)).toBeNull();
+    window.MusicKit = {
+      getInstance: () => ({ isAuthorized: true }),
+      configure: vi.fn(),
+    } as unknown as MusicKitGlobal;
+    document.dispatchEvent(new Event('musickitloaded'));
+    await pending;
+    localStorage.setItem(MUSICKIT_SAFARI_MODERN_EME_KEY, '1');
+    await loadMusicKit();
+    await configureMusicKit(window.MusicKit, { developerToken: 'test', storefront: null });
+    expect(localStorage.getItem(MUSICKIT_SAFARI_MODERN_EME_KEY)).toBe('1');
+  });
+
+  it('logs the flag once, on iOS Safari or legacy WebKit, and never on desktop Chrome', async () => {
+    const info = vi.spyOn(console, 'info').mockImplementation(() => {});
+    const userAgent = vi.spyOn(navigator, 'userAgent', 'get').mockReturnValue(DESKTOP_CHROME_UA);
+    try {
+      const chrome = await import('./musickit.js');
+      chrome.logSafariModernEmeFlagOnce();
+      expect(info).not.toHaveBeenCalled();
+
+      vi.resetModules();
+      userAgent.mockReturnValue(IOS_SAFARI_UA);
+      localStorage.setItem(MUSICKIT_SAFARI_MODERN_EME_KEY, '1');
+      const ios = await import('./musickit.js');
+      ios.logSafariModernEmeFlagOnce();
+      ios.logSafariModernEmeFlagOnce();
+      expect(info.mock.calls).toEqual([['[ritmo apple-music] mk-safari-modern-eme 1']]);
+    } finally {
+      info.mockRestore();
+      userAgent.mockRestore();
+    }
   });
 });
 
@@ -333,7 +375,8 @@ describe('Safari modern FairPlay access probe', () => {
       expect(request).toHaveBeenCalledWith('com.apple.fps', FAIRPLAY_AUDIO_ONLY);
       expect(createMediaKeys).not.toHaveBeenCalled();
       expect(createSession).not.toHaveBeenCalled();
-      expect(info.mock.calls).toEqual([['[ritmo apple-music] mk-safari-modern-eme 1']]);
+      // The flag line moved to logSafariModernEmeFlagOnce, after play (RF-147).
+      expect(info).not.toHaveBeenCalled();
     } finally {
       info.mockRestore();
       userAgent.mockRestore();
@@ -379,7 +422,8 @@ describe('Safari modern FairPlay access probe', () => {
       expect(request).toHaveBeenCalledWith('com.apple.fps', FAIRPLAY_AUDIO_ONLY);
       expect(createMediaKeys).not.toHaveBeenCalled();
       expect(createSession).not.toHaveBeenCalled();
-      expect(info.mock.calls).toEqual([['[ritmo apple-music] mk-safari-modern-eme 1']]);
+      // The flag line moved to logSafariModernEmeFlagOnce, after play (RF-147).
+      expect(info).not.toHaveBeenCalled();
     } finally {
       info.mockRestore();
     }
@@ -403,7 +447,7 @@ describe('Safari modern FairPlay access probe', () => {
       const dumped = JSON.stringify(info.mock.calls);
       expect(dumped).not.toContain('SECRETVALUE');
       expect(dumped).not.toContain('music-user-token');
-      expect(info.mock.calls).toEqual([['[ritmo apple-music] mk-safari-modern-eme not-1']]);
+      expect(info).not.toHaveBeenCalled();
     } finally {
       info.mockRestore();
     }
@@ -550,8 +594,6 @@ describe('Safari modern FairPlay access probe', () => {
 
   it('logs not-1 when reading the flag throws, and still does not throw', async () => {
     webKitWindow.WebKitMediaKeys = {};
-    const request = vi.fn(async () => ({ createMediaKeys: vi.fn() }));
-    installRequest(request);
     const original = Object.getOwnPropertyDescriptor(window, 'localStorage');
     Object.defineProperty(window, 'localStorage', {
       configurable: true,
@@ -561,8 +603,8 @@ describe('Safari modern FairPlay access probe', () => {
     });
     const info = vi.spyOn(console, 'info').mockImplementation(() => {});
     try {
-      const { probeSafariModernFairPlayAccess } = await import('./musickit.js');
-      await expect(probeSafariModernFairPlayAccess()).resolves.toBe('ok');
+      const { logSafariModernEmeFlagOnce } = await import('./musickit.js');
+      expect(() => logSafariModernEmeFlagOnce()).not.toThrow();
       expect(info.mock.calls).toEqual([['[ritmo apple-music] mk-safari-modern-eme not-1']]);
       expect(JSON.stringify(info.mock.calls)).not.toContain('SECRETVALUE');
     } finally {

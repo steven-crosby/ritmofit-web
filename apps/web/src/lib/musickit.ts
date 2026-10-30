@@ -66,10 +66,12 @@ export function isIosSafari(
  * item. With the flag cleared, Start, Pause/Resume, Next and auto-advance all
  * played on the owner's iPhone on 2026-10-29 (RF-124). The earlier iPhone
  * silence this flag was added for was the page CSP `media-src` (RF-122).
- * Ritmo set the flag on iOS until RF-124, so browsers can still hold `"1"`;
- * this removes it before MusicKit loads and before each queue/play. Desktop
- * Chrome has no `WebKitMediaKeys` and uses Widevine, so storage is left alone
- * there.
+ * Ritmo set the flag on iOS until RF-124, so browsers can still hold `"1"`.
+ * `loadMusicKit` calls this once per page, before the script loads (RF-147):
+ * MusicKit reads the flag when its player first attaches a key session, so
+ * one clear before that is enough, and a tester can still set the flag by
+ * hand afterwards to diagnose the modern path. Desktop Chrome has no
+ * `WebKitMediaKeys` and uses Widevine, so storage is left alone there.
  */
 export function clearSafariModernFairPlay(
   webKitMediaKeys: unknown = typeof window === 'undefined'
@@ -91,7 +93,13 @@ export function clearSafariModernFairPlay(
   }
 }
 
-/** MusicKit's FairPlay key system. The probe and MusicKit both request this one. */
+/**
+ * The unprefixed EME FairPlay key system, which MusicKit requests only on its
+ * modern path (`mk-safari-modern-eme` = `"1"`). With that flag cleared (RF-124)
+ * MusicKit uses legacy `WebKitMediaKeys` instead, so this probe describes a
+ * path MusicKit does not take. It is a console diagnostic on legacy desktop
+ * WebKit only and never runs on iOS (RF-147).
+ */
 const FAIRPLAY_KEY_SYSTEM = 'com.apple.fps';
 
 /**
@@ -180,8 +188,18 @@ function safariModernAccessErrorWord(error: unknown): string {
   return SAFARI_MODERN_ACCESS_OTHER;
 }
 
-/** Log whether our flag write stuck. Never log the stored value, a token, or an exception message. */
-function logSafariModernEmeFlag(): void {
+let flagLogged = false;
+
+/**
+ * Log once per page whether `mk-safari-modern-eme` is `"1"`, on iOS Safari and
+ * legacy WebKit only. The adapter calls it after MusicKit's first `play()`
+ * resolves, when the player has attached its key session, so the line shows
+ * the flag MusicKit actually read rather than the value right after our clear.
+ * Never logs the stored value, a token, or an exception message.
+ */
+export function logSafariModernEmeFlagOnce(): void {
+  if (flagLogged || (!webKitMediaKeys() && !isIosSafari())) return;
+  flagLogged = true;
   let enabled = false;
   try {
     enabled = localStorage.getItem(MUSICKIT_SAFARI_MODERN_EME_KEY) === '1';
@@ -211,7 +229,6 @@ async function requestSafariModernAccess(
 }
 
 async function runSafariModernAccessProbe(generation: number): Promise<string | null> {
-  logSafariModernEmeFlag();
   const request = navigator.requestMediaKeySystemAccess;
   if (typeof request !== 'function') return null;
   const settled = requestSafariModernAccess(request);
@@ -244,6 +261,8 @@ async function runSafariModernAccessProbe(generation: number): Promise<string | 
  * missing. A second call reuses the first result and does not request again.
  * Returns null (not a promise) on other browsers. Callers start it after
  * MusicKit's `play()`, never before, so it cannot use up the iOS user gesture.
+ * The playback adapter no longer calls it on iOS (RF-147), only on legacy
+ * desktop WebKit, and its word goes to the console, not the banner.
  */
 export function probeSafariModernFairPlayAccess(): Promise<string | null> | null {
   if (!webKitMediaKeys() && !isIosSafari()) return null;
@@ -286,6 +305,7 @@ export function resetSafariModernAccessProbeForTests(): void {
   modernAccessProbe = null;
   modernAccessInFlight = null;
   modernAccessGeneration += 1;
+  flagLogged = false;
 }
 
 /**
@@ -325,6 +345,18 @@ export interface MusicKitInstance {
   readonly currentPlaybackTime?: number;
   readonly currentPlaybackDuration?: number;
   readonly playbackState?: number;
+  /**
+   * The cued or playing item. Read before `play()` so a late, superseded
+   * `setQueue` that replaced the queue cannot make this adapter play the old
+   * song (RF-108). Optional: an instance without it is not treated as a mismatch.
+   */
+  readonly nowPlayingItem?: MusicKitMediaItem | null;
+}
+
+/** The identifiers of a MusicKit media item that Ritmo compares with its catalog id. */
+export interface MusicKitMediaItem {
+  readonly id?: string;
+  readonly playParams?: { readonly id?: string; readonly catalogId?: string };
 }
 
 /** The `setQueue` options Ritmo Studio uses — one catalog song cued at `startTime`. */
@@ -389,12 +421,16 @@ declare global {
 }
 
 let loadPromise: Promise<MusicKitGlobal> | null = null;
+let fairPlayFlagCleared = false;
 
 /** Inject the MusicKit JS script once; resolve when its global is ready. */
 export function loadMusicKit(): Promise<MusicKitGlobal> {
-  // Before the script, and before a page that already has the singleton: the
-  // key session is created on the first play, and it reads this flag then.
-  clearSafariModernFairPlay();
+  // Once per page, before the script: the key session is created on the first
+  // play, and it reads this flag then (RF-147).
+  if (!fairPlayFlagCleared) {
+    fairPlayFlagCleared = true;
+    clearSafariModernFairPlay();
+  }
   if (window.MusicKit) return Promise.resolve(window.MusicKit);
   if (loadPromise) return loadPromise;
 
@@ -433,7 +469,6 @@ export async function configureMusicKit(
   music: MusicKitGlobal,
   config: AppleMusicClientConfig,
 ): Promise<MusicKitInstance> {
-  clearSafariModernFairPlay();
   if (!configuration) {
     const existing = music.getInstance();
     if (existing) return existing;
