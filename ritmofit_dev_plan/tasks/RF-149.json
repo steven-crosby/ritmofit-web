@@ -1,0 +1,26 @@
+{
+  "schemaVersion": 1,
+  "id": "RF-149",
+  "title": "Class editor TrackSearch likes mode reaches liked songs past the first 200",
+  "kind": "task",
+  "status": "backlog",
+  "priority": "P2",
+  "parent": null,
+  "dependsOn": [],
+  "acceptance": [
+    "The class editor's TrackSearch \"likes\" mode shows a way to load liked songs past the first 200 (the X-RitmoFit-Next-Cursor page of GET /providers/:provider/likes), or searches them, instead of stopping at the first page.",
+    "Its tests cover a second page for Apple Music and SoundCloud."
+  ],
+  "nextAction": "RF-132 paged the Music workspace Songs list only; apps/web/src/components/TrackSearch.tsx still calls listLikes once and shows the first page (up to 200). Reuse listLikes({ cursor }) and the Apple server search (listLikes({ q })) from RF-132. Agent-created: Backlog until the owner sets Ready.",
+  "blocker": null,
+  "evidence": [
+    {
+      "kind": "source",
+      "ref": "apps/web/src/components/TrackSearch.tsx",
+      "summary": "TrackSearch likes mode reads one listLikes page and has no Load more. Checked on main 4206c8c.",
+      "checkedOn": "2026-10-29"
+    }
+  ],
+  "resolution": null,
+  "followUps": []
+}

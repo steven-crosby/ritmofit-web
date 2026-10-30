@@ -1,0 +1,29 @@
+{
+  "schemaVersion": 1,
+  "id": "RF-148",
+  "title": "Spotify saved-tracks paging on Music Songs is verified live on a connected account",
+  "kind": "verification",
+  "status": "backlog",
+  "priority": "P2",
+  "parent": null,
+  "dependsOn": [
+    "RF-92"
+  ],
+  "acceptance": [
+    "On a Spotify account the Web API serves (not 403), Music › Spotify › Songs shows a \"Load more\" after the first 200 saved tracks and loads the next ones in saved order.",
+    "Search on Spotify Songs finds a saved track past the first page by loading more pages, and says when it stopped at the 1,000-song bound.",
+    "\"Create class from liked songs\" on Spotify says when it used a subset of the saved tracks."
+  ],
+  "nextAction": "Waits for RF-92 (Spotify Web API returns 403 for the connected account). RF-132 shipped Spotify saved-tracks paging mock-tested only (offset cursor, X-RitmoFit-Next-Cursor header on GET /providers/spotify/likes). Once RF-92 is Done, verify the acceptance in a real browser on production; fix in packages/music/src/spotify.ts if the live shape differs. Owner-gated (provider code) if a fix is needed. Agent-created: Backlog until the owner sets Ready.",
+  "blocker": null,
+  "evidence": [
+    {
+      "kind": "document",
+      "ref": "ritmofit_dev_plan/tasks/RF-132.json",
+      "summary": "RF-132 owner decision 2026-10-29: close RF-132 on Apple Music and SoundCloud, move the live Spotify check to a Backlog record that depends on RF-92.",
+      "checkedOn": "2026-10-29"
+    }
+  ],
+  "resolution": null,
+  "followUps": []
+}

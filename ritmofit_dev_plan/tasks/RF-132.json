@@ -3,7 +3,7 @@
   "id": "RF-132",
   "title": "Music shows an instructor's whole library song list, and library search reaches all of it",
   "kind": "task",
-  "status": "ready",
+  "status": "in_progress",
   "priority": "P0",
   "parent": null,
   "dependsOn": [],
@@ -15,7 +15,7 @@
     "GET /providers/:provider/likes changes are registered in generate-openapi.ts and the OpenAPI drift and contract-parity checks pass; the iOS snapshot refresh is a separate iOS PR.",
     "No provider audio or derived data is cached; any paging cursor is the provider's own."
   ],
-  "nextAction": "Owner moved to Ready on 2026-10-29 as Lane B, Apple Music first. Plan first: choose client paging vs server search per provider (Apple, Spotify and SoundCloud expose different library APIs) and re-verify each provider API before coding. Files: packages/music/src/{apple-music,spotify,soundcloud}.ts, apps/api/src/lib/music/user-likes.ts, apps/api/src/routes/providers.ts, apps/web Music workspace (including Create class from liked songs and the Recents label). Spotify cannot be verified while its Web API returns 403 (RF-92); ship Apple and SoundCloud and leave the Spotify criterion open rather than closing on untested code. Owner-gated (provider code): the PR needs owner-approved. Surface: both (API contract): OpenAPI regenerates here and the iOS snapshot refresh is a separate iOS PR. Spotify remainder: do not reword the Ready criteria. In the PR, propose to the owner that RF-132 closes on Apple and SoundCloud, with the Spotify part moved to a new Backlog record (no parent, dependsOn RF-92) listed in followUps; until the owner approves that narrowing, RF-132 stays in Review. AGENTS.md freezes shared OpenAPI and routes across parallel lanes, so the orchestrator assigns apps/api/src/routes/providers.ts and openapi.json in the lane briefs. RF-141 edits apps/web/src/lib/providers.ts, not the API route; if Lane B's Music workspace needs that web file, coordinate with RF-141 first.",
+  "nextAction": "In progress: Lane B of round 20261029a, branch feat/rf-132-music-library (draft PR claims it). Restart: read the PR and the handoff ritmofit_dev_plan/handoffs/2026-10-29-r20261029a-laneB-music-library.md if present, then continue the approved plan: cursor paging on GET /providers/:provider/likes (X-RitmoFit-Next-Cursor header, bare array body), Apple server search via ?q=, Load more and search auto-load (1,000-song bound) on Music Songs, subset copy in Create class from liked songs, \"Recents\" relabeled \"Library order\", OpenAPI and api.md. Owner-gated (provider code): the PR needs owner-approved; Lane sessions never merge.",
   "blocker": null,
   "evidence": [
     {
@@ -41,8 +41,35 @@
       "ref": "https://github.com/steven-crosby/ritmofit-web/pull/662",
       "summary": "Owner instruction in session, 2026-10-29, published by PR #662: \"Yes move RF-123 and RF-132 to Ready and brief them as Lane A and Lane B after start-session\". RF-132 is Lane B (Music library, Phase 1).",
       "checkedOn": "2026-10-29"
+    },
+    {
+      "kind": "observation",
+      "ref": "https://github.com/steven-crosby/ritmofit-web/pull/662",
+      "summary": "Owner decision in session, 2026-10-29, on the Lane B plan's Spotify question: \"Yes recommended\". RF-132 may close Done on Apple Music and SoundCloud; live Spotify paging verification moves to Backlog RF-148 (dependsOn RF-92). Ref is the PR that published the Ready move; the decision itself was given in session.",
+      "checkedOn": "2026-10-29"
+    },
+    {
+      "kind": "observation",
+      "ref": "https://github.com/steven-crosby/ritmofit-web/pull/662",
+      "summary": "Owner decision in session, 2026-10-29: \"Recents\" becomes \"Library order\" on both Playlists and Songs: \"Yes recommendation\". Given in session; ref is the Ready-move PR.",
+      "checkedOn": "2026-10-29"
+    },
+    {
+      "kind": "observation",
+      "ref": "https://github.com/steven-crosby/ritmofit-web/pull/662",
+      "summary": "Owner decision in session, 2026-10-29: SoundCloud/Spotify search auto-loads up to 1,000 songs (5 calls), then says so and offers to keep loading: \"Yes 1,000\". Given in session; ref is the Ready-move PR.",
+      "checkedOn": "2026-10-29"
+    },
+    {
+      "kind": "observation",
+      "ref": "https://github.com/steven-crosby/ritmofit-web/pull/662",
+      "summary": "Owner decision in session, 2026-10-29: \"Yes, both\" (implementation authority for the Lane B plan scope, and a Backlog follow-up for TrackSearch likes mode, RF-149). Given in session; ref is the Ready-move PR.",
+      "checkedOn": "2026-10-29"
     }
   ],
   "resolution": null,
-  "followUps": []
+  "followUps": [
+    "RF-148",
+    "RF-149"
+  ]
 }
