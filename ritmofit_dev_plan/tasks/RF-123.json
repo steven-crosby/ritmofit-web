@@ -31,6 +31,18 @@
       "ref": "https://github.com/steven-crosby/ritmofit-web/pull/662",
       "summary": "Owner instruction in session, 2026-10-29, published by PR #662: \"Yes move RF-123 and RF-132 to Ready and brief them as Lane A and Lane B after start-session\". RF-123 is Lane A (Apple playback, Phase 1). The owner then confirmed Lane A ships the queue-lock fix only, with resume in place dropped.",
       "checkedOn": "2026-10-29"
+    },
+    {
+      "kind": "pr",
+      "ref": "https://github.com/steven-crosby/ritmofit-web/pull/664",
+      "summary": "Draft PR on fix/rf-123-apple-queue-lock (from main 4206c8c) carrying only the setQueue lock release in apple-music-adapter.ts and its regression test; supersedes #656 for RF-123.",
+      "checkedOn": "2026-10-29"
+    },
+    {
+      "kind": "observation",
+      "ref": "https://github.com/steven-crosby/ritmofit-web/pull/664",
+      "summary": "Owner decision in session, 2026-10-29, relayed by the round orchestrator: \"Yes, new branch and PR\". Lane A ships RF-123 on a new branch and PR from main instead of force-pushing #656; #656 is left untouched for the orchestrator to close as superseded.",
+      "checkedOn": "2026-10-29"
     }
   ],
   "resolution": null,
