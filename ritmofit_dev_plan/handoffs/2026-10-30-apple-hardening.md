@@ -3,7 +3,7 @@ date: 2026-10-30
 tool: Claude Code (local subagent, worktree)
 lane: lane-apple-hardening
 branch: fix/rf-108-apple-hardening
-head: 7d29bab
+head: 05ad7ea
 base: 5dd324a
 prs: ['#668 (open, owner-gated)']
 status: open
@@ -41,12 +41,16 @@ status: open
 - The nowPlayingItem check treats an item with no id as unknown and does not re-cue. If iPhone
   timing lines show `re-cue-before-play` on every play, MusicKit's item ids differ from Ritmo's
   catalog ids and the comparison needs another look.
+- 2026-10-30: the final review of 01dc417 found ten items (five significant). All were fixed in
+  05ad7ea on the same PR, with tests that fail on 01dc417. A late settle after a track started
+  now re-cues and replays that song (`late-settle-recue` in the timing lines), which the device
+  run should watch for. Finding 10 conflicts with RF-147 criterion 3's wording; it is an owner
+  decision in RF-147.
 
 ## Verification
 
-- Run: see the PR body for the full local gate result.
-- Skipped: `pnpm --filter @ritmofit/e2e e2e` (Playwright Chromium is not installed on this machine
-  and the brief forbids downloading it); CI runs it.
+- Run: see the PR body for the full local gate result, e2e included (Playwright Chromium r1248
+  was installed by the owner on 2026-10-30).
 
 ## Production as observed
 

@@ -74,6 +74,12 @@
       "ref": "apps/web/src/lib/playback/apple-music-adapter.test.ts",
       "summary": "New tests, all failing on main 5dd324a and passing on the PR: runtime with real adapters and leases (\"taps to tracks 2 and 3 during a pending start end playing track 3 with no lock error\"; \"a start whose cancelled play never settles fails clearly, and Retry recovers without a reload\"), lease tests for wait/supersede/release, and \"drops a held playback error after destroy then prepare\". \"rejects an overlapping queue request while an older one is still pending\" and the runtime supersession tests in runtime.test.ts pass unchanged. Mock MusicKit only; not audible playback.",
       "checkedOn": "2026-10-30"
+    },
+    {
+      "kind": "pr",
+      "ref": "https://github.com/steven-crosby/ritmofit-web/pull/668",
+      "summary": "Final review of #668 on 01dc417 found five significant bugs plus five cleanups; fixed in commit 05ad7ea on the same PR. A hung call no longer keeps whenIdle() pending (idle at timeout or at the settle bound; runtime retire entries expire too); the runtime waits only for retired adapters of the next track's provider; the late-settle snapshot is taken before setQueue is sent; a late settle after the track started re-cues and replays the playing song, or reports a Retry error if that fails; play() waits for a cancelled play after a re-cue. Eight new tests fail on 01dc417 and pass on 05ad7ea. Mock MusicKit only.",
+      "checkedOn": "2026-10-30"
     }
   ],
   "resolution": null,
