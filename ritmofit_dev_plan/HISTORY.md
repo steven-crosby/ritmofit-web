@@ -16,7 +16,8 @@ detail). Current focus and `main` vs production live in the "Now" block of
 > **Session 2026-10-31 — Air conductor merges (no deploy), relayed to the Neo close.** All with
 > owner permission. [#670](https://github.com/steven-crosby/ritmofit-web/pull/670) merged as `eaec1d3` (RF-156 record, For review). ritmofit-ios
 > [#52](https://github.com/steven-crosby/ritmofit-ios/pull/52) merged as `2cc92e2` (web-contract snapshots refreshed from web `0a77110`; iOS
-> Cross-repository parity green again). [#674](https://github.com/steven-crosby/ritmofit-web/pull/674) merged as `01a28d6` (RF-156 Done; new
+> Cross-repository parity passed on `2cc92e2`; the `iOS CI` run on that commit failed, consistent with
+> the Air simulator issue below). [#674](https://github.com/steven-crosby/ritmofit-web/pull/674) merged as `01a28d6` (RF-156 Done; new
 > Backlog RF-162, owner-gated: OpenAPI describes the provider routes' 429s, the empty likes cursor
 > and long `q` as the server behaves). [#677](https://github.com/steven-crosby/ritmofit-web/pull/677) merged as `9fa76d2` (RF-131 answered and Done:
 > run rule (b), plan gaps are guidance and over-time blocks a warning; readiness labels (a), four
