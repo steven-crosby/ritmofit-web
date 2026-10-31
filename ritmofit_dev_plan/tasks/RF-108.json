@@ -140,6 +140,24 @@
       "ref": "apps/web/src/components/LiveMode.test.tsx",
       "summary": "\"starts exactly one provider adapter for one timeline tap (RF-108)\": pointer down, 60 ms, pointer up starts one adapter; three on main. trailing-throttle.test.ts covers the tap, drag-release and discrete-flush cases.",
       "checkedOn": "2026-10-31"
+    },
+    {
+      "kind": "pr",
+      "ref": "https://github.com/steven-crosby/ritmofit-web/pull/669",
+      "summary": "Final review of #669 on 57a06b3 found five significant bugs; fixed in f1fdcfd on the same PR. (1) A timeline hold or a drag that paused before release jumped the clock back behind the audio: release now sends nothing when the throttle already sent that position and settles the clock where it is, else a normal seek. (2) One bounded wait: the adapter no longer waits; runtime.enterTrack waits on whenIdle() (setQueue only, settle or 2 s from the cancel) through a page-wide registry, so Retry waits too. (3) No yield before MusicKit play() on gesture paths: a pending previous play() is superseded, not awaited, and its late settle re-asserts nothing once its queue was replaced. (4) Pause/stop during a pending play() apply at once and are re-applied when it settles; a live seek runs after it settles. (5) Destroy mid-prepare returns quietly. Mock MusicKit only.",
+      "checkedOn": "2026-10-31"
+    },
+    {
+      "kind": "observation",
+      "ref": "https://github.com/steven-crosby/ritmofit-web/pull/669",
+      "summary": "Owner ruling 2026-10-31, relayed by the coordinator: raise the Apple play() start cap from 3 s to 5 s (\"Yes\"). Reason: the #669 review found a slow but successful start (~3.5 s on cellular) would be killed; the owner's Wi-Fi worst case was 1.2 s. Implemented in f1fdcfd (\"did not start ... within 5 s. Retry playback.\").",
+      "checkedOn": "2026-10-31"
+    },
+    {
+      "kind": "test",
+      "ref": "apps/web/src/components/LiveMode.test.tsx",
+      "summary": "Hold 2 s then release, and drag then rest 2 s then release: the clock matches the provider at release and after (both fail on 57a06b3); plain tap starts one adapter; a release inside the throttle window commits once. apple-music-adapter.test.ts adds: Next right after a start reaches MusicKit play() in the same tick, pause/stop re-applied and live seek deferred while play() is pending, a cancelled setQueue settling at 1.5 s lets the next start proceed, a hung one fails once at a single bound, a 3.5 s start succeeds under the 5 s cap, destroy mid-prepare is quiet.",
+      "checkedOn": "2026-10-31"
     }
   ],
   "resolution": null,
