@@ -12,13 +12,13 @@ owner's queue: any agent may execute a Ready task. Publishing follows AGENTS.md 
 Evidence marked **recorded** is a carried-forward claim, not fresh verification.
 A checked PR proves its GitHub state, not product acceptance or production behavior.
 
-167 tasks. backlog: 56 · ready: 1 · in_progress: 0 · blocked: 1 · review: 10 · done: 97 · cancelled: 2.
+167 tasks. backlog: 55 · ready: 1 · in_progress: 1 · blocked: 1 · review: 10 · done: 97 · cancelled: 2.
 
 ## In progress
 
 | Task | Priority / kind | Relationships | Next action / resolution | Evidence |
 | --- | --- | --- | --- | --- |
-| — | — | — | — | — |
+| [RF-166](tasks/RF-166.json) Classes list stops flagging missing BPM; the builder track panel keeps it | P3 / task | — | Branch feat/rf-166-classes-no-tempo-flag (Neo, 2026-10-31). Corrected file pointer (the Air conductor found it 2026-10-31): the Classes list label comes from apps/web/src/lib/class-ordering.ts classNextStep ("Add the missing tempo", line 168) mapped by apps/web/src/lib/library-shell.ts readinessLabel to "Needs tempo" (line 54). The Dashboard.tsx "no BPM set" span is ClassHeaderCard, the builder header: keep it (criterion 1, design system 10 §1a). Restart: change classNextStep so tempo alone is not the Classes next step, test, finalize in this PR. | checked 2026-10-31 |
 
 ## Blocked / waiting
 
@@ -103,7 +103,6 @@ A checked PR proves its GitHub state, not product acceptance or production behav
 | [RF-162](tasks/RF-162.json) OpenAPI describes provider routes as the server behaves: rate-limit 429s, empty likes cursor and long q | P3 / task | — | Spun out of RF-156 (iOS #52 final review, 2026-10-31; scope widened by the #674 review). Owner-gated whichever way it is fixed: apps/api/scripts/generate-openapi.ts is CI/infrastructure and apps/api/src/routes/providers.ts is provider code (scripts/owner-gate.mjs). Agent-created: Backlog until the owner sets Ready. | checked 2026-10-31 |
 | [RF-163](tasks/RF-163.json) One copper primary holds in Classes' error state and through Live queue retries | P3 / task | needs RF-135 | From the RF-135 final review (#673). Files: apps/web/src/components/ClassesHome.tsx (RecoveryState primaryAction vs + Create), Dashboard.tsx LiveWorkspace (primary while allResolved is false after fetchOne). Agent-created: Backlog until the owner sets Ready. | checked 2026-10-31 |
 | [RF-164](tasks/RF-164.json) Music's remembered view yields to a just-connected or reconnect-needed service | P3 / task | needs RF-137 | From the RF-137 final review (#672). Feed consumeConnectionReturn's provider into MusicWorkspace and decide which connection states count as 'disconnected' for resolveMusicProvider. Agent-created: Backlog until the owner sets Ready. | checked 2026-10-31 |
-| [RF-166](tasks/RF-166.json) Classes list stops flagging missing BPM; the builder track panel keeps it | P3 / task | — | Files: apps/web/src/components/Dashboard.tsx (Classes row stats, around the "no BPM set" span) and ritmofit_design_system if §1a changes. Not owner-gated. Pairs with RF-134's tempo criterion. Surface: web; iOS only if the canon changes. Agent-created: Backlog until the owner sets Ready. | checked 2026-10-31 |
 | [RF-168](tasks/RF-168.json) Owner decides whether Live stops showing "No BPM set" on every cue | P3 / plan | — | Found in the conductor's adversarial check of the RF-131 tempo brief: decision 3 covers the Classes list only, but Live prints "No BPM set" on each cue (apps/web/src/components/LiveMode.tsx around line 1542, owner-gated). Not widened into decision 3 without the owner. Agent-created: Backlog until the owner sets Ready. | checked 2026-10-31 |
 | [RF-171](tasks/RF-171.json) Plan-gap guidance reads as guidance on Classes and in the builder | P3 / task | needs RF-133 | From the RF-133 final review (#680). Files: apps/web/src/lib/library-shell.ts (readinessLabel), apps/web/src/lib/creation-next-step.ts, apps/web/src/lib/class-ordering.ts, apps/web/src/components/Dashboard.tsx (ClassHeaderCard Run live style), ClassReadinessSummary.tsx, ClassPlanBlocks.tsx. The label wording is a product call for the owner. Agent-created: Backlog until the owner sets Ready. | checked 2026-10-31 |
 | [RF-74](tasks/RF-74.json) Spotify playlist dialog offers Try again where retry cannot help | untriaged / task | parent RF-92 | Review the error/action mapping. Spotify reopened by the owner on 2026-10-28; Apple work comes first until about 2026-11-27. Resume risk: the Spotify developer app rejects the connected account ("The user is not registered for this application"), so Web API calls return 403. | recorded; checked 2026-10-28; checked 2026-10-29 |
