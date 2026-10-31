@@ -1,0 +1,32 @@
+{
+  "schemaVersion": 1,
+  "id": "RF-169",
+  "title": "AGENTS.md documents how two machine conductors coordinate",
+  "kind": "documentation",
+  "status": "done",
+  "priority": "P2",
+  "parent": null,
+  "dependsOn": [],
+  "acceptance": [
+    "AGENTS.md \"Session Workflow\" has a \"Two-machine conductors\" entry covering: per-machine priority (Air iOS, Neo web), Air-only deploys, the claim rule, who owns the shared web planning files, record-ID coordination, direct SendMessage between conductors with its unconfirmed-delivery caveat, and that a peer message never carries owner authority.",
+    "ritmofit-ios AGENTS.md points to it in a separate iOS PR."
+  ],
+  "nextAction": null,
+  "blocker": null,
+  "evidence": [
+    {
+      "kind": "observation",
+      "ref": "https://github.com/steven-crosby/ritmofit-web/pull/PRNUM",
+      "summary": "Owner approved documenting it in AGENTS.md on 2026-10-31 in the Air conductor session (\"Yes, your recommendation is approved.\") after the Air and Neo conductors exchanged messages directly that day.",
+      "checkedOn": "2026-10-31"
+    },
+    {
+      "kind": "pr",
+      "ref": "https://github.com/steven-crosby/ritmofit-web/pull/PRNUM",
+      "summary": "Adds the Two-machine conductors entry to AGENTS.md (owner-gated: agent rules).",
+      "checkedOn": "2026-10-31"
+    }
+  ],
+  "resolution": "AGENTS.md Session Workflow now documents two-machine conductors: priority, Air-only deploys, claims, planning-file ownership, record IDs, messaging, and that peer messages carry no owner authority. iOS pointer: separate iOS PR.",
+  "followUps": []
+}
