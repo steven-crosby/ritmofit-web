@@ -111,6 +111,14 @@ const ENDPOINT_TOLERANCE_MS = 1_000;
  */
 const RETIRED_SETTLE_WAIT_MS = 3_000;
 
+/**
+ * Destroyed adapters whose SDK calls have not settled yet (RF-108). Page-wide,
+ * not per coordinator: Live's Retry builds a new coordinator, and it must
+ * still wait for the call the failed one left running. Entries leave once
+ * their settle signal resolves, which the adapter bounds.
+ */
+let retired: Array<{ provider: Provider; idle: Promise<void> }> = [];
+
 export interface RuntimeCoordinatorOptions extends SelectionOptions {
   adapters: AdapterRegistry;
   onStatus?: (status: CoordinatorStatus) => void;
@@ -172,8 +180,6 @@ export class RuntimePlaybackCoordinator {
   private livenessProbeInFlight = false;
   /** rAF ticks since the last sample; zero means the host loop stalled too. */
   private hostTicksSinceSample = 0;
-  /** Destroyed adapters whose SDK calls have not settled yet (RF-108). */
-  private retired: Array<{ provider: Provider; idle: Promise<void> }> = [];
 
   constructor(
     private readonly payload: RunPayload,
@@ -368,10 +374,11 @@ export class RuntimePlaybackCoordinator {
     }
 
     this.setStatus({ kind: 'preparing', index, provider: selection.provider });
-    // A singleton SDK (Apple Music) may still be finishing a call from the
-    // adapter this transition just cancelled. Let it settle, bounded, and skip
-    // the prepare entirely if the instructor moved on meanwhile (RF-108).
-    const settling = this.retired
+    // A singleton SDK (Apple Music) may still be finishing a queue request from
+    // an adapter this run (or a failed run before Retry) cancelled. This is
+    // the one bounded wait (the adapter bounds its own signal, 2 s from the
+    // cancel); skip the prepare entirely if the instructor moved on (RF-108).
+    const settling = retired
       .filter((entry) => entry.provider === selection.provider)
       .map((entry) => entry.idle);
     if (settling.length > 0) {
@@ -495,9 +502,9 @@ export class RuntimePlaybackCoordinator {
     }
     if (!idle) return;
     const entry = { provider: adapter.provider, idle: idle.catch(() => {}) };
-    this.retired.push(entry);
+    retired.push(entry);
     void entry.idle.then(() => {
-      this.retired = this.retired.filter((other) => other !== entry);
+      retired = retired.filter((other) => other !== entry);
     });
   }
 

@@ -5,15 +5,17 @@
  * window entirely — used for a caller-guaranteed immediate call (e.g. commit
  * on pointer release) that also cancels anything still pending.
  *
- * A `flush` with the value that `call` last fired, and no `call` since, is a
- * no-op: `fn` already ran with that value. That is what a tap on the Live
- * timeline is (pointer down fires the preview, pointer up commits the same
- * position), and running `fn` twice there started two provider adapters
- * about 60 ms apart (RF-108). */
+ * `firedLast(value)` says whether `call` already ran `fn` with exactly this
+ * value and nothing is pending or called since. A Live timeline release uses
+ * it: when the gesture's position was already sent to the provider (a tap,
+ * or a drag that rested), the release sends nothing and leaves the clock to
+ * follow the provider. Re-sending it started a second provider adapter about
+ * 60 ms later (RF-108). */
 export interface TrailingThrottle<T> {
   call: (value: T) => void;
   flush: (value: T) => void;
   cancel: () => void;
+  firedLast: (value: T) => boolean;
 }
 
 export function createTrailingThrottle<T>(
@@ -23,7 +25,7 @@ export function createTrailingThrottle<T>(
 ): TrailingThrottle<T> {
   let lastFireAt = -Infinity;
   let pending: ReturnType<typeof setTimeout> | null = null;
-  /** The value `call` last fired, until the next `call` or `flush`. */
+  /** The value `call` last fired, until the next `call`, `flush` or `cancel`. */
   let calledFire: { value: T } | null = null;
 
   const clearPending = () => {
@@ -39,10 +41,8 @@ export function createTrailingThrottle<T>(
   };
 
   const flush = (value: T) => {
-    const already = pending === null && calledFire !== null && Object.is(calledFire.value, value);
     calledFire = null;
     clearPending();
-    if (already) return;
     fire(value);
   };
 
@@ -69,5 +69,7 @@ export function createTrailingThrottle<T>(
       calledFire = null;
       clearPending();
     },
+    firedLast: (value) =>
+      pending === null && calledFire !== null && Object.is(calledFire.value, value),
   };
 }

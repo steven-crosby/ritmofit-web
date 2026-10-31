@@ -59,6 +59,7 @@ export function LiveTimeline({
   clock,
   onSeekPreview,
   onSeekCommit,
+  onSeekRelease = onSeekCommit,
 }: {
   payload: RunPayload;
   /** The raw, frame-rate clock (SPC-18): subscribing directly to it here —
@@ -67,8 +68,14 @@ export function LiveTimeline({
   clock: ClockStore;
   /** Cheap, high-frequency position update while dragging — no provider call. */
   onSeekPreview: (ms: number) => void;
-  /** The authoritative seek: keyboard, tap, and drag release/cancel. */
+  /** The authoritative seek: keyboard (and pointer release unless `onSeekRelease` is given). */
   onSeekCommit: (ms: number) => void;
+  /**
+   * Pointer release/cancel with the position this gesture last previewed. The
+   * host may skip it when that position was already sent to the provider, so
+   * a tap or a resting drag does not start a second adapter (RF-108).
+   */
+  onSeekRelease?: (ms: number) => void;
 }) {
   const totalMs = payload.class.totalDurationMs;
   const trackRef = useRef<HTMLDivElement>(null);
@@ -103,13 +110,12 @@ export function LiveTimeline({
   // Release and cancel both commit the current preview position — a cancelled
   // drag still ends coherent (the playhead and provider audio agree) rather
   // than silently diverging from what's on screen. It is the position this
-  // gesture previewed, not the clock, which can tick between down and up: the
-  // host skips a commit equal to the preview it already sent, so a tap starts
-  // one provider adapter, not two (RF-108).
+  // gesture previewed, so the host can tell whether the provider already has
+  // it (RF-108).
   const commitGesture = () => {
     const ms = gestureMs.current ?? elapsedMs;
     gestureMs.current = null;
-    onSeekCommit(ms);
+    onSeekRelease(ms);
   };
   const onPointerUp = commitGesture;
   const onPointerCancel = commitGesture;
