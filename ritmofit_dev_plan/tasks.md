@@ -12,13 +12,13 @@ owner's queue: any agent may execute a Ready task. Publishing follows AGENTS.md 
 Evidence marked **recorded** is a carried-forward claim, not fresh verification.
 A checked PR proves its GitHub state, not product acceptance or production behavior.
 
-157 tasks. backlog: 51 · ready: 1 · in_progress: 1 · blocked: 1 · review: 11 · done: 90 · cancelled: 2.
+157 tasks. backlog: 51 · ready: 1 · in_progress: 0 · blocked: 1 · review: 11 · done: 91 · cancelled: 2.
 
 ## In progress
 
 | Task | Priority / kind | Relationships | Next action / resolution | Evidence |
 | --- | --- | --- | --- | --- |
-| [RF-137](tasks/RF-137.json) Music reopens on the provider and view the instructor last used | P1 / task | — | Branch feat/rf-137-music-remembers-provider (N1 lane, 2026-10-31): MusicView memory in music-library.ts, restored in Dashboard MusicWorkspace; tests added. Restart: run the gate, then open/finish the PR. | checked 2026-10-29; checked 2026-10-31 |
+| — | — | — | — | — |
 
 ## Blocked / waiting
 
@@ -116,6 +116,7 @@ A checked PR proves its GitHub state, not product acceptance or production behav
 | [RF-107](tasks/RF-107.json) The iPhone FairPlay probe records modern-access: on a playback error | P1 / task | — | PR #649: the probe calls navigator.requestMediaKeySystemAccess as a bound method, resolves timeout after 2 s, starts only after MusicKit play() is called and is never awaited before it, and a playback error waits for an in-flight probe so the banner carries modern-access: &lt;word&gt;. The word is ok, a DOMException name, a standard built-in error name (owner decision 2026-10-28), other, or timeout. Unit-verified with receiver-checked stubs; not device-verified (RF-29). | recorded; checked 2026-10-28 |
 | [RF-122](tasks/RF-122.json) iPhone Safari CSP allows Apple Music HLS audio | P1 / task | follow-ups RF-29, RF-123, RF-124 | media-src now allows https://*.itunes.apple.com. Whether iPhone Safari plays audibly is verified separately in RF-29 after an owner deploy. | checked 2026-10-28 |
 | [RF-124](tasks/RF-124.json) Apple Music plays every song of a class on iPhone Safari | P1 / task | needs RF-122 | Fixed by #657 (stop forcing modern FairPlay; clear a stored mk-safari-modern-eme). The owner heard Start, Next to songs 2 and 3, Previous, Pause/Resume, seek and auto-advance in iPhone Safari Live on the deployed build on 2026-10-29. Desktop Safari on the legacy path stays with RF-126; the RF-123 lock fix stays on PR #656 (resume in place was dropped on 2026-10-29: owner decision recorded in RF-123); review follow-ups are in the #657 PR comment. | checked 2026-10-28; checked 2026-10-29 |
+| [RF-137](tasks/RF-137.json) Music reopens on the provider and view the instructor last used | P1 / task | — | Music reopens on the last service and shelf (RF-137, #672). All four criteria are covered by component and unit tests; full local gate (incl. e2e smoke) green on 2026-10-31. No real-browser check beyond the e2e smoke. | checked 2026-10-29; checked 2026-10-31 |
 | [RF-88](tasks/RF-88.json) Review deploy guard regression coverage PR #596 | P2 / task | follow-ups RF-110 | Reviewed against current main on 2026-10-27: the self-check assertions are meaningful (ran under macOS bash 3.2; no temp files or worktrees left). Typecheck failed on current dependencies because the test redeclared ImportMeta.url; that block was removed in c906cf4. Squash-merged as d76fbd3. Tests and self-check only; deploy behavior unchanged. Amended 2026-10-28: the Claude audit (AUD-004) showed one self-check block cannot fail, so "meaningful" is wrong for that block; the fix is tracked in RF-110. | recorded; checked 2026-10-27 |
 | [RF-89](tasks/RF-89.json) Review core workflow regression coverage PR #625 | P2 / task | — | Reviewed against current main on 2026-10-27: web 171, Spotify 49 and D1 integration 4 tests passed on the merged tree. Squash-merged as 0065eaf. Tests only; its handoff, whose sole action was this merge, is retired. | recorded; checked 2026-10-27 |
 | [RF-95](tasks/RF-95.json) Implement the repository-owned RF task system | P2 / task | — | Repository-owned task tooling and migration completed; all acceptance checks passed locally. PR #640 publishes this result once merged. No deployment is required. | checked 2026-10-27 |
