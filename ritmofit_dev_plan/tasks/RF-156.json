@@ -3,7 +3,7 @@
   "id": "RF-156",
   "title": "iOS web-contract snapshot picks up the RF-132 likes paging and search contract",
   "kind": "task",
-  "status": "backlog",
+  "status": "review",
   "priority": "P3",
   "parent": null,
   "dependsOn": [],
@@ -11,7 +11,7 @@
     "An iOS PR re-copies apps/api/openapi/openapi.json and the api, schema, authorization and conventions docs from ritmofit_dev_plan/ on ritmofit-web main into ritmofit-ios/web-contract/ using the refresh block in web-contract/README.md and updates its provenance line; the snapshots then document the likes ?cursor= and ?q= parameters and the X-RitmoFit-Next-Cursor header.",
     "The iOS cross-repo parity check passes on that PR, and any iOS wire model that decodes the likes response is reconciled or confirmed unaffected."
   ],
-  "nextAction": "Owed since RF-132 merged (#665, d888d28) changed the likes contract; found by the #666 final review. Separate iOS PR per the workspace rule (web first, then the iOS snapshot). Agent-created: Backlog until the owner sets Ready.",
+  "nextAction": "Owner set Ready on 2026-10-31. iOS PR steven-crosby/ritmofit-ios#52 (docs/rf-156-web-contract-refresh) re-copies the snapshots from web main 0a77110; parity check passes locally and no iOS wire model decodes the likes response. Awaiting owner merge permission for the iOS PR; after it merges, a later web PR sets this record Done with the merge commit.",
   "blocker": null,
   "evidence": [
     {
@@ -19,6 +19,24 @@
       "ref": "https://github.com/steven-crosby/ritmofit-web/pull/666#issuecomment-6531593005",
       "summary": "Final review of #666, item 1: no open RF record owned the iOS snapshot refresh after RF-132.",
       "checkedOn": "2026-10-30"
+    },
+    {
+      "kind": "observation",
+      "ref": "https://github.com/steven-crosby/ritmofit-web/pull/670",
+      "summary": "Owner set Ready in the conductor chat on 2026-10-31 (\"Yes, approve both\").",
+      "checkedOn": "2026-10-31"
+    },
+    {
+      "kind": "pr",
+      "ref": "https://github.com/steven-crosby/ritmofit-ios/pull/52",
+      "summary": "iOS PR re-copies openapi.json and the api, architecture, authorization, schema, conventions and design-system docs from web main 0a77110 via the README refresh block and updates provenance. Only openapi.json and api.md changed; they now document likes ?cursor=, ?q=, X-RitmoFit-Next-Cursor and the 422. Local check-cross-repo-parity.mjs: current (19 comparisons). No Swift source references the likes endpoint, so no wire model needed reconciling. Open, not merged.",
+      "checkedOn": "2026-10-31"
+    },
+    {
+      "kind": "pr",
+      "ref": "https://github.com/steven-crosby/ritmofit-web/pull/670",
+      "summary": "Web record PR: owner-Ready evidence, iOS PR evidence and For review status for RF-156.",
+      "checkedOn": "2026-10-31"
     }
   ],
   "resolution": null,
