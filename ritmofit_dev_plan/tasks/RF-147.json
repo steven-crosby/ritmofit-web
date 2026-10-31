@@ -55,6 +55,12 @@
       "ref": "https://github.com/steven-crosby/ritmofit-web/pull/668",
       "summary": "Commit 05ad7ea (#668 review fixes): the iOS rule now lives inside probeSafariModernFairPlayAccess, which returns null on iOS Safari with or without WebKitMediaKeys; the desktop Chrome test was restored to assert removeItem is never called (review finding 10), which differs from criterion 3's wording.",
       "checkedOn": "2026-10-30"
+    },
+    {
+      "kind": "pr",
+      "ref": "https://github.com/steven-crosby/ritmofit-web/pull/668",
+      "summary": "Commit fe6a1d1: the late-settle guarantee for criterion 5 is now: before play, play() re-cues over a late settle; after start, a late settle that replaced the song shows Retry (never auto-plays). fairPlayFlagCleared resets with the probe test helper; the flag is still cleared once per page (the owner's passing runs before RF-147 cleared it per call; the device run checks song 2+).",
+      "checkedOn": "2026-10-30"
     }
   ],
   "resolution": null,

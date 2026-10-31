@@ -3,7 +3,7 @@ date: 2026-10-30
 tool: Claude Code (local subagent, worktree)
 lane: lane-apple-hardening
 branch: fix/rf-108-apple-hardening
-head: 05ad7ea
+head: fe6a1d1
 base: 5dd324a
 prs: ['#668 (open, owner-gated)']
 status: open
@@ -42,10 +42,13 @@ status: open
   timing lines show `re-cue-before-play` on every play, MusicKit's item ids differ from Ritmo's
   catalog ids and the comparison needs another look.
 - 2026-10-30: the final review of 01dc417 found ten items (five significant). All were fixed in
-  05ad7ea on the same PR, with tests that fail on 01dc417. A late settle after a track started
-  now re-cues and replays that song (`late-settle-recue` in the timing lines), which the device
-  run should watch for. Finding 10 conflicts with RF-147 criterion 3's wording; it is an owner
-  decision in RF-147.
+  05ad7ea on the same PR, with tests that fail on 01dc417. Finding 10 conflicts with RF-147
+  criterion 3's wording; it is an owner decision in RF-147.
+- 2026-10-30: the second final review (6595d3f) rejected the automatic mid-track re-cue. Owner
+  decision (option 1): a late settle after start shows Retry (`late-settle-error` in the timing
+  lines) and never auto-plays; while paused it is recorded and the next play re-cues. Fixed with
+  the other second-review items in fe6a1d1. The device run should note whether a "switched away
+  from" banner ever appears.
 
 ## Verification
 

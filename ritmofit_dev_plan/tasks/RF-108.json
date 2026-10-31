@@ -18,7 +18,7 @@
     "Owner device check on iPhone Safari: tapping three timeline tracks within about 4 s ends playing the last tapped track, with neither \"still finishing a cancelled play request\" nor \"still finishing a previous queue request\".",
     "The held Apple Music playback error (apple-music-adapter.ts onPlaybackError) carries an attempt token captured when the error fires and is delivered only if prepare, stop or destroy have not started a new attempt, with a test that a held error is dropped after destroy then prepare (RF-121 criterion 0)."
   ],
-  "nextAction": "Code for criteria 0-2 and 6 is in PR #668 (fix/rf-108-apple-hardening), owner-gated and awaiting the owner's owner-approved label. After merge and a deploy, the owner runs the iPhone Safari device check for criteria 3-5: iPhone Safari, Live, an Apple Music class with 5+ tracks, on production after deploy: (1) open the app with ?playback-timing=1 and Safari Web Inspector attached from a Mac, tap Start class once, and record the \"[ritmo apple-music] timing\" lines and when the first song is audible (RF-128); (2) tap the class timeline to tracks 3, 4 and 5 within about 4 s: the last tapped track plays, with neither \"still finishing a cancelled play request\" nor \"still finishing a previous queue request\"; (3) scrub within a song, Pause and Resume, Next and let one song auto-advance, all audible; (4) if a \"did not finish a cancelled play request\" or \"timed out loading\" banner ever shows, tap Retry playback and confirm it plays without a reload. Pass: move to Done with that evidence. Fail: record the timing and banner text here and reopen. Spotify adapter settle work is RF-158 (after RF-92).",
+  "nextAction": "Code for criteria 0-2 and 6 is in PR #668 (fix/rf-108-apple-hardening), owner-gated and awaiting the owner's owner-approved label. After merge and a deploy, the owner runs the iPhone Safari device check for criteria 3-5: iPhone Safari, Live, an Apple Music class with 5+ tracks, on production after deploy: (1) open the app with ?playback-timing=1 and Safari Web Inspector attached from a Mac, tap Start class once, and record the \"[ritmo apple-music] timing\" lines and when the first song is audible (RF-128); (2) tap the class timeline to tracks 3, 4 and 5 within about 4 s: the last tapped track plays, with neither \"still finishing a cancelled play request\" nor \"still finishing a previous queue request\"; (3) scrub within a song, Pause and Resume, Next and let one song auto-advance, all audible; (4) if a \"did not finish a cancelled play request\", \"timed out loading\" or \"switched away from\" banner ever shows, tap Retry playback and confirm it plays without a reload; a late settle after start never auto-plays, so the old song may be heard until Retry. Pass: move to Done with that evidence. Fail: record the timing and banner text here and reopen. Spotify adapter settle work is RF-158 (after RF-92).",
   "blocker": null,
   "evidence": [
     {
@@ -79,6 +79,18 @@
       "kind": "pr",
       "ref": "https://github.com/steven-crosby/ritmofit-web/pull/668",
       "summary": "Final review of #668 on 01dc417 found five significant bugs plus five cleanups; fixed in commit 05ad7ea on the same PR. A hung call no longer keeps whenIdle() pending (idle at timeout or at the settle bound; runtime retire entries expire too); the runtime waits only for retired adapters of the next track's provider; the late-settle snapshot is taken before setQueue is sent; a late settle after the track started re-cues and replays the playing song, or reports a Retry error if that fails; play() waits for a cancelled play after a re-cue. Eight new tests fail on 01dc417 and pass on 05ad7ea. Mock MusicKit only.",
+      "checkedOn": "2026-10-30"
+    },
+    {
+      "kind": "observation",
+      "ref": "https://github.com/steven-crosby/ritmofit-web/pull/668",
+      "summary": "Owner decision in session 2026-10-30, relayed by the coordinator after the second final review of #668 on 6595d3f: option 1, remove automatic mid-track recovery. A late, superseded MusicKit settle after a track started shows the recoverable playback error (Retry) only while the track runs and never re-cues or plays on its own; while paused it is recorded and the next play re-cues; an unknown nowPlayingItem counts as fine.",
+      "checkedOn": "2026-10-30"
+    },
+    {
+      "kind": "pr",
+      "ref": "https://github.com/steven-crosby/ritmofit-web/pull/668",
+      "summary": "Commit fe6a1d1 implements that decision and the other second-review fixes: lease check and claim in one synchronous step; fail() and destroy() retire adapters into a page-wide settle registry so Retry waits; a cancelled play past the bound stays tracked and Retry stops it, then waits one more bound; late settles decided by flags captured at settle time. Seven new tests fail on 6595d3f and pass on fe6a1d1; the in-time-rejection test passes on both (old microtask order happened to be right). Mock MusicKit only.",
       "checkedOn": "2026-10-30"
     }
   ],
