@@ -3,20 +3,18 @@
   "id": "RF-147",
   "title": "Apple Music adapter diagnostics and FairPlay flag handling match the legacy path RF-124 restored",
   "kind": "task",
-  "status": "blocked",
+  "status": "review",
   "priority": "P3",
   "parent": null,
-  "dependsOn": [
-    "RF-108"
-  ],
+  "dependsOn": [],
   "acceptance": [
     "The playback-failed banner no longer appends a modern-access probe word that describes a path MusicKit does not use.",
     "The unprefixed com.apple.fps probe no longer runs in play() on iOS, or a measured reason to keep it is recorded (coordinate with RF-128).",
     "The desktop test asserts only that the FairPlay key is not removed, not that no removeItem call happens.",
     "Owner hears Start, Next and auto-advance in iPhone Safari Live after the change (provider code, CI cannot prove it)."
   ],
-  "nextAction": "Criteria 0, 1 and 2 (strict desktop test, accepted by the owner) are met in PR #668. After it merges and deploys, the owner hears Start, Next and auto-advance in iPhone Safari Live (the same run as RF-108's device check). When RF-108 is Done and that run passes, move this to Done. The once-per-load flag clear, the flag-log timing criterion and the late-settle checks moved to RF-159 (owner decision 2026-10-30, option 1).",
-  "blocker": "Code for criteria 0-3 and 5 is in PR #668. Criterion 4 is the owner's iPhone Safari check, and this task now depends on RF-108 (owner of the setQueue/play lock design), which closes only after its own iPhone device check.",
+  "nextAction": "Criteria 0, 1 and 2 are met in PR #668 (banner without the probe word; no com.apple.fps probe on iOS Safari; strict desktop Chrome test, accepted by the owner). Pending criterion 3: after #668 merges and deploys, the owner hears Start, Next and auto-advance in iPhone Safari Live (the same timing run as RF-128). FairPlay flag clearing is unchanged from main. The once-per-load clear, flag-log timing and late-settle checks are RF-159.",
+  "blocker": null,
   "evidence": [
     {
       "kind": "observation",
@@ -70,6 +68,12 @@
       "kind": "observation",
       "ref": "https://github.com/steven-crosby/ritmofit-web/pull/668#issuecomment-6537812528",
       "summary": "Owner decision in session 2026-10-30, relayed by the coordinator after the third final review of #668 on d78067c: option 1, narrow the PR. Keep the bounded, provider-scoped settle wait, lease waits with the atomic claim, supersede-on-timeout, fail()/destroy() through retire(), start timing and the RF-147 banner, iOS probe gate and strict desktop test. Remove all late-settle detection and the once-per-page FairPlay clear (restore the per-call clear the passing iPhone runs used). Change the stuck-play hard cap to a clear Retry error that keeps the lease until MusicKit settles. Late-settle work and the once-per-load clear move to RF-159. Former criteria 2 (flag cleared once at load, flag-log timing) and 5 (late-settle supersede and nowPlayingItem checks) were moved to RF-159.",
+      "checkedOn": "2026-10-30"
+    },
+    {
+      "kind": "observation",
+      "ref": "https://github.com/steven-crosby/ritmofit-web/pull/668#issuecomment-6538168766",
+      "summary": "Owner decision in session 2026-10-30, relayed by the coordinator after the fourth final review of #668 on 85442ac: option 1, measure first. #668 shrinks to the RF-128 timing instrumentation and the RF-147 cleanups that need no locks; everything else in apps/ reverts to main. The lock work (leases, settle wait, hard caps, attempt token) is preserved on wip/rf-108-apple-locks at 85442ac. After deploy the owner times Start and quick taps on the iPhone, and RF-108's locks are redesigned in a new PR around those numbers. RF-108 was removed from dependsOn because the criterion that needed its lock design moved to RF-159.",
       "checkedOn": "2026-10-30"
     }
   ],

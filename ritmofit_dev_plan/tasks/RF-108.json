@@ -3,7 +3,7 @@
   "id": "RF-108",
   "title": "Scrubbing or pausing Live during a track start keeps music playing",
   "kind": "task",
-  "status": "review",
+  "status": "ready",
   "priority": "P2",
   "parent": null,
   "dependsOn": [
@@ -18,7 +18,7 @@
     "Owner device check on iPhone Safari: tapping three timeline tracks within about 4 s ends playing the last tapped track, with neither \"still finishing a cancelled play request\" nor \"still finishing a previous queue request\".",
     "The held Apple Music playback error (apple-music-adapter.ts onPlaybackError) carries an attempt token captured when the error fires and is delivered only if prepare, stop or destroy have not started a new attempt, with a test that a held error is dropped after destroy then prepare (RF-121 criterion 0)."
   ],
-  "nextAction": "Code for criteria 0-2 and 6 is in PR #668 (fix/rf-108-apple-hardening), owner-gated and awaiting the owner's owner-approved label. After merge and a deploy, the owner runs the iPhone Safari device check for criteria 3-5: iPhone Safari, Live, an Apple Music class with 5+ tracks, on production after deploy: (1) open the app with ?playback-timing=1 and Safari Web Inspector attached from a Mac, tap Start class once, and record the \"[ritmo apple-music] timing\" lines and when the first song is audible (RF-128); (2) tap the class timeline to tracks 3, 4 and 5 within about 4 s: the last tapped track plays, with neither \"still finishing a cancelled play request\" nor \"still finishing a previous queue request\"; (3) scrub within a song, Pause and Resume, Next and let one song auto-advance, all audible; (4) if a \"did not finish a cancelled play request\", \"still finishing the previous song\" or \"timed out loading\" banner ever shows, tap Retry playback and confirm it plays without a reload once MusicKit has finished (a Retry while MusicKit still holds the cancelled play shows \"still finishing the previous song\" again; it never starts a second play). Pass: move to Done with that evidence. Fail: record the timing and banner text here and reopen. Spotify adapter settle work is RF-158 (after RF-92). Detecting a superseded queue request that settles late is out of this scope: RF-159 (owner decision 2026-10-30).",
+  "nextAction": "Owner's Ready set stands (decision 2026-10-30, option 1: measure first). Lock work preserved on branch wip/rf-108-apple-locks at 85442ac (leases, provider-scoped settle wait, hard caps, held-error attempt token, and tests). The four #668 final reviews are in the PR comments. Redesign after the owner's iPhone timing run (from #668's ?playback-timing=1 instrumentation: Start, three quick timeline taps, Next and one auto-advance), in a new PR. Spotify adapter settle work is RF-158 (after RF-92); late-settle detection is RF-159. Owner-gated (playback code); device check owed.",
   "blocker": null,
   "evidence": [
     {
@@ -103,6 +103,18 @@
       "kind": "pr",
       "ref": "https://github.com/steven-crosby/ritmofit-web/pull/668",
       "summary": "Commit 62042da narrows #668 as decided: no late-settle detection (a late, superseded setQueue settle is not detected; generation guards still stop its result counting as a cue), per-call FairPlay clear restored, and a stuck cancelled play keeps its lease so Retry fails with \"Apple Music is still finishing the previous song. Tap Retry.\" instead of starting a second play. The two hard-cap tests fail on d78067c and pass on 62042da. Mock MusicKit only.",
+      "checkedOn": "2026-10-30"
+    },
+    {
+      "kind": "observation",
+      "ref": "https://github.com/steven-crosby/ritmofit-web/pull/668#issuecomment-6538168766",
+      "summary": "Owner decision in session 2026-10-30, relayed by the coordinator after the fourth final review of #668 on 85442ac: option 1, measure first. #668 shrinks to the RF-128 timing instrumentation and the RF-147 cleanups that need no locks; everything else in apps/ reverts to main. The lock work (leases, settle wait, hard caps, attempt token) is preserved on wip/rf-108-apple-locks at 85442ac. After deploy the owner times Start and quick taps on the iPhone, and RF-108's locks are redesigned in a new PR around those numbers.",
+      "checkedOn": "2026-10-30"
+    },
+    {
+      "kind": "source",
+      "ref": "https://github.com/steven-crosby/ritmofit-web/tree/wip/rf-108-apple-locks",
+      "summary": "Branch preserving the RF-108 lock work at 85442ac (the #668 head before the shrink). Not reviewed for merge; its four review rounds are in the #668 comments.",
       "checkedOn": "2026-10-30"
     }
   ],

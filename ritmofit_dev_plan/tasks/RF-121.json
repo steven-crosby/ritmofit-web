@@ -13,7 +13,7 @@
     "The probe's word is written in one place (one settle handler) and the module keeps one probe record instead of three globals plus a test-only generation counter; built-in error constructors are computed once.",
     "Existing RF-107 probe and adapter tests stay green."
   ],
-  "nextAction": "Acceptance 0 (held-error attempt token) is folded into RF-108 and implemented in PR #668, which cites RF-121; RF-108 owns its acceptance and test. Criteria 1-3 stay here in Backlog until the owner sets Ready. Owner-gated (playback code).",
+  "nextAction": "Acceptance 0 (held-error attempt token) is folded into RF-108. It was implemented on #668 and then reverted out of it on 2026-10-30 (owner: measure first); the code and test are preserved on wip/rf-108-apple-locks and land with RF-108's redesign PR, which should cite RF-121. Criteria 1-3 stay here in Backlog until the owner sets Ready. Owner-gated (playback code).",
   "blocker": null,
   "evidence": [
     {
@@ -26,6 +26,12 @@
       "kind": "pr",
       "ref": "https://github.com/steven-crosby/ritmofit-web/pull/668",
       "summary": "Criterion 0 implemented under RF-108: onPlaybackError captures an attempt token that prepare, stop and destroy bump; test \"drops a held playback error after destroy then prepare (RF-121 attempt token, RF-108)\". Criteria 1-3 untouched.",
+      "checkedOn": "2026-10-30"
+    },
+    {
+      "kind": "pr",
+      "ref": "https://github.com/steven-crosby/ritmofit-web/pull/668#issuecomment-6538168766",
+      "summary": "The attempt token was reverted out of #668 with the RF-108 lock work (owner decision 2026-10-30, measure first); it is preserved on wip/rf-108-apple-locks at 85442ac.",
       "checkedOn": "2026-10-30"
     }
   ],
