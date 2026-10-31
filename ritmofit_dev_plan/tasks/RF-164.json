@@ -1,0 +1,29 @@
+{
+  "schemaVersion": 1,
+  "id": "RF-164",
+  "title": "Music's remembered view yields to a just-connected or reconnect-needed service",
+  "kind": "task",
+  "status": "backlog",
+  "priority": "P3",
+  "parent": null,
+  "dependsOn": [
+    "RF-137"
+  ],
+  "acceptance": [
+    "Returning to Music from a provider OAuth round-trip opens the service just connected, even when Reconnect started from a chip that was not selected.",
+    "A remembered service whose connection is expired or needs a reconnect stays selected and shows its Reconnect prompt, rather than falling back to another service; a service with no connection still falls back.",
+    "Component tests cover both."
+  ],
+  "nextAction": "From the RF-137 final review (#672). Feed consumeConnectionReturn's provider into MusicWorkspace and decide which connection states count as 'disconnected' for resolveMusicProvider. Agent-created: Backlog until the owner sets Ready.",
+  "blocker": null,
+  "evidence": [
+    {
+      "kind": "pr",
+      "ref": "https://github.com/steven-crosby/ritmofit-web/pull/672",
+      "summary": "Final review of #672 on b9674b7 logged, not fixed: an OAuth return opens the remembered view rather than the just-connected service; an expired remembered service falls back like a disconnected one, hiding where Reconnect would show.",
+      "checkedOn": "2026-10-31"
+    }
+  ],
+  "resolution": null,
+  "followUps": []
+}

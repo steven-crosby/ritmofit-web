@@ -3,7 +3,7 @@
   "id": "RF-137",
   "title": "Music reopens on the provider and view the instructor last used",
   "kind": "task",
-  "status": "backlog",
+  "status": "done",
   "priority": "P1",
   "parent": null,
   "dependsOn": [],
@@ -13,7 +13,7 @@
     "A remembered provider that is now disconnected falls back to a connected one with no error.",
     "Remembering uses per-viewer state that survives private mode failing (no hard dependency on storage)."
   ],
-  "nextAction": "Files: apps/web/src/components/Dashboard.tsx (MusicWorkspace selectedProvider and libraryKind state), apps/web/src/lib/music-library.ts. Surface: web.",
+  "nextAction": null,
   "blocker": null,
   "evidence": [
     {
@@ -27,8 +27,34 @@
       "ref": "docs/audits/ux-audit-2026-10-28/README.md",
       "summary": "2026-10-28 owner UX audit of production: Top priority 8 and the walkthrough re-check that the choice resets after leaving Music. Browser evidence; not re-observed at intake.",
       "checkedOn": "2026-10-29"
+    },
+    {
+      "kind": "observation",
+      "ref": "https://github.com/steven-crosby/ritmofit-web/pull/672",
+      "summary": "Owner set Ready on 2026-10-31, relayed from the Air conductor: \"Yes, approve both\" (RF-137 and RF-135). No separate Ready PR; this lane PR records it.",
+      "checkedOn": "2026-10-31"
+    },
+    {
+      "kind": "pr",
+      "ref": "https://github.com/steven-crosby/ritmofit-web/pull/672",
+      "summary": "MusicView (provider + shelf) in music-library.ts: resolveMusicProvider keeps a remembered service while connected (or when none is), else the first connected in PROVIDER_ORDER; resolveMusicKind restores a shelf the service still offers. Dashboard keeps the view in state (outlives the Music mount) and best-effort localStorage keyed by user; MusicWorkspace resolves once when connections first settle, and a chip tap settles it. providers.ts unchanged.",
+      "checkedOn": "2026-10-31"
+    },
+    {
+      "kind": "test",
+      "ref": "apps/web/src/components/Dashboard.test.tsx",
+      "summary": "Four RF-137 tests fail on main eaec1d3 and pass on the PR: Apple Music Songs survives leaving Music; a first visit opens on the connected Apple Music; a remembered disconnected Apple Music falls back to connected Spotify with no alert; with storage throwing, the choice survives leaving Music. Two existing tests narrowed to the service-chip group because Music now opens on the only connected service. music-library.test.ts covers resolve, round-trip per user, malformed values and blocked storage. jsdom component tests; not a real-browser check.",
+      "checkedOn": "2026-10-31"
+    },
+    {
+      "kind": "pr",
+      "ref": "https://github.com/steven-crosby/ritmofit-web/pull/672",
+      "summary": "Final review (/code-review medium 672) on b9674b7: one correctness bug, fixed in the same PR: a failed first connections load latched the provisional service, so a successful Retry never picked a connected one. Resolution now waits for a ready load; new test \"picks a connected service after a failed first load is retried\" fails before and passes after. isConnected now shared with libraryKindFor. Logged in RF-164, not fixed: an OAuth return opens the remembered view rather than the just-connected service when Reconnect came from a non-selected chip; an expired remembered service falls back like a disconnected one.",
+      "checkedOn": "2026-10-31"
     }
   ],
-  "resolution": null,
-  "followUps": []
+  "resolution": "Music reopens on the last service and shelf (RF-137, #672). All four criteria are covered by component and unit tests; full local gate (incl. e2e smoke) green on 2026-10-31. No real-browser check beyond the e2e smoke.",
+  "followUps": [
+    "RF-164"
+  ]
 }

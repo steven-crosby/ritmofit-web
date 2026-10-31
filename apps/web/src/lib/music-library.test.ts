@@ -1,4 +1,4 @@
-import { describe, expect, it } from 'vitest';
+import { afterEach, describe, expect, it, vi } from 'vitest';
 import {
   appendSongPage,
   LIBRARY_SORT_OPTIONS,
@@ -20,6 +20,10 @@ import {
   musicLibraryKinds,
   orderLibrary,
   playlistMetaLine,
+  recallMusicView,
+  rememberMusicView,
+  resolveMusicKind,
+  resolveMusicProvider,
   songMetaLine,
 } from './music-library.js';
 
@@ -316,5 +320,66 @@ describe('Songs paging and search (RF-132)', () => {
       'Using your first 200 liked songs. Load more on Music › Songs to choose from more.',
     );
     expect(likesSubsetNote(42, false)).toBeNull();
+  });
+});
+
+describe('Music view memory (RF-137)', () => {
+  afterEach(() => vi.unstubAllGlobals());
+
+  function stubStorage(values = new Map<string, string>()) {
+    vi.stubGlobal('window', {
+      localStorage: {
+        getItem: (key: string) => values.get(key) ?? null,
+        setItem: (key: string, value: string) => values.set(key, value),
+      },
+    });
+    return values;
+  }
+
+  it('keeps a remembered service while it is connected or nothing is', () => {
+    expect(resolveMusicProvider('apple_music', ['spotify', 'apple_music'])).toBe('apple_music');
+    expect(resolveMusicProvider('apple_music', [])).toBe('apple_music');
+  });
+
+  it('falls back to the first connected service in order', () => {
+    expect(resolveMusicProvider('apple_music', ['spotify'])).toBe('spotify');
+    expect(resolveMusicProvider(null, ['apple_music', 'spotify'])).toBe('spotify');
+    expect(resolveMusicProvider(null, [])).toBe('soundcloud');
+  });
+
+  it('restores a shelf only when the service can show it', () => {
+    const kinds = ['playlists', 'songs', 'catalog'] as const;
+    expect(resolveMusicKind('songs', true, kinds)).toBe('songs');
+    expect(resolveMusicKind('songs', false, kinds)).toBe('catalog');
+    expect(resolveMusicKind('catalog', true, kinds)).toBe('catalog');
+    expect(resolveMusicKind('songs', true, ['catalog'])).toBe('catalog');
+    expect(resolveMusicKind(null, true, kinds)).toBe('playlists');
+  });
+
+  it('round-trips the view for the same viewer only', () => {
+    stubStorage();
+    rememberMusicView('me', { provider: 'apple_music', kind: 'songs' });
+    expect(recallMusicView('me')).toEqual({ provider: 'apple_music', kind: 'songs' });
+    expect(recallMusicView('someone-else')).toBeNull();
+  });
+
+  it('ignores malformed values', () => {
+    const values = stubStorage();
+    values.set(
+      'ritmofit:music-view:v1',
+      JSON.stringify({ userId: 'me', provider: 'tidal', kind: 'songs' }),
+    );
+    expect(recallMusicView('me')).toBeNull();
+    values.set('ritmofit:music-view:v1', '{not json');
+    expect(recallMusicView('me')).toBeNull();
+  });
+
+  it('never throws when storage is blocked', () => {
+    const throwing = () => {
+      throw new Error('blocked');
+    };
+    vi.stubGlobal('window', { localStorage: { getItem: throwing, setItem: throwing } });
+    expect(() => rememberMusicView('me', { provider: 'spotify', kind: 'catalog' })).not.toThrow();
+    expect(recallMusicView('me')).toBeNull();
   });
 });

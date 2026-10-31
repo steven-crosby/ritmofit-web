@@ -15,9 +15,11 @@
  * past the loaded pages: Apple Music searches the library server-side; the other
  * services keep loading pages while a query is typed, up to
  * `SONG_SEARCH_AUTOLOAD_BOUND` songs, then say so and offer to keep loading.
+ *
+ * Music reopens on the service and shelf the viewer last used (`MusicView`, RF-137).
  */
 import { providerCapabilities, type Provider, type TrackSearchResult } from '@ritmofit/shared';
-import type { ProviderConnectionState } from './providers.js';
+import { PROVIDER_ORDER, type ProviderConnectionState } from './providers.js';
 import { formatDuration } from './class-summary.js';
 
 export type MusicChipBadgeKind =
@@ -275,6 +277,70 @@ export function defaultLibraryKind(
 ): MusicLibraryKind {
   if (connected && kinds.includes('playlists')) return 'playlists';
   return 'catalog';
+}
+
+/** The service and shelf Music last showed, so it reopens there (RF-137). */
+export interface MusicView {
+  provider: Provider;
+  kind: MusicLibraryKind;
+}
+
+const MUSIC_VIEW_KEY = 'ritmofit:music-view:v1';
+const MUSIC_LIBRARY_KINDS: readonly MusicLibraryKind[] = ['playlists', 'songs', 'catalog'];
+
+/**
+ * Which service Music opens on. A remembered service wins while it is connected,
+ * or when nothing is connected. Otherwise the first connected service in
+ * `PROVIDER_ORDER`, so a first visit or a since-disconnected choice lands
+ * somewhere useful instead of on an empty catalog.
+ */
+export function resolveMusicProvider(
+  remembered: Provider | null,
+  connected: readonly Provider[],
+): Provider {
+  if (remembered && (connected.length === 0 || connected.includes(remembered))) return remembered;
+  return PROVIDER_ORDER.find((provider) => connected.includes(provider)) ?? PROVIDER_ORDER[0]!;
+}
+
+/** The remembered shelf when that service still offers it (and is connected, unless Catalog). */
+export function resolveMusicKind(
+  remembered: MusicLibraryKind | null,
+  connected: boolean,
+  kinds: readonly MusicLibraryKind[],
+): MusicLibraryKind {
+  if (remembered && kinds.includes(remembered) && (remembered === 'catalog' || connected))
+    return remembered;
+  return defaultLibraryKind(connected, kinds);
+}
+
+/**
+ * Per-viewer memory across reloads. Storage is best effort: private mode or blocked
+ * storage just means Music forgets on reload. Within a session the Dashboard keeps
+ * the view in component state, so leaving and returning works without storage.
+ */
+export function recallMusicView(userId: string): MusicView | null {
+  try {
+    const raw = window.localStorage.getItem(MUSIC_VIEW_KEY);
+    if (!raw) return null;
+    const value = JSON.parse(raw) as Partial<MusicView> & { userId?: unknown };
+    if (
+      value.userId !== userId ||
+      !PROVIDER_ORDER.includes(value.provider as Provider) ||
+      !MUSIC_LIBRARY_KINDS.includes(value.kind as MusicLibraryKind)
+    )
+      return null;
+    return { provider: value.provider as Provider, kind: value.kind as MusicLibraryKind };
+  } catch {
+    return null;
+  }
+}
+
+export function rememberMusicView(userId: string, view: MusicView): void {
+  try {
+    window.localStorage.setItem(MUSIC_VIEW_KEY, JSON.stringify({ userId, ...view }));
+  } catch {
+    /* Music still remembers for this session through Dashboard state. */
+  }
 }
 
 /** " · N tracks", or nothing when the provider never reported a count. */
