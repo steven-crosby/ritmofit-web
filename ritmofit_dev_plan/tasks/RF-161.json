@@ -15,16 +15,17 @@
     "When a timeline release takes the firedLast skip path, a throttled seek or resume that failed is still retried (LiveMode.tsx around line 692).",
     "Cleanups: queueRequests is merged into queueGenerations, and the unused abandonedAt/expired play fields and pendingPlays are removed or kept only with a stated timing need.",
     "The module-global retired list in runtime.ts (around line 730) is scoped so coordinators and tests do not share it.",
+    "The whenIdle() doc in apple-music-adapter.ts (around line 647) matches the code: an expired request fails with the existing Retry wording after 2 s rather than being \"superseded\".",
     "A decision is recorded on making coordinator seek idempotent, which would remove the throttle firedLast special case and cover other duplicate-commit sources.",
     "Each behavior change has a failing-then-passing test with mock MusicKit; existing runtime supersession tests pass."
   ],
-  "nextAction": "From the #669 round-2 final review (items 3-8). Start after RF-108 closes, so its owed device check runs on the code it reviewed. Playback code is owner-gated. Agent-created: Backlog until the owner sets Ready.",
+  "nextAction": "From the #669 round-2 final review (items 2-8). Start after RF-108 closes, so its owed device check runs on the code it reviewed. Playback code is owner-gated. Agent-created: Backlog until the owner sets Ready.",
   "blocker": null,
   "evidence": [
     {
       "kind": "pr",
       "ref": "https://github.com/steven-crosby/ritmofit-web/pull/669#issuecomment-6546640152",
-      "summary": "Final review of #669 on d0e2b52 (merged 0a77110), items 3-8: missed play() rejection after first playing state; seek burst after a pending play() settles; lost retry on the firedLast release path; queueRequests/queueGenerations duplication and dead abandonedAt/expired/pendingPlays; idempotent coordinator seek as a design option; module-global retired list shared across coordinators and tests.",
+      "summary": "Final review of #669 on d0e2b52 (merged 0a77110), items 2-8: whenIdle() doc says \"superseded\" but the code fails with the Retry wording; missed play() rejection after first playing state; seek burst after a pending play() settles; lost retry on the firedLast release path; queueRequests/queueGenerations duplication and dead abandonedAt/expired/pendingPlays; idempotent coordinator seek as a design option; module-global retired list shared across coordinators and tests.",
       "checkedOn": "2026-10-31"
     }
   ],

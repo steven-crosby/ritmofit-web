@@ -13,7 +13,7 @@
     "On iPhone Safari Live, the first Apple Music song is audible within 1 s of tapping Start class on 5G.",
     "Work that needs no gesture (load MusicKit, configure, check authorization) happens before Start; only setQueue/play run in the tap."
   ],
-  "nextAction": "Instrumentation landed in #668 (97f4454). The owner's first timing run on 2026-10-31 (RF-108 evidence, HISTORY) measured audio 0.5-1.2 s after play() on Wi-Fi and fed RF-108's redesign (#669, live at 0a77110); criterion 0 (audible within 1 s of tapping Start on 5G) still needs the owner's timed Start on 5G. If set-queue dominates, the open question in #668 (cue the first song before Start) is next. #668 review items 3-6 (timing-log edge cases) are noted in this record's evidence for the next change to start-timing.ts.",
+  "nextAction": "Instrumentation landed in #668 (97f4454). The owner's first timing run on 2026-10-31 (RF-108 evidence, HISTORY) measured audio 0.5-1.2 s after play() on Wi-Fi and fed RF-108's redesign (#669, live at 0a77110); criterion 0 (audible within 1 s of tapping Start on 5G) still needs the owner's timed Start on 5G. If set-queue dominates, the open question in #668 (cue the first song before Start) is next. #668 review items 3-8 (timing-log edge cases and cleanups) are noted in this record's evidence for the next change to start-timing.ts.",
   "blocker": null,
   "evidence": [
     {
@@ -55,7 +55,7 @@
     {
       "kind": "pr",
       "ref": "https://github.com/steven-crosby/ritmofit-web/pull/668#issuecomment-6539391050",
-      "summary": "Final review of #668 on b70f529, items 3-6 (debug timing-log edge cases, not triggered by the owner's device steps; fix with the next change to start-timing.ts): (3) timedCall: a synchronous throw from play()/setQueue() leaves timingInFlight above zero, so later destroys log \"cancelled\"; (4) prepare() bumps timingAttempt on a live re-prepare, so a late settle from the previous prepare is labelled \"(cancelled adapter)\"; (5) readOptIn: a failing sessionStorage.setItem hides an existing localStorage opt-in; (6) a FairPlayStorage without getItem logs \"not-1\" whatever the flag is. Items 1-2 are RF-160.",
+      "summary": "Final review of #668 on b70f529, items 3-8 (debug timing-log edge cases, not triggered by the owner's device steps; fix with the next change to start-timing.ts): (3) timedCall: a synchronous throw from play()/setQueue() leaves timingInFlight above zero, so later destroys log \"cancelled\"; (4) prepare() bumps timingAttempt on a live re-prepare, so a late settle from the previous prepare is labelled \"(cancelled adapter)\"; (5) readOptIn: a failing sessionStorage.setItem hides an existing localStorage opt-in; (6) a FairPlayStorage without getItem logs \"not-1\" whatever the flag is. Cleanups: (7) the settle-logging pattern for play/setQueue is duplicated; (8) the listener-registration guards for onTimingState are redundant. Items 1-2 are RF-160.",
       "checkedOn": "2026-10-31"
     }
   ],

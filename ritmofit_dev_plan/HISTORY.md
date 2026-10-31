@@ -45,8 +45,8 @@ detail). Current focus and `main` vs production live in the "Now" block of
 > **Merge 2026-10-31 — [#668](https://github.com/steven-crosby/ritmofit-web/pull/668) as `97f4454` (RF-128, RF-147).** The RF-128 debug
 > timing log (`?playback-timing=1` turns it on, `=0` turns it off) and RF-147 criteria 0, 1 and 3.
 > Playback is unchanged: after its fourth final review the owner chose "measure first", and the lock work
-> is preserved on `wip/rf-108-apple-locks` (`85442ac`). The last review's items are RF-160 and
-> RF-128 evidence.
+> is preserved on `wip/rf-108-apple-locks` (`85442ac`). The last review's items 1–2 are RF-160;
+> items 3–8 are RF-128 evidence.
 
 > **Session 2026-10-30 — round r20261029a close and device results (docs only).** Two web lanes ran
 > under one orchestrator, partitioned by file: Lane A owned `apple-music-adapter.ts` and its test

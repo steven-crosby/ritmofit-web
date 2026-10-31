@@ -19,13 +19,12 @@
 
 **Current actionable state:** [RF board](./tasks.md), backed by canonical [task records](./tasks/README.md).
 The order of work is [Phases](#phases) below; each phase lists RF records, not a second backlog.
-**Main vs production (observed 2026-10-31):** production is Worker
-`61cdeb33-e106-4224-90ad-18ad0cb3173f` at main `0a77110`, SPA `assets/index-DTaSHnmL.js` (three
-cache-busted fetches agree). It adds RF-128's timing log and RF-147 (#668) and RF-108's queue wait
-(#669) to `d888d28`. Rollback is `ffcf858d-78b7-4bc6-8a7b-e4197f28f6e2` (`97f4454`). Docs records
-after `0a77110` do not change runtime. See [HISTORY](./HISTORY.md).
-**In flight:** the D25 provider matrix (#654). The owner's 2026-10-31 Ready set:
-[RF-137](./tasks/RF-137.json) and [RF-135](./tasks/RF-135.json) (web lanes), RF-156 and iOS RF-1014.
+**Main vs production (2026-10-31):** production is main `0a77110`: SPA `assets/index-DTaSHnmL.js`
+on three cache-busted fetches, matching the deploy record (Worker `61cdeb33-e106-4224-90ad-18ad0cb3173f`
+per that record; not checked from this environment). It adds #668 (RF-128, RF-147) and #669 (RF-108)
+to `d888d28`. Rollback is `ffcf858d-78b7-4bc6-8a7b-e4197f28f6e2` (`97f4454`). See [HISTORY](./HISTORY.md).
+**In flight:** the D25 provider matrix (#654). **Ready (owner, 2026-10-31):** [RF-137](./tasks/RF-137.json),
+[RF-135](./tasks/RF-135.json), RF-156 and iOS RF-1014.
 **Next step:** the owner's iPhone Safari device check on `0a77110` (the 7 steps in the #669 PR body,
 with `?playback-timing=1`) for [RF-108](./tasks/RF-108.json), [RF-128](./tasks/RF-128.json) and
 [RF-147](./tasks/RF-147.json). Review follow-ups are [RF-160](./tasks/RF-160.json) and

@@ -162,7 +162,7 @@
     {
       "kind": "pr",
       "ref": "https://github.com/steven-crosby/ritmofit-web/pull/669#issuecomment-6546640152",
-      "summary": "Final review of #669 on d0e2b52: nothing blocking; merged as 0a77110 and deployed 2026-10-31 (HISTORY). Items 3-8 are logged in RF-161; item 1 (up to about 2 s wait between a tap and play()) is part of the owner's device check; item 9 was this record's stale summary, corrected in #671.",
+      "summary": "Final review of #669 on d0e2b52: nothing blocking; merged as 0a77110 and deployed 2026-10-31 (HISTORY). Items 2-8 are logged in RF-161; item 1 (up to about 2 s wait between a tap and play()) is part of the owner's device check; item 9 was this record's stale summary, corrected in #671.",
       "checkedOn": "2026-10-31"
     }
   ],

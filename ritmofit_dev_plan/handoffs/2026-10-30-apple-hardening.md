@@ -4,7 +4,7 @@ tool: Claude Code (local subagent, worktree)
 lane: lane-apple-hardening
 branch: n/a (#668 and #669 merged)
 head: 0a77110
-base: 5dd324a
+base: n/a
 prs: ['#668 (merged 97f4454)', '#669 (merged 0a77110)']
 status: open
 ---
@@ -25,7 +25,7 @@ status: open
   source, a new start waits for a previous queue (bounded 2 s), a pending play is superseded, and
   `play()` is capped at 5 s.
 - `wip/rf-108-apple-locks` (`85442ac`) was the pre-redesign lock work. #669 replaced it; it is not
-  for merge.
+  for merge. Deleting it needs the owner's permission (INBOX, 2026-10-31).
 
 ## Tasks
 
