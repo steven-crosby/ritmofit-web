@@ -60,5 +60,7 @@
     }
   ],
   "resolution": "Copper now marks identity and one primary per surface (#673): caution status dots on Classes rows, one copper Live queue action (the leading card), landing CTAs reviewed and kept. Owner to accept the two design choices in the PR.",
-  "followUps": []
+  "followUps": [
+    "RF-163"
+  ]
 }
