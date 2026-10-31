@@ -116,6 +116,27 @@ const ENDPOINT_TOLERANCE_MS = 1_000;
  */
 const DEFAULT_SETTLE_WAIT_MS = 3_000;
 
+/**
+ * Retired adapters whose SDK calls are still in flight, shared by every
+ * coordinator on the page: each provider SDK is a page singleton, and Live's
+ * Retry builds a fresh coordinator, which must still wait for the one it
+ * replaced (#668 second review, finding 5). Each entry removes itself once the
+ * adapter is idle or its bound passes, whichever is first.
+ */
+const retiredAdapters = new Map<PlaybackAdapter, { provider: Provider; done: Promise<void> }>();
+
+/** Test-only: forget retired adapters so one test's hung call cannot slow the next. */
+export function resetRetiredAdaptersForTests(): void {
+  retiredAdapters.clear();
+}
+
+/** The pending settle entries for one provider's retired adapters. */
+function settlingFor(provider: Provider): Promise<void>[] {
+  return [...retiredAdapters.values()]
+    .filter((entry) => entry.provider === provider)
+    .map((entry) => entry.done);
+}
+
 export interface RuntimeCoordinatorOptions extends SelectionOptions {
   adapters: AdapterRegistry;
   onStatus?: (status: CoordinatorStatus) => void;
@@ -179,12 +200,6 @@ export class RuntimePlaybackCoordinator {
   private livenessProbeInFlight = false;
   /** rAF ticks since the last sample; zero means the host loop stalled too. */
   private hostTicksSinceSample = 0;
-  /** Destroyed adapters whose SDK calls are still in flight; see `retire`. */
-  private readonly settling = new Map<
-    PlaybackAdapter,
-    { provider: Provider; done: Promise<void> }
-  >();
-
   constructor(
     private readonly payload: RunPayload,
     private readonly connections: ConnectionLike[],
@@ -302,7 +317,7 @@ export class RuntimePlaybackCoordinator {
     this.destroyTransitioningAdapter();
     if (this.active) {
       try {
-        this.active.adapter.destroy();
+        this.retire(this.active.adapter);
       } catch {
         // Unmount teardown must never throw into React.
       }
@@ -382,10 +397,12 @@ export class RuntimePlaybackCoordinator {
     // the epoch: another seek or tap during the wait supersedes this start.
     // The wait gets its own debug timing line (RF-128), since the adapter's
     // timer only starts at prepare.
-    if ([...this.settling.values()].some((entry) => entry.provider === selection.provider)) {
+    const pending = settlingFor(selection.provider);
+    if (pending.length > 0) {
       const timer = startTimer(`[ritmo playback ${selection.provider}]`);
       timer.mark('settle-wait');
-      await this.awaitSettled(selection.provider);
+      // Each entry is already bounded by its own expiry (see retire).
+      await Promise.all(pending);
       timer.mark('settle-wait-done');
       if (epoch !== this.epoch) return;
     }
@@ -510,41 +527,19 @@ export class RuntimePlaybackCoordinator {
     if (!idle) return;
     // The entry expires after the settle bound even if the adapter never
     // reports idle, so one hung SDK call cannot make every later start wait
-    // (review #668, finding 1).
+    // (review #668, finding 1). That expiry is the only bound on the wait.
     const done: Promise<void> = raceTimer(
       idle.catch(() => undefined),
-      this.settleWaitMs(),
+      this.options.settleWaitMs ?? DEFAULT_SETTLE_WAIT_MS,
       () => undefined,
     ).then(() => {
-      if (this.settling.get(adapter)?.done === done) this.settling.delete(adapter);
+      if (retiredAdapters.get(adapter)?.done === done) retiredAdapters.delete(adapter);
     });
-    this.settling.set(adapter, { provider: adapter.provider, done });
-  }
-
-  private settleWaitMs(): number {
-    return this.options.settleWaitMs ?? DEFAULT_SETTLE_WAIT_MS;
+    retiredAdapters.set(adapter, { provider: adapter.provider, done });
   }
 
   /**
-   * Wait, bounded, for retired adapters of the same provider only: a
-   * SoundCloud or Spotify start never pays for a pending MusicKit call
-   * (review #668, finding 2). Each provider has one page-level SDK, so the
-   * provider is the shared resource.
-   */
-  private async awaitSettled(provider: Provider): Promise<void> {
-    const pending = [...this.settling.values()]
-      .filter((entry) => entry.provider === provider)
-      .map((entry) => entry.done);
-    if (pending.length === 0) return;
-    await raceTimer(
-      Promise.all(pending).then(() => undefined),
-      this.settleWaitMs(),
-      () => undefined,
-    );
-  }
-
-  /**
-   * Tear down the adapter currently awaiting prepare/seek/play. Identity
+   * Destroy the adapter currently awaiting prepare/seek/play. Identity
    * guarding prevents an old transition from clearing a newer track's adapter
    * when its provider promise settles late.
    */
@@ -801,7 +796,7 @@ export class RuntimePlaybackCoordinator {
     this.destroyTransitioningAdapter();
     if (this.active) {
       try {
-        this.active.adapter.destroy();
+        this.retire(this.active.adapter);
       } catch {
         // The error state stands regardless of teardown success.
       }

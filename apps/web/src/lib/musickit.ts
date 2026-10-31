@@ -306,6 +306,7 @@ export function resetSafariModernAccessProbeForTests(): void {
   modernAccessInFlight = null;
   modernAccessGeneration += 1;
   flagLogged = false;
+  fairPlayFlagCleared = false;
 }
 
 /**
