@@ -145,8 +145,13 @@ import {
   SPOTIFY_ALLOWLIST_CODE,
   PROVIDER_QUOTA_CODE,
   libraryFailureExplainsItself,
+  recallMusicView,
+  rememberMusicView,
+  resolveMusicKind,
+  resolveMusicProvider,
   type LibrarySort,
   type MusicLibraryKind,
+  type MusicView,
 } from '../lib/music-library.js';
 import { Dialog } from './Dialog.js';
 import { ErrorBoundary } from './ErrorBoundary.js';
@@ -237,6 +242,16 @@ export function Dashboard({
 }) {
   const [profileName, setProfileName] = useState(userName);
   const [destination, setDestination] = useState<DashboardDestination>('classes');
+  // Music reopens where the viewer left it (RF-137). State here outlives the
+  // MusicWorkspace mount, so this works even when storage is unavailable.
+  const [musicView, setMusicView] = useState<MusicView | null>(() => recallMusicView(userId));
+  const rememberView = useCallback(
+    (view: MusicView) => {
+      setMusicView(view);
+      rememberMusicView(userId, view);
+    },
+    [userId],
+  );
   const [classes, setClasses] = useState<ClassListItem[]>([]);
   const [listStatus, setListStatus] = useState<ListStatus>('loading');
   const [nextClassCursor, setNextClassCursor] = useState<string | null>(null);
@@ -1222,6 +1237,8 @@ export function Dashboard({
             <MusicWorkspace
               userId={userId}
               connectionRevision={connectionRevision}
+              rememberedView={musicView}
+              onViewChange={rememberView}
               onOpenConnections={() => setConnectionsOpen(true)}
               onOpenPlaylist={(provider, playlists, playlistId) =>
                 setPlaylistBrowse({ provider, playlists, playlistId })
@@ -1978,6 +1995,8 @@ function ProviderConnectionsLoadState({
 function MusicWorkspace({
   userId,
   connectionRevision,
+  rememberedView,
+  onViewChange,
   onOpenConnections,
   onOpenPlaylist,
   onBrowseLikes,
@@ -1985,6 +2004,8 @@ function MusicWorkspace({
 }: {
   userId: string;
   connectionRevision: number;
+  rememberedView: MusicView | null;
+  onViewChange: (view: MusicView) => void;
   onOpenConnections: () => void;
   onOpenPlaylist: (
     provider: Provider,
@@ -2018,7 +2039,11 @@ function MusicWorkspace({
     beforeRedirect: (provider) =>
       rememberConnectionReturn({ userId, destination: 'music', provider }),
   });
-  const [selectedProvider, setSelectedProvider] = useState<Provider>(PROVIDER_ORDER[0]!);
+  // The view to restore is read once at mount; later updates only record it.
+  const restoreView = useRef(rememberedView);
+  const [selectedProvider, setSelectedProvider] = useState<Provider>(
+    rememberedView?.provider ?? PROVIDER_ORDER[0]!,
+  );
   const [libraryKind, setLibraryKind] = useState<MusicLibraryKind>('catalog');
   const [libraryQuery, setLibraryQuery] = useState('');
   const [sort, setSort] = useState<LibrarySort>('library');
@@ -2037,6 +2062,8 @@ function MusicWorkspace({
   } | null>(null);
   const librarySearchId = useRef(0);
   const typeTouched = useRef(false);
+  // Until connections first load, the provider is provisional; a chip tap settles it too.
+  const providerResolved = useRef(false);
   const [query, setQuery] = useState('');
   const [results, setResults] = useState<TrackSearchResult[] | null>(null);
   const [searching, setSearching] = useState(false);
@@ -2048,14 +2075,42 @@ function MusicWorkspace({
   const [creating, setCreating] = useState(false);
   const requestId = useRef(0);
 
-  const libraryKindFor = (provider: Provider): MusicLibraryKind => {
-    const connection = connections.find((row) => row.provider === provider);
-    const connected = providerConnectionState(provider, connection, Date.now()) === 'connected';
-    return defaultLibraryKind(connected, musicLibraryKinds(provider));
-  };
+  const isConnected = (provider: Provider) =>
+    providerConnectionState(
+      provider,
+      connections.find((row) => row.provider === provider),
+      Date.now(),
+    ) === 'connected';
+  const libraryKindFor = (provider: Provider): MusicLibraryKind =>
+    defaultLibraryKind(isConnected(provider), musicLibraryKinds(provider));
+
+  // Runs before the resolve effect so the provisional pre-load view is never recorded.
+  useEffect(() => {
+    if (providerResolved.current) onViewChange({ provider: selectedProvider, kind: libraryKind });
+  }, [selectedProvider, libraryKind]);
 
   useEffect(() => {
-    if (typeTouched.current || connectionsStatus === 'loading') return;
+    if (connectionsStatus === 'loading') return;
+    // A failed load is not an answer: stay provisional so a successful Retry resolves.
+    if (!providerResolved.current && connectionsStatus === 'ready') {
+      providerResolved.current = true;
+      const restore = restoreView.current;
+      const provider = resolveMusicProvider(
+        restore?.provider ?? null,
+        PROVIDER_ORDER.filter(isConnected),
+      );
+      const kind = resolveMusicKind(
+        provider === restore?.provider ? restore.kind : null,
+        isConnected(provider),
+        musicLibraryKinds(provider),
+      );
+      // A restored shelf other than the default counts as the viewer's own choice.
+      if (kind !== libraryKindFor(provider)) typeTouched.current = true;
+      setSelectedProvider(provider);
+      setLibraryKind(kind);
+      return;
+    }
+    if (typeTouched.current) return;
     setLibraryKind(libraryKindFor(selectedProvider));
   }, [connections, connectionsStatus, selectedProvider]);
 
@@ -2334,6 +2389,7 @@ function MusicWorkspace({
           failed: Boolean(loadMoreLikesError),
         });
   const chooseProvider = (provider: Provider) => {
+    providerResolved.current = true;
     if (flow.operation && flow.operation.provider !== provider) flow.cancel();
     if (provider !== selectedProvider) {
       typeTouched.current = false;
