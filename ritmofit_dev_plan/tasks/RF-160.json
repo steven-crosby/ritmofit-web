@@ -1,0 +1,27 @@
+{
+  "schemaVersion": 1,
+  "id": "RF-160",
+  "title": "Apple Music playback-failed banner appears at once and names the failing track",
+  "kind": "task",
+  "status": "backlog",
+  "priority": "P3",
+  "parent": null,
+  "dependsOn": [],
+  "acceptance": [
+    "When an Apple Music playback error fires on desktop Safari, the playback-failed banner appears at once; it no longer waits up to 2 s for the FairPlay probe, whose result goes only to the console.",
+    "If the adapter is re-prepared for another track while a deferred failure report is pending, the banner names the track that failed, or the stale report is dropped; it never names the next track.",
+    "Component or adapter tests cover both cases with mock MusicKit."
+  ],
+  "nextAction": "From the #668 final review (items 1-2); both behaviors are already on main, not introduced by #668. The deferred reportPlaybackFailed in apps/web/src/lib/playback/apple-music-adapter.ts checks only !this.destroyed. Playback code is owner-gated. Agent-created: Backlog until the owner sets Ready.",
+  "blocker": null,
+  "evidence": [
+    {
+      "kind": "pr",
+      "ref": "https://github.com/steven-crosby/ritmofit-web/pull/668#issuecomment-6539391050",
+      "summary": "Final review of #668 on b70f529, items 1-2: onPlaybackError waits for the desktop-Safari FairPlay probe (up to 2 s) before the banner although the probe word now goes only to the console; the deferred reportPlaybackFailed checks only !this.destroyed, so a re-prepare while the probe is pending can name the next track.",
+      "checkedOn": "2026-10-31"
+    }
+  ],
+  "resolution": null,
+  "followUps": []
+}

@@ -18,7 +18,7 @@
     "Owner device check on iPhone Safari: tapping three timeline tracks within about 4 s ends playing the last tapped track, with neither \"still finishing a cancelled play request\" nor \"still finishing a previous queue request\".",
     "The held Apple Music playback error (apple-music-adapter.ts onPlaybackError) carries an attempt token captured when the error fires and is delivered only if prepare, stop or destroy have not started a new attempt, with a test that a held error is dropped after destroy then prepare (RF-121 criterion 0)."
   ],
-  "nextAction": "PR #669 awaits owner review (owner-gated: playback). After merge and deploy, the owner runs the iPhone Safari check with ?playback-timing=1: one Start, three timeline taps within about 4 s, quick taps, Next right after a start, and one auto-advance. Criteria 0-2 and 6 are covered in code and mock tests; criteria 3-5 are the owed device checks. Spotify half: RF-158. Late-settle detection and clear-once: RF-159.",
+  "nextAction": "#669 merged as 0a77110 and is live on production (Worker 61cdeb33, SPA index-DTaSHnmL.js, HISTORY 2026-10-31). Stays For review until the owner's iPhone Safari device check: the 7 steps in the #669 PR body with ?playback-timing=1 (one Start, three timeline taps within about 4 s, quick taps, Next right after a start, one auto-advance), including whether WebKit keeps the gesture across the up-to-2 s wait. Criteria 0-2 and 6 are covered in code and mock tests; criteria 3-5 are the owed device checks. Spotify half: RF-158. Late-settle detection and clear-once: RF-159. Review follow-ups: RF-161.",
   "blocker": null,
   "evidence": [
     {
@@ -126,7 +126,7 @@
     {
       "kind": "pr",
       "ref": "https://github.com/steven-crosby/ritmofit-web/pull/669",
-      "summary": "Double start fixed at its source: LiveTimeline pointer down fired a leading-edge seek and pointer up flushed the same position; the trailing throttle now skips a flush equal to the value its own call just fired, and the timeline commits the gesture's previewed position. Apple adapter: a new setQueue/play waits for a previous (including cancelled) call, bounded 2 s from the cancel, then fails with the existing Retry wording and stops blocking so Retry proceeds; first playing state counts as started, play() capped at 3 s with a Retry error; whenIdle() settle signal; held playback error carries an attempt token. Runtime: enterTrack waits for retired adapters of the same provider (bounded 3 s) and re-checks the epoch before prepare. The double setQueue on later tracks is the mid-track re-cue (prepare cues the window start, the pre-play seek re-cues in play()), not the FairPlay clear; behavior left unchanged. Mock MusicKit only.",
+      "summary": "Double start fixed at its source: LiveTimeline pointer down fired a leading-edge seek and pointer up flushed the same position; the trailing throttle now skips a flush equal to the value its own call just fired, and the timeline commits the gesture's previewed position. Apple adapter as merged (0a77110): a pending previous play() is superseded, not waited on; a new start waits for a previous (including cancelled) setQueue through runtime.enterTrack and whenIdle(), bounded 2 s from the cancel, then fails with the existing Retry wording and stops blocking so Retry proceeds; first playing state counts as started, and play() is capped at 5 s with a Retry error; held playback error carries an attempt token. Runtime: enterTrack re-checks the epoch before prepare. The double setQueue on later tracks is the mid-track re-cue (prepare cues the window start, the pre-play seek re-cues in play()), not the FairPlay clear; behavior left unchanged. Corrected 2026-10-31 per the #669 final review item 9 (the first version of this summary described 57a06b3: a 3 s cap and waiting for a previous play). Mock MusicKit only.",
       "checkedOn": "2026-10-31"
     },
     {
@@ -158,11 +158,18 @@
       "ref": "apps/web/src/components/LiveMode.test.tsx",
       "summary": "Hold 2 s then release, and drag then rest 2 s then release: the clock matches the provider at release and after (both fail on 57a06b3); plain tap starts one adapter; a release inside the throttle window commits once. apple-music-adapter.test.ts adds: Next right after a start reaches MusicKit play() in the same tick, pause/stop re-applied and live seek deferred while play() is pending, a cancelled setQueue settling at 1.5 s lets the next start proceed, a hung one fails once at a single bound, a 3.5 s start succeeds under the 5 s cap, destroy mid-prepare is quiet.",
       "checkedOn": "2026-10-31"
+    },
+    {
+      "kind": "pr",
+      "ref": "https://github.com/steven-crosby/ritmofit-web/pull/669#issuecomment-6546640152",
+      "summary": "Final review of #669 on d0e2b52: nothing blocking; merged as 0a77110 and deployed 2026-10-31 (HISTORY). Items 3-8 are logged in RF-161; item 1 (up to about 2 s wait between a tap and play()) is part of the owner's device check; item 9 was this record's stale summary, corrected in #671.",
+      "checkedOn": "2026-10-31"
     }
   ],
   "resolution": null,
   "followUps": [
     "RF-158",
-    "RF-159"
+    "RF-159",
+    "RF-161"
   ]
 }
