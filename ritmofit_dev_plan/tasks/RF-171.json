@@ -1,0 +1,30 @@
+{
+  "schemaVersion": 1,
+  "id": "RF-171",
+  "title": "Plan-gap guidance reads as guidance on Classes and in the builder",
+  "kind": "task",
+  "status": "backlog",
+  "priority": "P3",
+  "parent": null,
+  "dependsOn": [
+    "RF-133"
+  ],
+  "acceptance": [
+    "A runnable class with a plan gap does not show a label on the Classes row that reads as blocked (today \"Needs music\" or \"Over time\" with a caution dot), so Classes, the builder and the Live queue agree at a glance.",
+    "The builder keeps exactly one copper primary when the plan lead is an over-time warning with no copper plan action.",
+    "A runnable class with a plan gap still shows its tempo, cue and music gaps somewhere in the builder summary.",
+    "creation-next-step.ts takes the refine ranks from class-ordering.ts instead of hard-coding them; ClassPlanBlocks drops the uncalled onPlanReady prop."
+  ],
+  "nextAction": "From the RF-133 final review (#680). Files: apps/web/src/lib/library-shell.ts (readinessLabel), apps/web/src/lib/creation-next-step.ts, apps/web/src/lib/class-ordering.ts, apps/web/src/components/Dashboard.tsx (ClassHeaderCard Run live style), ClassReadinessSummary.tsx, ClassPlanBlocks.tsx. The label wording is a product call for the owner. Agent-created: Backlog until the owner sets Ready.",
+  "blocker": null,
+  "evidence": [
+    {
+      "kind": "pr",
+      "ref": "https://github.com/steven-crosby/ritmofit-web/pull/680",
+      "summary": "Final review of #680 on 324677a, logged, not blocking: Classes label reads blocked for a runnable plan-gap class; an over-time lead may leave the builder without a copper primary; the runnable plan-gap summary hides other readiness gaps; hard-coded refine ranks; dead onPlanReady prop.",
+      "checkedOn": "2026-10-31"
+    }
+  ],
+  "resolution": null,
+  "followUps": []
+}

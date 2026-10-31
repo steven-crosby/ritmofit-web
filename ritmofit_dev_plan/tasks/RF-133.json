@@ -75,5 +75,7 @@
     }
   ],
   "resolution": "One run rule shipped (#680): only durations and music on the timeline decide whether a class can run, through canRunPayload; plan gaps and over-time blocks are guidance in the builder and on the Classes row; the builder, Classes, the Live queue and preflight agree.",
-  "followUps": []
+  "followUps": [
+    "RF-171"
+  ]
 }
