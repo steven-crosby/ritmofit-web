@@ -1,0 +1,52 @@
+{
+  "schemaVersion": 1,
+  "id": "RF-159",
+  "title": "Apple Music detects a superseded queue request that settles late",
+  "kind": "task",
+  "status": "backlog",
+  "priority": "P3",
+  "parent": null,
+  "dependsOn": [
+    "RF-108"
+  ],
+  "acceptance": [
+    "The #664 review items 1, 3, 4 and 5 are handled under RF-108's lock and supersession design, which must pass these checks: a timed-out setQueue generation is superseded; nowPlayingItem is checked before play, so a late settle cannot play the old song; a setQueue that settles after its timeout cannot start the old song; setQueue uses one try/finally; and a test covers a late settle and the not-destroyed path. Moved from RF-147 on 2026-10-30.",
+    "The stored mk-safari-modern-eme flag is cleared once at MusicKit load instead of at four call sites, and the flag log runs after the key session attaches, with accurate comments (including FAIRPLAY_KEY_SYSTEM). Moved from RF-147 on 2026-10-30."
+  ],
+  "nextAction": "Created 2026-10-30 when the owner narrowed #668 (option 1). A late settle has never been seen on a device, so start only if the RF-108 iPhone run or later use shows the old song playing after a quick tap or Retry. Any design must survive the three #668 review rounds: no re-cue or play on its own, no error while paused or before the runtime marks the job active, ID-format tolerance matching play(), and resume at the paused position. The once-at-load clear must not bring back the RF-124 failure mode (a flag written after load). Agent-created: Backlog until the owner sets Ready. Owner-gated (playback code).",
+  "blocker": null,
+  "evidence": [
+    {
+      "kind": "pr",
+      "ref": "https://github.com/steven-crosby/ritmofit-web/pull/668#issuecomment-6534892752",
+      "summary": "First final review of #668 (01dc417): late settles during a cue and after start were not handled.",
+      "checkedOn": "2026-10-30"
+    },
+    {
+      "kind": "pr",
+      "ref": "https://github.com/steven-crosby/ritmofit-web/pull/668#issuecomment-6537038191",
+      "summary": "Second final review of #668 (6595d3f): the automatic mid-track re-cue restarted audio while paused and treated unknown items as mismatches.",
+      "checkedOn": "2026-10-30"
+    },
+    {
+      "kind": "pr",
+      "ref": "https://github.com/steven-crosby/ritmofit-web/pull/668#issuecomment-6537812528",
+      "summary": "Third final review of #668 (d78067c): late-settle reporting raced runtime activation, misread ID formats and lost the paused position; the once-per-page FairPlay clear reopened the RF-124 failure mode.",
+      "checkedOn": "2026-10-30"
+    },
+    {
+      "kind": "observation",
+      "ref": "https://github.com/steven-crosby/ritmofit-web/pull/668#issuecomment-6537812528",
+      "summary": "Owner decision in session 2026-10-30, relayed by the coordinator after the third final review of #668 on d78067c: option 1, narrow the PR. Keep the bounded, provider-scoped settle wait, lease waits with the atomic claim, supersede-on-timeout, fail()/destroy() through retire(), start timing and the RF-147 banner, iOS probe gate and strict desktop test. Remove all late-settle detection and the once-per-page FairPlay clear (restore the per-call clear the passing iPhone runs used). Change the stuck-play hard cap to a clear Retry error that keeps the lease until MusicKit settles. Late-settle work and the once-per-load clear move to RF-159.",
+      "checkedOn": "2026-10-30"
+    },
+    {
+      "kind": "observation",
+      "ref": "https://github.com/steven-crosby/ritmofit-web/pull/668#issuecomment-6538168766",
+      "summary": "Owner decision in session 2026-10-30, relayed by the coordinator after the fourth final review of #668 on 85442ac: option 1, measure first. #668 shrinks to the RF-128 timing instrumentation and the RF-147 cleanups that need no locks; everything else in apps/ reverts to main. The lock work (leases, settle wait, hard caps, attempt token) is preserved on wip/rf-108-apple-locks at 85442ac. After deploy the owner times Start and quick taps on the iPhone, and RF-108's locks are redesigned in a new PR around those numbers.",
+      "checkedOn": "2026-10-30"
+    }
+  ],
+  "resolution": null,
+  "followUps": []
+}

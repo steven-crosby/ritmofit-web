@@ -1,0 +1,36 @@
+{
+  "schemaVersion": 1,
+  "id": "RF-158",
+  "title": "Scrubbing or pausing Live during a Spotify track start keeps music playing",
+  "kind": "task",
+  "status": "backlog",
+  "priority": "P2",
+  "parent": null,
+  "dependsOn": [
+    "RF-92",
+    "RF-108"
+  ],
+  "acceptance": [
+    "A seek, skip, or pause then resume during an in-flight Spotify start ends playing or buffering at the new position (the Spotify half of lane repro CM-01 passes).",
+    "The Spotify adapter implements the whenIdle() settle signal from RF-108, so runtime.enterTrack waits for a cancelled Spotify start, bounded to about 3 s, and re-checks the epoch before prepare; a never-settling call ends in a bounded, clearly worded error.",
+    "Owner device check: audible scrub, pause and resume on desktop Chrome with Spotify."
+  ],
+  "nextAction": "Split from RF-108 on 2026-10-30 (#667 final review, item 1) so RF-108 can close on Apple inside the Apple Music window. No parent on purpose: an open child would block RF-108 from Done. Start after RF-92 (Spotify Web API answering) and RF-108 (the adapter-agnostic settle wait in runtime.ts) are Done. Agent-created: Backlog until the owner sets Ready. Owner-gated (playback code).",
+  "blocker": null,
+  "evidence": [
+    {
+      "kind": "pr",
+      "ref": "https://github.com/steven-crosby/ritmofit-web/pull/667",
+      "summary": "Final review of #667, item 1: RF-108 acceptance needed Spotify (CM-01 Spotify half, desktop Chrome) while every Spotify Web API call returns 403 until RF-92.",
+      "checkedOn": "2026-10-30"
+    },
+    {
+      "kind": "pr",
+      "ref": "https://github.com/steven-crosby/ritmofit-web/pull/668",
+      "summary": "RF-108 PR that split this record out. Its whenIdle() adapter contract and bounded runtime settle wait were reverted out of #668 on 2026-10-30 (owner: measure first) and are preserved on wip/rf-108-apple-locks; RF-108's redesign defines the settle signal this record implements for Spotify.",
+      "checkedOn": "2026-10-30"
+    }
+  ],
+  "resolution": null,
+  "followUps": []
+}

@@ -37,6 +37,7 @@ import {
   type MusicKitPlaybackEvent,
   type MusicKitSetQueueOptions,
 } from '../musickit.js';
+import { NO_START_TIMER, startTimer, timingNow, type StartTimer } from './start-timing.js';
 import type {
   AdapterEvents,
   AdapterFactory,
@@ -54,6 +55,9 @@ const DEFAULT_PREPARE_TIMEOUT_MS = 20_000;
  * error path (which also lets the coordinator tear the orphaned adapter down).
  */
 const DEFAULT_AUTHORIZE_TIMEOUT_MS = 60_000;
+const CONSOLE_PREFIX = '[ritmo apple-music]';
+/** Numbers each adapter in the debug timing lines (RF-128); no behaviour depends on it. */
+let adapterSequence = 0;
 
 /** This browser lost its Apple Music authorization (signed out, revoked, or expired). */
 export const appleMusicAuthorizationLostMessage = (): string =>
@@ -64,17 +68,13 @@ export const appleMusicPlayRejectedMessage = (title: string): string =>
   `Apple Music would not play "${title}". Check that your Apple Music subscription is active, then retry.`;
 
 /**
- * Authorized media-element failure. `modernAccess` is the word from the one
- * audio-only FairPlay probe, when that probe ran: `"ok"`, a DOMException or
- * built-in error name, `"other"`, or `"timeout"`.
+ * Authorized media-element failure. The banner no longer carries the FairPlay
+ * probe word (RF-147): MusicKit plays on legacy FairPlay, so the unprefixed
+ * key-system result describes a path it does not use. When a probe ran, its
+ * word goes to the console instead.
  */
-export function appleMusicPlaybackFailedMessage(
-  title: string,
-  modernAccess: string | null,
-): string {
-  const sentence = `Apple Music playback failed for "${title}".`;
-  if (!modernAccess) return sentence;
-  return `${sentence} modern-access: ${modernAccess}.`;
+export function appleMusicPlaybackFailedMessage(title: string): string {
+  return `Apple Music playback failed for "${title}".`;
 }
 
 const msToSeconds = (ms: number): number => ms / 1000;
@@ -136,6 +136,20 @@ export class AppleMusicAdapter implements PlaybackAdapter {
   private queueGeneration: number | null = null;
   private lastPositionMs: number | null = null;
   private finishedReading: TransportReading | null = null;
+  /**
+   * Debug-only timing (RF-128), numbered per adapter. A no-op unless timing is
+   * on (`?playback-timing=1` for the tab, or the `ritmo-playback-timing`
+   * localStorage opt-in; see start-timing.ts). None of these fields change
+   * playback.
+   */
+  private readonly timingPrefix = `[ritmo apple-music #${++adapterSequence}]`;
+  private timer: StartTimer = NO_START_TIMER;
+  /** Bumped by prepare and destroy, so a late call end keeps its own attempt. */
+  private timingAttempt = 0;
+  /** MusicKit setQueue/play calls this adapter issued that have not settled (timing on only). */
+  private timingInFlight = 0;
+  /** play() was issued in this attempt and no 'playing' state has been seen yet. */
+  private awaitingFirstPlaying = false;
 
   // One bound handler pair for this adapter's life, so removeEventListener in
   // destroy() matches the addEventListener in prepare().
@@ -167,10 +181,23 @@ export class AppleMusicAdapter implements PlaybackAdapter {
     });
   };
 
+  /**
+   * Debug timing only: marks the first 'playing' state after play() is issued,
+   * which MusicKit usually emits before its play() promise resolves. Bound only
+   * while timing is on, and it never touches playback state.
+   */
+  private readonly onTimingState = (event: MusicKitPlaybackEvent): void => {
+    if (!this.awaitingFirstPlaying || this.destroyed || !this.instance) return;
+    if (transportOwners.get(this.instance) !== this) return;
+    if (this.transportState(event.state) !== 'playing') return;
+    this.awaitingFirstPlaying = false;
+    this.timer.mark('first-playing-state');
+  };
+
   private reportPlaybackFailed(): void {
-    this.events.onError?.({
-      message: appleMusicPlaybackFailedMessage(this.trackTitle, safariModernAccessWord()),
-    });
+    const word = safariModernAccessWord();
+    if (word) console.info(`${CONSOLE_PREFIX} playback-error modern-access ${word}`);
+    this.events.onError?.({ message: appleMusicPlaybackFailedMessage(this.trackTitle) });
   }
 
   constructor(
@@ -185,11 +212,18 @@ export class AppleMusicAdapter implements PlaybackAdapter {
    * rejects so preflight/start can surface it instead of hanging the class.
    */
   async prepare(entry: RunPayloadTrackEntry, window: PlaybackWindow): Promise<PlaybackReady> {
-    if (this.starting) throw new Error('Apple Music is still finishing a previous play request.');
+    if (this.starting) {
+      this.timer.mark('error', 'still-finishing-previous-play (same adapter)');
+      throw new Error('Apple Music is still finishing a previous play request.');
+    }
     const ref = entry.providerRefs.find((candidate) => candidate.provider === 'apple_music');
     if (!ref) {
       throw new Error(`"${entry.track.title}" has no Apple Music reference.`);
     }
+    this.timer = startTimer(this.timingPrefix);
+    this.timingAttempt++;
+    this.awaitingFirstPlaying = false;
+    this.timer.mark('prepare');
     this.destroyed = false;
     this.started = false;
     this.clearEndpoint();
@@ -209,15 +243,18 @@ export class AppleMusicAdapter implements PlaybackAdapter {
     // of this page, and a cached player keeps whichever session it attached.
     clearSafariModernFairPlay();
     const music = await (this.host.loadMusicKit ?? loadMusicKit)();
+    this.timer.mark('musickit-ready');
     if (this.destroyed) return;
     // Reuse the page singleton when it exists (e.g. connected earlier this
     // session) so we skip a redundant configure + token fetch.
     const instance = music.getInstance() ?? (await this.configure(music));
     if (this.destroyed) return;
-    if (pendingPlays.has(instance))
+    if (pendingPlays.has(instance)) {
+      this.timer.mark('error', 'still-finishing-cancelled-play');
       throw new Error(
         'Apple Music is still finishing a cancelled play request. Retry after it finishes, or reload.',
       );
+    }
 
     // Lazy authorize (the chosen posture): the first prepared track's play
     // gesture also covers Apple's consent surface, and an already-authorized
@@ -241,6 +278,7 @@ export class AppleMusicAdapter implements PlaybackAdapter {
       );
     }
     if (this.destroyed) return;
+    this.timer.mark('authorized');
 
     await this.setQueue(instance, { songs: [songId], startTime: this.cueSeconds }, this.trackTitle);
     if (this.destroyed) return;
@@ -249,13 +287,18 @@ export class AppleMusicAdapter implements PlaybackAdapter {
     // setQueue rejection above (a 'prepare' error), never a runtime error.
     instance.addEventListener(music.Events.playbackStateDidChange, this.onStateChange);
     instance.addEventListener(music.Events.mediaPlaybackError, this.onPlaybackError);
+    if (this.timer !== NO_START_TIMER)
+      instance.addEventListener(music.Events.playbackStateDidChange, this.onTimingState);
     this.music = music;
     this.instance = instance;
   }
 
   private async configure(music: MusicKitGlobal): Promise<MusicKitInstance> {
     const config = await (this.host.loadConfig ?? getAppleMusicConfig)();
-    return configureMusicKit(music, config);
+    this.timer.mark('config-fetched');
+    const instance = await configureMusicKit(music, config);
+    this.timer.mark('configured');
+    return instance;
   }
 
   async play(): Promise<void> {
@@ -273,8 +316,10 @@ export class AppleMusicAdapter implements PlaybackAdapter {
       this.cueDirty = false;
     }
     if (this.destroyed) throw new Error('Apple Music play was cancelled.');
-    if (pendingPlays.has(instance))
+    if (pendingPlays.has(instance)) {
+      this.timer.mark('error', 'still-finishing-previous-play');
       throw new Error('Apple Music is still finishing a previous play request.');
+    }
     this.starting = true;
     this.clearEndpoint();
     pendingPlays.add(instance);
@@ -284,10 +329,20 @@ export class AppleMusicAdapter implements PlaybackAdapter {
         // MusicKit's play() first, with no yield before it: a caller that
         // destroys during play() has to find MusicKit's play still pending,
         // and on iOS the call must keep the user gesture.
+        this.timer.mark('play-start');
+        this.awaitingFirstPlaying = this.timer !== NO_START_TIMER;
+        const playEnd = this.timedCall('play-end');
         const played = instance.play();
-        // Then, once per page on iOS Safari or legacy WebKitMediaKeys, the
-        // FairPlay probe. Never awaited here: it resolves to a word and never
-        // rejects, and the playback-error banner reads that word.
+        // Debug timing only: logs when MusicKit settles this play, including
+        // after this adapter was cancelled. The handlers never change outcome.
+        if (playEnd)
+          played.then(
+            () => playEnd('ok'),
+            () => playEnd('rejected'),
+          );
+        // Then the FairPlay probe, never awaited here. It resolves to a word,
+        // never rejects, and returns null on iOS Safari (RF-147) and on
+        // browsers without legacy WebKitMediaKeys. The word goes to the console.
         void probeSafariModernFairPlayAccess();
         await played;
       } catch (cause) {
@@ -315,6 +370,26 @@ export class AppleMusicAdapter implements PlaybackAdapter {
       pendingPlays.delete(instance);
       this.starting = false;
     }
+  }
+
+  /**
+   * Debug timing only: when timing is on, returns the end logger for one
+   * MusicKit call, capturing its clock and attempt as the call is issued, so a
+   * late end stays on its original clock and keeps "(cancelled adapter)" even
+   * if this adapter is re-prepared. Returns null when timing is off.
+   */
+  private timedCall(step: string): ((outcome: string) => void) | null {
+    const timer = this.timer;
+    if (timer === NO_START_TIMER) return null;
+    const attempt = this.timingAttempt;
+    const startedAt = timingNow();
+    this.timingInFlight++;
+    return (outcome) => {
+      this.timingInFlight--;
+      const cancelled = this.destroyed || this.timingAttempt !== attempt;
+      const tookMs = Math.round(timingNow() - startedAt);
+      timer.mark(step, `${outcome} took ${tookMs}ms${cancelled ? ' (cancelled adapter)' : ''}`);
+    };
   }
 
   async pause(): Promise<void> {
@@ -430,6 +505,11 @@ export class AppleMusicAdapter implements PlaybackAdapter {
   }
 
   destroy(): void {
+    // Debug timing only: a cancel interrupts a MusicKit call; a normal teardown
+    // (after a track finished, or between tracks) does not.
+    this.timer.mark(this.timingInFlight > 0 ? 'cancelled' : 'destroyed');
+    this.timingAttempt++;
+    this.awaitingFirstPlaying = false;
     this.destroyed = true;
     this.started = false;
     this.clearEndpoint();
@@ -439,6 +519,8 @@ export class AppleMusicAdapter implements PlaybackAdapter {
       try {
         instance.removeEventListener(music.Events.playbackStateDidChange, this.onStateChange);
         instance.removeEventListener(music.Events.mediaPlaybackError, this.onPlaybackError);
+        if (this.timer !== NO_START_TIMER)
+          instance.removeEventListener(music.Events.playbackStateDidChange, this.onTimingState);
         // Only halt audio if this adapter still owns the shared transport. A
         // superseded adapter (abandoned mid-prepare/-play by a rapid seek) must
         // never stop the newer adapter that has since claimed and started the
@@ -483,6 +565,7 @@ export class AppleMusicAdapter implements PlaybackAdapter {
     title: string,
   ): Promise<void> {
     if (pendingQueueGenerations.has(instance)) {
+      this.timer.mark('error', 'still-finishing-previous-queue');
       throw new Error(
         `The Apple Music player is still finishing a previous queue request for "${title}".`,
       );
@@ -491,8 +574,17 @@ export class AppleMusicAdapter implements PlaybackAdapter {
     const generation = claimQueueGeneration(instance);
     this.queueGeneration = generation;
     pendingQueueGenerations.set(instance, generation);
-    const queued = instance
-      .setQueue(options)
+    this.timer.mark('set-queue-start');
+    const queueEnd = this.timedCall('set-queue-end');
+    const raw = instance.setQueue(options);
+    // Debug timing only: logs when MusicKit settles this request, including
+    // after a timeout or after this adapter was cancelled.
+    if (queueEnd)
+      raw.then(
+        () => queueEnd('ok'),
+        () => queueEnd('rejected'),
+      );
+    const queued = raw
       .then((result) => {
         if (this.destroyed || currentQueueGeneration(instance) !== generation) {
           throw new Error(`The Apple Music queue request for "${title}" was superseded.`);

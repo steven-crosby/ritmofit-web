@@ -17,6 +17,7 @@ import {
   appleMusicPlayRejectedMessage,
 } from './apple-music-adapter.js';
 import type { AdapterEvents } from './types.js';
+import { PLAYBACK_TIMING_KEY, resetPlaybackTimingForTests } from './start-timing.js';
 import { RuntimePlaybackCoordinator } from './runtime.js';
 
 function makeEntry(overrides?: { providerTrackId?: string; refs?: [] }): RunPayloadTrackEntry {
@@ -485,6 +486,10 @@ describe('AppleMusicAdapter', () => {
 
 describe('Apple Music FairPlay probe', () => {
   const webKitWindow = window as Window & { WebKitMediaKeys?: object };
+  const IPHONE_SAFARI_UA =
+    'Mozilla/5.0 (iPhone; CPU iPhone OS 27_0_1 like Mac OS X) AppleWebKit/605.1.15 (KHTML, like Gecko) Version/27.0 Mobile/15E148 Safari/604.1';
+  const DESKTOP_CHROME_UA =
+    'Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/131.0.0.0 Safari/537.36';
   const audioOnly = [
     {
       initDataTypes: ['skd'],
@@ -494,6 +499,7 @@ describe('Apple Music FairPlay probe', () => {
       sessionTypes: ['temporary'],
     },
   ];
+  const FAILED = 'Apple Music playback failed for "Baiana".';
   let request: ReturnType<typeof vi.fn>;
   let info: ReturnType<typeof vi.spyOn>;
 
@@ -534,19 +540,17 @@ describe('Apple Music FairPlay probe', () => {
     return { adapter, instance, errors };
   }
 
+  const infoLines = () => info.mock.calls.map((call: unknown[]) => String(call[0]));
+
   it('leaves the playback-failed sentence unchanged on desktop Chrome', async () => {
-    const userAgent = vi
-      .spyOn(navigator, 'userAgent', 'get')
-      .mockReturnValue(
-        'Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/131.0.0.0 Safari/537.36',
-      );
+    const userAgent = vi.spyOn(navigator, 'userAgent', 'get').mockReturnValue(DESKTOP_CHROME_UA);
     try {
       const { adapter, instance, errors } = await prepared();
       await adapter.play();
       instance.emit(EVENTS.mediaPlaybackError);
       await settleProbe();
       await settleProbe();
-      expect(errors).toEqual(['Apple Music playback failed for "Baiana".']);
+      expect(errors).toEqual([FAILED]);
       expect(request).not.toHaveBeenCalled();
       expect(info).not.toHaveBeenCalled();
     } finally {
@@ -555,11 +559,7 @@ describe('Apple Music FairPlay probe', () => {
   });
 
   it('does not wait on the FairPlay probe in desktop Chrome', async () => {
-    const userAgent = vi
-      .spyOn(navigator, 'userAgent', 'get')
-      .mockReturnValue(
-        'Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/131.0.0.0 Safari/537.36',
-      );
+    const userAgent = vi.spyOn(navigator, 'userAgent', 'get').mockReturnValue(DESKTOP_CHROME_UA);
     request.mockImplementation(() => new Promise(() => {}));
     let played = false;
     try {
@@ -583,15 +583,8 @@ describe('Apple Music FairPlay probe', () => {
     }
   });
 
-  it('probes iOS Safari without WebKitMediaKeys and names modern-access', async () => {
-    const userAgent = vi
-      .spyOn(navigator, 'userAgent', 'get')
-      .mockReturnValue(
-        'Mozilla/5.0 (iPhone; CPU iPhone OS 27_0_1 like Mac OS X) AppleWebKit/605.1.15 (KHTML, like Gecko) Version/27.0 Mobile/15E148 Safari/604.1',
-      );
-    const createSession = vi.fn();
-    const createMediaKeys = vi.fn(async () => ({ createSession }));
-    request.mockResolvedValue({ createMediaKeys });
+  it('does not probe com.apple.fps on iOS Safari, and keeps the banner plain (RF-147)', async () => {
+    const userAgent = vi.spyOn(navigator, 'userAgent', 'get').mockReturnValue(IPHONE_SAFARI_UA);
     // Left over from an earlier Ritmo build that set it on iOS.
     localStorage.setItem(MUSICKIT_SAFARI_MODERN_EME_KEY, '1');
     try {
@@ -599,49 +592,17 @@ describe('Apple Music FairPlay probe', () => {
       await adapter.play();
       instance.emit(EVENTS.mediaPlaybackError);
       await settleProbe();
-      await settleProbe();
-      expect(webKitWindow.WebKitMediaKeys).toBeUndefined();
-      expect(request).toHaveBeenCalledTimes(1);
-      expect(request.mock.calls[0]?.[0]).toBe('com.apple.fps');
-      expect(request.mock.calls[0]?.[1]?.[0]?.videoCapabilities).toBeUndefined();
-      expect(createMediaKeys).not.toHaveBeenCalled();
-      expect(createSession).not.toHaveBeenCalled();
+      expect(request).not.toHaveBeenCalled();
+      expect(safariModernAccessInFlight()).toBeNull();
+      // RF-124's per-call clear is unchanged.
       expect(localStorage.getItem(MUSICKIT_SAFARI_MODERN_EME_KEY)).toBeNull();
-      expect(info.mock.calls).toEqual([['[ritmo apple-music] mk-safari-modern-eme not-1']]);
-      expect(JSON.stringify(info.mock.calls)).not.toContain('dev-token');
-      expect(errors).toEqual(['Apple Music playback failed for "Baiana". modern-access: ok.']);
+      expect(errors).toEqual([FAILED]);
     } finally {
       userAgent.mockRestore();
     }
   });
 
-  it('puts the DOMException name on the iOS Safari sentence when WebKitMediaKeys is gone', async () => {
-    const userAgent = vi
-      .spyOn(navigator, 'userAgent', 'get')
-      .mockReturnValue(
-        'Mozilla/5.0 (iPhone; CPU iPhone OS 27_0_1 like Mac OS X) AppleWebKit/605.1.15 (KHTML, like Gecko) Version/27.0 Mobile/15E148 Safari/604.1',
-      );
-    request.mockRejectedValue(
-      new DOMException('music-user-token SECRETVALUE', 'NotSupportedError'),
-    );
-    try {
-      const { adapter, instance, errors } = await prepared();
-      await adapter.play();
-      instance.emit(EVENTS.mediaPlaybackError);
-      await settleProbe();
-      await settleProbe();
-      expect(errors).toEqual([
-        'Apple Music playback failed for "Baiana". modern-access: NotSupportedError.',
-      ]);
-      expect(errors[0]).not.toContain('SECRETVALUE');
-      expect(JSON.stringify(info.mock.calls)).not.toContain('SECRETVALUE');
-      expect(instance.calls).toContain('play');
-    } finally {
-      userAgent.mockRestore();
-    }
-  });
-
-  it('probes once, after play, and puts ok on the playback-failed sentence', async () => {
+  it('on legacy WebKit, probes once after play and puts the word in the console, not the banner', async () => {
     webKitWindow.WebKitMediaKeys = {};
     localStorage.setItem(MUSICKIT_SAFARI_MODERN_EME_KEY, 'SECRETVALUE');
     const order: string[] = [];
@@ -664,12 +625,14 @@ describe('Apple Music FairPlay probe', () => {
     expect(request).toHaveBeenCalledWith('com.apple.fps', audioOnly);
     expect(createMediaKeys).not.toHaveBeenCalled();
     expect(createSession).not.toHaveBeenCalled();
-    // RF-124: the stored flag is cleared, so MusicKit stays on legacy FairPlay.
     expect(localStorage.getItem(MUSICKIT_SAFARI_MODERN_EME_KEY)).toBeNull();
-    expect(info.mock.calls).toEqual([['[ritmo apple-music] mk-safari-modern-eme not-1']]);
+    expect(infoLines()).toEqual([
+      '[ritmo apple-music] mk-safari-modern-eme not-1',
+      '[ritmo apple-music] playback-error modern-access ok',
+    ]);
     expect(JSON.stringify(info.mock.calls)).not.toContain('SECRETVALUE');
     expect(JSON.stringify(info.mock.calls)).not.toContain('dev-token');
-    expect(errors).toEqual(['Apple Music playback failed for "Baiana". modern-access: ok.']);
+    expect(errors).toEqual([FAILED]);
   });
 
   it('calls MusicKit play before the probe and never waits on a hung probe', async () => {
@@ -699,7 +662,7 @@ describe('Apple Music FairPlay probe', () => {
     expect(configuration).not.toHaveProperty('videoCapabilities');
   });
 
-  it('holds a playback error until the probe word arrives, then names it', async () => {
+  it('holds a playback error until the probe word arrives, then reports it', async () => {
     webKitWindow.WebKitMediaKeys = {};
     let resolveProbe: (value: object) => void = () => {};
     request.mockImplementation(
@@ -715,10 +678,11 @@ describe('Apple Music FairPlay probe', () => {
     expect(errors).toEqual([]);
     resolveProbe({ createMediaKeys: vi.fn() });
     await settleProbe();
-    expect(errors).toEqual(['Apple Music playback failed for "Baiana". modern-access: ok.']);
+    expect(errors).toEqual([FAILED]);
+    expect(infoLines()).toContain('[ritmo apple-music] playback-error modern-access ok');
   });
 
-  it('names timeout on the banner when the probe never settles', async () => {
+  it('logs timeout when the probe never settles', async () => {
     vi.useFakeTimers();
     try {
       webKitWindow.WebKitMediaKeys = {};
@@ -729,7 +693,8 @@ describe('Apple Music FairPlay probe', () => {
       await vi.advanceTimersByTimeAsync(SAFARI_MODERN_ACCESS_TIMEOUT_MS - 1);
       expect(errors).toEqual([]);
       await vi.advanceTimersByTimeAsync(1);
-      expect(errors).toEqual(['Apple Music playback failed for "Baiana". modern-access: timeout.']);
+      expect(errors).toEqual([FAILED]);
+      expect(infoLines()).toContain('[ritmo apple-music] playback-error modern-access timeout');
     } finally {
       vi.useRealTimers();
     }
@@ -754,11 +719,7 @@ describe('Apple Music FairPlay probe', () => {
   });
 
   it('on iOS Safari, destroy during play still finds MusicKit play pending and cancels it', async () => {
-    const userAgent = vi
-      .spyOn(navigator, 'userAgent', 'get')
-      .mockReturnValue(
-        'Mozilla/5.0 (iPhone; CPU iPhone OS 27_0_1 like Mac OS X) AppleWebKit/605.1.15 (KHTML, like Gecko) Version/27.0 Mobile/15E148 Safari/604.1',
-      );
+    const userAgent = vi.spyOn(navigator, 'userAgent', 'get').mockReturnValue(IPHONE_SAFARI_UA);
     request.mockImplementation(() => new Promise(() => {}));
     let releasePlay: () => void = () => {};
     try {
@@ -770,7 +731,7 @@ describe('Apple Music FairPlay probe', () => {
       );
       const play = adapter.play();
       const cancelled = expect(play).rejects.toThrow('cancelled');
-      // No yield before MusicKit's play(), even with the probe path active.
+      // No yield before MusicKit's play().
       expect(instance.calls).toContain('play');
       adapter.destroy();
       expect(instance.calls).toContain('stop');
@@ -782,59 +743,43 @@ describe('Apple Music FairPlay probe', () => {
     }
   });
 
-  it('puts the DOMException name, not its message, on the playback-failed sentence', async () => {
-    webKitWindow.WebKitMediaKeys = {};
-    request.mockRejectedValue(
-      new DOMException('music-user-token SECRETVALUE', 'NotSupportedError'),
-    );
-    const { adapter, instance, errors } = await prepared();
-    await adapter.play();
-    instance.emit(EVENTS.mediaPlaybackError);
-    await settleProbe();
-    expect(errors).toEqual([
-      'Apple Music playback failed for "Baiana". modern-access: NotSupportedError.',
-    ]);
-    expect(errors[0]).not.toContain('SECRETVALUE');
-    expect(JSON.stringify(info.mock.calls)).not.toContain('SECRETVALUE');
-    expect(instance.calls).toContain('play');
-  });
-
-  it('names a built-in Error rejection but never its message', async () => {
-    webKitWindow.WebKitMediaKeys = {};
-    request.mockRejectedValue(new Error('developer-token SECRETVALUE'));
-    const { adapter, instance, errors } = await prepared();
-    await adapter.play();
-    instance.emit(EVENTS.mediaPlaybackError);
-    await settleProbe();
-    expect(errors).toEqual(['Apple Music playback failed for "Baiana". modern-access: Error.']);
-    expect(errors[0]).not.toContain('SECRETVALUE');
-    expect(JSON.stringify(info.mock.calls)).not.toContain('SECRETVALUE');
-  });
-
-  it('puts TypeError on the sentence for a TypeError rejection', async () => {
-    webKitWindow.WebKitMediaKeys = {};
-    request.mockRejectedValue(new TypeError('music-user-token SECRETVALUE'));
-    const { adapter, instance, errors } = await prepared();
-    await adapter.play();
-    instance.emit(EVENTS.mediaPlaybackError);
-    await settleProbe();
-    expect(errors).toEqual(['Apple Music playback failed for "Baiana". modern-access: TypeError.']);
-  });
-
-  it('does not leak a crafted error name onto the sentence', async () => {
-    webKitWindow.WebKitMediaKeys = {};
-    class CraftedError extends TypeError {
-      override name = 'SECRETVALUE';
-    }
-    request.mockRejectedValue(new CraftedError('developer-token'));
-    const { adapter, instance, errors } = await prepared();
-    await adapter.play();
-    instance.emit(EVENTS.mediaPlaybackError);
-    await settleProbe();
-    expect(errors).toEqual(['Apple Music playback failed for "Baiana". modern-access: other.']);
-    expect(errors[0]).not.toContain('SECRETVALUE');
-    expect(errors[0]).not.toContain('developer-token');
-  });
+  it.each([
+    {
+      name: 'a DOMException name',
+      error: () => new DOMException('music-user-token SECRETVALUE', 'NotSupportedError'),
+      word: 'NotSupportedError',
+    },
+    {
+      name: 'a built-in Error',
+      error: () => new Error('developer-token SECRETVALUE'),
+      word: 'Error',
+    },
+    { name: 'a TypeError', error: () => new TypeError('SECRETVALUE'), word: 'TypeError' },
+    {
+      name: 'a crafted name as other',
+      error: () => {
+        class CraftedError extends TypeError {
+          override name = 'SECRETVALUE';
+        }
+        return new CraftedError('developer-token');
+      },
+      word: 'other',
+    },
+  ])(
+    'logs $name, never a message, and keeps the banner plain',
+    async ({ error, word }: { error: () => unknown; word: string }) => {
+      webKitWindow.WebKitMediaKeys = {};
+      request.mockRejectedValue(error());
+      const { adapter, instance, errors } = await prepared();
+      await adapter.play();
+      instance.emit(EVENTS.mediaPlaybackError);
+      await settleProbe();
+      expect(errors).toEqual([FAILED]);
+      expect(infoLines()).toContain(`[ritmo apple-music] playback-error modern-access ${word}`);
+      expect(JSON.stringify(info.mock.calls)).not.toContain('SECRETVALUE');
+      expect(JSON.stringify(info.mock.calls)).not.toContain('developer-token');
+    },
+  );
 
   it('keeps the authorization sentence free of the probe word', async () => {
     webKitWindow.WebKitMediaKeys = {};
@@ -858,12 +803,155 @@ describe('Apple Music FairPlay probe', () => {
       instance.emit(EVENTS.mediaPlaybackError);
       await settleProbe();
       await settleProbe();
-      expect(info.mock.calls).toEqual([['[ritmo apple-music] mk-safari-modern-eme not-1']]);
+      expect(infoLines()[0]).toBe('[ritmo apple-music] mk-safari-modern-eme not-1');
       expect(JSON.stringify(info.mock.calls)).not.toContain('SECRETVALUE');
-      expect(errors).toEqual(['Apple Music playback failed for "Baiana". modern-access: ok.']);
+      expect(errors).toEqual([FAILED]);
     } finally {
       setItem.mockRestore();
     }
+  });
+});
+
+describe('Apple Music debug timing (RF-128)', () => {
+  let info: ReturnType<typeof vi.spyOn>;
+
+  beforeEach(() => {
+    sessionStorage.setItem(PLAYBACK_TIMING_KEY, '1');
+    resetPlaybackTimingForTests();
+    info = vi.spyOn(console, 'info').mockImplementation(() => {});
+  });
+
+  afterEach(() => {
+    sessionStorage.removeItem(PLAYBACK_TIMING_KEY);
+    resetPlaybackTimingForTests();
+    info.mockRestore();
+  });
+
+  const timingLines = (): string[] =>
+    info.mock.calls
+      .map((call: unknown[]) => String(call[0]))
+      .filter((line: string) => line.includes(' timing '));
+
+  it('logs each MusicKit call start and end with its outcome, and never a title, id or token', async () => {
+    const instance = new FakeInstance(true);
+    const { adapter } = makeAdapter(instance, { preconfigured: true });
+    await adapter.prepare(makeEntry(), WINDOW_ZERO);
+    await adapter.play();
+    for (let i = 0; i < 5; i++) await Promise.resolve();
+    const lines = timingLines();
+    const steps = lines.map((line) => line.replace(/^\[ritmo apple-music #\d+\] timing /, ''));
+    expect(steps.map((step) => step.split(' ')[0])).toEqual([
+      'prepare',
+      'musickit-ready',
+      'authorized',
+      'set-queue-start',
+      'set-queue-end',
+      'play-start',
+      'play-end',
+    ]);
+    expect(lines.find((line) => line.includes('set-queue-end'))).toMatch(/ok took \d+ms$/);
+    expect(lines.find((line) => line.includes('play-end'))).toMatch(/ok took \d+ms$/);
+    const dumped = JSON.stringify(info.mock.calls);
+    expect(dumped).not.toContain('Baiana');
+    expect(dumped).not.toContain('am-123');
+    expect(dumped).not.toContain('dev-token');
+  });
+
+  it('logs a cancelled adapter call that finishes after the next start, and the still-finishing error', async () => {
+    const instance = new FakeInstance(true);
+    const pending = deferred<void>();
+    instance.playBehavior = () => pending.promise;
+    const { music } = makeMusicKit(instance, { preconfigured: true });
+    const host = { loadMusicKit: async () => music };
+    const cancelled = new AppleMusicAdapter({}, host);
+    await cancelled.prepare(makeEntry(), WINDOW_ZERO);
+    const play = cancelled.play().catch(() => {});
+    cancelled.destroy();
+    const next = new AppleMusicAdapter({}, host);
+    await expect(next.prepare(makeEntry(), WINDOW_ZERO)).rejects.toThrow('still finishing');
+    pending.resolve();
+    await play;
+    const lines = timingLines();
+    expect(lines.some((line) => / timing cancelled \+\d+ms$/.test(line))).toBe(true);
+    expect(
+      lines.some((line) => / timing error \+\d+ms still-finishing-cancelled-play$/.test(line)),
+    ).toBe(true);
+    expect(
+      lines.some((line) =>
+        / timing play-end \+\d+ms ok took \d+ms \(cancelled adapter\)$/.test(line),
+      ),
+    ).toBe(true);
+  });
+
+  it('marks the first playing state when MusicKit emits it before play() resolves (#668 fifth review, 1)', async () => {
+    const instance = new FakeInstance(true);
+    const pending = deferred<void>();
+    instance.playBehavior = () => pending.promise;
+    const { adapter } = makeAdapter(instance, { preconfigured: true });
+    await adapter.prepare(makeEntry(), WINDOW_ZERO);
+    // A 'playing' event before play() is issued does not count.
+    instance.emit(EVENTS.playbackStateDidChange, { state: STATES.playing });
+    const play = adapter.play();
+    instance.emit(EVENTS.playbackStateDidChange, { state: STATES.playing });
+    instance.emit(EVENTS.playbackStateDidChange, { state: STATES.playing });
+    const marks = timingLines().filter((line) => line.includes('first-playing-state'));
+    expect(marks).toHaveLength(1);
+    expect(timingLines().some((l) => l.includes('play-end'))).toBe(false); // play() still pending
+    pending.resolve();
+    await play;
+  });
+
+  it('keeps a late call end on its original clock and tagged cancelled after the adapter is re-prepared (#668 fifth review, 2)', async () => {
+    let clock = 1_000;
+    vi.spyOn(performance, 'now').mockImplementation(() => clock);
+    const instance = new FakeInstance(true);
+    const pendingQueue = deferred();
+    instance.setQueueBehavior = () => pendingQueue.promise;
+    const { adapter } = makeAdapter(instance, { preconfigured: true });
+    // Attempt A: clock starts at 1000; its setQueue stays pending.
+    const first = adapter.prepare(makeEntry(), WINDOW_ZERO).catch(() => {});
+    await waitForSetQueueCalls(instance, 1);
+    adapter.destroy();
+    clock = 5_000;
+    // Attempt B on the same adapter: a new clock at 5000 (it hits the queue lock).
+    await expect(adapter.prepare(makeEntry(), WINDOW_ZERO)).rejects.toThrow('still finishing');
+    clock = 6_000;
+    pendingQueue.resolve(undefined);
+    await first;
+    for (let i = 0; i < 5; i++) await Promise.resolve();
+    const lateEnd = timingLines().find((line) => line.includes('set-queue-end'));
+    // +5000ms on clock A (not +1000ms on clock B), and still tagged cancelled.
+    expect(lateEnd).toMatch(/ timing set-queue-end \+5000ms ok took 5000ms \(cancelled adapter\)$/);
+  });
+
+  it('marks destroyed for a normal teardown and cancelled only with a call in flight (#668 fifth review, 3)', async () => {
+    const instance = new FakeInstance(true);
+    const idle = makeAdapter(instance, { preconfigured: true }).adapter;
+    await idle.prepare(makeEntry(), WINDOW_ZERO);
+    await idle.play();
+    for (let i = 0; i < 5; i++) await Promise.resolve();
+    idle.destroy();
+    expect(timingLines().at(-1)).toMatch(/ timing destroyed \+\d+ms$/);
+
+    const pending = deferred<void>();
+    instance.playBehavior = () => pending.promise;
+    const busy = makeAdapter(instance, { preconfigured: true }).adapter;
+    await busy.prepare(makeEntry(), WINDOW_ZERO);
+    const play = busy.play().catch(() => {});
+    busy.destroy();
+    expect(timingLines().at(-1)).toMatch(/ timing cancelled \+\d+ms$/);
+    pending.resolve();
+    await play;
+  });
+
+  it('logs nothing when timing is off', async () => {
+    sessionStorage.removeItem(PLAYBACK_TIMING_KEY);
+    resetPlaybackTimingForTests();
+    const instance = new FakeInstance(true);
+    const { adapter } = makeAdapter(instance, { preconfigured: true });
+    await adapter.prepare(makeEntry(), WINDOW_ZERO);
+    await adapter.play();
+    expect(timingLines()).toEqual([]);
   });
 });
 

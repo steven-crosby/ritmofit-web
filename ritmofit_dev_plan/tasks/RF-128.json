@@ -3,7 +3,7 @@
   "id": "RF-128",
   "title": "Apple Music Start class sounds within 1 s on iPhone Safari",
   "kind": "task",
-  "status": "ready",
+  "status": "review",
   "priority": "P2",
   "parent": null,
   "dependsOn": [
@@ -13,7 +13,7 @@
     "On iPhone Safari Live, the first Apple Music song is audible within 1 s of tapping Start class on 5G.",
     "Work that needs no gesture (load MusicKit, configure, check authorization) happens before Start; only setQueue/play run in the tap."
   ],
-  "nextAction": "Owner moved this to Ready on 2026-10-30 (session; Apple hardening lane with RF-108, RF-128 and RF-147, before the Apple Music testing window ends ~2026-11-27). RF-124 is Done and its device runs did not time Start. Plan: instrument MusicKit load, config fetch, setQueue and play with timestamps in the Apple adapter (debug-only), have the owner time one Start on iPhone Safari, then move pre-gesture work before the tap. Consider dropping the unprefixed com.apple.fps probe in play() (RF-147). Owner-gated (playback code).",
+  "nextAction": "Instrumentation landed in PR #668: with ?playback-timing=1, each Apple adapter is numbered (\"[ritmo apple-music #N] timing <step> +<ms>ms\") and logs prepare, musickit-ready, config-fetched/configured when it runs, authorized, set-queue-start/-end and play-start/-end with duration and outcome (including calls from cancelled adapters that finish after a new start), cancelled, first-playing-state, and each \"still finishing\" error as it fires. Criterion 1 holds on main and is unchanged. Criterion 0 (audible within 1 s on 5G) waits on the owner's timed Start after deploy; record the lines here. If set-queue dominates, the open question in #668 (cue the first song before Start) is next.",
   "blocker": null,
   "evidence": [
     {
@@ -32,6 +32,24 @@
       "kind": "observation",
       "ref": "https://github.com/steven-crosby/ritmofit-web/pull/667",
       "summary": "Owner set Ready in session on 2026-10-30 (\"Yes, option 1, Apple hardening\"): RF-108, RF-128 and RF-147 as one Apple hardening lane.",
+      "checkedOn": "2026-10-30"
+    },
+    {
+      "kind": "pr",
+      "ref": "https://github.com/steven-crosby/ritmofit-web/pull/668",
+      "summary": "Debug-only timing module apps/web/src/lib/playback/start-timing.ts (off unless ?playback-timing=1 or localStorage ritmo-playback-timing=1; logs step names only) wired through the Apple adapter. No pre-gesture work moved: LiveMode.tsx already gates Start on the \"Check Apple Music authorization\" step, which runs prepareAppleMusic (load + configure) and requires isAuthorized, so the tap path reuses the configured singleton.",
+      "checkedOn": "2026-10-30"
+    },
+    {
+      "kind": "test",
+      "ref": "apps/web/src/lib/playback/start-timing.test.ts",
+      "summary": "Timing is off by default and logs nothing; turns on from the URL flag and localStorage; blocked storage keeps it off. Existing adapter test \"reuses the page singleton without re-configuring or re-fetching the token\" covers the tap path skipping configure.",
+      "checkedOn": "2026-10-30"
+    },
+    {
+      "kind": "observation",
+      "ref": "https://github.com/steven-crosby/ritmofit-web/pull/668#issuecomment-6538168766",
+      "summary": "Owner decision in session 2026-10-30, relayed by the coordinator after the fourth final review of #668 on 85442ac: option 1, measure first. #668 shrinks to the RF-128 timing instrumentation and the RF-147 cleanups that need no locks; everything else in apps/ reverts to main. The lock work (leases, settle wait, hard caps, attempt token) is preserved on wip/rf-108-apple-locks at 85442ac. After deploy the owner times Start and quick taps on the iPhone, and RF-108's locks are redesigned in a new PR around those numbers.",
       "checkedOn": "2026-10-30"
     }
   ],
