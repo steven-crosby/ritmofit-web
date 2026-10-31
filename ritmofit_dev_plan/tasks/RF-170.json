@@ -1,0 +1,31 @@
+{
+  "schemaVersion": 1,
+  "id": "RF-170",
+  "title": "Owner decides whether HIIT gets its own Classes library filter chip",
+  "kind": "plan",
+  "status": "backlog",
+  "priority": "P3",
+  "parent": null,
+  "dependsOn": [],
+  "acceptance": [
+    "The owner decides whether the Classes library filter adds a HIIT chip beside All, Cycle and Pilates now that the home has a HIIT template card (RF-165). The answer is recorded here; any implementation gets its own record."
+  ],
+  "nextAction": "From the #678 final review (2026-10-31): HIIT classes can only be found under All. #678 kept the filter type separate (DisciplineFilter in ClassesHome.tsx) so cards cannot add chips silently. Agent-created: Backlog until the owner decides.",
+  "blocker": null,
+  "evidence": [
+    {
+      "kind": "pr",
+      "ref": "https://github.com/steven-crosby/ritmofit-web/pull/678",
+      "summary": "Final review of #678 (merged dbcb514), item 1: no HIIT filter chip; plus cleanups (derive LIBRARY_TEMPLATES from SCAFFOLD_DISCIPLINES, tie DisciplineFilter to ClassTemplate).",
+      "checkedOn": "2026-10-31"
+    },
+    {
+      "kind": "pr",
+      "ref": "https://github.com/steven-crosby/ritmofit-web/pull/PRNUM",
+      "summary": "Filed in this records PR.",
+      "checkedOn": "2026-10-31"
+    }
+  ],
+  "resolution": null,
+  "followUps": []
+}

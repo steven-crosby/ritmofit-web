@@ -8,7 +8,7 @@
   "parent": null,
   "dependsOn": [],
   "acceptance": [
-    "On Music › Songs, every song row has a labeled, keyboard-accessible checkbox. Ticking a song selects it; tapping the rest of the row keeps today's row behavior.",
+    "On Music › Songs the list is always in pick mode: tapping anywhere on a song row toggles its selection, and the row never starts playback. A labeled, keyboard-accessible checkbox on each row shows and toggles the same state. The artwork area reserves a spot for a ▶ preview control (RF-138) so adding preview later does not shift the layout.",
     "At most 15 songs can be selected. At 15, the remaining checkboxes are disabled with a short note saying why.",
     "A selection bar shows \"N of 15 selected\", a way to clear the selection, and a \"Create a class\" button once at least one song is selected.",
     "The selection survives search, Load more and sort changes within the same provider. Switching provider, disconnecting, or a different account's list clears it.",
@@ -17,7 +17,7 @@
     "It works the same for Apple Music and SoundCloud likes, at 1440 and 390 wide, with no horizontal overflow and axe WCAG 2.2 AA clean.",
     "Component tests cover selection, the 15 cap, persistence across Load more and search, clearing on provider switch, and the create sheet. The e2e smoke covers creating a class from selected songs."
   ],
-  "nextAction": "Owner, 2026-10-30, after using \"Create class from liked songs\" on production: the 15-song limit is a good gut check, but the separate button is lazy; songs on Music › Songs should have checkboxes, up to 15, and a \"Create a class\" button once some are selected. Owner chose option A for what follows the button: a sheet with class name and template only. Today the button is in apps/web/src/components/Dashboard.tsx (around line 2948), its note comes from apps/web/src/lib/music-library.ts, and the 15-song picker pattern is apps/web/src/components/PlaylistSongPicker.tsx. Song order in the class: follow the list order the user sees unless the owner decides otherwise at Ready. Agent-created: Backlog until the owner sets Ready. Spotify likes are RF-157, which waits on RF-92 (Spotify Web API 403), so this record can reach Ready and Done without Spotify.",
+  "nextAction": "Owner, 2026-10-31: option (a), always in pick mode (row tap selects, never plays; preview later as a ▶ on the artwork via RF-138); the owner will smoke test the feel on Mac and iPhone after deploy. Owner, 2026-10-30, after using \"Create class from liked songs\" on production: the 15-song limit is a good gut check, but the separate button is lazy; songs on Music › Songs should have checkboxes, up to 15, and a \"Create a class\" button once some are selected. Owner chose option A for what follows the button: a sheet with class name and template only. Today the button is in apps/web/src/components/Dashboard.tsx (around line 2948), its note comes from apps/web/src/lib/music-library.ts, and the 15-song picker pattern is apps/web/src/components/PlaylistSongPicker.tsx. Song order in the class: follow the list order the user sees unless the owner decides otherwise at Ready. Agent-created: Backlog until the owner sets Ready. Spotify likes are RF-157, which waits on RF-92 (Spotify Web API 403), so this record can reach Ready and Done without Spotify.",
   "blocker": null,
   "evidence": [
     {
@@ -31,6 +31,12 @@
       "ref": "apps/web/src/components/PlaylistSongPicker.tsx",
       "summary": "The existing 15-song picker (\"Choose up to 15 songs\") that the liked-songs flow reuses today. Checked on main d888d28.",
       "checkedOn": "2026-10-30"
+    },
+    {
+      "kind": "observation",
+      "ref": "https://github.com/steven-crosby/ritmofit-web/pull/PRNUM",
+      "summary": "Owner, 2026-10-31 (Air conductor session), after an iPhone recording of Music › Songs where tapping rows did nothing and screenshots of Spotify playlist Edit mode: rows must select, not play; preview must exist but as a secondary control. Chose option (a) \"always in pick mode\" (\"Let’s try a first\") over a Spotify-style Select button, and will smoke test it on Mac and iPhone to judge the feel.",
+      "checkedOn": "2026-10-31"
     }
   ],
   "resolution": null,
