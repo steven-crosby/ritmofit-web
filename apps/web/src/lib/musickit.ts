@@ -13,6 +13,7 @@
  * by live verification, not the headless test suite.
  */
 import type { AppleMusicClientConfig } from '@ritmofit/shared';
+import { playbackTimingEnabled } from './playback/start-timing.js';
 
 const MUSICKIT_SRC = 'https://js-cdn.music.apple.com/musickit/v3/musickit.js';
 
@@ -23,7 +24,7 @@ const MUSICKIT_SRC = 'https://js-cdn.music.apple.com/musickit/v3/musickit.js';
  */
 export const MUSICKIT_SAFARI_MODERN_EME_KEY = 'mk-safari-modern-eme';
 
-type FairPlayStorage = { removeItem(key: string): void };
+type FairPlayStorage = { removeItem(key: string): void; getItem?(key: string): string | null };
 
 function navigatorUserAgent(): string {
   try {
@@ -69,7 +70,9 @@ export function isIosSafari(
  * Ritmo set the flag on iOS until RF-124, so browsers can still hold `"1"`;
  * this removes it before MusicKit loads and before each queue/play. Desktop
  * Chrome has no `WebKitMediaKeys` and uses Widevine, so storage is left alone
- * there.
+ * there. With debug timing on (`?playback-timing=1`, RF-128), each clear first
+ * logs whether the flag was `"1"`, so iOS Safari shows whether anything wrote
+ * it back since the last clear. The clear itself does not depend on timing.
  */
 export function clearSafariModernFairPlay(
   webKitMediaKeys: unknown = typeof window === 'undefined'
@@ -85,10 +88,25 @@ export function clearSafariModernFairPlay(
   try {
     const target = storage === undefined ? localStorage : storage;
     if (!target) return;
+    if (playbackTimingEnabled()) logSafariModernEmeFlagBeforeClear(target);
     target.removeItem(MUSICKIT_SAFARI_MODERN_EME_KEY);
   } catch {
     // A blocked getter or a rejected write leaves storage as it was.
   }
+}
+
+/**
+ * Debug timing only: whether the flag was `"1"` just before a clear. Never logs
+ * the stored value, a token, or an exception message.
+ */
+function logSafariModernEmeFlagBeforeClear(target: FairPlayStorage): void {
+  let found = false;
+  try {
+    found = target.getItem?.(MUSICKIT_SAFARI_MODERN_EME_KEY) === '1';
+  } catch {
+    found = false;
+  }
+  console.info(`[ritmo apple-music] mk-safari-modern-eme ${found ? '1' : 'not-1'} before clear`);
 }
 
 /** MusicKit's FairPlay key system. The probe and MusicKit both request this one. */
@@ -112,12 +130,13 @@ const SAFARI_MODERN_ACCESS_TIMEOUT = 'timeout';
 /** A rejection whose name is not safe to show (custom class, crafted name, non-error value). */
 const SAFARI_MODERN_ACCESS_OTHER = 'other';
 
-/** Short, so a hung key-system request cannot hold the error banner for long. */
+/** Short, so a hung key-system request cannot hold the error banner (and its console line) for long. */
 export const SAFARI_MODERN_ACCESS_TIMEOUT_MS = 2_000;
 
 /**
- * Standard built-in error constructors whose fixed `name` may appear on the
- * banner (owner decision, 2026-10-28). Resolved lazily: `AggregateError` is
+ * Standard built-in error constructors whose fixed `name` may appear in the
+ * playback-error console line (owner decision, 2026-10-28; RF-147 moved it off
+ * the banner). Resolved lazily: `AggregateError` is
  * absent in older engines.
  */
 function builtInErrorConstructors(): ErrorConstructor[] {
@@ -162,7 +181,7 @@ function audioOnlyFairPlayConfiguration(): MediaKeySystemConfiguration {
 }
 
 /**
- * The one word a probe rejection may put on the banner: a DOMException name,
+ * The one word a probe rejection may put in the console line: a DOMException name,
  * or the standard name of a built-in error. A subclass or crafted `name` maps
  * to `other`. Never the message or stack, which can carry tokens.
  */
@@ -225,7 +244,7 @@ async function runSafariModernAccessProbe(generation: number): Promise<string | 
   try {
     const word = await Promise.race([settled, timedOut]);
     if (word === SAFARI_MODERN_ACCESS_TIMEOUT) {
-      // A late answer is still better evidence than "timeout" for a later banner.
+      // A late answer is still better evidence than "timeout" for a later console line.
       void settled.then((late) => {
         if (generation === modernAccessGeneration) modernAccessWord = late;
       });

@@ -17,7 +17,7 @@ import {
   appleMusicPlayRejectedMessage,
 } from './apple-music-adapter.js';
 import type { AdapterEvents } from './types.js';
-import { PLAYBACK_TIMING_KEY } from './start-timing.js';
+import { PLAYBACK_TIMING_KEY, resetPlaybackTimingForTests } from './start-timing.js';
 import { RuntimePlaybackCoordinator } from './runtime.js';
 
 function makeEntry(overrides?: { providerTrackId?: string; refs?: [] }): RunPayloadTrackEntry {
@@ -817,11 +817,13 @@ describe('Apple Music debug timing (RF-128)', () => {
 
   beforeEach(() => {
     sessionStorage.setItem(PLAYBACK_TIMING_KEY, '1');
+    resetPlaybackTimingForTests();
     info = vi.spyOn(console, 'info').mockImplementation(() => {});
   });
 
   afterEach(() => {
     sessionStorage.removeItem(PLAYBACK_TIMING_KEY);
+    resetPlaybackTimingForTests();
     info.mockRestore();
   });
 
@@ -881,8 +883,70 @@ describe('Apple Music debug timing (RF-128)', () => {
     ).toBe(true);
   });
 
+  it('marks the first playing state when MusicKit emits it before play() resolves (#668 fifth review, 1)', async () => {
+    const instance = new FakeInstance(true);
+    const pending = deferred<void>();
+    instance.playBehavior = () => pending.promise;
+    const { adapter } = makeAdapter(instance, { preconfigured: true });
+    await adapter.prepare(makeEntry(), WINDOW_ZERO);
+    // A 'playing' event before play() is issued does not count.
+    instance.emit(EVENTS.playbackStateDidChange, { state: STATES.playing });
+    const play = adapter.play();
+    instance.emit(EVENTS.playbackStateDidChange, { state: STATES.playing });
+    instance.emit(EVENTS.playbackStateDidChange, { state: STATES.playing });
+    const marks = timingLines().filter((line) => line.includes('first-playing-state'));
+    expect(marks).toHaveLength(1);
+    expect(timingLines().some((l) => l.includes('play-end'))).toBe(false); // play() still pending
+    pending.resolve();
+    await play;
+  });
+
+  it('keeps a late call end on its original clock and tagged cancelled after the adapter is re-prepared (#668 fifth review, 2)', async () => {
+    let clock = 1_000;
+    vi.spyOn(performance, 'now').mockImplementation(() => clock);
+    const instance = new FakeInstance(true);
+    const pendingQueue = deferred();
+    instance.setQueueBehavior = () => pendingQueue.promise;
+    const { adapter } = makeAdapter(instance, { preconfigured: true });
+    // Attempt A: clock starts at 1000; its setQueue stays pending.
+    const first = adapter.prepare(makeEntry(), WINDOW_ZERO).catch(() => {});
+    await waitForSetQueueCalls(instance, 1);
+    adapter.destroy();
+    clock = 5_000;
+    // Attempt B on the same adapter: a new clock at 5000 (it hits the queue lock).
+    await expect(adapter.prepare(makeEntry(), WINDOW_ZERO)).rejects.toThrow('still finishing');
+    clock = 6_000;
+    pendingQueue.resolve(undefined);
+    await first;
+    for (let i = 0; i < 5; i++) await Promise.resolve();
+    const lateEnd = timingLines().find((line) => line.includes('set-queue-end'));
+    // +5000ms on clock A (not +1000ms on clock B), and still tagged cancelled.
+    expect(lateEnd).toMatch(/ timing set-queue-end \+5000ms ok took 5000ms \(cancelled adapter\)$/);
+  });
+
+  it('marks destroyed for a normal teardown and cancelled only with a call in flight (#668 fifth review, 3)', async () => {
+    const instance = new FakeInstance(true);
+    const idle = makeAdapter(instance, { preconfigured: true }).adapter;
+    await idle.prepare(makeEntry(), WINDOW_ZERO);
+    await idle.play();
+    for (let i = 0; i < 5; i++) await Promise.resolve();
+    idle.destroy();
+    expect(timingLines().at(-1)).toMatch(/ timing destroyed \+\d+ms$/);
+
+    const pending = deferred<void>();
+    instance.playBehavior = () => pending.promise;
+    const busy = makeAdapter(instance, { preconfigured: true }).adapter;
+    await busy.prepare(makeEntry(), WINDOW_ZERO);
+    const play = busy.play().catch(() => {});
+    busy.destroy();
+    expect(timingLines().at(-1)).toMatch(/ timing cancelled \+\d+ms$/);
+    pending.resolve();
+    await play;
+  });
+
   it('logs nothing when timing is off', async () => {
     sessionStorage.removeItem(PLAYBACK_TIMING_KEY);
+    resetPlaybackTimingForTests();
     const instance = new FakeInstance(true);
     const { adapter } = makeAdapter(instance, { preconfigured: true });
     await adapter.prepare(makeEntry(), WINDOW_ZERO);

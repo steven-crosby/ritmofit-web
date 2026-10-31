@@ -218,6 +218,41 @@ describe('Safari modern FairPlay', () => {
     });
   });
 
+  it('with debug timing on, logs the flag state from the clear path on iOS Safari (#668 fifth review, 4)', async () => {
+    const userAgent = vi.spyOn(navigator, 'userAgent', 'get').mockReturnValue(IOS_SAFARI_UA);
+    sessionStorage.setItem('ritmo-playback-timing', '1');
+    localStorage.setItem(MUSICKIT_SAFARI_MODERN_EME_KEY, '1');
+    const info = vi.spyOn(console, 'info').mockImplementation(() => {});
+    try {
+      const { clearSafariModernFairPlay: clear } = await import('./musickit.js');
+      clear();
+      clear();
+      expect(info.mock.calls).toEqual([
+        ['[ritmo apple-music] mk-safari-modern-eme 1 before clear'],
+        ['[ritmo apple-music] mk-safari-modern-eme not-1 before clear'],
+      ]);
+      // The clear itself is unchanged.
+      expect(localStorage.getItem(MUSICKIT_SAFARI_MODERN_EME_KEY)).toBeNull();
+    } finally {
+      info.mockRestore();
+      userAgent.mockRestore();
+      sessionStorage.removeItem('ritmo-playback-timing');
+    }
+  });
+
+  it('logs no flag line from the clear path when timing is off', async () => {
+    const userAgent = vi.spyOn(navigator, 'userAgent', 'get').mockReturnValue(IOS_SAFARI_UA);
+    const info = vi.spyOn(console, 'info').mockImplementation(() => {});
+    try {
+      const { clearSafariModernFairPlay: clear } = await import('./musickit.js');
+      clear();
+      expect(info).not.toHaveBeenCalled();
+    } finally {
+      info.mockRestore();
+      userAgent.mockRestore();
+    }
+  });
+
   it('clears the flag on iOS Safari before the script loads, without WebKitMediaKeys', async () => {
     const userAgent = vi.spyOn(navigator, 'userAgent', 'get').mockReturnValue(IOS_SAFARI_UA);
     localStorage.setItem(MUSICKIT_SAFARI_MODERN_EME_KEY, '1');

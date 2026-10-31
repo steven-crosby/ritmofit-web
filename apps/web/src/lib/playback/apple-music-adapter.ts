@@ -136,20 +136,26 @@ export class AppleMusicAdapter implements PlaybackAdapter {
   private queueGeneration: number | null = null;
   private lastPositionMs: number | null = null;
   private finishedReading: TransportReading | null = null;
-  /** Debug-only timing (RF-128): numbered per adapter, a no-op unless ?playback-timing=1. */
+  /**
+   * Debug-only timing (RF-128), numbered per adapter. A no-op unless timing is
+   * on (`?playback-timing=1` for the tab, or the `ritmo-playback-timing`
+   * localStorage opt-in; see start-timing.ts). None of these fields change
+   * playback.
+   */
   private readonly timingPrefix = `[ritmo apple-music #${++adapterSequence}]`;
   private timer: StartTimer = NO_START_TIMER;
-  private sawPlaying = false;
+  /** Bumped by prepare and destroy, so a late call end keeps its own attempt. */
+  private timingAttempt = 0;
+  /** MusicKit setQueue/play calls this adapter issued that have not settled (timing on only). */
+  private timingInFlight = 0;
+  /** play() was issued in this attempt and no 'playing' state has been seen yet. */
+  private awaitingFirstPlaying = false;
 
   // One bound handler pair for this adapter's life, so removeEventListener in
   // destroy() matches the addEventListener in prepare().
   private readonly onStateChange = (event: MusicKitPlaybackEvent): void => {
     if (!this.started || !this.instance || transportOwners.get(this.instance) !== this) return;
     const state = this.transportState(event.state);
-    if (state === 'playing' && !this.sawPlaying) {
-      this.sawPlaying = true;
-      this.timer.mark('first-playing-state');
-    }
     // Capture before notifying the runtime: MusicKit clears time and duration
     // during single-song teardown (paused -> seeking -> ended -> completed).
     this.captureTransport(state);
@@ -173,6 +179,19 @@ export class AppleMusicAdapter implements PlaybackAdapter {
     void pending.then(() => {
       if (!this.destroyed) this.reportPlaybackFailed();
     });
+  };
+
+  /**
+   * Debug timing only: marks the first 'playing' state after play() is issued,
+   * which MusicKit usually emits before its play() promise resolves. Bound only
+   * while timing is on, and it never touches playback state.
+   */
+  private readonly onTimingState = (event: MusicKitPlaybackEvent): void => {
+    if (!this.awaitingFirstPlaying || this.destroyed || !this.instance) return;
+    if (transportOwners.get(this.instance) !== this) return;
+    if (this.transportState(event.state) !== 'playing') return;
+    this.awaitingFirstPlaying = false;
+    this.timer.mark('first-playing-state');
   };
 
   private reportPlaybackFailed(): void {
@@ -202,8 +221,9 @@ export class AppleMusicAdapter implements PlaybackAdapter {
       throw new Error(`"${entry.track.title}" has no Apple Music reference.`);
     }
     this.timer = startTimer(this.timingPrefix);
+    this.timingAttempt++;
+    this.awaitingFirstPlaying = false;
     this.timer.mark('prepare');
-    this.sawPlaying = false;
     this.destroyed = false;
     this.started = false;
     this.clearEndpoint();
@@ -267,6 +287,8 @@ export class AppleMusicAdapter implements PlaybackAdapter {
     // setQueue rejection above (a 'prepare' error), never a runtime error.
     instance.addEventListener(music.Events.playbackStateDidChange, this.onStateChange);
     instance.addEventListener(music.Events.mediaPlaybackError, this.onPlaybackError);
+    if (this.timer !== NO_START_TIMER)
+      instance.addEventListener(music.Events.playbackStateDidChange, this.onTimingState);
     this.music = music;
     this.instance = instance;
   }
@@ -307,15 +329,16 @@ export class AppleMusicAdapter implements PlaybackAdapter {
         // MusicKit's play() first, with no yield before it: a caller that
         // destroys during play() has to find MusicKit's play still pending,
         // and on iOS the call must keep the user gesture.
-        const playStarted = timingNow();
         this.timer.mark('play-start');
+        this.awaitingFirstPlaying = this.timer !== NO_START_TIMER;
+        const playEnd = this.timedCall('play-end');
         const played = instance.play();
         // Debug timing only: logs when MusicKit settles this play, including
         // after this adapter was cancelled. The handlers never change outcome.
-        if (this.timer !== NO_START_TIMER)
+        if (playEnd)
           played.then(
-            () => this.logCallEnd('play-end', playStarted, 'ok'),
-            () => this.logCallEnd('play-end', playStarted, 'rejected'),
+            () => playEnd('ok'),
+            () => playEnd('rejected'),
           );
         // Then the FairPlay probe, never awaited here. It resolves to a word,
         // never rejects, and returns null on iOS Safari (RF-147) and on
@@ -349,13 +372,24 @@ export class AppleMusicAdapter implements PlaybackAdapter {
     }
   }
 
-  /** Debug timing only: one line per settled MusicKit call, with its duration. */
-  private logCallEnd(step: string, startedAt: number, outcome: string): void {
-    const tookMs = Math.round(timingNow() - startedAt);
-    this.timer.mark(
-      step,
-      `${outcome} took ${tookMs}ms${this.destroyed ? ' (cancelled adapter)' : ''}`,
-    );
+  /**
+   * Debug timing only: when timing is on, returns the end logger for one
+   * MusicKit call, capturing its clock and attempt as the call is issued, so a
+   * late end stays on its original clock and keeps "(cancelled adapter)" even
+   * if this adapter is re-prepared. Returns null when timing is off.
+   */
+  private timedCall(step: string): ((outcome: string) => void) | null {
+    const timer = this.timer;
+    if (timer === NO_START_TIMER) return null;
+    const attempt = this.timingAttempt;
+    const startedAt = timingNow();
+    this.timingInFlight++;
+    return (outcome) => {
+      this.timingInFlight--;
+      const cancelled = this.destroyed || this.timingAttempt !== attempt;
+      const tookMs = Math.round(timingNow() - startedAt);
+      timer.mark(step, `${outcome} took ${tookMs}ms${cancelled ? ' (cancelled adapter)' : ''}`);
+    };
   }
 
   async pause(): Promise<void> {
@@ -471,7 +505,11 @@ export class AppleMusicAdapter implements PlaybackAdapter {
   }
 
   destroy(): void {
-    this.timer.mark('cancelled');
+    // Debug timing only: a cancel interrupts a MusicKit call; a normal teardown
+    // (after a track finished, or between tracks) does not.
+    this.timer.mark(this.timingInFlight > 0 ? 'cancelled' : 'destroyed');
+    this.timingAttempt++;
+    this.awaitingFirstPlaying = false;
     this.destroyed = true;
     this.started = false;
     this.clearEndpoint();
@@ -481,6 +519,8 @@ export class AppleMusicAdapter implements PlaybackAdapter {
       try {
         instance.removeEventListener(music.Events.playbackStateDidChange, this.onStateChange);
         instance.removeEventListener(music.Events.mediaPlaybackError, this.onPlaybackError);
+        if (this.timer !== NO_START_TIMER)
+          instance.removeEventListener(music.Events.playbackStateDidChange, this.onTimingState);
         // Only halt audio if this adapter still owns the shared transport. A
         // superseded adapter (abandoned mid-prepare/-play by a rapid seek) must
         // never stop the newer adapter that has since claimed and started the
@@ -534,15 +574,15 @@ export class AppleMusicAdapter implements PlaybackAdapter {
     const generation = claimQueueGeneration(instance);
     this.queueGeneration = generation;
     pendingQueueGenerations.set(instance, generation);
-    const queueStarted = timingNow();
     this.timer.mark('set-queue-start');
+    const queueEnd = this.timedCall('set-queue-end');
     const raw = instance.setQueue(options);
     // Debug timing only: logs when MusicKit settles this request, including
     // after a timeout or after this adapter was cancelled.
-    if (this.timer !== NO_START_TIMER)
+    if (queueEnd)
       raw.then(
-        () => this.logCallEnd('set-queue-end', queueStarted, 'ok'),
-        () => this.logCallEnd('set-queue-end', queueStarted, 'rejected'),
+        () => queueEnd('ok'),
+        () => queueEnd('rejected'),
       );
     const queued = raw
       .then((result) => {
