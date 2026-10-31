@@ -12,13 +12,13 @@ owner's queue: any agent may execute a Ready task. Publishing follows AGENTS.md 
 Evidence marked **recorded** is a carried-forward claim, not fresh verification.
 A checked PR proves its GitHub state, not product acceptance or production behavior.
 
-167 tasks. backlog: 55 · ready: 1 · in_progress: 1 · blocked: 1 · review: 10 · done: 97 · cancelled: 2.
+167 tasks. backlog: 55 · ready: 1 · in_progress: 0 · blocked: 1 · review: 10 · done: 98 · cancelled: 2.
 
 ## In progress
 
 | Task | Priority / kind | Relationships | Next action / resolution | Evidence |
 | --- | --- | --- | --- | --- |
-| [RF-166](tasks/RF-166.json) Classes list stops flagging missing BPM; the builder track panel keeps it | P3 / task | — | Branch feat/rf-166-classes-no-tempo-flag (Neo, 2026-10-31). Corrected file pointer (the Air conductor found it 2026-10-31): the Classes list label comes from apps/web/src/lib/class-ordering.ts classNextStep ("Add the missing tempo", line 168) mapped by apps/web/src/lib/library-shell.ts readinessLabel to "Needs tempo" (line 54). The Dashboard.tsx "no BPM set" span is ClassHeaderCard, the builder header: keep it (criterion 1, design system 10 §1a). Restart: change classNextStep so tempo alone is not the Classes next step, test, finalize in this PR. | checked 2026-10-31 |
+| — | — | — | — | — |
 
 ## Blocked / waiting
 
@@ -131,6 +131,7 @@ A checked PR proves its GitHub state, not product acceptance or production behav
 | [RF-165](tasks/RF-165.json) Classes home offers a HIIT template card beside Cycle and Pilates | P2 / task | — | The Classes home now offers Cycle, Pilates and HIIT template cards, matching the Create dialog and D21. The cards stack on a phone and sit three across from the sm breakpoint, so there is no orphan. Choosing HIIT opens the same Create dialog scaffold flow with HIIT preselected. The library filter keeps only Cycle and Pilates chips; a HIIT chip was not added. | checked 2026-10-31 |
 | [RF-144](tasks/RF-144.json) The design brief and D21 describe the provider capabilities and Account sections the product has | P3 / documentation | needs RF-131 | Design brief 9.8 and D21 match the product (#679): provider capabilities per providerCapabilities, and the three Account sections with Preferences cut per RF-131 decision 5. | checked 2026-10-29; checked 2026-10-31 |
 | [RF-156](tasks/RF-156.json) iOS web-contract snapshot picks up the RF-132 likes paging and search contract | P3 / task | follow-ups RF-162 | Met. iOS web-contract/ was re-copied from web main 0a77110 by the README refresh block (iOS #52, merged 2cc92e2); openapi.json and api.md now document likes ?cursor=, ?q=, X-RitmoFit-Next-Cursor and the 422. Cross-repository parity passed on the PR. No iOS wire model decodes the likes response, so none changed. Contract gaps found in review: RF-162. | checked 2026-10-30; checked 2026-10-31 |
+| [RF-166](tasks/RF-166.json) Classes list stops flagging missing BPM; the builder track panel keeps it | P3 / task | — | The Classes list no longer flags missing tempo (#682); the builder readiness panel and Live keep it per design system 10 §1a. | checked 2026-10-31 |
 | [RF-1](tasks/RF-1.json) Desktop hold, BPM, and effort recorded on the QA cycle song | untriaged / task | — | Recorded complete on the imported board; product behavior was not re-tested during task migration. | recorded |
 | [RF-2](tasks/RF-2.json) Teaching-screen deploy record on main | untriaged / documentation | — | Recorded complete on the imported board; product behavior was not re-tested during task migration. | recorded; checked 2026-10-27 |
 | [RF-3](tasks/RF-3.json) Teaching screen live | untriaged / task | — | Recorded complete on the imported board; product behavior was not re-tested during task migration. | recorded; checked 2026-10-27 |

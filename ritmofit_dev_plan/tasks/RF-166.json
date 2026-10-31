@@ -3,7 +3,7 @@
   "id": "RF-166",
   "title": "Classes list stops flagging missing BPM; the builder track panel keeps it",
   "kind": "task",
-  "status": "in_progress",
+  "status": "done",
   "priority": "P3",
   "parent": null,
   "dependsOn": [],
@@ -13,7 +13,7 @@
     "Design system 10 §1a is checked and still holds: it requires missing tempo as readiness in the builder (the tempo dimension of the readiness panel) and as supporting status in Live; it says nothing about the Classes list, so removing the Classes flag needs no canon change.",
     "GetSongBPM stays unprovisioned (owner deferral); no Spotify BPM path (permanent constraint)."
   ],
-  "nextAction": "Branch feat/rf-166-classes-no-tempo-flag (Neo, 2026-10-31). Corrected file pointer (the Air conductor found it 2026-10-31): the Classes list label comes from apps/web/src/lib/class-ordering.ts classNextStep (\"Add the missing tempo\", line 168) mapped by apps/web/src/lib/library-shell.ts readinessLabel to \"Needs tempo\" (line 54). The Dashboard.tsx \"no BPM set\" span is ClassHeaderCard, the builder header: keep it (criterion 1, design system 10 §1a). Restart: change classNextStep so tempo alone is not the Classes next step, test, finalize in this PR.",
+  "nextAction": null,
   "blocker": null,
   "evidence": [
     {
@@ -39,8 +39,26 @@
       "ref": "https://github.com/steven-crosby/ritmofit-web/pull/680",
       "summary": "Owner set Ready 2026-10-31: approved in the Air session (\"Corrected plan is approved\", relayed by the Air conductor) and confirmed in the Neo session (\"Yes, start the lanes\"). Started after RF-133 merged (#680, a1b971d) as planned.",
       "checkedOn": "2026-10-31"
+    },
+    {
+      "kind": "pr",
+      "ref": "https://github.com/steven-crosby/ritmofit-web/pull/682",
+      "summary": "class-ordering.ts classNextStep skips the tempo dimension when naming the next step, so a class whose only gap is missing BPM is \"Ready to teach\" on the Classes row and in the Live queue order; library-shell.ts drops the \"Needs tempo\" label. The builder keeps tempo: readiness.ts tempo dimension (readiness panel) and the ClassHeaderCard \"no BPM set\" status are unchanged; Live per-cue status unchanged (RF-168 is the owner decision there). No GetSongBPM or Spotify BPM path added.",
+      "checkedOn": "2026-10-31"
+    },
+    {
+      "kind": "test",
+      "ref": "apps/web/src/components/ClassesHome.test.tsx",
+      "summary": "Fail on main a1b971d, pass on the PR: a tempo-only class reads Ready with no dot (ClassesHome.test.tsx) and classNextStep does not make missing tempo a step (class-ordering.test.ts). Tests that used \"Needs tempo\" as the example label now use \"Needs cues\". Full local gate green 2026-10-31: web 1614, api 636, e2e 2 passed.",
+      "checkedOn": "2026-10-31"
+    },
+    {
+      "kind": "document",
+      "ref": "ritmofit_design_system/10-rhythm-system.md",
+      "summary": "Design system 10 §1a checked on 2026-10-31: missing tempo is readiness in the builder readiness panel and supporting status in Live, and never blocks a run; it says nothing about the Classes list. Still holds; no canon change.",
+      "checkedOn": "2026-10-31"
     }
   ],
-  "resolution": null,
+  "resolution": "The Classes list no longer flags missing tempo (#682); the builder readiness panel and Live keep it per design system 10 §1a.",
   "followUps": []
 }
