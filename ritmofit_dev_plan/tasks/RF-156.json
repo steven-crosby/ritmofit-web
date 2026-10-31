@@ -43,6 +43,12 @@
       "ref": "https://github.com/steven-crosby/ritmofit-ios/pull/52",
       "summary": "iOS #52 squash-merged as 2cc92e2 with owner permission (\"Yes squash and merge\", 2026-10-31) after web #670 (eaec1d3). CI on head a648ac5: parity and ios build · test passed. Final review found no blocking issues; three likes-contract gaps it logged moved to RF-162.",
       "checkedOn": "2026-10-31"
+    },
+    {
+      "kind": "pr",
+      "ref": "https://github.com/steven-crosby/ritmofit-web/pull/674",
+      "summary": "Web record PR: RF-156 Done with the iOS #52 merge evidence.",
+      "checkedOn": "2026-10-31"
     }
   ],
   "resolution": "Met. iOS web-contract/ was re-copied from web main 0a77110 by the README refresh block (iOS #52, merged 2cc92e2); openapi.json and api.md now document likes ?cursor=, ?q=, X-RitmoFit-Next-Cursor and the 422. Cross-repository parity passed on the PR. No iOS wire model decodes the likes response, so none changed. Contract gaps found in review: RF-162.",

@@ -21,6 +21,12 @@
       "ref": "https://github.com/steven-crosby/ritmofit-ios/pull/52",
       "summary": "Final review of iOS #52 (snapshot of web 0a77110), items 1-3: the likes 429 omits the per-user rate limits; cursor lacks minLength though the server rejects empty; q maxLength 200 while the server truncates.",
       "checkedOn": "2026-10-31"
+    },
+    {
+      "kind": "pr",
+      "ref": "https://github.com/steven-crosby/ritmofit-web/pull/674",
+      "summary": "Web record PR that created this record.",
+      "checkedOn": "2026-10-31"
     }
   ],
   "resolution": null,
