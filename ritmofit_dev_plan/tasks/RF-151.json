@@ -8,8 +8,8 @@
   "parent": null,
   "dependsOn": [],
   "acceptance": [
-    "On Music › Songs the list is always in pick mode: tapping anywhere on a song row toggles its selection, and the row never starts playback. A labeled, keyboard-accessible checkbox on each row shows and toggles the same state. The artwork area reserves a spot for a ▶ preview control (RF-138) so adding preview later does not shift the layout.",
-    "At most 15 songs can be selected. At 15, the remaining checkboxes are disabled with a short note saying why.",
+    "On Music › Songs the list is always in pick mode: tapping a song row toggles its selection, and the row never starts playback. Each row is one accessible control (for example the row is the <label> for its checkbox), so a tap or click toggles exactly once and axe finds no nested interactive controls. The artwork area is excluded from the toggle target and reserves a spot for a ▶ preview control (RF-138), so adding preview later does not change the layout or hit areas.",
+    "At most 15 songs can be selected. At 15, unselected rows (checkbox and row tap alike) are disabled with a short note saying why; selected rows can still be unticked.",
     "A selection bar shows \"N of 15 selected\", a way to clear the selection, and a \"Create a class\" button once at least one song is selected.",
     "The selection survives search, Load more and sort changes within the same provider. Switching provider, disconnecting, or a different account's list clears it.",
     "\"Create a class\" opens a short sheet that asks only for the class name and the template (Cycle, Pilates or HIIT), with the selected songs already chosen, then creates the class with those songs as its blocks. There is no second song picker.",
@@ -36,6 +36,12 @@
       "kind": "observation",
       "ref": "https://github.com/steven-crosby/ritmofit-web/pull/684",
       "summary": "Owner, 2026-10-31 (Air conductor session), after an iPhone recording of Music › Songs where tapping rows did nothing and screenshots of Spotify playlist Edit mode: rows must select, not play; preview must exist but as a secondary control. Chose option (a) \"always in pick mode\" (\"Let’s try a first\") over a Spotify-style Select button, and will smoke test it on Mac and iPhone to judge the feel.",
+      "checkedOn": "2026-10-31"
+    },
+    {
+      "kind": "pr",
+      "ref": "https://github.com/steven-crosby/ritmofit-web/pull/684",
+      "summary": "Final review of #684 tightened: artwork spot excluded from the row toggle, cap covers row taps, one accessible control per row, RF-138 depends on RF-151, RF-170 linked to RF-165.",
       "checkedOn": "2026-10-31"
     }
   ],

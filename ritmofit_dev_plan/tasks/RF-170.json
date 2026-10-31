@@ -8,7 +8,8 @@
   "parent": null,
   "dependsOn": [],
   "acceptance": [
-    "The owner decides whether the Classes library filter adds a HIIT chip beside All, Cycle and Pilates now that the home has a HIIT template card (RF-165). The answer is recorded here; any implementation gets its own record."
+    "The owner decides whether the Classes library filter adds a HIIT chip beside All, Cycle and Pilates now that the home has a HIIT template card (RF-165). The answer is recorded here; any implementation gets its own record.",
+    "Separately from the chip decision, the #678 cleanups are done or explicitly dropped: LIBRARY_TEMPLATES is derived from SCAFFOLD_DISCIPLINES, and DisciplineFilter is typed from ClassTemplate."
   ],
   "nextAction": "From the #678 final review (2026-10-31): HIIT classes can only be found under All. #678 kept the filter type separate (DisciplineFilter in ClassesHome.tsx) so cards cannot add chips silently. Agent-created: Backlog until the owner decides.",
   "blocker": null,
@@ -23,6 +24,12 @@
       "kind": "pr",
       "ref": "https://github.com/steven-crosby/ritmofit-web/pull/684",
       "summary": "Filed in this records PR.",
+      "checkedOn": "2026-10-31"
+    },
+    {
+      "kind": "pr",
+      "ref": "https://github.com/steven-crosby/ritmofit-web/pull/684",
+      "summary": "Final review of #684 tightened: artwork spot excluded from the row toggle, cap covers row taps, one accessible control per row, RF-138 depends on RF-151, RF-170 linked to RF-165.",
       "checkedOn": "2026-10-31"
     }
   ],
