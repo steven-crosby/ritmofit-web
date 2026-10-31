@@ -4564,7 +4564,6 @@ function ClassWorkspace({
   const assigningPlanBlockId = assigningPlanBlock?.id ?? null;
   const [assignStay, setAssignStay] = useState(false);
   const [planLead, setPlanLead] = useState<string | null>(null);
-  const [planReady, setPlanReady] = useState(false);
   const [planFailed, setPlanFailed] = useState(false);
   const [planBlocks, setPlanBlocks] = useState<ClassPlanBlock[]>([]);
   const currentAssigningPlanBlock = assigningPlanBlock
@@ -4844,7 +4843,7 @@ function ClassWorkspace({
             trackCount={payload?.tracks.length ?? tracks.length}
             isOwner={isOwner}
             canEdit={canEdit}
-            canRun={payload != null && canRunPayload(payload) && !planLead && planReady}
+            canRun={payload != null && canRunPayload(payload)}
             onError={onError}
             onRun={onRun}
             onSelectTrack={setSelectedTrackId}
@@ -4902,7 +4901,6 @@ function ClassWorkspace({
           onSelectTrack={(id) => setSelectedTrackId((cur) => (cur === id ? null : id))}
           onTracksChanged={onTrackChanged}
           onPlanNextStep={setPlanLead}
-          onPlanReady={setPlanReady}
           onPlanFailed={setPlanFailed}
           onHasPlanBlocks={setHasPlanBlocks}
           onPlanBlocks={setPlanBlocks}
@@ -5300,25 +5298,23 @@ export function ClassHeaderCard({
   // cues-moves/music, surfaced before Live instead of on stage (P0 #2).
   const readiness = payload ? classReadiness(payload) : null;
   // Why Run live is disabled, said at the button itself (not only a hover title)
-  // and associated for assistive tech via aria-describedby. Duration is the sole
-  // run gate (mirrors canRunPayload), so the reason is either "no tracks yet" or
-  // "a track without a length". Especially matters for an empty class, where the
-  // readiness panel isn't shown and the greyed button is the only signal.
+  // and associated for assistive tech via aria-describedby. One run rule (RF-133):
+  // durations decide (canRunPayload), so the reason is either "no tracks yet" or
+  // "a track without a length". Plan gaps and over-time blocks are guidance shown
+  // in the readiness summary, never a reason here. Especially matters for an empty
+  // class, where the readiness panel isn't shown and the greyed button is the only signal.
   const runBlockedId = `run-blocked-${cls.id}`;
   // A failed load says so; it never blames track lengths it could not read.
-  // While only the plan is still loading, the button stays quiet.
-  const runEnabled = canRun && !planLead;
+  const runEnabled = canRun;
   const runBlockedReason = runEnabled
     ? null
-    : planLead
-      ? planLead
-      : trackCount === 0
-        ? 'Add a track to run this class.'
-        : detailsFailed
-          ? CLASS_DETAILS_NOT_LOADED
-          : payload && canRunPayload(payload)
-            ? null
-            : 'Give every track a length to run.';
+    : trackCount === 0
+      ? 'Add a track to run this class.'
+      : detailsFailed
+        ? CLASS_DETAILS_NOT_LOADED
+        : payload && canRunPayload(payload)
+          ? null
+          : 'Give every track a length to run.';
   const templateLabel = formatTemplateLabel(cls.template);
 
   const startRename = () => {
@@ -5434,10 +5430,12 @@ export function ClassHeaderCard({
             />
           )}
           <button
+            // Enabled whenever durations allow (RF-133). Copper only when it is the
+            // surface's one primary: while the plan has gaps the plan step leads (RF-135).
             className={
-              planLead
-                ? 'order-first col-span-2 min-h-11 rounded-control border border-interactive/35 px-3 font-ui text-sm font-semibold text-text-secondary disabled:opacity-40 sm:order-none sm:col-span-auto sm:rounded-pill sm:px-4'
-                : 'order-first col-span-2 min-h-11 rounded-control rf-btn-primary px-3 font-ui text-sm font-semibold text-text-on-accent disabled:opacity-40 sm:order-none sm:col-span-auto sm:rounded-pill sm:px-4'
+              runEnabled && !planLead
+                ? 'order-first col-span-2 min-h-11 rounded-control rf-btn-primary px-3 font-ui text-sm font-semibold text-text-on-accent disabled:opacity-40 sm:order-none sm:col-span-auto sm:rounded-pill sm:px-4'
+                : 'order-first col-span-2 min-h-11 rounded-control border border-interactive/35 px-3 font-ui text-sm font-semibold text-text-secondary disabled:opacity-40 sm:order-none sm:col-span-auto sm:rounded-pill sm:px-4'
             }
             onClick={onRun}
             disabled={!runEnabled}

@@ -119,7 +119,7 @@ describe('ClassHeaderCard Live readiness', () => {
     expect(document.getElementById(describedBy!)?.textContent).toMatch(/add a track to run/i);
   });
 
-  it('lets an unfinished plan speak at 0 tracks and quiets Run live', () => {
+  it('lets an unfinished plan speak at 0 tracks while Run live waits for a track', () => {
     render(
       <ClassHeaderCard
         {...baseProps}
@@ -136,10 +136,11 @@ describe('ClassHeaderCard Live readiness', () => {
     const runButton = screen.getByRole('button', { name: /run live/i });
     expect(runButton.className).not.toMatch(/rf-btn-primary/);
     const describedBy = runButton.getAttribute('aria-describedby');
-    expect(document.getElementById(describedBy!)?.textContent).toMatch(/7 blocks still need music/);
+    // Plan gaps are guidance (RF-133): the disabled reason is the run gate itself.
+    expect(document.getElementById(describedBy!)?.textContent).toMatch(/Add a track to run/);
   });
 
-  it('keeps Run live disabled when the payload can run but the plan is unfinished', () => {
+  it('enables Run live when the payload can run though the plan is unfinished (RF-133)', () => {
     const onRun = vi.fn();
     const runnable = {
       class: { totalDurationMs: 180_000 },
@@ -160,10 +161,13 @@ describe('ClassHeaderCard Live readiness', () => {
     );
 
     const runButton = screen.getByRole('button', { name: /run live/i });
-    expect(runButton).toHaveProperty('disabled', true);
+    expect(runButton).toHaveProperty('disabled', false);
+    expect(runButton.getAttribute('aria-describedby')).toBeNull();
+    // The plan step stays the surface's one copper primary (RF-135).
     expect(runButton.className).not.toMatch(/rf-btn-primary/);
     fireEvent.click(runButton);
-    expect(onRun).not.toHaveBeenCalled();
+    expect(onRun).toHaveBeenCalledTimes(1);
+    // The plan gap stays visible as guidance.
     expect(screen.getAllByText('6 blocks still need music').length).toBeGreaterThanOrEqual(1);
   });
 

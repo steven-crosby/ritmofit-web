@@ -57,8 +57,9 @@ function headline(
   readiness: ClassReadiness,
   planLead?: string | null,
 ): { text: string; tone: string } {
-  if (planLead) return { text: planLead, tone: 'text-state-caution' };
+  // Durations are the run gate; a plan gap is guidance once the class can run (RF-133).
   if (!readiness.runnable) return { text: 'Not ready for Live', tone: 'text-state-caution' };
+  if (planLead) return { text: planLead, tone: 'text-state-caution' };
   if (readiness.fullyReady)
     return { text: 'Class shape ready · take it live', tone: 'text-state-positive' };
   const n = readiness.attentionCount;
@@ -79,7 +80,7 @@ export function ClassReadinessSummary({
   readiness?: ClassReadiness | null;
   canEdit: boolean;
   compact?: boolean;
-  /** Planning next step when the class has blocks. Leads the Live headline. */
+  /** Planning next step when the class has blocks: guidance, never a run gate (RF-133). */
   planLead?: string | null;
   /** Jump the inspector to a flagged track so the gap can be fixed in place. */
   onSelectTrack: (classTrackId: string) => void;
@@ -109,7 +110,9 @@ export function ClassReadinessSummary({
   if (!readiness) return null;
 
   const head = headline(readiness, planLead);
-  const hideLiveBody = Boolean(planLead);
+  // While the plan has gaps, a runnable class shows only the plan step; a class
+  // that cannot run keeps the readiness list so the blocking dimension stays visible.
+  const hideLiveBody = Boolean(planLead) && readiness.runnable;
   return (
     <section
       aria-label={hideLiveBody ? 'Class next step' : 'Class readiness'}

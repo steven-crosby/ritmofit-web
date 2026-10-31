@@ -63,6 +63,24 @@ describe('ClassReadinessSummary', () => {
     expect(screen.getByLabelText('Class next step')).toBeTruthy();
   });
 
+  it('keeps the run blocker visible when a plan gap exists but the class cannot run (RF-133)', () => {
+    const readiness = classReadiness(
+      payload(entry({ classTrackId: 'ct-9', track: { title: 'Untimed', durationMs: null } })),
+    );
+    render(
+      <ClassReadinessSummary
+        readiness={readiness}
+        canEdit
+        planLead="4 blocks still need music"
+        onSelectTrack={() => {}}
+      />,
+    );
+    // Durations are the run gate, so they lead; the plan gap does not hide them.
+    expect(screen.getByText('Not ready for Live')).toBeTruthy();
+    expect(screen.getByLabelText('Class readiness')).toBeTruthy();
+    expect(screen.getByText(/what live needs from this class/i)).toBeTruthy();
+  });
+
   it('shows a plan-only next step when there are no tracks yet', () => {
     render(
       <ClassReadinessSummary
