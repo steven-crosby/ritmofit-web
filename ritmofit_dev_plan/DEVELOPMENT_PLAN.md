@@ -17,6 +17,7 @@
 <!-- Claude Code, 2026-10-30: Owner set the Apple hardening Ready set (RF-108, RF-128, RF-147). -->
 <!-- Claude Code, 2026-10-31: #668 and #669 deployed; Now names the device check, the 2026-10-31 Ready set and RF-151's Ready decision. -->
 <!-- Claude Code, 2026-10-31: RF-137 (#672) and RF-135 (#673) merged, undeployed; main is ahead of production. -->
+<!-- Claude Code, 2026-10-31: Close: RF-131 answered (#677, follow-ups RF-133, RF-134, RF-144, RF-165 to RF-168); RF-168 is the open owner decision. -->
 
 **Current actionable state:** [RF board](./tasks.md), backed by canonical [task records](./tasks/README.md).
 The order of work is [Phases](#phases) below; each phase lists RF records, not a second backlog.
@@ -37,7 +38,8 @@ with `?playback-timing=1`) for [RF-108](./tasks/RF-108.json), [RF-128](./tasks/R
 account (Phase 1) goes first. Spotify is reopened (owner, 2026-10-28) but every Web API call returns
 `403` until the developer app accepts the connected account.
 **Open owner decisions:** whether [RF-151](./tasks/RF-151.json) (tick up to 15 songs on Music ›
-Songs, then create a class) moves to Ready; RF-131's six questions; the review queue
+Songs, then create a class) moves to Ready; whether Live stops showing "No BPM set" on every cue
+([RF-168](./tasks/RF-168.json)); the review queue
 (RF-91, RF-93, RF-94, RF-96, RF-16, RF-23, RF-32); whether [RF-80](./tasks/RF-80.json) is cancelled or
 rescoped now that RF-124 found the playback root cause; Live finish placement (see Backlog).
 
@@ -51,10 +53,10 @@ direct ask before starting one.
 
 | Phase | Target | Records | Why this order |
 | --- | --- | --- | --- |
-| 0. Land what is in flight | this week | Done 2026-10-29: #657 deployed, [RF-124](./tasks/RF-124.json) and [RF-29](./tasks/RF-29.json) closed, #658 merged. Open: #654; [RF-131](./tasks/RF-131.json) decisions | Clears the P1 playback fix and unblocks the UX P0s |
+| 0. Land what is in flight | this week | Done 2026-10-29: #657 deployed, [RF-124](./tasks/RF-124.json) and [RF-29](./tasks/RF-29.json) closed, #658 merged. Open: #654. [RF-131](./tasks/RF-131.json) answered 2026-10-31 | Clears the P1 playback fix and unblocks the UX P0s |
 | 1. Apple hardening | by ~2026-11-20 | Done 2026-10-30: [RF-132](./tasks/RF-132.json), [RF-123](./tasks/RF-123.json). Open: [RF-108](./tasks/RF-108.json), [RF-128](./tasks/RF-128.json) and [RF-147](./tasks/RF-147.json) (Ready, one lane), [RF-125](./tasks/RF-125.json), [RF-121](./tasks/RF-121.json), [RF-136](./tasks/RF-136.json), [RF-126](./tasks/RF-126.json) (incl. desktop Safari) | Needs a live Apple subscription |
-| 2. Trust and truth | after RF-131 | [RF-133](./tasks/RF-133.json), [RF-134](./tasks/RF-134.json), [RF-135](./tasks/RF-135.json), [RF-137](./tasks/RF-137.json), [RF-129](./tasks/RF-129.json) (absorbs RF-139), [RF-138](./tasks/RF-138.json), [RF-145](./tasks/RF-145.json) | The audit's main theme; mostly web |
-| 3. Spotify | when the `403` is resolved | [RF-92](./tasks/RF-92.json) (with [RF-74](./tasks/RF-74.json)), [RF-16](./tasks/RF-16.json), RF-131 decision 6 | Blocked by the developer-app allowlist |
+| 2. Trust and truth | after RF-131 | [RF-133](./tasks/RF-133.json), [RF-134](./tasks/RF-134.json), [RF-135](./tasks/RF-135.json) and [RF-137](./tasks/RF-137.json) (both Done 2026-10-31), [RF-165](./tasks/RF-165.json), [RF-166](./tasks/RF-166.json), [RF-129](./tasks/RF-129.json) (absorbs RF-139), [RF-138](./tasks/RF-138.json), [RF-145](./tasks/RF-145.json) | The audit's main theme; mostly web |
+| 3. Spotify | when the `403` is resolved | [RF-92](./tasks/RF-92.json) (with [RF-74](./tasks/RF-74.json)), [RF-16](./tasks/RF-16.json), [RF-167](./tasks/RF-167.json) (RF-131 decision 6) | Blocked by the developer-app allowlist |
 | 4. Beta-expansion gate | before inviting more instructors | [RF-116](./tasks/RF-116.json) → [RF-140](./tasks/RF-140.json) (self-service deletion, D22), the D22 provider-terms review | Required before expansion |
 | 5. Polish | fill-in | [RF-141](./tasks/RF-141.json), [RF-142](./tasks/RF-142.json) (absorbs RF-73), [RF-143](./tasks/RF-143.json), [RF-144](./tasks/RF-144.json), [RF-146](./tasks/RF-146.json) | Copy, accessibility, benchmark triage |
 | Background | between phases | [RF-100](./tasks/RF-100.json) (Ready), [RF-87](./tasks/RF-87.json), RF-101–RF-106, RF-109–RF-115, RF-117–RF-120, [RF-127](./tasks/RF-127.json) | Small hardening (mostly P3; RF-87 and RF-115 are P2) |
