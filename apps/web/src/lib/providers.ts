@@ -224,7 +224,8 @@ export function providerCapabilityTruth(
       label: connection ? 'Authorization unverified' : 'Status unavailable',
     };
   } else if (connectionState === 'connected' && connectionHasPlaybackScope(provider, connection)) {
-    playback = { state: 'ready', label: 'Authorized' };
+    // Stored scope only: Live checks this browser's authorization at Start (D24, RF-134).
+    playback = { state: 'ready', label: 'Linked · Live checks this browser' };
   } else if (connectionState === 'connected' || connectionState === 'expired') {
     playback = { state: 'action-required', label: 'Reconnect for playback' };
   } else {

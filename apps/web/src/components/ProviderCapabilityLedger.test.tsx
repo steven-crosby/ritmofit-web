@@ -18,7 +18,7 @@ describe('ProviderCapabilityLedger', () => {
     const ledger = screen.getByLabelText('Spotify capabilities');
     expect(within(ledger).getByText('Browse catalog')).toBeTruthy();
     expect(within(ledger).getByText('Likes & playlists ready')).toBeTruthy();
-    expect(within(ledger).getByText('Authorized')).toBeTruthy();
+    expect(within(ledger).getByText('Linked · Live checks this browser')).toBeTruthy();
   });
 
   it('uses unverified labels rather than false disconnect language', () => {

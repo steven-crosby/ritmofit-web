@@ -11,7 +11,7 @@
  */
 import type { ClassPlanBlock, ClassTrack, RunPayload } from '@ritmofit/shared';
 import { classNextStep, type ClassDetailState, type ClassNextStep } from './class-ordering.js';
-import { planNextStep } from './class-scaffold.js';
+import { planGap } from './class-scaffold.js';
 import { canRunPayload } from './duration.js';
 
 export type CreationPlanContext = {
@@ -24,7 +24,7 @@ export type CreationClassRef = {
   trackCount: number;
 };
 
-function planWork(action: string, detail: string): ClassNextStep {
+function planWork(action: string, detail: string, label: string): ClassNextStep {
   // One step more finished than an empty draft (work 0 / teach 4), so Ready to
   // teach ranks a mid-build scaffold above a blank class. Needs work still
   // puts empty drafts first.
@@ -34,6 +34,7 @@ function planWork(action: string, detail: string): ClassNextStep {
     eyebrow: 'Fill the plan',
     action,
     detail,
+    label,
     teachable: false,
   };
 }
@@ -51,8 +52,9 @@ export function creationNextStep(
 ): ClassNextStep {
   const payload: RunPayload | null = state?.status === 'ready' ? state.payload : null;
   if (plan && plan.blocks.length > 0) {
-    const lead = planNextStep(plan.blocks, plan.tracks, payload);
-    if (lead) {
+    const gap = planGap(plan.blocks, plan.tracks, payload);
+    if (gap) {
+      const { lead, label } = gap;
       if (payload && canRunPayload(payload)) {
         // Runnable: the plan gap is guidance on top of the payload's own standing.
         // A fully ready class with plan gaps ranks as "Refine before teaching"
@@ -64,15 +66,16 @@ export function creationNextStep(
           eyebrow: 'Refine before teaching',
           action: actionFromPlanLead(lead),
           detail: `Can run live · ${lead}`,
+          label,
           teachable: false,
         };
       }
-      return planWork(actionFromPlanLead(lead), lead);
+      return planWork(actionFromPlanLead(lead), lead, label);
     }
   }
 
   if (cls.scaffoldRecipeId && cls.trackCount === 0) {
-    return planWork('Add music to the plan', 'Teaching plan · no music yet');
+    return planWork('Add music to the plan', 'Teaching plan · no music yet', 'Plan has no music');
   }
 
   return classNextStep(state);

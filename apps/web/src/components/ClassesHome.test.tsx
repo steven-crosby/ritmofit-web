@@ -346,7 +346,7 @@ describe('ClassesHome library shell', () => {
     expect(screen.getByRole('button', { name: 'Rehearsal view — Class 1' })).toBeTruthy();
   });
 
-  it('names an unfinished plan as Needs music', async () => {
+  it('names the exact plan gap on the row (RF-134)', async () => {
     vi.mocked(api.getClassShelfPayload).mockResolvedValue(payload('UXF-1'));
     vi.mocked(api.listClassPlanBlocks).mockResolvedValue([
       { id: 'b1', position: 0, targetDurationMs: 360_000 } as ClassPlanBlock,
@@ -360,7 +360,8 @@ describe('ClassesHome library shell', () => {
         scaffoldRecipeId: 'cycle_45_v1',
       }),
     ]);
-    expect(await screen.findByText('Needs music')).toBeTruthy();
+    expect(await screen.findByText('1 block empty')).toBeTruthy();
+    expect(screen.queryByText('Needs music')).toBeNull();
     expect(screen.queryByRole('button', { name: 'Ready to teach' })).toBeNull();
     expect(api.listClassPlanBlocks).toHaveBeenCalledWith(cls(1).id);
     expect(api.listClassTracks).toHaveBeenCalledWith(cls(1).id);

@@ -42,14 +42,18 @@ export function jumpBackInClasses<T extends OpenedClass>(
 }
 
 /**
- * Short readiness phrase. The orange dot may repeat this; the words are the signal.
+ * Short readiness phrase. The caution dot may repeat this; the words are the signal.
+ * Each label names what was checked, never a generic verdict (RF-134): plan gaps
+ * come from the step's own label ("2 blocks empty"), and missing tempo is not a
+ * list label at all (RF-166).
  */
 export function readinessLabel(
-  step: Pick<ClassNextStep, 'eyebrow' | 'action' | 'teachable'>,
+  step: Pick<ClassNextStep, 'eyebrow' | 'action' | 'teachable' | 'label'>,
 ): string {
   if (step.eyebrow === 'Reading class') return 'Checking';
   if (step.eyebrow === 'Details unavailable') return 'Unavailable';
   if (step.teachable) return 'Ready';
+  if (step.label) return step.label;
   switch (step.action) {
     case 'Set track durations':
       return 'Needs duration';
@@ -58,18 +62,17 @@ export function readinessLabel(
     case 'Score the effort arc':
       return 'Needs effort';
     case 'Add the first track':
+      return 'No tracks';
     case 'Link music to tracks':
-    case 'Add music to the plan':
-    case 'Put songs in the plan':
-      return 'Needs music';
-    case 'Fix overflowing blocks':
-      return 'Over time';
+      return 'Music not linked';
     default:
       return 'Needs work';
   }
 }
 
-export function readinessMark(step: Pick<ClassNextStep, 'eyebrow' | 'action' | 'teachable'>): {
+export function readinessMark(
+  step: Pick<ClassNextStep, 'eyebrow' | 'action' | 'teachable' | 'label'>,
+): {
   label: string;
   dot: boolean;
 } {

@@ -75,6 +75,11 @@ export type ClassNextStep = {
   /** One line of supporting fact for the status label. */
   detail: string;
   /**
+   * Short Classes-row label naming the exact gap, when the step knows it better
+   * than its action does (plan gaps: "2 blocks empty"). RF-134.
+   */
+  label?: string;
+  /**
    * Runnable with nothing left that this list names. Missing tempo does not count
    * (RF-166), so this is not `readiness.fullyReady`; the builder still shows tempo.
    */

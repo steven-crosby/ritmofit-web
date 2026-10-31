@@ -1588,7 +1588,7 @@ describe('Dashboard class library states', () => {
     expect(screen.queryByText('Queue readiness')).toBeNull();
     expect(screen.queryByText('Needs a duration')).toBeNull();
     expect(screen.queryByText('All linked')).toBeNull();
-    expect(screen.getByText('0 of 1 class ready for Live.')).toBeTruthy();
+    expect(screen.getByText('0 of 1 class can run live: every track has a length.')).toBeTruthy();
   });
 
   it('surfaces a retry when a class run-payload fails to load, and keeps Run live disabled', async () => {
@@ -1928,11 +1928,11 @@ describe('Dashboard class library states', () => {
     const musicSection = document.getElementById('account-music-connections');
     expect(musicSection).toBeTruthy();
     expect(await within(musicSection!).findByText('Connected')).toBeTruthy();
-    expect(within(musicSection!).getByText('Authorized')).toBeTruthy();
+    expect(within(musicSection!).getByText('Linked · Live checks this browser')).toBeTruthy();
 
     // Account stays mounted while Manage dialog runs; connectionRevision must
     // re-fetch listConnections so the Spotify row flips without a nav away/back.
-    fireEvent.click(screen.getByRole('button', { name: 'Manage' }));
+    fireEvent.click(screen.getByRole('button', { name: 'Manage connections' }));
     const connectionsDialog = await screen.findByRole('dialog', { name: 'Music connections' });
     expect((await within(connectionsDialog).findAllByText('Connected')).length).toBeGreaterThan(0);
     fireEvent.click(screen.getByRole('button', { name: 'Disconnect Spotify' }));
@@ -2543,11 +2543,14 @@ describe('Dashboard Account status ledger', () => {
     expect(screen.getByLabelText('Display name')).toHaveProperty('disabled', true);
     expect(screen.getByRole('button', { name: 'Save profile' })).toHaveProperty('disabled', true);
     expect(screen.getByRole('button', { name: 'Sign out' })).toHaveProperty('disabled', false);
-    expect(screen.getByRole('button', { name: 'Manage' })).toHaveProperty('disabled', false);
+    expect(screen.getByRole('button', { name: 'Manage connections' })).toHaveProperty(
+      'disabled',
+      false,
+    );
     const musicSection = document.getElementById('account-music-connections');
     expect(musicSection).toBeTruthy();
     expect(within(musicSection!).getByText('Connected')).toBeTruthy();
-    expect(within(musicSection!).getByText('Authorized')).toBeTruthy();
+    expect(within(musicSection!).getByText('Linked · Live checks this browser')).toBeTruthy();
   });
 
   it('preserves typed profile values and focuses a failed mutation', async () => {

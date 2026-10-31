@@ -72,14 +72,14 @@ describe('musicChipBadge', () => {
     expect(libraryFailureExplainsItself(undefined)).toBe(false);
   });
 
-  it('uses Reconnect for an expired session and Catalog only when nothing is linked', () => {
+  it('names an expired session as a state and Catalog only when nothing is linked', () => {
     expect(
       musicChipBadge({
         fetchStatus: 'ready',
         connectionState: 'expired',
         libraryFailure: 'none',
       }),
-    ).toEqual({ kind: 'expired', label: 'Reconnect' });
+    ).toEqual({ kind: 'expired', label: 'Session expired' });
     expect(
       musicChipBadge({
         fetchStatus: 'ready',

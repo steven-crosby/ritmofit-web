@@ -205,7 +205,7 @@ describe('providerCapabilityTruth', () => {
       state: 'partial',
       label: 'Likes ready · reconnect playlists',
     });
-    expect(truth.playback).toEqual({ state: 'ready', label: 'Authorized' });
+    expect(truth.playback).toEqual({ state: 'ready', label: 'Linked · Live checks this browser' });
   });
 
   it('marks last-known account capabilities unverified after status failure', () => {
