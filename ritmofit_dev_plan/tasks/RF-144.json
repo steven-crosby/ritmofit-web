@@ -3,7 +3,7 @@
   "id": "RF-144",
   "title": "The design brief and D21 describe the provider capabilities and Account sections the product has",
   "kind": "documentation",
-  "status": "in_progress",
+  "status": "done",
   "priority": "P3",
   "parent": null,
   "dependsOn": [
@@ -13,7 +13,7 @@
     "ritmofit-design-system.md §9.8 no longer says Spotify and Apple Music are catalog-only; it matches D21, D24 and providerCapabilityTruth.",
     "After the RF-131 Preferences decision, D21 names the Account sections; HISTORY.md stays as written."
   ],
-  "nextAction": "Branch docs/rf-144-account-sections (Neo, 2026-10-31). Restart: finish the change, run checks, finalize the record in this PR.",
+  "nextAction": null,
   "blocker": null,
   "evidence": [
     {
@@ -36,11 +36,17 @@
     },
     {
       "kind": "observation",
-      "ref": "ritmofit_dev_plan/tasks/RF-144.json",
+      "ref": "https://github.com/steven-crosby/ritmofit-web/pull/679",
       "summary": "Owner set Ready 2026-10-31: approved in the Air session (\"Corrected plan is approved\", relayed by the Air conductor) and confirmed in the Neo session (\"Yes, start the lanes\"). No separate Ready PR; this lane PR records it.",
+      "checkedOn": "2026-10-31"
+    },
+    {
+      "kind": "pr",
+      "ref": "https://github.com/steven-crosby/ritmofit-web/pull/679",
+      "summary": "Design system 9.8 now says all three providers offer catalog search and import without a connection, and a user connection for likes, saved playlists and playlist import; SoundCloud widget playback needs no connection, Spotify and Apple Music need playback authorization. Matches packages/shared providerCapabilities and providerCapabilityTruth on main 8aad5fb. D21 names the Account sections Profile, Music connections and Security (the nav in Dashboard.tsx AccountWorkspace) and records that Preferences was cut. HISTORY.md unchanged.",
       "checkedOn": "2026-10-31"
     }
   ],
-  "resolution": null,
+  "resolution": "Design brief 9.8 and D21 match the product (#679): provider capabilities per providerCapabilities, and the three Account sections with Preferences cut per RF-131 decision 5.",
   "followUps": []
 }

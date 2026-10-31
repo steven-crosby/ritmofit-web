@@ -464,7 +464,7 @@ prompter and class clock. That changed in two steps:
    music app; preview/listen while building; convert musical curiosity into class creation; and run Live
    Mode with provider playback, preflight, auto-advance, and recovery states.
 
-**Deployed web-desktop slice (first implementation of the doctrine) — ✅ shipped 2026-07-07 (Worker `9d0a5710`, PR #232).** The workstation-shell consolidation is live: primary nav unified to Classes / Music / Live / Account; Music is a first-class provider/source workspace with saved-playlist and liked-tracks browsing on its shelves; Live is a runnable-class queue with preflight readiness; Account is an in-page settings workspace. The product decisions that drove that slice:
+**Deployed web-desktop slice (first implementation of the doctrine) — ✅ shipped 2026-07-07 (Worker `9d0a5710`, PR #232).** The workstation-shell consolidation is live: primary nav unified to Classes / Music / Live / Account; Music is a first-class provider/source workspace with saved-playlist and liked-tracks browsing on its shelves; Live is a runnable-class queue with preflight readiness; Account is an in-page settings workspace with three sections: **Profile**, **Music connections** and **Security**. There is no Preferences section (RF-131 decision 5, owner 2026-10-31: cut; RF-144). The product decisions that drove that slice:
 
 - **Templates narrow to three.** Show only **Cycle**, **Pilates**, and **HIIT** as class templates.
   **Pilates maps to the existing `sculpt` enum value** for now — display-layer only, no migration (the
