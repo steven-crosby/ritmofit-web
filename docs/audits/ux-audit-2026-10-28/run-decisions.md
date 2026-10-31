@@ -91,7 +91,7 @@ These came from comparing the audit with the owner's walkthrough notes and with 
 
 ## Owner decisions
 
-All six are held in RF-131. Briefs:
+All six were held in RF-131 and are answered (see "Owner answers" below). Briefs:
 
 1. **Run rule.** Today the builder blocks for any song outside a block, any empty block and any
    block over its planned time, plus the duration gate; the Classes row agrees. The Live queue and
@@ -117,6 +117,26 @@ All six are held in RF-131. Briefs:
 6. **Spotify while the allowlist is unresolved.** (a) Hide Spotify library and playback for accounts
    not on the allowlist, which needs a reliable signal from the API. (b) Keep it visible and name the
    real cause, surfacing the #606 error. Test against the real 403 first.
+
+### Owner answers (2026-10-31)
+
+The owner answered all six in the conductor chat, one at a time, and accepted the recommendation
+each time. The full record is RF-131's resolution.
+
+1. **Run rule: (b).** Plan gaps (songs outside a block, empty blocks) are guidance only. Only
+   durations and music decide whether a class can run. Over-time blocks are a warning, not a
+   blocker. Record: RF-133.
+2. **Readiness vocabulary: (a).** Keep four dimensions and rename each by what it checks. Record:
+   RF-134. The providers.ts and LiveMode.tsx strings are owner-gated.
+3. **Tempo: (b) now.** The Classes list stops flagging missing BPM, and the builder panel keeps it.
+   GetSongBPM stays deferred. Design system 10 §1a requires tempo status in the builder and in Live, not on the Classes list, so RF-166 needs no canon change. Live's
+   per-cue "No BPM set" is a separate owner decision, RF-168.
+4. **HIIT: (a).** Add the third template card. Record: RF-165.
+5. **Account Preferences: (a) cut.** D21 names the three Account sections. Record: RF-144. The
+   Preferences claim came from `HISTORY.md`, not D21 (intake correction 1).
+6. **Spotify: (b).** Keep it visible and name the real cause. First test against the current
+   real Spotify response, because RF-31 was never re-tested and RF-92's 403 note dates from
+   2026-10-28. Record: RF-167.
 
 ## Docs-only items
 

@@ -7,7 +7,8 @@
   "priority": "P1",
   "parent": null,
   "dependsOn": [
-    "RF-131"
+    "RF-131",
+    "RF-166"
   ],
   "acceptance": [
     "The Live card music line no longer says \"Music ready\" or \"a music service Live can play\" when it has only checked for provider links.",
@@ -18,7 +19,7 @@
     "The new vocabulary is written into the design canon; iOS follows the canon wording.",
     "Judgment, if the owner accepts it: Classes home surfaces one next class and what is left on it."
   ],
-  "nextAction": "Waits on the RF-131 vocabulary (and tempo) decisions. The D24 Account fix needs no decision; split it into its own child record if it should start before RF-131 closes. Files: apps/web/src/lib/readiness.ts, library-shell.ts, providers.ts, Dashboard.tsx, ConnectionStateMark.tsx, ritmofit_design_system copy. providers.ts is owner-gated (scripts/owner-gate.mjs provider/playback paths), so a PR touching it needs owner-approved. Surface: web; iOS for canon wording only.",
+  "nextAction": "RF-131 answered 2026-10-31: option (a), keep four dimensions and rename each by what it checks. The tempo criterion is met only once RF-166 (decision 3b) is Done, hence dependsOn RF-166. The D24 Account fix needs no decision. Files: apps/web/src/lib/readiness.ts, library-shell.ts, providers.ts, Dashboard.tsx, ConnectionStateMark.tsx, ritmofit_design_system copy. providers.ts is owner-gated (scripts/owner-gate.mjs provider/playback paths), so a PR touching it needs owner-approved. Surface: web; iOS for canon wording only.",
   "blocker": null,
   "evidence": [
     {
@@ -44,6 +45,18 @@
       "ref": "docs/audits/ux-audit-2026-10-28/README.md",
       "summary": "2026-10-28 owner UX audit of production: Top priorities 3, 4 and 5, cross-cutting theme 1, and the matching Classes, Live and Account rows. Browser evidence; not re-observed at intake.",
       "checkedOn": "2026-10-29"
+    },
+    {
+      "kind": "observation",
+      "ref": "docs/audits/ux-audit-2026-10-28/run-decisions.md",
+      "summary": "RF-131 answers recorded 2026-10-31 (see RF-131 resolution).",
+      "checkedOn": "2026-10-31"
+    },
+    {
+      "kind": "pr",
+      "ref": "https://github.com/steven-crosby/ritmofit-web/pull/677",
+      "summary": "Final review of #677 corrected file pointers, record links and the design system 10 §1a reading.",
+      "checkedOn": "2026-10-31"
     }
   ],
   "resolution": null,
