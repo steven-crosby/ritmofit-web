@@ -10,7 +10,7 @@
   "acceptance": [
     "The Classes row no longer shows \"no BPM set\" in the caution channel; missing tempo does not read like a gap that needs action on the list.",
     "The builder track panel still shows which tracks have no BPM.",
-    "Design system 10 §1a (name a gap rather than silently drop a stat) is reconciled in the PR: either the row keeps a neutral, non-caution mention, or §1a records the exception for tempo. The choice is stated in the PR.",
+    "Design system 10 §1a is checked and still holds: it requires missing tempo as readiness in the builder (the tempo dimension of the readiness panel) and as supporting status in Live; it says nothing about the Classes list, so removing the Classes flag needs no canon change.",
     "GetSongBPM stays unprovisioned (owner deferral); no Spotify BPM path (permanent constraint)."
   ],
   "nextAction": "Files: apps/web/src/components/Dashboard.tsx (Classes row stats, around the \"no BPM set\" span) and ritmofit_design_system if §1a changes. Not owner-gated. Pairs with RF-134's tempo criterion. Surface: web; iOS only if the canon changes. Agent-created: Backlog until the owner sets Ready.",
@@ -26,6 +26,12 @@
       "kind": "pr",
       "ref": "https://github.com/steven-crosby/ritmofit-web/pull/677",
       "summary": "Filed from the RF-131 answers.",
+      "checkedOn": "2026-10-31"
+    },
+    {
+      "kind": "pr",
+      "ref": "https://github.com/steven-crosby/ritmofit-web/pull/677",
+      "summary": "Final review of #677 corrected file pointers, record links and the design system 10 §1a reading.",
       "checkedOn": "2026-10-31"
     }
   ],

@@ -8,7 +8,7 @@
   "parent": null,
   "dependsOn": [],
   "acceptance": [
-    "The owner decides: keep Live's per-cue \"No BPM set\", show it in a neutral tone, or drop it when no track has a BPM. The answer is recorded here; any implementation gets its own record."
+    "The owner decides: keep Live's per-cue \"No BPM set\", or show it in a quieter, neutral tone. Design system 10 §1a requires missing tempo in Live as supporting status under an affirmative ready state, so dropping it entirely would need a canon change (which iOS follows) and is not offered as a plain option. The answer is recorded here; any implementation gets its own record."
   ],
   "nextAction": "Found in the conductor's adversarial check of the RF-131 tempo brief: decision 3 covers the Classes list only, but Live prints \"No BPM set\" on each cue (apps/web/src/components/LiveMode.tsx around line 1542, owner-gated). Not widened into decision 3 without the owner. Agent-created: Backlog until the owner sets Ready.",
   "blocker": null,
@@ -23,6 +23,12 @@
       "kind": "pr",
       "ref": "https://github.com/steven-crosby/ritmofit-web/pull/677",
       "summary": "Filed from the RF-131 answers.",
+      "checkedOn": "2026-10-31"
+    },
+    {
+      "kind": "pr",
+      "ref": "https://github.com/steven-crosby/ritmofit-web/pull/677",
+      "summary": "Final review of #677 corrected file pointers, record links and the design system 10 §1a reading.",
       "checkedOn": "2026-10-31"
     }
   ],

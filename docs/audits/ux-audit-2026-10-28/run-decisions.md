@@ -129,7 +129,7 @@ each time. The full record is RF-131's resolution.
 2. **Readiness vocabulary: (a).** Keep four dimensions and rename each by what it checks. Record:
    RF-134. The providers.ts and LiveMode.tsx strings are owner-gated.
 3. **Tempo: (b) now.** The Classes list stops flagging missing BPM, and the builder panel keeps it.
-   GetSongBPM stays deferred. The design system 10 §1a conflict is settled in RF-166. Live's
+   GetSongBPM stays deferred. Design system 10 §1a requires tempo status in the builder and in Live, not on the Classes list, so RF-166 needs no canon change. Live's
    per-cue "No BPM set" is a separate owner decision, RF-168.
 4. **HIIT: (a).** Add the third template card. Record: RF-165.
 5. **Account Preferences: (a) cut.** D21 names the three Account sections. Record: RF-144. The

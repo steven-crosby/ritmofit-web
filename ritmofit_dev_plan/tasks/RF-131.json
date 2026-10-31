@@ -40,7 +40,7 @@
     {
       "kind": "observation",
       "ref": "docs/audits/ux-audit-2026-10-28/run-decisions.md",
-      "summary": "Owner answered all six in the Air conductor chat on 2026-10-31, one at a time, each accepting the recommendation (\"Yes your recommendation is approved\" and equivalents): 1 (b) plan gaps guidance only, over-time a warning; 2 (a) four dimensions renamed by what they check; 3 (b) now, GetSongBPM deferred; 4 (a) add HIIT; 5 (a) cut Preferences; 6 (b) keep Spotify visible and name the real cause.",
+      "summary": "Owner answered all six in the conductor chat on 2026-10-31, one at a time, each accepting the recommendation (\"Yes your recommendation is approved\" and equivalents): 1 (b) plan gaps guidance only, over-time a warning; 2 (a) four dimensions renamed by what they check; 3 (b) now, GetSongBPM deferred; 4 (a) add HIIT; 5 (a) cut Preferences; 6 (b) keep Spotify visible and name the real cause.",
       "checkedOn": "2026-10-31"
     },
     {
@@ -50,7 +50,7 @@
       "checkedOn": "2026-10-31"
     }
   ],
-  "resolution": "Answered 2026-10-31. 1 Run rule: (b) plan gaps (songs outside a block, empty blocks) are guidance only; only durations and music decide whether a class can run; over-time blocks are a warning, not a blocker (RF-133). 2 Vocabulary: (a) keep four readiness dimensions, each renamed by what it checks (RF-134). 3 Tempo: (b) stop flagging missing BPM on the Classes list, keep it in the builder panel; GetSongBPM deferred until the owner does a terms and quota check and sets the secret (RF-166; Live's per-cue line is RF-168). 4 HIIT: (a) add the third template card (RF-165). 5 Preferences: (a) cut; D21 names the three Account sections (RF-144). 6 Spotify: (b) keep it visible and name the real cause, tested against the real current response first (RF-167).",
+  "resolution": "Answered 2026-10-31. 1 Run rule: (b) plan gaps (songs outside a block, empty blocks) are guidance only; only durations and music decide whether a class can run; over-time blocks are a warning, not a blocker (RF-133). 2 Vocabulary: (a) keep four readiness dimensions, each renamed by what it checks (RF-134). 3 Tempo: (b) stop flagging missing BPM on the Classes list, keep it in the builder panel; GetSongBPM deferred until the owner does a terms and quota check and sets the secret (RF-166; Live's per-cue line is a separate owner decision, RF-168). 4 HIIT: (a) add the third template card (RF-165). 5 Preferences: (a) cut; D21 names the three Account sections (RF-144). 6 Spotify: (b) keep it visible and name the real cause, tested against the real current response first (RF-167).",
   "followUps": [
     "RF-133",
     "RF-134",
