@@ -18,7 +18,7 @@
     "Owner device check on iPhone Safari: tapping three timeline tracks within about 4 s ends playing the last tapped track, with neither \"still finishing a cancelled play request\" nor \"still finishing a previous queue request\".",
     "The held Apple Music playback error (apple-music-adapter.ts onPlaybackError) carries an attempt token captured when the error fires and is delivered only if prepare, stop or destroy have not started a new attempt, with a test that a held error is dropped after destroy then prepare (RF-121 criterion 0)."
   ],
-  "nextAction": "Code for criteria 0-2 and 6 is in PR #668 (fix/rf-108-apple-hardening), owner-gated and awaiting the owner's owner-approved label. After merge and a deploy, the owner runs the iPhone Safari device check for criteria 3-5: iPhone Safari, Live, an Apple Music class with 5+ tracks, on production after deploy: (1) open the app with ?playback-timing=1 and Safari Web Inspector attached from a Mac, tap Start class once, and record the \"[ritmo apple-music] timing\" lines and when the first song is audible (RF-128); (2) tap the class timeline to tracks 3, 4 and 5 within about 4 s: the last tapped track plays, with neither \"still finishing a cancelled play request\" nor \"still finishing a previous queue request\"; (3) scrub within a song, Pause and Resume, Next and let one song auto-advance, all audible; (4) if a \"did not finish a cancelled play request\", \"timed out loading\" or \"switched away from\" banner ever shows, tap Retry playback and confirm it plays without a reload; a late settle after start never auto-plays, so the old song may be heard until Retry. Pass: move to Done with that evidence. Fail: record the timing and banner text here and reopen. Spotify adapter settle work is RF-158 (after RF-92).",
+  "nextAction": "Code for criteria 0-2 and 6 is in PR #668 (fix/rf-108-apple-hardening), owner-gated and awaiting the owner's owner-approved label. After merge and a deploy, the owner runs the iPhone Safari device check for criteria 3-5: iPhone Safari, Live, an Apple Music class with 5+ tracks, on production after deploy: (1) open the app with ?playback-timing=1 and Safari Web Inspector attached from a Mac, tap Start class once, and record the \"[ritmo apple-music] timing\" lines and when the first song is audible (RF-128); (2) tap the class timeline to tracks 3, 4 and 5 within about 4 s: the last tapped track plays, with neither \"still finishing a cancelled play request\" nor \"still finishing a previous queue request\"; (3) scrub within a song, Pause and Resume, Next and let one song auto-advance, all audible; (4) if a \"did not finish a cancelled play request\", \"still finishing the previous song\" or \"timed out loading\" banner ever shows, tap Retry playback and confirm it plays without a reload once MusicKit has finished (a Retry while MusicKit still holds the cancelled play shows \"still finishing the previous song\" again; it never starts a second play). Pass: move to Done with that evidence. Fail: record the timing and banner text here and reopen. Spotify adapter settle work is RF-158 (after RF-92). Detecting a superseded queue request that settles late is out of this scope: RF-159 (owner decision 2026-10-30).",
   "blocker": null,
   "evidence": [
     {
@@ -92,10 +92,23 @@
       "ref": "https://github.com/steven-crosby/ritmofit-web/pull/668",
       "summary": "Commit fe6a1d1 implements that decision and the other second-review fixes: lease check and claim in one synchronous step; fail() and destroy() retire adapters into a page-wide settle registry so Retry waits; a cancelled play past the bound stays tracked and Retry stops it, then waits one more bound; late settles decided by flags captured at settle time. Seven new tests fail on 6595d3f and pass on fe6a1d1; the in-time-rejection test passes on both (old microtask order happened to be right). Mock MusicKit only.",
       "checkedOn": "2026-10-30"
+    },
+    {
+      "kind": "observation",
+      "ref": "https://github.com/steven-crosby/ritmofit-web/pull/668#issuecomment-6537812528",
+      "summary": "Owner decision in session 2026-10-30, relayed by the coordinator after the third final review of #668 on d78067c: option 1, narrow the PR. Keep the bounded, provider-scoped settle wait, lease waits with the atomic claim, supersede-on-timeout, fail()/destroy() through retire(), start timing and the RF-147 banner, iOS probe gate and strict desktop test. Remove all late-settle detection and the once-per-page FairPlay clear (restore the per-call clear the passing iPhone runs used). Change the stuck-play hard cap to a clear Retry error that keeps the lease until MusicKit settles. Late-settle work and the once-per-load clear move to RF-159.",
+      "checkedOn": "2026-10-30"
+    },
+    {
+      "kind": "pr",
+      "ref": "https://github.com/steven-crosby/ritmofit-web/pull/668",
+      "summary": "Commit 62042da narrows #668 as decided: no late-settle detection (a late, superseded setQueue settle is not detected; generation guards still stop its result counting as a cue), per-call FairPlay clear restored, and a stuck cancelled play keeps its lease so Retry fails with \"Apple Music is still finishing the previous song. Tap Retry.\" instead of starting a second play. The two hard-cap tests fail on d78067c and pass on 62042da. Mock MusicKit only.",
+      "checkedOn": "2026-10-30"
     }
   ],
   "resolution": null,
   "followUps": [
-    "RF-158"
+    "RF-158",
+    "RF-159"
   ]
 }

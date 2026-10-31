@@ -3,7 +3,7 @@ date: 2026-10-30
 tool: Claude Code (local subagent, worktree)
 lane: lane-apple-hardening
 branch: fix/rf-108-apple-hardening
-head: fe6a1d1
+head: 62042da
 base: 5dd324a
 prs: ['#668 (open, owner-gated)']
 status: open
@@ -18,12 +18,13 @@ status: open
   cleanup in `apps/web/src/lib/musickit.ts`, and debug-only Start timing
   (`apps/web/src/lib/playback/start-timing.ts`).
 - Records: RF-108 and RF-128 set to For review, RF-147 Blocked (now depends on RF-108), RF-158
-  created in Backlog for the Spotify half, RF-121 cites #668 for criterion 0.
+  created in Backlog for the Spotify half, RF-159 created in Backlog for late-settle detection,
+  RF-121 cites #668 for criterion 0.
 
 ## Tasks
 
 - [RF-108](../tasks/RF-108.json), [RF-128](../tasks/RF-128.json), [RF-147](../tasks/RF-147.json),
-  [RF-158](../tasks/RF-158.json), [RF-121](../tasks/RF-121.json).
+  [RF-158](../tasks/RF-158.json), [RF-159](../tasks/RF-159.json), [RF-121](../tasks/RF-121.json).
 
 ## In flight
 
@@ -34,21 +35,17 @@ status: open
 
 - Device check owed after merge and deploy (the steps are in RF-108's next action and the PR body).
   It is the only proof of the change: CI uses fake MusicKit.
-- Judgment calls flagged in the PR: when the bound passes, a cancelled setQueue is superseded (the
-  new start goes ahead) but a cancelled play() fails with a clear error and releases its lock. The
-  `com.apple.fps` probe stays on legacy desktop WebKit as a console diagnostic only. The adversarial
-  test "refuses a replacement until it settles" now expects the replacement to wait instead.
-- The nowPlayingItem check treats an item with no id as unknown and does not re-cue. If iPhone
-  timing lines show `re-cue-before-play` on every play, MusicKit's item ids differ from Ritmo's
-  catalog ids and the comparison needs another look.
-- 2026-10-30: the final review of 01dc417 found ten items (five significant). All were fixed in
-  05ad7ea on the same PR, with tests that fail on 01dc417. Finding 10 conflicts with RF-147
-  criterion 3's wording; it is an owner decision in RF-147.
-- 2026-10-30: the second final review (6595d3f) rejected the automatic mid-track re-cue. Owner
-  decision (option 1): a late settle after start shows Retry (`late-settle-error` in the timing
-  lines) and never auto-plays; while paused it is recorded and the next play re-cues. Fixed with
-  the other second-review items in fe6a1d1. The device run should note whether a "switched away
-  from" banner ever appears.
+- Judgment calls flagged in the PR: once the 3 s bound passes, a cancelled setQueue is superseded
+  and the new start goes ahead. A cancelled play() keeps its lease until MusicKit settles it. The
+  first request past the bound fails with "did not finish a cancelled play request". Each Retry
+  stops the play and waits one more bound; if it is still pending, Retry fails with "still finishing
+  the previous song". The `com.apple.fps` probe stays on legacy desktop WebKit as a console
+  diagnostic only. The adversarial test "refuses a replacement until it settles" now expects the
+  replacement to wait instead.
+- 2026-10-30: three final review rounds (01dc417, 6595d3f, d78067c). After the third, the owner
+  chose option 1 and narrowed the PR (62042da). Late-settle detection is removed, as is the
+  once-per-page FairPlay clear (the per-call clear the passing iPhone runs used is back). Both moved
+  to RF-159. The owner accepted the strict desktop Chrome test for RF-147.
 
 ## Verification
 
