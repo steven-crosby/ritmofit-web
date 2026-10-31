@@ -16,6 +16,7 @@
 <!-- Claude Code, 2026-10-30: Round r20261029a closed (#664, #665 deployed); Now points at the next round. -->
 <!-- Claude Code, 2026-10-30: Owner set the Apple hardening Ready set (RF-108, RF-128, RF-147). -->
 <!-- Claude Code, 2026-10-31: #668 and #669 deployed; Now names the device check, the 2026-10-31 Ready set and RF-151's Ready decision. -->
+<!-- Claude Code, 2026-10-31: RF-137 (#672) and RF-135 (#673) merged, undeployed; main is ahead of production. -->
 
 **Current actionable state:** [RF board](./tasks.md), backed by canonical [task records](./tasks/README.md).
 The order of work is [Phases](#phases) below; each phase lists RF records, not a second backlog.
@@ -23,8 +24,11 @@ The order of work is [Phases](#phases) below; each phase lists RF records, not a
 on three cache-busted fetches, matching the deploy record (Worker `61cdeb33-e106-4224-90ad-18ad0cb3173f`
 per that record; not checked from this environment). It adds #668 (RF-128, RF-147) and #669 (RF-108)
 to `d888d28`. Rollback is `ffcf858d-78b7-4bc6-8a7b-e4197f28f6e2` (`97f4454`). See [HISTORY](./HISTORY.md).
-**In flight:** the D25 provider matrix (#654). **Ready (owner, 2026-10-31):** [RF-137](./tasks/RF-137.json),
-[RF-135](./tasks/RF-135.json), RF-156 and iOS RF-1014.
+**Main is ahead:** `9d9b5b4` adds [RF-137](./tasks/RF-137.json) (#672, Music reopens on the last
+service and view) and [RF-135](./tasks/RF-135.json) (#673, one copper primary per surface), both web
+UI only, no migration. Not deployed; a deploy needs the owner.
+**In flight:** the D25 provider matrix (#654). From the 2026-10-31 Ready set, RF-137, RF-135 and
+RF-156 are Done; iOS RF-1014 (ritmofit-ios #53, draft) waits on the Air's simulator update.
 **Next step:** the owner's iPhone Safari device check on `0a77110` (the 7 steps in the #669 PR body,
 with `?playback-timing=1`) for [RF-108](./tasks/RF-108.json), [RF-128](./tasks/RF-128.json) and
 [RF-147](./tasks/RF-147.json). Review follow-ups are [RF-160](./tasks/RF-160.json) and
