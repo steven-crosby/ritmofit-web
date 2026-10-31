@@ -16,13 +16,13 @@
   "evidence": [
     {
       "kind": "observation",
-      "ref": "https://github.com/steven-crosby/ritmofit-web/pull/PRNUM",
+      "ref": "https://github.com/steven-crosby/ritmofit-web/pull/681",
       "summary": "Owner approved documenting it in AGENTS.md on 2026-10-31 in the Air conductor session (\"Yes, your recommendation is approved.\") after the Air and Neo conductors exchanged messages directly that day.",
       "checkedOn": "2026-10-31"
     },
     {
       "kind": "pr",
-      "ref": "https://github.com/steven-crosby/ritmofit-web/pull/PRNUM",
+      "ref": "https://github.com/steven-crosby/ritmofit-web/pull/681",
       "summary": "Adds the Two-machine conductors entry to AGENTS.md (owner-gated: agent rules).",
       "checkedOn": "2026-10-31"
     }
