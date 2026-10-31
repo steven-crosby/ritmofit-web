@@ -3,7 +3,7 @@ date: 2026-10-30
 tool: Claude Code (local subagent, worktree)
 lane: lane-apple-hardening
 branch: fix/rf-108-apple-hardening
-head: 3ea18ca
+head: 6ded939
 base: 5dd324a
 prs: ['#668 (open, owner-gated)']
 status: open
@@ -55,7 +55,8 @@ status: open
   1. tap Start once;
   2. tap three timeline tracks within about 4 s;
   3. tap Next and let one song auto-advance;
-  4. copy every `[ritmo apple-music #N] timing` line.
+  4. copy every `[ritmo apple-music #N] timing` line;
+  5. load `?playback-timing=0` to switch the log off again.
   The `set-queue-end` and `play-end` lines marked `(cancelled adapter)` show how long cancelled
   requests take to finish.
 
