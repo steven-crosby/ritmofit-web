@@ -14,7 +14,10 @@ import {
 import {
   AppleMusicAdapter,
   appleMusicAuthorizationLostMessage,
+  appleMusicPlayNotStartedMessage,
   appleMusicPlayRejectedMessage,
+  appleMusicPlayStillFinishingMessage,
+  appleMusicQueueStillFinishingMessage,
 } from './apple-music-adapter.js';
 import type { AdapterEvents } from './types.js';
 import { PLAYBACK_TIMING_KEY, resetPlaybackTimingForTests } from './start-timing.js';
@@ -159,6 +162,8 @@ function makeAdapter(
     preconfigured?: boolean;
     prepareTimeoutMs?: number;
     authorizeTimeoutMs?: number;
+    settleWaitMs?: number;
+    playStartCapMs?: number;
   },
 ) {
   const { music, calls } = makeMusicKit(instance, { preconfigured: overrides?.preconfigured });
@@ -171,6 +176,8 @@ function makeAdapter(
     },
     prepareTimeoutMs: overrides?.prepareTimeoutMs,
     authorizeTimeoutMs: overrides?.authorizeTimeoutMs,
+    settleWaitMs: overrides?.settleWaitMs,
+    playStartCapMs: overrides?.playStartCapMs,
   });
   return { adapter, music, musicCalls: calls, configCalls };
 }
@@ -381,7 +388,7 @@ describe('AppleMusicAdapter', () => {
     expect(instance.calls.filter((call) => call.startsWith('setQueue:'))).toEqual([]);
   });
 
-  it('rejects an overlapping queue request while an older one is still pending', async () => {
+  it('waits for a cancelled queue request to settle, then queues (RF-108)', async () => {
     const instance = new FakeInstance(true);
     const { music } = makeMusicKit(instance, { preconfigured: true });
     const firstQueue = deferred();
@@ -399,15 +406,111 @@ describe('AppleMusicAdapter', () => {
 
     const firstPrepare = first.prepare(makeEntry({ providerTrackId: 'am-first' }), WINDOW_ZERO);
     await waitForSetQueueCalls(instance, 1);
+    first.destroy(); // a timeline tap cancels the first start mid-setQueue
 
-    await expect(
-      second.prepare(makeEntry({ providerTrackId: 'am-second' }), WINDOW_CLIPPED),
-    ).rejects.toThrow(/still finishing a previous queue request/i);
+    instance.setQueueBehavior = () => Promise.resolve(undefined);
+    const secondPrepare = second.prepare(
+      makeEntry({ providerTrackId: 'am-second' }),
+      WINDOW_CLIPPED,
+    );
+    for (let i = 0; i < 10; i++) await Promise.resolve();
+    // Waiting, not failing, and not overlapping MusicKit's queue requests.
     expect(instance.calls.filter((call) => call.startsWith('setQueue:'))).toEqual(['setQueue:0']);
 
-    first.destroy();
     firstQueue.resolve(undefined);
-    await expect(firstPrepare).rejects.toThrow(/superseded/i);
+    await expect(firstPrepare).rejects.toThrow(/superseded|torn down/i);
+    await expect(secondPrepare).resolves.toMatchObject({ provider: 'apple_music' });
+    expect(instance.calls.filter((call) => call.startsWith('setQueue:'))).toEqual([
+      'setQueue:0',
+      'setQueue:15',
+    ]);
+  });
+
+  it('fails with the Retry error once a previous queue request outlasts the bound, and Retry then queues (RF-108)', async () => {
+    const instance = new FakeInstance(true);
+    instance.setQueueBehavior = () => new Promise<never>(() => {}); // MusicKit never settles
+    const first = makeAdapter(instance, { preconfigured: true, settleWaitMs: 20 }).adapter;
+    void first.prepare(makeEntry(), WINDOW_ZERO).catch(() => {});
+    await waitForSetQueueCalls(instance, 1);
+    first.destroy();
+
+    const second = makeAdapter(instance, { preconfigured: true, settleWaitMs: 20 }).adapter;
+    await expect(second.prepare(makeEntry(), WINDOW_ZERO)).rejects.toThrow(
+      appleMusicQueueStillFinishingMessage('Baiana'),
+    );
+    second.destroy();
+
+    // Retry: the hung request no longer blocks, so this queues at once.
+    instance.setQueueBehavior = () => Promise.resolve(undefined);
+    const retry = makeAdapter(instance, { preconfigured: true, settleWaitMs: 20 }).adapter;
+    await expect(retry.prepare(makeEntry(), WINDOW_ZERO)).resolves.toMatchObject({
+      provider: 'apple_music',
+    });
+    await retry.play();
+    expect(instance.calls.filter((call) => call.startsWith('setQueue:'))).toHaveLength(2);
+  });
+
+  it('counts the first playing state as started while play() is still pending (RF-108)', async () => {
+    const instance = new FakeInstance(true);
+    const pendingPlay = deferred<void>();
+    instance.playBehavior = () => pendingPlay.promise;
+    const { adapter } = makeAdapter(instance, { preconfigured: true });
+    await adapter.prepare(makeEntry(), WINDOW_ZERO);
+    const play = adapter.play();
+    instance.playbackState = STATES.playing;
+    instance.currentPlaybackTime = 0.5;
+    instance.emit(EVENTS.playbackStateDidChange, { state: STATES.playing });
+    await expect(play).resolves.toBeUndefined();
+    await expect(adapter.getTransport()).resolves.toEqual({ state: 'playing', positionMs: 500 });
+    // MusicKit's play() is still pending, so whenIdle waits for it.
+    const idle = adapter.whenIdle();
+    expect(idle).not.toBeNull();
+    let settled = false;
+    void idle!.then(() => (settled = true));
+    await Promise.resolve();
+    expect(settled).toBe(false);
+    pendingPlay.resolve();
+    await idle;
+    expect(adapter.whenIdle()).toBeNull();
+  });
+
+  it("a later start waits for the previous track's still-pending play() (Next after start, RF-108)", async () => {
+    const instance = new FakeInstance(true);
+    const pendingPlay = deferred<void>();
+    instance.playBehavior = () => pendingPlay.promise;
+    const { music } = makeMusicKit(instance, { preconfigured: true });
+    const host = { loadMusicKit: async () => music };
+    const current = new AppleMusicAdapter({}, host);
+    await current.prepare(makeEntry(), WINDOW_ZERO);
+    const play = current.play();
+    instance.emit(EVENTS.playbackStateDidChange, { state: STATES.playing });
+    await play;
+    await current.stop();
+    current.destroy();
+
+    instance.playBehavior = () => Promise.resolve();
+    const next = new AppleMusicAdapter({}, host);
+    const nextPrepare = next.prepare(makeEntry({ providerTrackId: 'am-next' }), WINDOW_CLIPPED);
+    for (let i = 0; i < 10; i++) await Promise.resolve();
+    expect(instance.calls.filter((call) => call.startsWith('setQueue:'))).toEqual(['setQueue:0']);
+    pendingPlay.resolve();
+    await nextPrepare;
+    await next.play();
+    expect(instance.calls.filter((call) => call.startsWith('setQueue:'))).toEqual([
+      'setQueue:0',
+      'setQueue:15',
+    ]);
+  });
+
+  it('fails a play that neither plays nor resolves within the cap with a Retry error (RF-108)', async () => {
+    const instance = new FakeInstance(true);
+    instance.playBehavior = () => new Promise<never>(() => {});
+    const { adapter } = makeAdapter(instance, { preconfigured: true, playStartCapMs: 20 });
+    await adapter.prepare(makeEntry(), WINDOW_ZERO);
+    await expect(adapter.play()).rejects.toThrow(appleMusicPlayNotStartedMessage('Baiana', 20));
+    expect(appleMusicPlayNotStartedMessage('Baiana', 3_000)).toBe(
+      'Apple Music did not start "Baiana" within 3 s. Retry playback.',
+    );
   });
 
   it('rejects prepare for a track without an Apple Music ref', async () => {
@@ -718,6 +821,43 @@ describe('Apple Music FairPlay probe', () => {
     expect(errors).toEqual([]);
   });
 
+  it('drops a held playback error after destroy then prepare (attempt token, RF-108)', async () => {
+    webKitWindow.WebKitMediaKeys = {};
+    let resolveProbe: (value: object) => void = () => {};
+    request.mockImplementation(
+      () =>
+        new Promise((resolve) => {
+          resolveProbe = resolve;
+        }),
+    );
+    const { adapter, instance, errors } = await prepared();
+    await adapter.play();
+    instance.emit(EVENTS.mediaPlaybackError);
+    adapter.destroy();
+    await adapter.prepare(makeEntry(), WINDOW_ZERO); // a new attempt on the same adapter
+    resolveProbe({ createMediaKeys: vi.fn() });
+    await settleProbe();
+    expect(errors).toEqual([]);
+  });
+
+  it('drops a held playback error after stop', async () => {
+    webKitWindow.WebKitMediaKeys = {};
+    let resolveProbe: (value: object) => void = () => {};
+    request.mockImplementation(
+      () =>
+        new Promise((resolve) => {
+          resolveProbe = resolve;
+        }),
+    );
+    const { adapter, instance, errors } = await prepared();
+    await adapter.play();
+    instance.emit(EVENTS.mediaPlaybackError);
+    await adapter.stop();
+    resolveProbe({ createMediaKeys: vi.fn() });
+    await settleProbe();
+    expect(errors).toEqual([]);
+  });
+
   it('on iOS Safari, destroy during play still finds MusicKit play pending and cancels it', async () => {
     const userAgent = vi.spyOn(navigator, 'userAgent', 'get').mockReturnValue(IPHONE_SAFARI_UA);
     request.mockImplementation(() => new Promise(() => {}));
@@ -848,7 +988,9 @@ describe('Apple Music debug timing (RF-128)', () => {
       'set-queue-end',
       'play-start',
       'play-end',
+      'started',
     ]);
+    expect(lines.find((line) => line.includes(' started '))).toMatch(/ play-resolved$/);
     expect(lines.find((line) => line.includes('set-queue-end'))).toMatch(/ok took \d+ms$/);
     expect(lines.find((line) => line.includes('play-end'))).toMatch(/ok took \d+ms$/);
     const dumped = JSON.stringify(info.mock.calls);
@@ -857,7 +999,7 @@ describe('Apple Music debug timing (RF-128)', () => {
     expect(dumped).not.toContain('dev-token');
   });
 
-  it('logs a cancelled adapter call that finishes after the next start, and the still-finishing error', async () => {
+  it('logs a cancelled adapter call that finishes after the next start, and the wait for it (RF-108)', async () => {
     const instance = new FakeInstance(true);
     const pending = deferred<void>();
     instance.playBehavior = () => pending.promise;
@@ -868,17 +1010,35 @@ describe('Apple Music debug timing (RF-128)', () => {
     const play = cancelled.play().catch(() => {});
     cancelled.destroy();
     const next = new AppleMusicAdapter({}, host);
-    await expect(next.prepare(makeEntry(), WINDOW_ZERO)).rejects.toThrow('still finishing');
+    const nextPrepare = next.prepare(makeEntry(), WINDOW_ZERO);
     pending.resolve();
     await play;
+    await nextPrepare;
     const lines = timingLines();
     expect(lines.some((line) => / timing cancelled \+\d+ms$/.test(line))).toBe(true);
-    expect(
-      lines.some((line) => / timing error \+\d+ms still-finishing-cancelled-play$/.test(line)),
-    ).toBe(true);
+    expect(lines.some((line) => / timing waited-for-previous-play \+\d+ms \d+ms$/.test(line))).toBe(
+      true,
+    );
     expect(
       lines.some((line) =>
         / timing play-end \+\d+ms ok took \d+ms \(cancelled adapter\)$/.test(line),
+      ),
+    ).toBe(true);
+    expect(lines.some((line) => line.includes('still-finishing'))).toBe(false);
+  });
+
+  it('logs the still-finishing error with the time waited when the bound passes (RF-108)', async () => {
+    const instance = new FakeInstance(true);
+    instance.setQueueBehavior = () => new Promise<never>(() => {});
+    const first = makeAdapter(instance, { preconfigured: true, settleWaitMs: 20 }).adapter;
+    void first.prepare(makeEntry(), WINDOW_ZERO).catch(() => {});
+    await waitForSetQueueCalls(instance, 1);
+    first.destroy();
+    const second = makeAdapter(instance, { preconfigured: true, settleWaitMs: 20 }).adapter;
+    await expect(second.prepare(makeEntry(), WINDOW_ZERO)).rejects.toThrow('still finishing');
+    expect(
+      timingLines().some((line) =>
+        / timing error \+\d+ms still-finishing-previous-queue after \d+ms wait$/.test(line),
       ),
     ).toBe(true);
   });
@@ -913,11 +1073,12 @@ describe('Apple Music debug timing (RF-128)', () => {
     await waitForSetQueueCalls(instance, 1);
     adapter.destroy();
     clock = 5_000;
-    // Attempt B on the same adapter: a new clock at 5000 (it hits the queue lock).
-    await expect(adapter.prepare(makeEntry(), WINDOW_ZERO)).rejects.toThrow('still finishing');
+    // Attempt B on the same adapter: a new clock at 5000 (it waits for the queue).
+    const second = adapter.prepare(makeEntry(), WINDOW_ZERO);
     clock = 6_000;
     pendingQueue.resolve(undefined);
     await first;
+    await second;
     for (let i = 0; i < 5; i++) await Promise.resolve();
     const lateEnd = timingLines().find((line) => line.includes('set-queue-end'));
     // +5000ms on clock A (not +1000ms on clock B), and still tagged cancelled.
@@ -1181,7 +1342,7 @@ describe('Live preauthorization', () => {
 });
 
 describe('adversarial Apple play cancellation', () => {
-  it('stops a cancelled late play and refuses a replacement until it settles', async () => {
+  it('stops a cancelled late play and holds a replacement until it settles (RF-108)', async () => {
     const instance = new FakeInstance();
     const pending = deferred<void>();
     instance.playBehavior = () => pending.promise;
@@ -1193,20 +1354,180 @@ describe('adversarial Apple play cancellation', () => {
     const cancelled = expect(play).rejects.toThrow('cancelled');
     adapter.destroy();
     expect(instance.calls).toContain('stop');
-    await expect(adapter.prepare(makeEntry(), { startMs: 0, endMs: 180000 })).rejects.toThrow(
-      'still finishing',
-    );
     const replacement = new AppleMusicAdapter({}, host);
-    await expect(replacement.prepare(makeEntry(), { startMs: 0, endMs: 180000 })).rejects.toThrow(
-      'still finishing',
-    );
+    const replacementPrepare = replacement.prepare(makeEntry(), { startMs: 0, endMs: 180000 });
+    for (let i = 0; i < 10; i++) await Promise.resolve();
+    // No second queue or play while the cancelled play is still pending.
+    expect(instance.calls.filter((call) => call.startsWith('setQueue:'))).toHaveLength(1);
     pending.resolve();
     await cancelled;
+    await replacementPrepare;
     expect(instance.calls.filter((call) => call === 'stop')).toHaveLength(2);
     instance.playBehavior = async () => {};
-    await replacement.prepare(makeEntry(), { startMs: 0, endMs: 180000 });
     await replacement.play();
+    expect(instance.calls.filter((call) => call === 'play')).toHaveLength(2);
     replacement.destroy();
+  });
+
+  it('fails with the Retry error when a cancelled play outlasts the bound, and Retry then plays (RF-108)', async () => {
+    const instance = new FakeInstance();
+    instance.playBehavior = () => new Promise<never>(() => {});
+    const { music } = makeMusicKit(instance, { preconfigured: true });
+    const host = { loadMusicKit: async () => music, settleWaitMs: 20, playStartCapMs: 10_000 };
+    const adapter = new AppleMusicAdapter({}, host);
+    await adapter.prepare(makeEntry(), { startMs: 0, endMs: 180000 });
+    void adapter.play().catch(() => {});
+    adapter.destroy();
+    const replacement = new AppleMusicAdapter({}, host);
+    await expect(replacement.prepare(makeEntry(), { startMs: 0, endMs: 180000 })).rejects.toThrow(
+      appleMusicPlayStillFinishingMessage(),
+    );
+    replacement.destroy();
+    instance.playBehavior = async () => {};
+    const retry = new AppleMusicAdapter({}, host);
+    await retry.prepare(makeEntry(), { startMs: 0, endMs: 180000 });
+    await retry.play();
+    expect(instance.calls.filter((call) => call === 'play')).toHaveLength(2);
+  });
+});
+
+// RF-108: the runtime driving real Apple adapters over one shared MusicKit
+// instance, the way quick timeline taps on iPhone Safari did on 2026-10-31.
+describe('Apple Music runtime: a cancelled start is waited for, not failed (RF-108)', () => {
+  function threeTracks(): RunPayload {
+    const tracks = [0, 1, 2].map((i) => {
+      const entry = makeEntry({ providerTrackId: `am-${i + 1}` });
+      entry.classTrackId = `ct-${i + 1}`;
+      entry.position = i;
+      entry.startOffsetMs = i * 180_000;
+      entry.track = { ...entry.track, id: `track-${i + 1}`, title: `Song ${i + 1}` };
+      return entry;
+    });
+    return {
+      schemaVersion: 1,
+      class: {
+        id: 'rf-108-fixture',
+        title: 'Quick taps',
+        template: null,
+        targetDurationMs: null,
+        timelineMode: 'sequential',
+        totalDurationMs: 540_000,
+      },
+      tracks,
+      sections: [],
+    };
+  }
+
+  /** setQueue answers in call order; a call past the script resolves at once. */
+  function scriptQueues(instance: FakeInstance, script: Array<Promise<unknown>>) {
+    let n = 0;
+    instance.setQueueBehavior = () => script[n++] ?? Promise.resolve(undefined);
+  }
+
+  function coordinatorFor(
+    instance: FakeInstance,
+    options: { settleWaitMs?: number } = {},
+    errors: string[] = [],
+  ) {
+    return new RuntimePlaybackCoordinator(
+      threeTracks(),
+      [{ provider: 'apple_music', expiresAt: null, scope: null }],
+      {
+        now: Date.now(),
+        adapters: {
+          apple_music: (events) =>
+            makeAdapter(instance, { events, preconfigured: true, ...options }).adapter,
+        },
+        onError: (error) => errors.push(error.message),
+      },
+    );
+  }
+
+  const queueCalls = (instance: FakeInstance) =>
+    instance.calls.filter((call) => call.startsWith('setQueue:'));
+
+  it('taps to tracks 2 and 3 during a pending start end playing track 3 with no lock error', async () => {
+    const instance = new FakeInstance(true);
+    const track2Queue = deferred();
+    scriptQueues(instance, [Promise.resolve(undefined), track2Queue.promise]);
+    const errors: string[] = [];
+    const coordinator = coordinatorFor(instance, {}, errors);
+    try {
+      await coordinator.start(0);
+      expect(coordinator.getStatus()).toMatchObject({ kind: 'playing', index: 0 });
+
+      const tap2 = coordinator.seek(180_000);
+      await waitForSetQueueCalls(instance, 2); // track 2's setQueue is in flight
+      const tap3 = coordinator.seek(360_000); // cancels track 2 mid-setQueue
+      for (let i = 0; i < 10; i++) await Promise.resolve();
+      // Track 3 waits for the cancelled request instead of overlapping it.
+      expect(queueCalls(instance)).toHaveLength(2);
+      track2Queue.resolve(undefined); // MusicKit finishes the cancelled request
+      await Promise.all([tap2, tap3]);
+
+      expect(coordinator.getStatus()).toMatchObject({ kind: 'playing', index: 2 });
+      expect(errors).toEqual([]);
+      expect(queueCalls(instance)).toHaveLength(3);
+      expect(instance.calls.filter((call) => call === 'play')).toHaveLength(2);
+    } finally {
+      coordinator.destroy();
+    }
+  });
+
+  it('pause then resume during an in-flight start ends playing at the resumed position', async () => {
+    const instance = new FakeInstance(true);
+    const firstQueue = deferred();
+    scriptQueues(instance, [firstQueue.promise]);
+    const errors: string[] = [];
+    const coordinator = coordinatorFor(instance, {}, errors);
+    try {
+      const start = coordinator.start(0);
+      await waitForSetQueueCalls(instance, 1);
+      await coordinator.pause();
+      const resume = coordinator.resume(200_000);
+      for (let i = 0; i < 10; i++) await Promise.resolve();
+      expect(queueCalls(instance)).toHaveLength(1);
+      firstQueue.resolve(undefined);
+      await Promise.all([start, resume]);
+      expect(coordinator.getStatus()).toMatchObject({ kind: 'playing', index: 1 });
+      expect(errors).toEqual([]);
+      // Track 2 cued at its window start, then re-cued at the resumed position (20 s in).
+      expect(queueCalls(instance)).toEqual(['setQueue:0', 'setQueue:0', 'setQueue:20']);
+    } finally {
+      coordinator.destroy();
+    }
+  });
+
+  it('a cancelled setQueue that never settles fails clearly after the bound, and Retry recovers without a reload', async () => {
+    const instance = new FakeInstance(true);
+    scriptQueues(instance, [Promise.resolve(undefined), new Promise<never>(() => {})]);
+    const errors: string[] = [];
+    const coordinator = coordinatorFor(instance, { settleWaitMs: 50 }, errors);
+    try {
+      await coordinator.start(0);
+      const tap2 = coordinator.seek(180_000);
+      await waitForSetQueueCalls(instance, 2); // track 2's setQueue hangs
+      await coordinator.seek(360_000);
+      await tap2;
+      const status = coordinator.getStatus();
+      expect(status.kind).toBe('error');
+      expect(errors).toEqual([appleMusicQueueStillFinishingMessage('Song 3')]);
+      expect(queueCalls(instance)).toHaveLength(2);
+    } finally {
+      coordinator.destroy();
+    }
+
+    // Retry builds a new coordinator at the held position, as Live does.
+    const retryErrors: string[] = [];
+    const retry = coordinatorFor(instance, { settleWaitMs: 50 }, retryErrors);
+    try {
+      await retry.resume(360_000);
+      expect(retry.getStatus()).toMatchObject({ kind: 'playing', index: 2 });
+      expect(retryErrors).toEqual([]);
+      expect(queueCalls(instance)).toHaveLength(3);
+    } finally {
+      retry.destroy();
+    }
   });
 });
 

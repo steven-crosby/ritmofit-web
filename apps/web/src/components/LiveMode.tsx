@@ -642,8 +642,10 @@ export function LiveMode({
   // every pointer-move of a drag (SPC-16). `commitThrottle` coalesces a burst
   // of preview positions into the trailing one, at most once per window; `seek`
   // always flushes it immediately, so a discrete jump (keyboard, tap, release)
-  // never waits behind a pending drag commit. Built once per mount (a ref, not
-  // state) so the window survives across renders.
+  // never waits behind a pending drag commit. A timeline tap previews and then
+  // commits the same position; the throttle runs that once, so one tap starts
+  // one provider adapter (RF-108). Built once per mount (a ref, not state) so
+  // the window survives across renders.
   const commitThrottleRef = useRef<ReturnType<typeof createTrailingThrottle<number>> | null>(null);
   commitThrottleRef.current ??= createTrailingThrottle((ms) => {
     // Re-cue provider playback at the new position (no-op while paused — the

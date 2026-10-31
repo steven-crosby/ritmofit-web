@@ -45,6 +45,14 @@ export interface PlaybackAdapter {
   stop(): Promise<void>;
   destroy(): void;
   /**
+   * Settle signal for a singleton SDK (RF-108): resolves once the SDK calls
+   * this adapter issued no longer hold up the shared player (settled, or a
+   * bounded time after the adapter was destroyed), so the runtime can let a
+   * cancelled start finish before the next one. Never rejects. Null, or not
+   * implemented, when nothing is pending.
+   */
+  whenIdle?(): Promise<void> | null;
+  /**
    * What the provider says its own transport is doing right now. Read through
    * the official SDK on the same channel as play/pause/seek — a remote-control
    * status read, not stream inspection: nothing here caches, proxies, decodes,

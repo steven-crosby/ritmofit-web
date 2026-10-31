@@ -2419,6 +2419,52 @@ describe('LiveMode screen-reader announcements', () => {
 });
 
 describe('LiveMode timeline scrubber', () => {
+  it('starts exactly one provider adapter for one timeline tap (RF-108)', async () => {
+    const prepared: number[] = [];
+    vi.mocked(listConnections).mockResolvedValue([soundcloudConnection]);
+    vi.mocked(soundcloudAdapterFactory).mockImplementation(() => {
+      const adapter = workingAdapter();
+      const prepare = adapter.prepare.bind(adapter);
+      adapter.prepare = (entry, window) => {
+        prepared.push(window.startMs);
+        return prepare(entry, window);
+      };
+      return adapter;
+    });
+    render(<LiveMode payload={payload} onExit={() => {}} />);
+    await screen.findByRole('list', { name: 'Track playback check' });
+    fireEvent.click(screen.getByRole('button', { name: 'Start class' }));
+    await screen.findByRole('button', { name: 'Pause' });
+    await waitFor(() => expect(soundcloudAdapterFactory).toHaveBeenCalledTimes(1));
+
+    // One tap: pointer down previews (and commits) the position, pointer up
+    // commits the same position ~60 ms later. On iPhone that was two adapter
+    // starts ~60 ms apart, the first cancelled mid-setQueue.
+    const slider = screen.getByRole('slider', { name: 'Seek class timeline' });
+    vi.spyOn(slider, 'getBoundingClientRect').mockReturnValue({
+      width: 180_000,
+      left: 0,
+      right: 180_000,
+      top: 0,
+      bottom: 40,
+      height: 40,
+      x: 0,
+      y: 0,
+      toJSON: () => ({}),
+    } as DOMRect);
+    fireEvent.pointerDown(slider, { clientX: 90_000, pointerId: 1 });
+    await act(async () => {
+      await new Promise((resolve) => setTimeout(resolve, 60));
+    });
+    fireEvent.pointerUp(slider);
+    await waitFor(() => expect(soundcloudAdapterFactory).toHaveBeenCalledTimes(2));
+    await act(async () => {
+      await new Promise((resolve) => setTimeout(resolve, 300));
+    });
+    expect(soundcloudAdapterFactory).toHaveBeenCalledTimes(2);
+    expect(prepared).toHaveLength(2);
+  });
+
   it('seeks the virtual clock from the timeline (keyboard)', async () => {
     await renderLive();
     // The transport scrubber replaces the old plain range input.

@@ -87,4 +87,45 @@ describe('createTrailingThrottle', () => {
     expect(fn).toHaveBeenCalledTimes(1);
     expect(fn).toHaveBeenCalledWith(5);
   });
+
+  it('a tap (call then flush of the same value) runs fn once (RF-108)', () => {
+    const clock = fakeNow();
+    const fn = vi.fn();
+    const throttle = createTrailingThrottle(fn, 200, clock.now);
+    throttle.call(60_000); // pointer down: leading edge fires
+    clock.advance(60);
+    throttle.flush(60_000); // pointer up at the same position
+    vi.advanceTimersByTime(1000);
+    expect(fn).toHaveBeenCalledTimes(1);
+    expect(fn).toHaveBeenCalledWith(60_000);
+  });
+
+  it('a drag release on the value the trailing call already fired runs fn once more at most', () => {
+    const clock = fakeNow();
+    const fn = vi.fn();
+    const throttle = createTrailingThrottle(fn, 200, clock.now);
+    throttle.call(1); // leading edge
+    clock.advance(10);
+    throttle.call(2); // queued
+    vi.advanceTimersByTime(190); // trailing fires 2
+    expect(fn).toHaveBeenCalledTimes(2);
+    throttle.flush(2); // released where the trailing call left it
+    expect(fn).toHaveBeenCalledTimes(2);
+  });
+
+  it('still runs a flush with a different value, and a later discrete flush of the same value', () => {
+    const clock = fakeNow();
+    const fn = vi.fn();
+    const throttle = createTrailingThrottle(fn, 200, clock.now);
+    throttle.call(1);
+    throttle.flush(2); // a different position commits
+    expect(fn).toHaveBeenLastCalledWith(2);
+    throttle.flush(2); // a later discrete seek (e.g. Next) is never swallowed
+    expect(fn).toHaveBeenCalledTimes(3);
+    throttle.call(4);
+    clock.advance(500);
+    throttle.cancel();
+    throttle.flush(4); // cancel forgets the fired value
+    expect(fn).toHaveBeenCalledTimes(4);
+  });
 });
