@@ -51,8 +51,6 @@ export function readinessLabel(
   if (step.eyebrow === 'Details unavailable') return 'Unavailable';
   if (step.teachable) return 'Ready';
   switch (step.action) {
-    case 'Add the missing tempo':
-      return 'Needs tempo';
     case 'Set track durations':
       return 'Needs duration';
     case 'Add cues and moves':

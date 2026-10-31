@@ -47,21 +47,29 @@ const emptyDraft = ready();
 describe('classNextStep', () => {
   it('names the specific gap rather than a generic next step', () => {
     expect(classNextStep(teachable).action).toBe('Open class');
-    expect(classNextStep(noTempo).action).toBe('Add the missing tempo');
     expect(classNextStep(noChoreography).action).toBe('Add cues and moves');
     expect(classNextStep(noDuration).action).toBe('Set track durations');
     expect(classNextStep(emptyDraft).action).toBe('Add the first track');
   });
 
-  it('reports teachability only when every dimension is ready', () => {
+  it('reports teachability only when every listed dimension is ready', () => {
     expect(classNextStep(teachable).teachable).toBe(true);
-    expect(classNextStep(noTempo).teachable).toBe(false);
+    expect(classNextStep(noChoreography).teachable).toBe(false);
     expect(classNextStep(emptyDraft).teachable).toBe(false);
+  });
+
+  it('does not make missing tempo a list-level step (RF-166)', () => {
+    // RF-131 decision 3b: the Classes list and Live queue order ignore tempo;
+    // the builder readiness row still shows it.
+    const step = classNextStep(noTempo);
+    expect(step.action).toBe('Open class');
+    expect(step.teachable).toBe(true);
+    expect(step.teachRank).toBe(classNextStep(teachable).teachRank);
   });
 
   it('uses Can run live for the teachable status line', () => {
     expect(classNextStep(teachable).detail).toBe('Can run live');
-    expect(classNextStep(noTempo).detail).toBe('Can run live · 1 left');
+    expect(classNextStep(noChoreography).detail).toBe('Can run live · 1 left');
   });
 
   it('mirrors the two orderings across every known state', () => {
@@ -87,19 +95,19 @@ describe('orderClassesBy', () => {
   const classes = [
     { id: 'empty', title: 'Empty draft', updatedAt: 5 },
     { id: 'teachable', title: 'Finished class', updatedAt: 1 },
-    { id: 'tempo', title: 'Missing tempo', updatedAt: 3 },
+    { id: 'cues', title: 'Missing cues', updatedAt: 3 },
   ];
   const states: Record<string, ClassDetailState> = {
     empty: emptyDraft,
     teachable,
-    tempo: noTempo,
+    cues: noChoreography,
   };
   const stepFor = (cls: { id: string }) => classNextStep(states[cls.id]);
 
   it('puts the most run-ready class first under "ready to teach"', () => {
     expect(orderClassesBy('ready_to_teach', classes, stepFor).map((cls) => cls.id)).toEqual([
       'teachable',
-      'tempo',
+      'cues',
       'empty',
     ]);
   });
@@ -107,7 +115,7 @@ describe('orderClassesBy', () => {
   it('puts the least-finished class first under "needs work"', () => {
     expect(orderClassesBy('needs_work', classes, stepFor).map((cls) => cls.id)).toEqual([
       'empty',
-      'tempo',
+      'cues',
       'teachable',
     ]);
   });

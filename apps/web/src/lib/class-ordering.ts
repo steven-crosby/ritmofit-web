@@ -102,9 +102,13 @@ function known(
  *
  * The verb comes from the specific readiness gap rather than a generic "continue"
  * (P0-03): `readiness.ts` already knows whether the class is missing durations,
- * tempo, choreography, or music, so the button says which. Dimensions are checked
- * in readiness display order, so the named step is always the one the instructor
+ * choreography, or music, so the button says which. Dimensions are checked in
+ * readiness display order, so the named step is always the one the instructor
  * would reach for first.
+ *
+ * Missing tempo is not a next step here (RF-131 decision 3b, RF-166): the Classes
+ * list and the Live queue order do not flag it. The builder's tempo readiness row
+ * and Live's per-cue status still show it (design system 10 §1a).
  */
 export function classNextStep(state: ClassDetailState | undefined): ClassNextStep {
   if (!state || state.status === 'loading') {
@@ -158,19 +162,19 @@ export function classNextStep(state: ClassDetailState | undefined): ClassNextSte
     });
   }
 
-  if (!readiness.fullyReady) {
-    // The first outstanding dimension in readiness display order names the step.
-    // Duration is already handled above (it gates `runnable`), so this is tempo,
-    // choreography, or music.
-    const gap = readiness.dimensions.find((dimension) => dimension.level !== 'ready');
+  // The first outstanding dimension in readiness display order names the step.
+  // Duration is already handled above (it gates `runnable`), and tempo is not a
+  // list-level step (RF-166), so this is choreography or music.
+  const gap = readiness.dimensions.find(
+    (dimension) => dimension.level !== 'ready' && dimension.key !== 'tempo',
+  );
+  if (gap) {
     const action =
-      gap?.key === 'tempo'
-        ? 'Add the missing tempo'
-        : gap?.key === 'choreography'
-          ? 'Add cues and moves'
-          : gap?.key === 'music'
-            ? 'Link music to tracks'
-            : 'Finish refinements';
+      gap.key === 'choreography'
+        ? 'Add cues and moves'
+        : gap.key === 'music'
+          ? 'Link music to tracks'
+          : 'Finish refinements';
     return known(3, {
       eyebrow: 'Refine before teaching',
       action,
