@@ -875,13 +875,18 @@ Cue color picker must exclude plasma range.
 
 Music providers are core to trust.
 
-Catalog availability is not account connection. Current product capability is authoritative:
+Catalog availability is not account connection. Current product capability is authoritative
+(`providerCapabilities` in `packages/shared`, shown through `providerCapabilityTruth` in
+`apps/web/src/lib/providers.ts`; D21, D24):
 
-- Spotify and Apple Music support catalog search/import only.
-- SoundCloud supports catalog search/import, user connection, and likes.
+- Spotify, Apple Music and SoundCloud all support catalog search and import without a connection.
+- All three support a user connection that unlocks likes, saved playlists and playlist import.
+- In-app playback goes through each provider's official SDK or widget (D19). SoundCloud's public
+  widget plays without a connection; Spotify and Apple Music need a connected account with playback
+  authorization.
 
-Show `catalog available` for catalog-only providers. Use the connection states below only when the
-provider supports a user-account integration.
+Show the catalog as available whether or not an account is linked. Use the connection states below
+for the account itself: its library (likes and playlists) and, for Spotify and Apple Music, playback.
 
 States must be explicit:
 
