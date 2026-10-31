@@ -3,7 +3,7 @@
   "id": "RF-133",
   "title": "Builder, Live queue and preflight apply one rule for when a class can run",
   "kind": "task",
-  "status": "in_progress",
+  "status": "done",
   "priority": "P0",
   "parent": null,
   "dependsOn": [
@@ -16,7 +16,7 @@
     "Comments that call duration the only run gate (Dashboard.tsx, readiness.ts, live-readiness.ts, ClassReadinessSummary.tsx) match the new rule.",
     "If the rule changes what \"runnable\" means, the iOS Live gate impact is written into this record for the iOS repo."
   ],
-  "nextAction": "Branch feat/rf-133-one-run-rule (Neo, 2026-10-31). Restart: finish the change, run checks, finalize the record in this PR.",
+  "nextAction": null,
   "blocker": null,
   "evidence": [
     {
@@ -51,11 +51,29 @@
     },
     {
       "kind": "observation",
-      "ref": "ritmofit_dev_plan/tasks/RF-133.json",
+      "ref": "https://github.com/steven-crosby/ritmofit-web/pull/680",
       "summary": "Owner set Ready 2026-10-31: approved in the Air session (\"Corrected plan is approved\", relayed by the Air conductor) and confirmed in the Neo session (\"Yes, start the lanes\"). No separate Ready PR; this lane PR records it.",
+      "checkedOn": "2026-10-31"
+    },
+    {
+      "kind": "pr",
+      "ref": "https://github.com/steven-crosby/ritmofit-web/pull/680",
+      "summary": "One run rule (RF-131 answer 1b): canRunPayload (duration.ts) is the only gate. readiness.ts runnable now calls it directly; the builder Run live (ClassHeaderCard canRun) no longer requires !planLead or the plan to load; entering Live and the Live queue card use runBlockedMessage, which is null exactly when canRunPayload holds; live-readiness counts readiness.runnable. creation-next-step.ts: a runnable class with a plan gap keeps its Live standing (detail \"Can run live · <gap>\", ranks from classNextStep, a fully ready class ranks as refine) instead of being demoted to plan work; a class that cannot run keeps plan work as its step. Over-time blocks are guidance text like other gaps. ClassReadinessSummary: a class that cannot run shows \"Not ready for Live\" and the readiness list even with a plan gap. Builder panels hidden by !planLead (Pulse, TrackPreview) are unchanged: they are display, not a gate. Run live stays secondary while a plan gap exists so the plan step keeps the one copper (RF-135). Comments in readiness.ts, live-readiness.ts, creation-next-step.ts, ClassReadinessSummary.tsx and Dashboard.tsx updated.",
+      "checkedOn": "2026-10-31"
+    },
+    {
+      "kind": "test",
+      "ref": "apps/web/src/components/ClassHeaderCard.test.tsx",
+      "summary": "Fail on main, pass on the PR: Run live enabled and clickable when the payload can run though the plan is unfinished; a class whose plan failed to load still runs (Dashboard.test.tsx); the readiness summary keeps the blocker visible when a plan gap exists and the class cannot run (ClassReadinessSummary.test.tsx). Updated to the new rule: creation-next-step.test.ts (runnable plan gap keeps Live ranks; non-runnable keeps plan work), the mid-build builder test (Run live enabled, not copper). Full local gate green 2026-10-31: web 1608, api 636, e2e 2 passed. jsdom and e2e smoke only; not a real-browser check.",
+      "checkedOn": "2026-10-31"
+    },
+    {
+      "kind": "observation",
+      "ref": "apps/web/src/lib/duration.ts",
+      "summary": "iOS impact (criterion 4): runnable still means canRunPayload (tracks with durations), so its meaning is unchanged; iOS Live has no plan gate (per the Air conductor, 2026-10-31), so no iOS change is needed.",
       "checkedOn": "2026-10-31"
     }
   ],
-  "resolution": null,
+  "resolution": "One run rule shipped (#680): only durations and music on the timeline decide whether a class can run, through canRunPayload; plan gaps and over-time blocks are guidance in the builder and on the Classes row; the builder, Classes, the Live queue and preflight agree.",
   "followUps": []
 }
