@@ -1,0 +1,33 @@
+{
+  "schemaVersion": 1,
+  "id": "RF-167",
+  "title": "A Spotify account outside the developer allowlist sees the real cause and an alternative",
+  "kind": "task",
+  "status": "backlog",
+  "priority": "P2",
+  "parent": null,
+  "dependsOn": [],
+  "acceptance": [
+    "First the real current Spotify response for a non-allowlisted account is captured (status, body shape) and recorded here; RF-92's 403 note dates from 2026-10-28 and RF-31 was never re-tested.",
+    "Spotify stays visible in Music and preflight. When Spotify refuses an account because it is not on the app's developer allowlist, the message says so in plain words and points to Apple Music or SoundCloud, instead of a generic error.",
+    "Other Spotify failures (expired session, quota, outage) keep their own messages."
+  ],
+  "nextAction": "From RF-131 decision 6 (b). Likely files: apps/api/src/routes/provider*.ts or apps/api/src/lib/music/ (error classification) and apps/web/src/lib/providers.ts: owner-gated (provider). Coordinate with RF-92 triage. Surface: web; iOS if the error code is new. Agent-created: Backlog until the owner sets Ready.",
+  "blocker": null,
+  "evidence": [
+    {
+      "kind": "observation",
+      "ref": "docs/audits/ux-audit-2026-10-28/run-decisions.md",
+      "summary": "RF-131 decision 6 (b), owner 2026-10-31.",
+      "checkedOn": "2026-10-31"
+    },
+    {
+      "kind": "pr",
+      "ref": "https://github.com/steven-crosby/ritmofit-web/pull/PRNUM",
+      "summary": "Filed from the RF-131 answers.",
+      "checkedOn": "2026-10-31"
+    }
+  ],
+  "resolution": null,
+  "followUps": []
+}

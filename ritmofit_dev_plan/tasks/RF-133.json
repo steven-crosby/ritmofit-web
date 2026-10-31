@@ -16,7 +16,7 @@
     "Comments that call duration the only run gate (Dashboard.tsx, readiness.ts, live-readiness.ts, ClassReadinessSummary.tsx) match the new rule.",
     "If the rule changes what \"runnable\" means, the iOS Live gate impact is written into this record for the iOS repo."
   ],
-  "nextAction": "Waits on the RF-131 run-rule decision. Files: apps/web/src/lib/readiness.ts, class-scaffold.ts (planNextStep), creation-next-step.ts, live-readiness.ts, Dashboard.tsx (builder header and LiveQueueCard), LivePreflight.tsx. Preflight is playback UI: check scripts/owner-gate.mjs before the PR. Surface: both if runnable changes.",
+  "nextAction": "RF-131 answered 2026-10-31: option (b). Plan gaps (songs outside a block, empty blocks) are guidance only; only durations and music decide whether a class can run. Over-time blocks are a warning, not a blocker. Smallest change: drop the planLead gate in the builder so it matches the Live queue; iOS Live already has no plan gate. Files: apps/web/src/lib/readiness.ts, class-scaffold.ts (planNextStep), creation-next-step.ts, live-readiness.ts, Dashboard.tsx (builder header and LiveQueueCard), LivePreflight.tsx. Preflight is playback UI: check scripts/owner-gate.mjs before the PR. Surface: both if runnable changes.",
   "blocker": null,
   "evidence": [
     {
@@ -36,6 +36,12 @@
       "ref": "docs/audits/ux-audit-2026-10-28/README.md",
       "summary": "2026-10-28 owner UX audit of production: Top priority 2 (P0) and the Live row on \"[QA] Goal Template Cycle\". Browser evidence; not re-observed at intake.",
       "checkedOn": "2026-10-29"
+    },
+    {
+      "kind": "observation",
+      "ref": "docs/audits/ux-audit-2026-10-28/run-decisions.md",
+      "summary": "RF-131 answers recorded 2026-10-31 (see RF-131 resolution).",
+      "checkedOn": "2026-10-31"
     }
   ],
   "resolution": null,

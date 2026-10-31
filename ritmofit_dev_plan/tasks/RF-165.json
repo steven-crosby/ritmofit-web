@@ -1,0 +1,33 @@
+{
+  "schemaVersion": 1,
+  "id": "RF-165",
+  "title": "Classes home offers a HIIT template card beside Cycle and Pilates",
+  "kind": "task",
+  "status": "backlog",
+  "priority": "P2",
+  "parent": null,
+  "dependsOn": [],
+  "acceptance": [
+    "Classes home \"Start from a template\" shows Cycle, Pilates and HIIT, matching the Create dialog and D21.",
+    "The cards lay out cleanly with three: no orphan card on the two-column grid (for example three across on desktop, stacked at 390px), checked in the 1440 and 390 e2e screenshots.",
+    "Choosing HIIT starts the same HIIT scaffold the Create dialog uses."
+  ],
+  "nextAction": "Files: apps/web/src/components/ClassesHome.tsx (template cards) and the shared template list the Create dialog uses. Not owner-gated. Surface: web. Agent-created: Backlog until the owner sets Ready.",
+  "blocker": null,
+  "evidence": [
+    {
+      "kind": "observation",
+      "ref": "docs/audits/ux-audit-2026-10-28/run-decisions.md",
+      "summary": "RF-131 decision 4 (a), owner 2026-10-31.",
+      "checkedOn": "2026-10-31"
+    },
+    {
+      "kind": "pr",
+      "ref": "https://github.com/steven-crosby/ritmofit-web/pull/PRNUM",
+      "summary": "Filed from the RF-131 answers.",
+      "checkedOn": "2026-10-31"
+    }
+  ],
+  "resolution": null,
+  "followUps": []
+}

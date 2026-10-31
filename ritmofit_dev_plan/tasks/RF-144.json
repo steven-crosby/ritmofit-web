@@ -13,7 +13,7 @@
     "ritmofit-design-system.md §9.8 no longer says Spotify and Apple Music are catalog-only; it matches D21, D24 and providerCapabilityTruth.",
     "After the RF-131 Preferences decision, D21 names the Account sections; HISTORY.md stays as written."
   ],
-  "nextAction": "Docs-only PR. The §9.8 fix can ship first as its own child record if wanted; the D21 line waits on RF-131 decision 5. Surface: docs (design canon, so iOS reads it too).",
+  "nextAction": "RF-131 decision 5 answered 2026-10-31: cut Preferences. D21 names the three Account sections; HISTORY.md stays as written. Docs-only PR. The §9.8 fix can ship first as its own child record if wanted; the D21 line is now unblocked. Surface: docs (design canon, so iOS reads it too).",
   "blocker": null,
   "evidence": [
     {
@@ -27,6 +27,12 @@
       "ref": "docs/audits/ux-audit-2026-10-28/run-decisions.md",
       "summary": "Intake correction 1: the Preferences list comes from HISTORY.md (2026-07-07 entry), not D21.",
       "checkedOn": "2026-10-29"
+    },
+    {
+      "kind": "observation",
+      "ref": "docs/audits/ux-audit-2026-10-28/run-decisions.md",
+      "summary": "RF-131 answers recorded 2026-10-31 (see RF-131 resolution).",
+      "checkedOn": "2026-10-31"
     }
   ],
   "resolution": null,
