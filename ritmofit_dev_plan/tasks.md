@@ -12,13 +12,13 @@ owner's queue: any agent may execute a Ready task. Publishing follows AGENTS.md 
 Evidence marked **recorded** is a carried-forward claim, not fresh verification.
 A checked PR proves its GitHub state, not product acceptance or production behavior.
 
-157 tasks. backlog: 52 · ready: 1 · in_progress: 0 · blocked: 1 · review: 11 · done: 90 · cancelled: 2.
+157 tasks. backlog: 51 · ready: 1 · in_progress: 1 · blocked: 1 · review: 11 · done: 90 · cancelled: 2.
 
 ## In progress
 
 | Task | Priority / kind | Relationships | Next action / resolution | Evidence |
 | --- | --- | --- | --- | --- |
-| — | — | — | — | — |
+| [RF-137](tasks/RF-137.json) Music reopens on the provider and view the instructor last used | P1 / task | — | Branch feat/rf-137-music-remembers-provider (N1 lane, 2026-10-31): MusicView memory in music-library.ts, restored in Dashboard MusicWorkspace; tests added. Restart: run the gate, then open/finish the PR. | checked 2026-10-29; checked 2026-10-31 |
 
 ## Blocked / waiting
 
@@ -62,7 +62,6 @@ A checked PR proves its GitHub state, not product acceptance or production behav
 | [RF-134](tasks/RF-134.json) Every readiness and connection label says only what it checked, in one vocabulary | P1 / task | needs RF-131 | Waits on the RF-131 vocabulary (and tempo) decisions. The D24 Account fix needs no decision; split it into its own child record if it should start before RF-131 closes. Files: apps/web/src/lib/readiness.ts, library-shell.ts, providers.ts, Dashboard.tsx, ConnectionStateMark.tsx, ritmofit_design_system copy. providers.ts is owner-gated (scripts/owner-gate.mjs provider/playback paths), so a PR touching it needs owner-approved. Surface: web; iOS for canon wording only. | checked 2026-10-29 |
 | [RF-135](tasks/RF-135.json) Copper marks identity and the one primary action per surface, never status | P1 / task | — | Files: apps/web/src/components/ClassesHome.tsx (status dot), Dashboard.tsx (LiveQueueCard buttons), MarketingPage.tsx. Choose which Live card keeps the primary (for example the next class she is likely to teach) and say so in the PR. Surface: web. | checked 2026-10-29 |
 | [RF-136](tasks/RF-136.json) Preflight groups repeated failures, names the provider and puts the fix beside them | P1 / task | — | Files: apps/web/src/components/LivePreflight.tsx, apps/web/src/lib/playback/coordinator.ts and types.ts (the unplayable reason needs the provider). Owner-gated (playback code): the PR needs owner-approved. Surface: web. | checked 2026-10-29 |
-| [RF-137](tasks/RF-137.json) Music reopens on the provider and view the instructor last used | P1 / task | — | Files: apps/web/src/components/Dashboard.tsx (MusicWorkspace selectedProvider and libraryKind state), apps/web/src/lib/music-library.ts. Surface: web. | checked 2026-10-29 |
 | [RF-138](tasks/RF-138.json) Instructors can preview, select and add single tracks from Music playlists and Songs | P1 / task | — | Design pass first: where selection lives and what it adds to (new class or an open class). Files: apps/web/src/components/Dashboard.tsx (Music song rows and playlist dialog), TrackPreview.tsx, PlaylistSongPicker.tsx. Check scripts/owner-gate.mjs for the files the PR actually touches; playback code under apps/web/src/lib/playback/ is gated. Either way the PR needs a real-browser preview check, which CI cannot prove. Surface: web. | checked 2026-10-29 |
 | [RF-140](tasks/RF-140.json) Account Security lets an instructor change her password, sign out other sessions and delete her account | P1 / task | needs RF-116 | Plan after RF-116 (password reset revokes old sessions), which shares the session code. Deletion is likely its own child record with schema and purge design. Files: apps/api auth routes and Better Auth config, apps/web Dashboard Account section. Owner-gated (auth): the PR needs owner-approved. Surface: both (auth API). | checked 2026-10-29 |
 | [RF-87](tasks/RF-87.json) Verify open-tab update recovery across a deployment | P2 / verification | needs RF-11 | Arrange an attended check during a separately authorized deployment; do not deploy just to close this task. | recorded |

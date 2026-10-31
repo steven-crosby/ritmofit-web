@@ -3,7 +3,7 @@
   "id": "RF-137",
   "title": "Music reopens on the provider and view the instructor last used",
   "kind": "task",
-  "status": "backlog",
+  "status": "in_progress",
   "priority": "P1",
   "parent": null,
   "dependsOn": [],
@@ -13,7 +13,7 @@
     "A remembered provider that is now disconnected falls back to a connected one with no error.",
     "Remembering uses per-viewer state that survives private mode failing (no hard dependency on storage)."
   ],
-  "nextAction": "Files: apps/web/src/components/Dashboard.tsx (MusicWorkspace selectedProvider and libraryKind state), apps/web/src/lib/music-library.ts. Surface: web.",
+  "nextAction": "Branch feat/rf-137-music-remembers-provider (N1 lane, 2026-10-31): MusicView memory in music-library.ts, restored in Dashboard MusicWorkspace; tests added. Restart: run the gate, then open/finish the PR.",
   "blocker": null,
   "evidence": [
     {
@@ -27,6 +27,12 @@
       "ref": "docs/audits/ux-audit-2026-10-28/README.md",
       "summary": "2026-10-28 owner UX audit of production: Top priority 8 and the walkthrough re-check that the choice resets after leaving Music. Browser evidence; not re-observed at intake.",
       "checkedOn": "2026-10-29"
+    },
+    {
+      "kind": "observation",
+      "ref": "ritmofit_dev_plan/tasks/RF-137.json",
+      "summary": "Owner set Ready on 2026-10-31, relayed from the Air conductor: \"Yes, approve both\" (RF-137 and RF-135). No separate Ready PR; this lane PR records it.",
+      "checkedOn": "2026-10-31"
     }
   ],
   "resolution": null,
