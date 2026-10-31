@@ -12,13 +12,13 @@ owner's queue: any agent may execute a Ready task. Publishing follows AGENTS.md 
 Evidence marked **recorded** is a carried-forward claim, not fresh verification.
 A checked PR proves its GitHub state, not product acceptance or production behavior.
 
-166 tasks. backlog: 56 · ready: 1 · in_progress: 0 · blocked: 1 · review: 10 · done: 96 · cancelled: 2.
+166 tasks. backlog: 55 · ready: 1 · in_progress: 1 · blocked: 1 · review: 10 · done: 96 · cancelled: 2.
 
 ## In progress
 
 | Task | Priority / kind | Relationships | Next action / resolution | Evidence |
 | --- | --- | --- | --- | --- |
-| — | — | — | — | — |
+| [RF-133](tasks/RF-133.json) Builder, Live queue and preflight apply one rule for when a class can run | P0 / task | needs RF-131 | Branch feat/rf-133-one-run-rule (Neo, 2026-10-31). Restart: finish the change, run checks, finalize the record in this PR. | checked 2026-10-29; checked 2026-10-31 |
 
 ## Blocked / waiting
 
@@ -51,7 +51,6 @@ A checked PR proves its GitHub state, not product acceptance or production behav
 
 | Task | Priority / kind | Relationships | Next action / resolution | Evidence |
 | --- | --- | --- | --- | --- |
-| [RF-133](tasks/RF-133.json) Builder, Live queue and preflight apply one rule for when a class can run | P0 / task | needs RF-131 | RF-131 answered 2026-10-31: option (b). Plan gaps (songs outside a block, empty blocks) are guidance only; only durations and music decide whether a class can run. Over-time blocks are a warning, not a blocker. Plan gaps gate in two places today: the builder (Dashboard.tsx !planLead, which also hides other builder panels) and the Classes row next step (creation-next-step.ts via planNextStep, used by ClassesHome.tsx). Both must stop treating gaps as blockers so they agree with the Live queue; iOS Live already has no plan gate. Files: apps/web/src/lib/readiness.ts, class-scaffold.ts (planNextStep), creation-next-step.ts, live-readiness.ts, Dashboard.tsx (builder header and LiveQueueCard), LivePreflight.tsx. Preflight is playback UI: check scripts/owner-gate.mjs before the PR. Surface: both if runnable changes. | checked 2026-10-29; checked 2026-10-31 |
 | [RF-92](tasks/RF-92.json) Triage Spotify expiry finding C-1 and retry classification C-2 | P1 / plan | — | Spotify reopened by the owner on 2026-10-28. Await owner Ready; Apple work comes first until the Apple Music subscription ends around 2026-11-27. Resume risk: the Spotify developer app rejects the connected account ("The user is not registered for this application"), so Web API calls return 403. | recorded; checked 2026-10-28 |
 | [RF-116](tasks/RF-116.json) A password reset signs out old sessions, and Disconnect drops provider logins | P1 / task | — | Await owner Ready. Split out of RF-94 at intake. Owner-gated paths: the PR needs owner-approved. | recorded; checked 2026-10-29 |
 | [RF-125](tasks/RF-125.json) Apple Music authorization completes on any network where Apple Music works | P1 / investigation | — | Owner: retry authorization on cellular to confirm it completes there, then on home Wi-Fi with Web Inspector attached to the Apple authorization page (Develop menu lists it separately). Do not change product code from this task without approval; any fix is owner-gated (playback/auth surfaces). | checked 2026-10-28 |

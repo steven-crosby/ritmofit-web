@@ -3,7 +3,7 @@
   "id": "RF-133",
   "title": "Builder, Live queue and preflight apply one rule for when a class can run",
   "kind": "task",
-  "status": "backlog",
+  "status": "in_progress",
   "priority": "P0",
   "parent": null,
   "dependsOn": [
@@ -16,7 +16,7 @@
     "Comments that call duration the only run gate (Dashboard.tsx, readiness.ts, live-readiness.ts, ClassReadinessSummary.tsx) match the new rule.",
     "If the rule changes what \"runnable\" means, the iOS Live gate impact is written into this record for the iOS repo."
   ],
-  "nextAction": "RF-131 answered 2026-10-31: option (b). Plan gaps (songs outside a block, empty blocks) are guidance only; only durations and music decide whether a class can run. Over-time blocks are a warning, not a blocker. Plan gaps gate in two places today: the builder (Dashboard.tsx !planLead, which also hides other builder panels) and the Classes row next step (creation-next-step.ts via planNextStep, used by ClassesHome.tsx). Both must stop treating gaps as blockers so they agree with the Live queue; iOS Live already has no plan gate. Files: apps/web/src/lib/readiness.ts, class-scaffold.ts (planNextStep), creation-next-step.ts, live-readiness.ts, Dashboard.tsx (builder header and LiveQueueCard), LivePreflight.tsx. Preflight is playback UI: check scripts/owner-gate.mjs before the PR. Surface: both if runnable changes.",
+  "nextAction": "Branch feat/rf-133-one-run-rule (Neo, 2026-10-31). Restart: finish the change, run checks, finalize the record in this PR.",
   "blocker": null,
   "evidence": [
     {
@@ -47,6 +47,12 @@
       "kind": "pr",
       "ref": "https://github.com/steven-crosby/ritmofit-web/pull/677",
       "summary": "Final review of #677 corrected file pointers, record links and the design system 10 §1a reading.",
+      "checkedOn": "2026-10-31"
+    },
+    {
+      "kind": "observation",
+      "ref": "ritmofit_dev_plan/tasks/RF-133.json",
+      "summary": "Owner set Ready 2026-10-31: approved in the Air session (\"Corrected plan is approved\", relayed by the Air conductor) and confirmed in the Neo session (\"Yes, start the lanes\"). No separate Ready PR; this lane PR records it.",
       "checkedOn": "2026-10-31"
     }
   ],
