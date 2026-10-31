@@ -3,7 +3,7 @@
   "id": "RF-165",
   "title": "Classes home offers a HIIT template card beside Cycle and Pilates",
   "kind": "task",
-  "status": "backlog",
+  "status": "in_progress",
   "priority": "P2",
   "parent": null,
   "dependsOn": [],
@@ -12,7 +12,7 @@
     "The cards lay out cleanly with three: no orphan card on the two-column grid (for example three across on desktop, stacked at 390px), checked in the 1440 and 390 e2e screenshots.",
     "Choosing HIIT starts the same HIIT scaffold the Create dialog uses."
   ],
-  "nextAction": "Files: the home cards come from LIBRARY_TEMPLATES in apps/web/src/lib/library-shell.ts (the Create dialog uses a separate list, SCAFFOLD_DISCIPLINES in class-scaffold.ts, which already has HIIT). LibraryTemplate also types the ClassesHome discipline filter, so adding HIIT must not add a filter chip unless the PR says why. Not owner-gated. Surface: web. Agent-created: Backlog until the owner sets Ready.",
+  "nextAction": "In progress on branch feat/rf-165-hiit-template-card (lane A1, Air). Restart: add HIIT to LIBRARY_TEMPLATES, keep the ClassesHome filter type to Cycle and Pilates, three-across template grid on desktop and stacked at 390, then tests and e2e screenshots. Not owner-gated.",
   "blocker": null,
   "evidence": [
     {
@@ -31,6 +31,12 @@
       "kind": "pr",
       "ref": "https://github.com/steven-crosby/ritmofit-web/pull/677",
       "summary": "Final review of #677 corrected file pointers, record links and the design system 10 §1a reading.",
+      "checkedOn": "2026-10-31"
+    },
+    {
+      "kind": "observation",
+      "ref": "docs/audits/ux-audit-2026-10-28/run-decisions.md",
+      "summary": "Owner approved this round in the Air conductor chat on 2026-10-31 (\"Corrected plan is approved\"), setting RF-165 to Ready; it implements RF-131 decision 4 (a), \"add the HIIT card\".",
       "checkedOn": "2026-10-31"
     }
   ],
