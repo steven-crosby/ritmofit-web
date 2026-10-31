@@ -916,13 +916,16 @@ Connections dialog use the same words:
 | Open the connection list | Manage connections | action |
 | Spotify or Apple Music playback scope is stored | Linked · Live checks this browser | state |
 
-"Reconnect" is never a state label. Stored data is never called "Authorized": only Live knows
+"Reconnect" is never a state label. The one exception is the Account capability ledger, whose
+capability column gives the next action ("Reconnect account", "Connect account") because the row's
+state mark already names the state. Stored data is never called "Authorized": only Live knows
 whether this browser can play (D24).
 
 **Readiness says what it checked** (RF-131 answer 2a). The four readiness dimensions keep their keys
 and name only what was verified. Music says "Music linked on every track"; whether audio plays is
 preflight's question. The Classes row names the exact gap — "2 blocks empty", "1 song outside the
-plan", "1 block over time", "No tracks", "Music not linked", "Needs duration", "Needs cues" — and
+plan", "1 block over time", "Plan has no music", "No tracks", "Music not linked", "Needs duration",
+"Needs cues", "Needs effort" — and
 never one "Needs music" for several states. Missing tempo is not a Classes-list label; it stays
 readiness in the builder and supporting status in Live (rhythm system §1a, RF-166). The Live queue
 count says what it counts: "N of M classes can run live: every track has a length."
