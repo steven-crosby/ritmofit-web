@@ -52,7 +52,7 @@ If a breadcrumb doesn't fit any home, it probably isn't worth keeping — delete
 
 <!-- newest at top; one per line -->
 
-- [ ] (2026-10-31) Owner permission needed: remove the r20261029a lane worktrees `lanes/web-a` and `lanes/web-b` on the machine that ran that round (from the retired orchestrator handoff; remote lane branches are already gone), and delete `wip/rf-108-apple-locks` (`85442ac`, superseded by #669). Branch deletion is never granted by default. — #fact
+- [ ] (2026-10-31) Owner approved housekeeping 2026-10-31. Done from the Neo: 24 merged remote branches and `wip/rf-108-apple-locks` deleted. Left: remove the r20261029a lane worktrees `lanes/web-a` and `lanes/web-b` on the Air (not on the Neo); delete this line once done. — #fact
 
 <!-- 2026-07-27: the two 2026-07-25 design-audit breadcrumbs were routed to
      docs/audits/claude-design-audit-2026-07-24/IMPLEMENTATION-KICKOFF.md as F-01 (dead Tailwind
