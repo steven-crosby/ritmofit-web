@@ -67,6 +67,11 @@ describe('classNextStep', () => {
     expect(step.teachRank).toBe(classNextStep(teachable).teachRank);
   });
 
+  it('counts only the gaps the list names (RF-166)', () => {
+    const cuesAndTempo = ready(track({ cues: [], moves: [], displayBpm: null }));
+    expect(classNextStep(cuesAndTempo).detail).toBe('Can run live · 1 left');
+  });
+
   it('uses Can run live for the teachable status line', () => {
     expect(classNextStep(teachable).detail).toBe('Can run live');
     expect(classNextStep(noChoreography).detail).toBe('Can run live · 1 left');

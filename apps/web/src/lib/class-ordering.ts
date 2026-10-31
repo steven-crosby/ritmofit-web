@@ -74,7 +74,10 @@ export type ClassNextStep = {
   action: string;
   /** One line of supporting fact for the status label. */
   detail: string;
-  /** Runnable with nothing left outstanding. */
+  /**
+   * Runnable with nothing left that this list names. Missing tempo does not count
+   * (RF-166), so this is not `readiness.fullyReady`; the builder still shows tempo.
+   */
   teachable: boolean;
 };
 
@@ -178,7 +181,10 @@ export function classNextStep(state: ClassDetailState | undefined): ClassNextSte
     return known(3, {
       eyebrow: 'Refine before teaching',
       action,
-      detail: `Can run live · ${readiness.attentionCount} left`,
+      // Count only the gaps this list names; tempo stays in the builder (RF-166).
+      detail: `Can run live · ${
+        readiness.dimensions.filter((d) => d.level !== 'ready' && d.key !== 'tempo').length
+      } left`,
       teachable: false,
     });
   }

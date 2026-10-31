@@ -57,6 +57,12 @@
       "ref": "ritmofit_design_system/10-rhythm-system.md",
       "summary": "Design system 10 §1a checked on 2026-10-31: missing tempo is readiness in the builder readiness panel and supporting status in Live, and never blocks a run; it says nothing about the Classes list. Still holds; no canon change.",
       "checkedOn": "2026-10-31"
+    },
+    {
+      "kind": "pr",
+      "ref": "https://github.com/steven-crosby/ritmofit-web/pull/682",
+      "summary": "Final review (/code-review medium 682): the refine detail count still included tempo (\"2 left\" for a class missing cues and BPM); fixed in this PR to count only the gaps the list names, with a test. ClassNextStep.teachable documented as not fullyReady. Logged, not changed: a tempo-only class reads Ready on Classes while its Live queue card says \"1 thing left\"; Live keeps tempo per design system 10 §1a, and RF-168 holds the owner decision on Live tempo status.",
+      "checkedOn": "2026-10-31"
     }
   ],
   "resolution": "The Classes list no longer flags missing tempo (#682); the builder readiness panel and Live keep it per design system 10 §1a.",
