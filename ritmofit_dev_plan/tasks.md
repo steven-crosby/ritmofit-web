@@ -12,13 +12,13 @@ owner's queue: any agent may execute a Ready task. Publishing follows AGENTS.md 
 Evidence marked **recorded** is a carried-forward claim, not fresh verification.
 A checked PR proves its GitHub state, not product acceptance or production behavior.
 
-166 tasks. backlog: 57 · ready: 1 · in_progress: 0 · blocked: 1 · review: 10 · done: 95 · cancelled: 2.
+166 tasks. backlog: 56 · ready: 1 · in_progress: 1 · blocked: 1 · review: 10 · done: 95 · cancelled: 2.
 
 ## In progress
 
 | Task | Priority / kind | Relationships | Next action / resolution | Evidence |
 | --- | --- | --- | --- | --- |
-| — | — | — | — | — |
+| [RF-144](tasks/RF-144.json) The design brief and D21 describe the provider capabilities and Account sections the product has | P3 / documentation | needs RF-131 | Branch docs/rf-144-account-sections (Neo, 2026-10-31). Restart: finish the change, run checks, finalize the record in this PR. | checked 2026-10-29; checked 2026-10-31 |
 
 ## Blocked / waiting
 
@@ -92,7 +92,6 @@ A checked PR proves its GitHub state, not product acceptance or production behav
 | [RF-121](tasks/RF-121.json) Apple Music held-error and probe state are hardened after RF-107 | P3 / task | — | Acceptance 0 (held-error attempt token) is folded into RF-108. It was implemented on #668 and then reverted out of it on 2026-10-30 (owner: measure first); the code and test are preserved on wip/rf-108-apple-locks and land with RF-108's redesign PR, which should cite RF-121. Criteria 1-3 stay here in Backlog until the owner sets Ready. Owner-gated (playback code). | checked 2026-10-28; checked 2026-10-30 |
 | [RF-127](tasks/RF-127.json) Playback CSP docs describe iOS native HLS under media-src | P3 / documentation | — | One-line comment fix in _headers; owner-gated path (security headers), so batch it with the next _headers change. The planning doc was fixed in the follow-up docs PR. | checked 2026-10-28 |
 | [RF-130](tasks/RF-130.json) Live shows the next song, not only the next cue, in Cue-by-Cue | P3 / task | — | Design copy for the Next row with the ux-copy guidance; small web change in Live Mode. | checked 2026-10-29 |
-| [RF-144](tasks/RF-144.json) The design brief and D21 describe the provider capabilities and Account sections the product has | P3 / documentation | needs RF-131 | RF-131 decision 5 answered 2026-10-31: cut Preferences. D21 names the three Account sections; HISTORY.md stays as written. Docs-only PR. The §9.8 fix can ship first as its own child record if wanted; the D21 line is now unblocked. Surface: docs (design canon, so iOS reads it too). | checked 2026-10-29; checked 2026-10-31 |
 | [RF-146](tasks/RF-146.json) Instructor benchmark gaps from 2026-09-29 are triaged into records | P3 / plan | — | Walk the gap list in DEVELOPMENT_PLAN.md › Backlog › Instructor benchmark gaps against open records, propose the mapping, and file only what the owner accepts. Schema-changing gaps (cue plus per-cue note) need their own plan. | checked 2026-10-29 |
 | [RF-150](tasks/RF-150.json) Music Songs Load more shows the next Apple Music songs after one provider request | P3 / task | — | Owner, 2026-10-30: "open a Backlog record suggesting the first 100 show sooner." Each likes page targets LIKES_PAGE_TARGET = 200 songs (apps/api/src/lib/music/user-likes.ts), and Apple returns at most LIBRARY_PAGE_LIMIT = 100 per request (packages/music/src/apple-music.ts), so one Load more makes two Apple requests in sequence. Options: a 100-song target for Apple, or a smaller first page. A 100-song target doubles /likes calls per 200 songs, so weigh the limiters first: Load more without a query goes through likesLimiter (provider-likes, 20 per minute), and only searches with q use likesSearchLimiter (30 per minute), both in apps/api/src/routes/providers.ts; also the 5-request autoload budget and RF-152's limiter item. Agent-created: Backlog until the owner sets Ready. | checked 2026-10-30 |
 | [RF-152](tasks/RF-152.json) Music Songs search and Load more behave cleanly at the edges (RF-132 review follow-ups) | P3 / task | — | Logged items from the #665 (RF-132) final reviews: round 4 items 1, 2, 4, 5 and 6, and round 3 items 4 and 5. Code: apps/web/src/components/Dashboard.tsx (Music Songs likes state and autoload) and apps/web/src/lib/music-library.ts. Not owner-gated unless it touches provider code. Agent-created: Backlog until the owner sets Ready. | checked 2026-10-30 |

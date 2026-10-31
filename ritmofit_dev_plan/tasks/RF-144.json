@@ -3,7 +3,7 @@
   "id": "RF-144",
   "title": "The design brief and D21 describe the provider capabilities and Account sections the product has",
   "kind": "documentation",
-  "status": "backlog",
+  "status": "in_progress",
   "priority": "P3",
   "parent": null,
   "dependsOn": [
@@ -13,7 +13,7 @@
     "ritmofit-design-system.md §9.8 no longer says Spotify and Apple Music are catalog-only; it matches D21, D24 and providerCapabilityTruth.",
     "After the RF-131 Preferences decision, D21 names the Account sections; HISTORY.md stays as written."
   ],
-  "nextAction": "RF-131 decision 5 answered 2026-10-31: cut Preferences. D21 names the three Account sections; HISTORY.md stays as written. Docs-only PR. The §9.8 fix can ship first as its own child record if wanted; the D21 line is now unblocked. Surface: docs (design canon, so iOS reads it too).",
+  "nextAction": "Branch docs/rf-144-account-sections (Neo, 2026-10-31). Restart: finish the change, run checks, finalize the record in this PR.",
   "blocker": null,
   "evidence": [
     {
@@ -32,6 +32,12 @@
       "kind": "observation",
       "ref": "docs/audits/ux-audit-2026-10-28/run-decisions.md",
       "summary": "RF-131 answers recorded 2026-10-31 (see RF-131 resolution).",
+      "checkedOn": "2026-10-31"
+    },
+    {
+      "kind": "observation",
+      "ref": "ritmofit_dev_plan/tasks/RF-144.json",
+      "summary": "Owner set Ready 2026-10-31: approved in the Air session (\"Corrected plan is approved\", relayed by the Air conductor) and confirmed in the Neo session (\"Yes, start the lanes\"). No separate Ready PR; this lane PR records it.",
       "checkedOn": "2026-10-31"
     }
   ],
