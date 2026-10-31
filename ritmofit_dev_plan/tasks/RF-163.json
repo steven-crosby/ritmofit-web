@@ -1,0 +1,29 @@
+{
+  "schemaVersion": 1,
+  "id": "RF-163",
+  "title": "One copper primary holds in Classes' error state and through Live queue retries",
+  "kind": "task",
+  "status": "backlog",
+  "priority": "P3",
+  "parent": null,
+  "dependsOn": [
+    "RF-135"
+  ],
+  "acceptance": [
+    "When the class library fails to load, Classes shows one copper primary (the recovery action or Create, not both).",
+    "A per-card readiness Retry in the Live queue does not drop or move the copper action while that card refetches.",
+    "A decision is recorded on whether the Live queue's copper goes to the first runnable class (Preflight) when the leading card only offers a fix action."
+  ],
+  "nextAction": "From the RF-135 final review (#673). Files: apps/web/src/components/ClassesHome.tsx (RecoveryState primaryAction vs + Create), Dashboard.tsx LiveWorkspace (primary while allResolved is false after fetchOne). Agent-created: Backlog until the owner sets Ready.",
+  "blocker": null,
+  "evidence": [
+    {
+      "kind": "pr",
+      "ref": "https://github.com/steven-crosby/ritmofit-web/pull/673",
+      "summary": "Final review of #673 on 60bff17, logged, not blocking: the Classes library-error state renders two copper buttons; a Live queue card Retry makes allResolved false so copper drops and may move; copper can land on a fix verb while a runnable class sits lower.",
+      "checkedOn": "2026-10-31"
+    }
+  ],
+  "resolution": null,
+  "followUps": []
+}

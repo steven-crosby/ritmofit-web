@@ -3,7 +3,7 @@
   "id": "RF-135",
   "title": "Copper marks identity and the one primary action per surface, never status",
   "kind": "task",
-  "status": "backlog",
+  "status": "done",
   "priority": "P1",
   "parent": null,
   "dependsOn": [],
@@ -13,7 +13,7 @@
     "Landing CTAs are reviewed against §9.1 and the outcome recorded (judgment: header plus hero is a common pattern).",
     "The e2e screenshots at 1440 and 390 show one copper primary on Classes and Live."
   ],
-  "nextAction": "Files: apps/web/src/components/ClassesHome.tsx (status dot), Dashboard.tsx (LiveQueueCard buttons), MarketingPage.tsx. Choose which Live card keeps the primary (for example the next class she is likely to teach) and say so in the PR. Surface: web.",
+  "nextAction": null,
   "blocker": null,
   "evidence": [
     {
@@ -33,8 +33,34 @@
       "ref": "docs/audits/ux-audit-2026-10-28/README.md",
       "summary": "2026-10-28 owner UX audit of production: Top priorities 5 and 10, and cross-cutting theme 2. Browser evidence; not re-observed at intake.",
       "checkedOn": "2026-10-29"
+    },
+    {
+      "kind": "observation",
+      "ref": "https://github.com/steven-crosby/ritmofit-web/pull/672",
+      "summary": "Owner set Ready on 2026-10-31, relayed from the Air conductor: \"Yes, approve both\" (RF-137 and RF-135). No separate Ready PR; this lane PR records it.",
+      "checkedOn": "2026-10-31"
+    },
+    {
+      "kind": "pr",
+      "ref": "https://github.com/steven-crosby/ritmofit-web/pull/673",
+      "summary": "ClassesHome readiness dot bg-brand -> bg-state-caution (the text label still carries the meaning). LiveQueueCard: only the card leading the ranked queue (orderClassesBy, the class she is most likely to teach next) uses rf-btn-primary, and only once every card has resolved, so copper never hops; the other cards use a cyan secondary. Landing CTAs reviewed against design system 9.1: kept as is, because header, hero and closing buttons are one primary action (Start building / Enter the private beta, all onStartBuilding) repeated at scroll positions, not competing actions.",
+      "checkedOn": "2026-10-31"
+    },
+    {
+      "kind": "test",
+      "ref": "apps/web/src/components/Dashboard.test.tsx",
+      "summary": "\"gives copper to one Live queue card only, the one leading the queue (RF-135)\" (three runnable classes, one rf-btn-primary) and the ClassesHome dot test (bg-state-caution, not bg-brand) both fail on the RF-137 head and pass on the PR.",
+      "checkedOn": "2026-10-31"
+    },
+    {
+      "kind": "observation",
+      "ref": "https://github.com/steven-crosby/ritmofit-web/pull/673",
+      "summary": "Local e2e screenshots 2026-10-31: Classes at 1440 and 390 show one copper primary (Create); the 390 row shows the caution Needs tempo dot. Live at 1440 and 390 shows one copper primary (Play). The smoke captures Live mode, not the Live queue list; the queue is covered by the component test.",
+      "checkedOn": "2026-10-31"
     }
   ],
-  "resolution": null,
-  "followUps": []
+  "resolution": "Copper now marks identity and one primary per surface (#673): caution status dots on Classes rows, one copper Live queue action (the leading card), landing CTAs reviewed and kept. Owner to accept the two design choices in the PR.",
+  "followUps": [
+    "RF-163"
+  ]
 }

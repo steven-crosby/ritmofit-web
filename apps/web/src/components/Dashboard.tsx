@@ -3234,11 +3234,12 @@ function LiveWorkspace({
             No classes with tracks yet. Add tracks in Classes, then come back here.
           </p>
         ) : (
-          ordered.map((cls) => (
+          ordered.map((cls, index) => (
             <LiveQueueCard
               key={cls.id}
               cls={cls}
               state={payloads[cls.id]}
+              primary={allResolved && index === 0}
               onRun={() => onRunClass(cls.id)}
               onEdit={() => void onOpenClass(cls)}
               onRetry={() => fetchOne(cls.id)}
@@ -3250,21 +3251,32 @@ function LiveWorkspace({
   );
 }
 
+const LIVE_QUEUE_PRIMARY_CLASS =
+  'min-h-11 rounded-control rf-btn-primary px-4 font-ui text-sm font-semibold text-text-on-accent rf-focus-ring';
+const LIVE_QUEUE_SECONDARY_CLASS =
+  'min-h-11 rounded-control border border-interactive/35 px-4 font-ui text-sm font-semibold text-interactive hover:bg-interactive/10 rf-focus-ring';
+
 /**
  * One class in the Live queue. A short row: name, shape, and the next action.
  * Full readiness stays one disclosure away. "Run live" uses the same duration
  * gate as Live Mode — a blocked class names the fix, and `aria-describedby`
  * points at `runBlockedMessage`.
+ *
+ * Copper marks one primary per surface (design system §9.1, RF-135): only the
+ * card that leads the ranked queue, the class she is most likely to teach next,
+ * once every card has resolved so the copper never hops. The rest are secondary.
  */
 function LiveQueueCard({
   cls,
   state,
+  primary,
   onRun,
   onEdit,
   onRetry,
 }: {
   cls: ClassListItem;
   state: LivePayloadState | undefined;
+  primary: boolean;
   onRun: () => void;
   onEdit: () => void;
   onRetry: () => void;
@@ -3283,6 +3295,7 @@ function LiveQueueCard({
   const step = classNextStep(state);
   const gapCount = state?.status === 'ready' ? state.readiness.attentionCount : 0;
 
+  const actionClass = primary ? LIVE_QUEUE_PRIMARY_CLASS : LIVE_QUEUE_SECONDARY_CLASS;
   const gapsLabel =
     gapCount === 0 ? 'Details' : `${gapCount} ${gapCount === 1 ? 'thing' : 'things'} left`;
 
@@ -3327,7 +3340,7 @@ function LiveQueueCard({
             onClick={onRun}
             aria-label={`Preflight ${cls.title}`}
             title="Run this class live"
-            className="min-h-11 rounded-control rf-btn-primary px-4 font-ui text-sm font-semibold text-text-on-accent rf-focus-ring"
+            className={actionClass}
           >
             Preflight
           </button>
@@ -3337,7 +3350,7 @@ function LiveQueueCard({
             onClick={onEdit}
             aria-label={`${step.action} — ${cls.title}`}
             aria-describedby={blockReason ? reasonId : undefined}
-            className="min-h-11 rounded-control rf-btn-primary px-4 font-ui text-sm font-semibold text-text-on-accent rf-focus-ring"
+            className={actionClass}
           >
             {step.action}
           </button>
@@ -3346,7 +3359,7 @@ function LiveQueueCard({
             type="button"
             onClick={onRetry}
             aria-label={`Retry readiness — ${cls.title}`}
-            className="min-h-11 rounded-control rf-btn-primary px-4 font-ui text-sm font-semibold text-text-on-accent rf-focus-ring"
+            className={actionClass}
           >
             Retry
           </button>
