@@ -1276,6 +1276,37 @@ describe('Dashboard class library states', () => {
     expect(recentsTitles()).toEqual(['Quiet ride', 'Edited ride']);
   });
 
+  it('gives copper to one Live queue card only, the one leading the queue (RF-135)', async () => {
+    const make = (title: string) => ({
+      ...makeClass(title, 'owner', 'me'),
+      trackCount: 1,
+      totalDurationMs: 60_000,
+    });
+    vi.mocked(api.listClasses).mockResolvedValue(
+      page([make('Alpha ride'), make('Beta ride'), make('Gamma ride')]),
+    );
+    const payload = liveRunPayload([{ classTrackId: 'ct-1', durationMs: 60_000 }]);
+    payload.sections = [];
+    vi.mocked(api.getRunPayload).mockResolvedValue(payload);
+    renderDashboard();
+
+    fireEvent.click(await screen.findByRole('button', { name: 'Live' }));
+    await screen.findByRole('button', { name: 'Preflight Gamma ride' });
+    await waitFor(() => {
+      const preflights = screen.getAllByRole('button', { name: /^Preflight / });
+      expect(preflights).toHaveLength(3);
+      expect(preflights.filter((b) => b.className.includes('rf-btn-primary'))).toHaveLength(1);
+    });
+    const [leading, ...rest] = screen
+      .getAllByRole('article')
+      .map((card) => within(card).getByRole('button', { name: /^Preflight / }));
+    expect(leading!.className).toContain('rf-btn-primary');
+    for (const button of rest) {
+      expect(button.className).not.toContain('rf-btn-primary');
+      expect(button.className).toContain('text-interactive');
+    }
+  });
+
   it('stamps last opened when Live starts, not when the queue is only listed', async () => {
     const alpha = {
       ...makeClass('Alpha ride', 'owner', 'me'),
@@ -2088,7 +2119,13 @@ describe('Music tab library', () => {
     renderDashboard();
     fireEvent.click(await screen.findByRole('button', { name: 'Music' }));
     const spotify = await screen.findByRole('button', { name: 'Spotify, Unavailable' });
-    expect(screen.queryByRole('button', { name: 'Reconnect Spotify' })).toBeNull();
+    // The chip never offers Reconnect for a library failure (the open Spotify panel may,
+    // for its missing playlist scope).
+    expect(
+      within(screen.getByRole('group', { name: 'Music services' })).queryByRole('button', {
+        name: 'Reconnect Spotify',
+      }),
+    ).toBeNull();
     fireEvent.click(spotify);
     expect(api.connectProvider).not.toHaveBeenCalled();
     expect(screen.queryByRole('button', { name: /Open / })).toBeNull();
@@ -2117,7 +2154,13 @@ describe('Music tab library', () => {
     fireEvent.click(await screen.findByRole('button', { name: 'Music' }));
     const spotify = await screen.findByRole('button', { name: 'Spotify, Not allowlisted' });
     expect(screen.queryByRole('button', { name: 'Spotify, Unavailable' })).toBeNull();
-    expect(screen.queryByRole('button', { name: 'Reconnect Spotify' })).toBeNull();
+    // The chip never offers Reconnect for a library failure (the open Spotify panel may,
+    // for its missing playlist scope).
+    expect(
+      within(screen.getByRole('group', { name: 'Music services' })).queryByRole('button', {
+        name: 'Reconnect Spotify',
+      }),
+    ).toBeNull();
     fireEvent.click(spotify);
     expect(api.connectProvider).not.toHaveBeenCalled();
     expect(
@@ -2233,6 +2276,82 @@ describe('Music tab library', () => {
     } finally {
       vi.useRealTimers();
     }
+  });
+});
+
+describe('Music remembers the last service and view (RF-137)', () => {
+  const apple = () => ({ ...spotifyConnection(), id: 'conn-apple', provider: 'apple_music' });
+  const pressed = (name: string | RegExp) =>
+    screen.getByRole('button', { name }).getAttribute('aria-pressed');
+
+  beforeEach(() => {
+    vi.mocked(api.listClasses).mockResolvedValue(page([]));
+    vi.mocked(api.listPlaylists).mockResolvedValue([]);
+    vi.mocked(api.listLikes).mockResolvedValue([]);
+  });
+
+  it('reopens on Apple Music Songs after leaving Music', async () => {
+    vi.mocked(api.listConnections).mockResolvedValue([spotifyConnection(), apple()]);
+    renderDashboard();
+    fireEvent.click(await screen.findByRole('button', { name: 'Music' }));
+    await selectMusicService('Apple Music');
+    fireEvent.click(screen.getByRole('button', { name: 'Songs' }));
+
+    fireEvent.click(screen.getByRole('button', { name: 'Classes' }));
+    fireEvent.click(screen.getByRole('button', { name: 'Music' }));
+    await waitFor(() => expect(pressed(/^Apple Music,/)).toBe('true'));
+    expect(pressed('Songs')).toBe('true');
+  });
+
+  it('opens a first visit on a connected service, not the first in order', async () => {
+    vi.mocked(api.listConnections).mockResolvedValue([apple()]);
+    renderDashboard();
+    fireEvent.click(await screen.findByRole('button', { name: 'Music' }));
+    await waitFor(() => expect(pressed(/^Apple Music,/)).toBe('true'));
+    expect(pressed(/^SoundCloud,/)).toBe('false');
+    expect(pressed('Playlists')).toBe('true');
+  });
+
+  it('falls back to a connected service when the remembered one is disconnected', async () => {
+    window.localStorage.setItem(
+      'ritmofit:music-view:v1',
+      JSON.stringify({ userId: 'me', provider: 'apple_music', kind: 'songs' }),
+    );
+    vi.mocked(api.listConnections).mockResolvedValue([spotifyConnection()]);
+    renderDashboard();
+    fireEvent.click(await screen.findByRole('button', { name: 'Music' }));
+    await waitFor(() => expect(pressed(/^Spotify,/)).toBe('true'));
+    expect(pressed(/^Apple Music,/)).toBe('false');
+    expect(screen.queryByRole('alert')).toBeNull();
+  });
+
+  it('picks a connected service after a failed first load is retried', async () => {
+    vi.mocked(api.listConnections)
+      .mockRejectedValueOnce(new Error('network down'))
+      .mockResolvedValueOnce([apple()]);
+    renderDashboard();
+    fireEvent.click(await screen.findByRole('button', { name: 'Music' }));
+    const alert = await screen.findByRole('alert');
+    fireEvent.click(within(alert).getByRole('button', { name: 'Retry' }));
+    await waitFor(() => expect(pressed(/^Apple Music,/)).toBe('true'));
+  });
+
+  it('still remembers within the session when storage throws', async () => {
+    const throwing = () => {
+      throw new Error('blocked');
+    };
+    Object.defineProperty(window, 'localStorage', {
+      configurable: true,
+      value: { getItem: throwing, setItem: throwing, removeItem: throwing, clear: () => {} },
+    });
+    vi.mocked(api.listConnections).mockResolvedValue([spotifyConnection(), apple()]);
+    renderDashboard();
+    fireEvent.click(await screen.findByRole('button', { name: 'Music' }));
+    await selectMusicService('Apple Music');
+
+    fireEvent.click(screen.getByRole('button', { name: 'Classes' }));
+    fireEvent.click(screen.getByRole('button', { name: 'Music' }));
+    await waitFor(() => expect(pressed(/^Apple Music,/)).toBe('true'));
   });
 });
 

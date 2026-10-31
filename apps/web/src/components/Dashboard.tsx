@@ -145,8 +145,13 @@ import {
   SPOTIFY_ALLOWLIST_CODE,
   PROVIDER_QUOTA_CODE,
   libraryFailureExplainsItself,
+  recallMusicView,
+  rememberMusicView,
+  resolveMusicKind,
+  resolveMusicProvider,
   type LibrarySort,
   type MusicLibraryKind,
+  type MusicView,
 } from '../lib/music-library.js';
 import { Dialog } from './Dialog.js';
 import { ErrorBoundary } from './ErrorBoundary.js';
@@ -237,6 +242,16 @@ export function Dashboard({
 }) {
   const [profileName, setProfileName] = useState(userName);
   const [destination, setDestination] = useState<DashboardDestination>('classes');
+  // Music reopens where the viewer left it (RF-137). State here outlives the
+  // MusicWorkspace mount, so this works even when storage is unavailable.
+  const [musicView, setMusicView] = useState<MusicView | null>(() => recallMusicView(userId));
+  const rememberView = useCallback(
+    (view: MusicView) => {
+      setMusicView(view);
+      rememberMusicView(userId, view);
+    },
+    [userId],
+  );
   const [classes, setClasses] = useState<ClassListItem[]>([]);
   const [listStatus, setListStatus] = useState<ListStatus>('loading');
   const [nextClassCursor, setNextClassCursor] = useState<string | null>(null);
@@ -1222,6 +1237,8 @@ export function Dashboard({
             <MusicWorkspace
               userId={userId}
               connectionRevision={connectionRevision}
+              rememberedView={musicView}
+              onViewChange={rememberView}
               onOpenConnections={() => setConnectionsOpen(true)}
               onOpenPlaylist={(provider, playlists, playlistId) =>
                 setPlaylistBrowse({ provider, playlists, playlistId })
@@ -1978,6 +1995,8 @@ function ProviderConnectionsLoadState({
 function MusicWorkspace({
   userId,
   connectionRevision,
+  rememberedView,
+  onViewChange,
   onOpenConnections,
   onOpenPlaylist,
   onBrowseLikes,
@@ -1985,6 +2004,8 @@ function MusicWorkspace({
 }: {
   userId: string;
   connectionRevision: number;
+  rememberedView: MusicView | null;
+  onViewChange: (view: MusicView) => void;
   onOpenConnections: () => void;
   onOpenPlaylist: (
     provider: Provider,
@@ -2018,7 +2039,11 @@ function MusicWorkspace({
     beforeRedirect: (provider) =>
       rememberConnectionReturn({ userId, destination: 'music', provider }),
   });
-  const [selectedProvider, setSelectedProvider] = useState<Provider>(PROVIDER_ORDER[0]!);
+  // The view to restore is read once at mount; later updates only record it.
+  const restoreView = useRef(rememberedView);
+  const [selectedProvider, setSelectedProvider] = useState<Provider>(
+    rememberedView?.provider ?? PROVIDER_ORDER[0]!,
+  );
   const [libraryKind, setLibraryKind] = useState<MusicLibraryKind>('catalog');
   const [libraryQuery, setLibraryQuery] = useState('');
   const [sort, setSort] = useState<LibrarySort>('library');
@@ -2037,6 +2062,8 @@ function MusicWorkspace({
   } | null>(null);
   const librarySearchId = useRef(0);
   const typeTouched = useRef(false);
+  // Until connections first load, the provider is provisional; a chip tap settles it too.
+  const providerResolved = useRef(false);
   const [query, setQuery] = useState('');
   const [results, setResults] = useState<TrackSearchResult[] | null>(null);
   const [searching, setSearching] = useState(false);
@@ -2048,14 +2075,42 @@ function MusicWorkspace({
   const [creating, setCreating] = useState(false);
   const requestId = useRef(0);
 
-  const libraryKindFor = (provider: Provider): MusicLibraryKind => {
-    const connection = connections.find((row) => row.provider === provider);
-    const connected = providerConnectionState(provider, connection, Date.now()) === 'connected';
-    return defaultLibraryKind(connected, musicLibraryKinds(provider));
-  };
+  const isConnected = (provider: Provider) =>
+    providerConnectionState(
+      provider,
+      connections.find((row) => row.provider === provider),
+      Date.now(),
+    ) === 'connected';
+  const libraryKindFor = (provider: Provider): MusicLibraryKind =>
+    defaultLibraryKind(isConnected(provider), musicLibraryKinds(provider));
+
+  // Runs before the resolve effect so the provisional pre-load view is never recorded.
+  useEffect(() => {
+    if (providerResolved.current) onViewChange({ provider: selectedProvider, kind: libraryKind });
+  }, [selectedProvider, libraryKind]);
 
   useEffect(() => {
-    if (typeTouched.current || connectionsStatus === 'loading') return;
+    if (connectionsStatus === 'loading') return;
+    // A failed load is not an answer: stay provisional so a successful Retry resolves.
+    if (!providerResolved.current && connectionsStatus === 'ready') {
+      providerResolved.current = true;
+      const restore = restoreView.current;
+      const provider = resolveMusicProvider(
+        restore?.provider ?? null,
+        PROVIDER_ORDER.filter(isConnected),
+      );
+      const kind = resolveMusicKind(
+        provider === restore?.provider ? restore.kind : null,
+        isConnected(provider),
+        musicLibraryKinds(provider),
+      );
+      // A restored shelf other than the default counts as the viewer's own choice.
+      if (kind !== libraryKindFor(provider)) typeTouched.current = true;
+      setSelectedProvider(provider);
+      setLibraryKind(kind);
+      return;
+    }
+    if (typeTouched.current) return;
     setLibraryKind(libraryKindFor(selectedProvider));
   }, [connections, connectionsStatus, selectedProvider]);
 
@@ -2334,6 +2389,7 @@ function MusicWorkspace({
           failed: Boolean(loadMoreLikesError),
         });
   const chooseProvider = (provider: Provider) => {
+    providerResolved.current = true;
     if (flow.operation && flow.operation.provider !== provider) flow.cancel();
     if (provider !== selectedProvider) {
       typeTouched.current = false;
@@ -3178,11 +3234,12 @@ function LiveWorkspace({
             No classes with tracks yet. Add tracks in Classes, then come back here.
           </p>
         ) : (
-          ordered.map((cls) => (
+          ordered.map((cls, index) => (
             <LiveQueueCard
               key={cls.id}
               cls={cls}
               state={payloads[cls.id]}
+              primary={allResolved && index === 0}
               onRun={() => onRunClass(cls.id)}
               onEdit={() => void onOpenClass(cls)}
               onRetry={() => fetchOne(cls.id)}
@@ -3194,21 +3251,32 @@ function LiveWorkspace({
   );
 }
 
+const LIVE_QUEUE_PRIMARY_CLASS =
+  'min-h-11 rounded-control rf-btn-primary px-4 font-ui text-sm font-semibold text-text-on-accent rf-focus-ring';
+const LIVE_QUEUE_SECONDARY_CLASS =
+  'min-h-11 rounded-control border border-interactive/35 px-4 font-ui text-sm font-semibold text-interactive hover:bg-interactive/10 rf-focus-ring';
+
 /**
  * One class in the Live queue. A short row: name, shape, and the next action.
  * Full readiness stays one disclosure away. "Run live" uses the same duration
  * gate as Live Mode — a blocked class names the fix, and `aria-describedby`
  * points at `runBlockedMessage`.
+ *
+ * Copper marks one primary per surface (design system §9.1, RF-135): only the
+ * card that leads the ranked queue, the class she is most likely to teach next,
+ * once every card has resolved so the copper never hops. The rest are secondary.
  */
 function LiveQueueCard({
   cls,
   state,
+  primary,
   onRun,
   onEdit,
   onRetry,
 }: {
   cls: ClassListItem;
   state: LivePayloadState | undefined;
+  primary: boolean;
   onRun: () => void;
   onEdit: () => void;
   onRetry: () => void;
@@ -3227,6 +3295,7 @@ function LiveQueueCard({
   const step = classNextStep(state);
   const gapCount = state?.status === 'ready' ? state.readiness.attentionCount : 0;
 
+  const actionClass = primary ? LIVE_QUEUE_PRIMARY_CLASS : LIVE_QUEUE_SECONDARY_CLASS;
   const gapsLabel =
     gapCount === 0 ? 'Details' : `${gapCount} ${gapCount === 1 ? 'thing' : 'things'} left`;
 
@@ -3271,7 +3340,7 @@ function LiveQueueCard({
             onClick={onRun}
             aria-label={`Preflight ${cls.title}`}
             title="Run this class live"
-            className="min-h-11 rounded-control rf-btn-primary px-4 font-ui text-sm font-semibold text-text-on-accent rf-focus-ring"
+            className={actionClass}
           >
             Preflight
           </button>
@@ -3281,7 +3350,7 @@ function LiveQueueCard({
             onClick={onEdit}
             aria-label={`${step.action} — ${cls.title}`}
             aria-describedby={blockReason ? reasonId : undefined}
-            className="min-h-11 rounded-control rf-btn-primary px-4 font-ui text-sm font-semibold text-text-on-accent rf-focus-ring"
+            className={actionClass}
           >
             {step.action}
           </button>
@@ -3290,7 +3359,7 @@ function LiveQueueCard({
             type="button"
             onClick={onRetry}
             aria-label={`Retry readiness — ${cls.title}`}
-            className="min-h-11 rounded-control rf-btn-primary px-4 font-ui text-sm font-semibold text-text-on-accent rf-focus-ring"
+            className={actionClass}
           >
             Retry
           </button>
