@@ -2062,7 +2062,7 @@ function MusicWorkspace({
   } | null>(null);
   const librarySearchId = useRef(0);
   const typeTouched = useRef(false);
-  // Until connections first settle, the provider is provisional; a chip tap settles it too.
+  // Until connections first load, the provider is provisional; a chip tap settles it too.
   const providerResolved = useRef(false);
   const [query, setQuery] = useState('');
   const [results, setResults] = useState<TrackSearchResult[] | null>(null);
@@ -2075,11 +2075,14 @@ function MusicWorkspace({
   const [creating, setCreating] = useState(false);
   const requestId = useRef(0);
 
-  const libraryKindFor = (provider: Provider): MusicLibraryKind => {
-    const connection = connections.find((row) => row.provider === provider);
-    const connected = providerConnectionState(provider, connection, Date.now()) === 'connected';
-    return defaultLibraryKind(connected, musicLibraryKinds(provider));
-  };
+  const isConnected = (provider: Provider) =>
+    providerConnectionState(
+      provider,
+      connections.find((row) => row.provider === provider),
+      Date.now(),
+    ) === 'connected';
+  const libraryKindFor = (provider: Provider): MusicLibraryKind =>
+    defaultLibraryKind(isConnected(provider), musicLibraryKinds(provider));
 
   // Runs before the resolve effect so the provisional pre-load view is never recorded.
   useEffect(() => {
@@ -2088,14 +2091,9 @@ function MusicWorkspace({
 
   useEffect(() => {
     if (connectionsStatus === 'loading') return;
-    if (!providerResolved.current) {
+    // A failed load is not an answer: stay provisional so a successful Retry resolves.
+    if (!providerResolved.current && connectionsStatus === 'ready') {
       providerResolved.current = true;
-      const isConnected = (provider: Provider) =>
-        providerConnectionState(
-          provider,
-          connections.find((row) => row.provider === provider),
-          Date.now(),
-        ) === 'connected';
       const restore = restoreView.current;
       const provider = resolveMusicProvider(
         restore?.provider ?? null,

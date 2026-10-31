@@ -2294,6 +2294,17 @@ describe('Music remembers the last service and view (RF-137)', () => {
     expect(screen.queryByRole('alert')).toBeNull();
   });
 
+  it('picks a connected service after a failed first load is retried', async () => {
+    vi.mocked(api.listConnections)
+      .mockRejectedValueOnce(new Error('network down'))
+      .mockResolvedValueOnce([apple()]);
+    renderDashboard();
+    fireEvent.click(await screen.findByRole('button', { name: 'Music' }));
+    const alert = await screen.findByRole('alert');
+    fireEvent.click(within(alert).getByRole('button', { name: 'Retry' }));
+    await waitFor(() => expect(pressed(/^Apple Music,/)).toBe('true'));
+  });
+
   it('still remembers within the session when storage throws', async () => {
     const throwing = () => {
       throw new Error('blocked');
