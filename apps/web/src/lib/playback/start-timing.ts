@@ -1,29 +1,33 @@
 /**
- * Debug-only Start timing for provider adapters (RF-128). Off by default; it
- * writes nothing and reads no clock unless the tester opts in, so production
- * behaviour is unchanged.
+ * Debug-only playback timing (RF-128). It is off by default, and when off it
+ * writes nothing and changes no behaviour, so production playback is the same
+ * as without it.
  *
- * Opt in for one tab by opening the app with `?playback-timing=1` (kept in
- * sessionStorage, so in-app navigation keeps it), or for the browser with
- * `localStorage['ritmo-playback-timing'] = '1'`. Two kinds of line, each
- * `<prefix> timing <step> +<ms>ms`:
- *   - `[ritmo playback <provider>] timing settle-wait / settle-wait-done`: the
- *     runtime's bounded wait for a cancelled start of the same provider
- *     (RF-108), timed on its own because it runs before the adapter exists.
- *     Start class from rest never waits, so it never prints these.
- *   - `[ritmo apple-music] timing <step>`: measured from the Apple adapter's
- *     prepare, which on Start class runs in the same task as the tap.
- * Add the two for a start that waited. Lines carry step names only: never a
- * token, title, or provider id.
+ * To opt in for one tab, open the app with `?playback-timing=1`. The flag is
+ * kept in sessionStorage, so in-app navigation keeps it. To opt in for the
+ * whole browser, set `localStorage['ritmo-playback-timing'] = '1'`.
+ *
+ * Each line reads `<prefix> timing <step> +<ms>ms [detail]`, where the offset
+ * is measured from the adapter's prepare. On Start class, prepare runs in the
+ * same task as the tap. Every Apple adapter gets its own number in the prefix
+ * (`[ritmo apple-music #3]`). A cancelled adapter keeps logging its MusicKit
+ * calls as they finish, so quick timeline taps show how long a cancelled
+ * request takes to end. Lines carry step names, durations and outcomes only:
+ * never a token, title, or provider id.
  */
 export const PLAYBACK_TIMING_KEY = 'ritmo-playback-timing';
 const PLAYBACK_TIMING_PARAM = 'playback-timing';
 
 export interface StartTimer {
-  mark(step: string): void;
+  mark(step: string, detail?: string): void;
 }
 
 export const NO_START_TIMER: StartTimer = { mark() {} };
+
+/** A monotonic clock for durations; falls back to Date.now where performance is missing. */
+export function timingNow(): number {
+  return typeof performance === 'undefined' ? Date.now() : performance.now();
+}
 
 export function playbackTimingEnabled(): boolean {
   try {
@@ -42,19 +46,17 @@ export function playbackTimingEnabled(): boolean {
 }
 
 /** A timer that logs each step's offset from now, or a no-op when timing is off. */
-export function startTimer(
-  prefix: string,
-  now: () => number = () => performance.now(),
-): StartTimer {
+export function startTimer(prefix: string, now: () => number = timingNow): StartTimer {
   if (!playbackTimingEnabled()) return NO_START_TIMER;
   const began = now();
   const seen = new Set<string>();
   return {
-    mark(step: string) {
+    mark(step: string, detail?: string) {
       // A step repeats on a re-cue; keep its first time and label the repeat.
       const label = seen.has(step) ? `${step} (again)` : step;
       seen.add(step);
-      console.info(`${prefix} timing ${label} +${Math.round(now() - began)}ms`);
+      const suffix = detail ? ` ${detail}` : '';
+      console.info(`${prefix} timing ${label} +${Math.round(now() - began)}ms${suffix}`);
     },
   };
 }

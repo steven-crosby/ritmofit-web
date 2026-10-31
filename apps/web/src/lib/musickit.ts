@@ -91,13 +91,7 @@ export function clearSafariModernFairPlay(
   }
 }
 
-/**
- * The unprefixed EME FairPlay key system, which MusicKit requests only on its
- * modern path (`mk-safari-modern-eme` = `"1"`). With that flag cleared (RF-124)
- * MusicKit uses legacy `WebKitMediaKeys` instead, so this probe describes a
- * path MusicKit does not take. It is a console diagnostic on legacy desktop
- * WebKit only and never runs on iOS (RF-147).
- */
+/** MusicKit's FairPlay key system. The probe and MusicKit both request this one. */
 const FAIRPLAY_KEY_SYSTEM = 'com.apple.fps';
 
 /**
@@ -186,18 +180,8 @@ function safariModernAccessErrorWord(error: unknown): string {
   return SAFARI_MODERN_ACCESS_OTHER;
 }
 
-let flagLogged = false;
-
-/**
- * Log once per page whether `mk-safari-modern-eme` is `"1"`, on iOS Safari and
- * legacy WebKit only. The adapter calls it after MusicKit's first `play()`
- * resolves, when the player has attached its key session, so the line shows
- * whether anything wrote the flag back after Ritmo's clear before play.
- * Never logs the stored value, a token, or an exception message.
- */
-export function logSafariModernEmeFlagOnce(): void {
-  if (flagLogged || (!webKitMediaKeys() && !isIosSafari())) return;
-  flagLogged = true;
+/** Log whether our flag write stuck. Never log the stored value, a token, or an exception message. */
+function logSafariModernEmeFlag(): void {
   let enabled = false;
   try {
     enabled = localStorage.getItem(MUSICKIT_SAFARI_MODERN_EME_KEY) === '1';
@@ -227,6 +211,7 @@ async function requestSafariModernAccess(
 }
 
 async function runSafariModernAccessProbe(generation: number): Promise<string | null> {
+  logSafariModernEmeFlag();
   const request = navigator.requestMediaKeySystemAccess;
   if (typeof request !== 'function') return null;
   const settled = requestSafariModernAccess(request);
@@ -303,7 +288,6 @@ export function resetSafariModernAccessProbeForTests(): void {
   modernAccessProbe = null;
   modernAccessInFlight = null;
   modernAccessGeneration += 1;
-  flagLogged = false;
 }
 
 /**

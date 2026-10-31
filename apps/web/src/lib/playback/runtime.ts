@@ -19,8 +19,6 @@ import {
   type SelectionOptions,
 } from './coordinator.js';
 import type { LivenessObserver } from './liveness.js';
-import { raceTimer } from './race-timer.js';
-import { startTimer } from './start-timing.js';
 import type {
   AdapterRegistry,
   PlaybackAdapter,
@@ -106,37 +104,6 @@ const DEFAULT_LIVENESS_INTERVAL_MS = 2_500;
  */
 const ENDPOINT_TOLERANCE_MS = 1_000;
 
-/**
- * How long a new track start waits for adapters this run just cancelled to
- * settle their in-flight SDK calls (RF-108). Page-singleton SDKs (MusicKit,
- * Spotify's player) cannot cancel a queue or play request already sent, so a
- * quick seek, skip or timeline tap waits briefly for the earlier request
- * instead of colliding with it. Bounded: past it the start proceeds and the
- * adapter's own lock decides.
- */
-const DEFAULT_SETTLE_WAIT_MS = 3_000;
-
-/**
- * Retired adapters whose SDK calls are still in flight, shared by every
- * coordinator on the page: each provider SDK is a page singleton, and Live's
- * Retry builds a fresh coordinator, which must still wait for the one it
- * replaced (#668 second review, finding 5). Each entry removes itself once the
- * adapter is idle or its bound passes, whichever is first.
- */
-const retiredAdapters = new Map<PlaybackAdapter, { provider: Provider; done: Promise<void> }>();
-
-/** Test-only: forget retired adapters so one test's hung call cannot slow the next. */
-export function resetRetiredAdaptersForTests(): void {
-  retiredAdapters.clear();
-}
-
-/** The pending settle entries for one provider's retired adapters. */
-function settlingFor(provider: Provider): Promise<void>[] {
-  return [...retiredAdapters.values()]
-    .filter((entry) => entry.provider === provider)
-    .map((entry) => entry.done);
-}
-
 export interface RuntimeCoordinatorOptions extends SelectionOptions {
   adapters: AdapterRegistry;
   onStatus?: (status: CoordinatorStatus) => void;
@@ -153,8 +120,6 @@ export interface RuntimeCoordinatorOptions extends SelectionOptions {
   /** Music-led runs publish confirmed class position here. Without a subscriber,
    * tick remains the legacy externally-clocked coordinator contract. */
   onPosition?: (classMs: number) => void;
-  /** Bound on waiting for cancelled adapters to settle before a start (RF-108). */
-  settleWaitMs?: number;
 }
 
 /** The currently prepared provider job. */
@@ -200,6 +165,7 @@ export class RuntimePlaybackCoordinator {
   private livenessProbeInFlight = false;
   /** rAF ticks since the last sample; zero means the host loop stalled too. */
   private hostTicksSinceSample = 0;
+
   constructor(
     private readonly payload: RunPayload,
     private readonly connections: ConnectionLike[],
@@ -317,7 +283,7 @@ export class RuntimePlaybackCoordinator {
     this.destroyTransitioningAdapter();
     if (this.active) {
       try {
-        this.retire(this.active.adapter);
+        this.active.adapter.destroy();
       } catch {
         // Unmount teardown must never throw into React.
       }
@@ -393,19 +359,6 @@ export class RuntimePlaybackCoordinator {
     }
 
     this.setStatus({ kind: 'preparing', index, provider: selection.provider });
-    // Let a cancelled start's SDK calls settle first, bounded, then re-check
-    // the epoch: another seek or tap during the wait supersedes this start.
-    // The wait gets its own debug timing line (RF-128), since the adapter's
-    // timer only starts at prepare.
-    const pending = settlingFor(selection.provider);
-    if (pending.length > 0) {
-      const timer = startTimer(`[ritmo playback ${selection.provider}]`);
-      timer.mark('settle-wait');
-      // Each entry is already bounded by its own expiry (see retire).
-      await Promise.all(pending);
-      timer.mark('settle-wait-done');
-      if (epoch !== this.epoch) return;
-    }
     let authorizationAt: number | null = null;
     const adapter = factory({
       // FINISH requires fresh endpoint evidence; a short stream is a mismatch.
@@ -505,41 +458,15 @@ export class RuntimePlaybackCoordinator {
     } catch {
       // A failing stop must not block the transition; destroy still runs.
     }
-    this.retire(job.adapter);
-  }
-
-  /**
-   * Destroy an adapter and, when it still has SDK calls in flight, remember it
-   * until they settle so the next start can wait for them (RF-108).
-   */
-  private retire(adapter: PlaybackAdapter): void {
     try {
-      adapter.destroy();
+      job.adapter.destroy();
     } catch {
       // Teardown is best-effort.
     }
-    let idle: Promise<void> | null | undefined;
-    try {
-      idle = adapter.whenIdle?.();
-    } catch {
-      idle = null;
-    }
-    if (!idle) return;
-    // The entry expires after the settle bound even if the adapter never
-    // reports idle, so one hung SDK call cannot make every later start wait
-    // (review #668, finding 1). That expiry is the only bound on the wait.
-    const done: Promise<void> = raceTimer(
-      idle.catch(() => undefined),
-      this.options.settleWaitMs ?? DEFAULT_SETTLE_WAIT_MS,
-      () => undefined,
-    ).then(() => {
-      if (retiredAdapters.get(adapter)?.done === done) retiredAdapters.delete(adapter);
-    });
-    retiredAdapters.set(adapter, { provider: adapter.provider, done });
   }
 
   /**
-   * Destroy the adapter currently awaiting prepare/seek/play. Identity
+   * Tear down the adapter currently awaiting prepare/seek/play. Identity
    * guarding prevents an old transition from clearing a newer track's adapter
    * when its provider promise settles late.
    */
@@ -548,8 +475,11 @@ export class RuntimePlaybackCoordinator {
     this.transitioningAdapter = null;
     this.transitionAbort?.abort();
     this.transitionAbort = null;
-    // Cancellation must still settle the coordinator if teardown fails.
-    this.retire(adapter);
+    try {
+      adapter.destroy();
+    } catch {
+      // Cancellation must still settle the coordinator if teardown fails.
+    }
   }
 
   /** A silent SDK promise must not hold preparation or teardown indefinitely. */
@@ -796,7 +726,7 @@ export class RuntimePlaybackCoordinator {
     this.destroyTransitioningAdapter();
     if (this.active) {
       try {
-        this.retire(this.active.adapter);
+        this.active.adapter.destroy();
       } catch {
         // The error state stands regardless of teardown success.
       }
