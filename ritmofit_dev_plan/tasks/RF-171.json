@@ -23,6 +23,12 @@
       "ref": "https://github.com/steven-crosby/ritmofit-web/pull/680",
       "summary": "Final review of #680 on 324677a, logged, not blocking: Classes label reads blocked for a runnable plan-gap class; an over-time lead may leave the builder without a copper primary; the runnable plan-gap summary hides other readiness gaps; hard-coded refine ranks; dead onPlanReady prop.",
       "checkedOn": "2026-10-31"
+    },
+    {
+      "kind": "pr",
+      "ref": "https://github.com/steven-crosby/ritmofit-web/pull/683",
+      "summary": "RF-134 (#683) changed the plan-gap labels from \"Needs music\" to the exact gap (\"2 blocks empty\", \"1 song outside the plan\", \"1 block over time\") with the row detail \"Can run live · ...\" for runnable classes. Criterion 1 is partly addressed: the label is specific but still carries the caution dot; whether a runnable plan gap should drop the dot is the remaining question.",
+      "checkedOn": "2026-10-31"
     }
   ],
   "resolution": null,
