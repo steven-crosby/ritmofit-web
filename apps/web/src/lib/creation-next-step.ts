@@ -3,10 +3,16 @@
  * Live queue keeps `classNextStep` (payload-only readiness). This helper lets
  * an unfinished teaching plan outrank "Add the missing tempo" so a half-filled
  * scaffold is not promoted as closest to teachable.
+ *
+ * One run rule (RF-131 answer 1b, RF-133): plan gaps and over-time blocks are
+ * guidance, never a run gate. A class whose timeline can run keeps its "Can run
+ * live" standing here, exactly as in the builder and the Live queue; the plan
+ * gap only names the next refinement.
  */
 import type { ClassPlanBlock, ClassTrack, RunPayload } from '@ritmofit/shared';
 import { classNextStep, type ClassDetailState, type ClassNextStep } from './class-ordering.js';
 import { planNextStep } from './class-scaffold.js';
+import { canRunPayload } from './duration.js';
 
 export type CreationPlanContext = {
   blocks: readonly ClassPlanBlock[];
@@ -46,7 +52,23 @@ export function creationNextStep(
   const payload: RunPayload | null = state?.status === 'ready' ? state.payload : null;
   if (plan && plan.blocks.length > 0) {
     const lead = planNextStep(plan.blocks, plan.tracks, payload);
-    if (lead) return planWork(actionFromPlanLead(lead), lead);
+    if (lead) {
+      if (payload && canRunPayload(payload)) {
+        // Runnable: the plan gap is guidance on top of the payload's own standing.
+        // A fully ready class with plan gaps ranks as "Refine before teaching"
+        // (work 3 / teach 1), never level with a class that has nothing left.
+        const base = classNextStep(state);
+        return {
+          workRank: base.teachable ? 3 : base.workRank,
+          teachRank: base.teachable ? 1 : base.teachRank,
+          eyebrow: 'Refine before teaching',
+          action: actionFromPlanLead(lead),
+          detail: `Can run live · ${lead}`,
+          teachable: false,
+        };
+      }
+      return planWork(actionFromPlanLead(lead), lead);
+    }
   }
 
   if (cls.scaffoldRecipeId && cls.trackCount === 0) {

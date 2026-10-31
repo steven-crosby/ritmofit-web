@@ -77,13 +77,41 @@ describe('creationNextStep', () => {
         tracks: [track('00000000-0000-4000-8000-0000000000a2', otherBlockId)],
       },
     );
+    // The plan gap still names the step, but the class can run (RF-133): it keeps
+    // its own Live standing instead of being demoted below an empty draft.
+    const base = classNextStep(ready(payloadTracks as unknown as RunPayload['tracks']));
+    expect(base.action).toBe('Add the missing tempo');
+    expect(step.action).toBe('Add music to the plan');
+    expect(step.detail).toBe('Can run live · Block 1 still needs music');
+    expect(step.teachable).toBe(false);
+    expect(step.workRank).toBe(base.workRank);
+    expect(step.teachRank).toBe(base.teachRank);
+  });
+
+  it('keeps plan work as the step while the timeline cannot run (RF-133)', () => {
+    const payloadTracks = [
+      {
+        classTrackId: '00000000-0000-4000-8000-0000000000a2',
+        track: { durationMs: null },
+        intensity: 'mod' as const,
+        displayBpm: null,
+        providerRefs: [{ provider: 'spotify' }],
+        cues: [],
+        moves: [],
+      },
+    ];
+    const step = creationNextStep(
+      { scaffoldRecipeId: 'cycle_45_v1', trackCount: 1 },
+      ready(payloadTracks as unknown as RunPayload['tracks']),
+      {
+        blocks: [block(blockId, 0, 360_000), block(otherBlockId, 1, 360_000)],
+        tracks: [track('00000000-0000-4000-8000-0000000000a2', otherBlockId)],
+      },
+    );
     expect(step.action).toBe('Add music to the plan');
     expect(step.detail).toBe('Block 1 still needs music');
     expect(step.workRank).toBe(1);
     expect(step.teachRank).toBe(3);
-    expect(classNextStep(ready(payloadTracks as unknown as RunPayload['tracks'])).action).toBe(
-      'Add the missing tempo',
-    );
   });
 
   it('falls through to Live readiness once the plan is filled', () => {

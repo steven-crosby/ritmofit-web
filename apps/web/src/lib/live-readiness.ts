@@ -6,8 +6,9 @@
  *
  * Kept separate from the per-class `classReadiness` (readiness.ts) so the queue-level
  * math is unit-testable without React, and so the two never drift: a class is
- * `runnable` here iff its duration gate is satisfied — the same gate Live Mode
- * enforces via `canRunPayload` (both bottom out on `tracksMissingDuration`).
+ * `runnable` here iff `canRunPayload` holds — the one run rule (RF-131 answer 1b,
+ * RF-133) that the builder, the Classes row, preflight and Live Mode all share.
+ * Teaching-plan gaps and over-time blocks never change this count.
  */
 import type { ClassReadiness } from './readiness.js';
 

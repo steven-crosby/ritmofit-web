@@ -18,6 +18,11 @@
  * `attention` states: the class can still run, but the instructor sees exactly
  * what is incomplete instead of discovering it on stage.
  *
+ * One run rule (RF-131 answer 1b, RF-133): only durations and music on the
+ * timeline decide whether a class can run (`canRunPayload`). Teaching-plan gaps
+ * (songs outside a block, empty blocks) are guidance, and over-time blocks are a
+ * warning; neither blocks Run live, the Classes row, the Live queue or preflight.
+ *
  * NOTE on MUSIC: builder-level readiness asks only "does the track carry a
  * provider reference?" — the stronger "is a *connected* provider available to
  * play it?" check is Live preflight's job (it needs the connections fetch, see
@@ -25,7 +30,7 @@
  * contradict each other.
  */
 import type { RunPayload, RunPayloadTrackEntry } from '@ritmofit/shared';
-import { tracksMissingDuration } from './duration.js';
+import { canRunPayload, tracksMissingDuration } from './duration.js';
 
 export type ReadinessLevel = 'ready' | 'attention' | 'blocked';
 export type ReadinessKey = 'duration' | 'tempo' | 'choreography' | 'music';
@@ -170,7 +175,7 @@ export function classReadiness(payload: RunPayload): ClassReadiness {
   const dimensions = [duration, tempo, choreography, music];
   return {
     dimensions,
-    runnable: duration.level === 'ready',
+    runnable: canRunPayload(payload),
     fullyReady: dimensions.every((d) => d.level === 'ready'),
     attentionCount: dimensions.filter((d) => d.level !== 'ready').length,
   };

@@ -1655,7 +1655,7 @@ describe('Dashboard class library states', () => {
     expect(screen.queryByText("Class details didn't load.")).toBeNull();
   });
 
-  it('says class details did not load when the plan blocks fail', async () => {
+  it('still runs a class whose teaching plan failed to load (RF-133)', async () => {
     const cls = { ...makeClass('Plan offline', 'owner', 'me'), trackCount: 1 };
     vi.mocked(api.listClasses).mockResolvedValue(page([cls]));
     vi.mocked(api.listClassTracks).mockResolvedValue([makeClassTrack('ct-1', 0)]);
@@ -1667,7 +1667,15 @@ describe('Dashboard class library states', () => {
     renderDashboard();
     await openClassFromClasses('Plan offline');
 
-    expect(await screen.findByText("Class details didn't load.")).toBeTruthy();
+    // The plan failure is reported by the plan itself; it never blocks Run live,
+    // because plan gaps are not a run gate and the timeline loaded fine.
+    expect((await screen.findAllByText('Couldn’t load the teaching plan')).length).toBeGreaterThan(
+      0,
+    );
+    await waitFor(() =>
+      expect(screen.getByRole('button', { name: /run live/i })).toHaveProperty('disabled', false),
+    );
+    expect(screen.queryByText("Class details didn't load.")).toBeNull();
     expect(screen.queryByText('Give every track a length to run.')).toBeNull();
   });
 
@@ -4761,7 +4769,11 @@ describe('Dashboard plan-first next step', () => {
       1,
     );
     expect(screen.queryByLabelText('Class Pulse')).toBeNull();
-    expect(screen.getByRole('button', { name: /run live/i })).toHaveProperty('disabled', true);
+    // One run rule (RF-133): the timeline can run, so the empty block is guidance.
+    // Run live stays enabled, but the plan step keeps the one copper (RF-135).
+    const run = screen.getByRole('button', { name: /run live/i });
+    expect(run).toHaveProperty('disabled', false);
+    expect(run.className).not.toMatch(/rf-btn-primary/);
     expect(screen.queryByRole('button', { name: 'Add music' })).toBeNull();
 
     fireEvent.click(screen.getByRole('button', { name: 'Choose music for Block 2 · Climb' }));
