@@ -49,7 +49,7 @@ handoffs are retired locally. SoundCloud QA `91c94386-5816-48f5-91aa-61e874abb05
 after final browser confirmation; authenticated re-read returned 404. Apple content fingerprint
 matched before/after deletion. Cleanup [PR #523](https://github.com/steven-crosby/ritmofit-web/pull/523) merged as `973db61`;
 full post-main CI `38460359795` passed. Its publication branch was removed locally/remotely at close.
-[Completed cleanup record](./2026-10-13-session-cleanup.md).
+[Completed cleanup record](https://github.com/steven-crosby/ritmofit-web/blob/0a77110ad9cd206410c3ccd6121a02ab4bc7ff2c/ritmofit_dev_plan/handoffs/2026-10-13-session-cleanup.md).
 Apple fixture `[QA] Apple browse import 2026-10-12 Cycle`
 (`75b7af90-141f-4f56-b02b-0bdd2c1c9dfe`, ten tracks) is retained for the unresolved 5:18 recovery.
 Protected managed lane worktrees/branches/briefs, tags, original classes and playlists remain.

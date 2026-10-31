@@ -23,7 +23,7 @@
     },
     {
       "kind": "test",
-      "ref": "ritmofit_dev_plan/handoffs/2026-10-27-repo-task-system.md",
+      "ref": "https://github.com/steven-crosby/ritmofit-web/blob/0a77110ad9cd206410c3ccd6121a02ab4bc7ff2c/ritmofit_dev_plan/handoffs/2026-10-27-repo-task-system.md",
       "summary": "Full CI-equivalent local gate passed; 10 task-tool tests passed. All 84 original records preserve exact IDs, statuses and titles. No product acceptance is claimed.",
       "checkedOn": "2026-10-27"
     },

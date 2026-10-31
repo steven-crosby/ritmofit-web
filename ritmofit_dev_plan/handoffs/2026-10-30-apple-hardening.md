@@ -2,72 +2,69 @@
 date: 2026-10-30
 tool: Claude Code (local subagent, worktree)
 lane: lane-apple-hardening
-branch: fix/rf-108-apple-hardening
-head: 6ded939
+branch: n/a (#668 and #669 merged)
+head: 0a77110
 base: 5dd324a
-prs: ['#668 (open, owner-gated)']
+prs: ['#668 (merged 97f4454)', '#669 (merged 0a77110)']
 status: open
 ---
 
-# Apple Music timing instrumentation and RF-147 cleanups; RF-108 lock work parked on a branch
+<!-- Claude Code, 2026-10-31: Updated by the 2026-10-31 docs catch-up (#671) on the owner's brief: timing run done, #669 merged and deployed, next step is the owner's device check. -->
+
+# Apple Music hardening: timing run done, RF-108 queue wait live; owner device check owed
 
 ## Done
 
-- PR [#668](https://github.com/steven-crosby/ritmofit-web/pull/668), after four final reviews, is
-  now only:
-  - debug-only playback timing behind `?playback-timing=1` (RF-128);
-  - the RF-147 cleanups that need no locks (plain banner, no `com.apple.fps` probe on iOS Safari,
-    strict desktop Chrome test).
-  - Playback behaviour equals `main` apart from console timing lines.
-- The RF-108 lock work (leases, settle wait, hard caps, attempt token, and their tests) is preserved
-  on branch `wip/rf-108-apple-locks` at 85442ac. No PR is open for it.
-- Records:
-  - RF-108 is back in Ready, with its acceptance unchanged.
-  - RF-128 and RF-147 are For review.
-  - RF-158 (the Spotify half) and RF-159 (late-settle detection and the once-at-load flag clear)
-    are new Backlog records.
-  - RF-121 and RF-158 were corrected for the revert.
+- [#668](https://github.com/steven-crosby/ritmofit-web/pull/668) merged as `97f4454` and deployed
+  2026-10-31 (Worker `ffcf858d`): debug-only playback timing behind `?playback-timing=1` (RF-128)
+  and the RF-147 cleanups that need no locks.
+- The owner's iPhone Safari timing run on `97f4454` (2026-10-31) is done. Its numbers are in
+  HISTORY and RF-108's evidence. It found one timeline tap started two adapters about 60 ms apart.
+- [#669](https://github.com/steven-crosby/ritmofit-web/pull/669) merged as `0a77110` and deployed
+  2026-10-31 (Worker `61cdeb33`, SPA `assets/index-DTaSHnmL.js`): the double start is fixed at its
+  source, a new start waits for a previous queue (bounded 2 s), a pending play is superseded, and
+  `play()` is capped at 5 s.
+- `wip/rf-108-apple-locks` (`85442ac`) was the pre-redesign lock work. #669 replaced it; it is not
+  for merge.
 
 ## Tasks
 
 - [RF-108](../tasks/RF-108.json), [RF-128](../tasks/RF-128.json), [RF-147](../tasks/RF-147.json),
-  [RF-158](../tasks/RF-158.json), [RF-159](../tasks/RF-159.json), [RF-121](../tasks/RF-121.json).
+  [RF-158](../tasks/RF-158.json), [RF-159](../tasks/RF-159.json), [RF-160](../tasks/RF-160.json),
+  [RF-161](../tasks/RF-161.json).
 
 ## In flight
 
-- #668 is waiting for the owner's `owner-approved` label. Lane sessions never merge it; a Solo or
-  Orchestrator session runs the final review and merge after approval.
-- `wip/rf-108-apple-locks` (85442ac) is parked until the owner's iPhone timing run.
+- No PR. The owner's device check on production `0a77110` is the next step.
 
 ## Restart context
 
-- Owner decision 2026-10-30 (option 1, measure first): merge and deploy #668, have the owner time
-  Start and quick taps on the iPhone, then redesign RF-108's locks in a new PR around the real
-  numbers.
-- The four reviews' findings (in the #668 comments) are the redesign's checklist. These review
-  findings stay unmeasured until the timing run:
-  - the 3 s queue supersede;
-  - the settle wait and lease deadline ending together;
-  - the unbounded stop() in play()'s finally;
-  - the iOS gesture window;
-  - a stuck play's Retry loop.
-- Device run after deploy: open `?playback-timing=1` with Safari Web Inspector attached. Then:
-  1. tap Start once;
-  2. tap three timeline tracks within about 4 s;
-  3. tap Next and let one song auto-advance;
-  4. copy every `[ritmo apple-music #N] timing` line;
-  5. load `?playback-timing=0` to switch the log off again.
-  The `set-queue-end` and `play-end` lines marked `(cancelled adapter)` show how long cancelled
-  requests take to finish.
+- Owner's 7-step iPhone Safari check from the #669 PR body, with `?playback-timing=1` and Safari
+  Web Inspector attached:
+  1. Start class once. Audio plays; the log shows `started first-playing-state` at about 0.5–1.2 s.
+  2. One timeline tap to track 3, then to track 5. Each tap shows one new `#N prepare` and no
+     banner. Hold the timeline about 2 s before lifting: the playhead must not jump back.
+  3. Three quick timeline taps within about 4 s end playing the last tapped track, with neither
+     "still finishing" message.
+  4. Next right after a start (within about 1 s), then Next again later: both switch with no
+     banner, and the old song does not resume.
+  5. Let one track auto-advance: the next track plays with no banner.
+  6. Scrub, pause and resume during a start, and Pause within about 1 s of a start: Pause stays
+     paused.
+  7. If a banner shows, tap Retry once: it plays within about 2 s with no reload.
+  Share the console lines for steps 2–6, then load `?playback-timing=0` to switch the log off.
+- Device risk the check covers: overlapping a pending MusicKit `play()` with a new
+  `setQueue`/`play` (steps 3–4), and whether WebKit keeps the gesture across the up-to-2 s wait.
+- Results go to RF-108 (criteria 3–5), RF-128 (criterion 0 needs a timed Start on 5G) and RF-147.
 
 ## Verification
 
-- Run: see the PR body for the full local gate result, e2e included (Playwright Chromium r1248
-  was installed by the owner on 2026-10-30).
+- #669: see its PR body for the local gate. Mock MusicKit only; not audible playback.
 
 ## Production as observed
 
-- Not checked from this environment.
+- 2026-10-31: SPA `assets/index-DTaSHnmL.js` on three cache-busted fetches, matching the `0a77110`
+  deploy (HISTORY). Worker version not checked from this environment.
 
 ## Shared zones touched
 
