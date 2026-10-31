@@ -1,8 +1,10 @@
 import { describe, expect, it } from 'vitest';
+import { SCAFFOLD_DISCIPLINES } from './class-scaffold.js';
 import {
   compareLastOpenedOrTaught,
   coverGradientClass,
   isQaClassTitle,
+  LIBRARY_TEMPLATES,
   jumpBackInClasses,
   readinessLabel,
   readinessMark,
@@ -99,5 +101,13 @@ describe('coverGradientClass', () => {
     expect(coverGradientClass('cycle')).toContain('from-brand');
     expect(coverGradientClass('sculpt')).toContain('from-interactive');
     expect(coverGradientClass(null)).toContain('from-border-strong');
+  });
+});
+
+describe('LIBRARY_TEMPLATES', () => {
+  it('matches the Create dialog disciplines, order and labels (D21)', () => {
+    expect(LIBRARY_TEMPLATES.map(({ template, label }) => ({ value: template, label }))).toEqual(
+      SCAFFOLD_DISCIPLINES.map(({ value, label }) => ({ value, label })),
+    );
   });
 });

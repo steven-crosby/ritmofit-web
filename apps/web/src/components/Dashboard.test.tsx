@@ -16,6 +16,7 @@ import * as api from '../lib/api.js';
 import { rememberConnectionReturn } from '../lib/connection-return.js';
 import { isLiveActive } from '../lib/session-guard.js';
 import type { ClassListPage } from '../lib/api.js';
+import { DEFAULT_SCAFFOLD_DURATION, scaffoldRecipeId } from '../lib/class-scaffold.js';
 import {
   hasDismissedOnboardingVideo,
   markOnboardingVideoPending,
@@ -342,6 +343,34 @@ describe('Dashboard class library states', () => {
     );
   });
 
+  it('starts the HIIT scaffold from the HIIT template card', async () => {
+    const created = makeClass('Tabata Tuesday');
+    vi.mocked(api.listClasses).mockResolvedValue(page([]));
+    vi.mocked(api.createClass).mockResolvedValue(
+      created as Awaited<ReturnType<typeof api.createClass>>,
+    );
+    vi.mocked(api.listClassTracks).mockResolvedValue([]);
+    vi.mocked(api.getRunPayload).mockRejectedValue(new Error('no payload'));
+    renderDashboard();
+
+    fireEvent.click(await screen.findByRole('button', { name: 'Start from the HIIT template' }));
+    const dialog = screen.getByRole('dialog', { name: 'Create a class' });
+    const disciplines = within(dialog).getByRole('group', { name: 'Class discipline' });
+    expect(
+      within(disciplines).getByRole('button', { name: 'HIIT' }).getAttribute('aria-pressed'),
+    ).toBe('true');
+    fireEvent.change(screen.getByLabelText('Class title'), { target: { value: 'Tabata Tuesday' } });
+    fireEvent.click(within(dialog).getByRole('button', { name: 'Create class' }));
+
+    await waitFor(() =>
+      expect(api.createClass).toHaveBeenCalledWith({
+        mode: 'scaffold',
+        title: 'Tabata Tuesday',
+        recipeId: scaffoldRecipeId('hiit', DEFAULT_SCAFFOLD_DURATION),
+      }),
+    );
+  });
+
   it('creates a scaffold class from the isolated dialog', async () => {
     const created = makeClass('Saturday ride');
     vi.mocked(api.listClasses).mockResolvedValue(page([]));
@@ -444,7 +473,7 @@ describe('Dashboard class library states', () => {
     expect(screen.getByRole('heading', { name: 'Start from a template' })).toBeTruthy();
     expect(screen.getByRole('button', { name: 'Start from the Cycle template' })).toBeTruthy();
     expect(screen.getByRole('button', { name: 'Start from the Pilates template' })).toBeTruthy();
-    expect(screen.queryByRole('button', { name: /HIIT/ })).toBeNull();
+    expect(screen.getByRole('button', { name: 'Start from the HIIT template' })).toBeTruthy();
     expect(screen.queryByRole('region', { name: 'Jump back in' })).toBeNull();
     expect(screen.getByRole('button', { name: 'Create' })).toBeTruthy();
     expect(screen.queryByRole('button', { name: /Find a track or source/ })).toBeNull();

@@ -22,6 +22,12 @@ import { LoadingSkeleton, RecoveryState } from './SharedState.js';
 
 const DETAIL_CONCURRENCY = 2;
 
+/**
+ * The library filter chips, kept apart from LIBRARY_TEMPLATES on purpose: a new
+ * template card (HIIT, RF-165) does not add a filter chip by itself.
+ */
+type DisciplineFilter = 'all' | 'cycle' | 'sculpt';
+
 export function ClassesHome({
   classes,
   status,
@@ -168,7 +174,7 @@ function LibraryShell({
   const [pendingDelete, setPendingDelete] = useState<ClassListItem | null>(null);
   const [deleting, setDeleting] = useState(false);
   const [deleteError, setDeleteError] = useState<string | null>(null);
-  const [discipline, setDiscipline] = useState<'all' | LibraryTemplate>('all');
+  const [discipline, setDiscipline] = useState<DisciplineFilter>('all');
   const [details, setDetails] = useState<Record<string, ClassDetailState>>({});
   const [plans, setPlans] = useState<Record<string, CreationPlanContext | null>>({});
   const [retryRevision, setRetryRevision] = useState(0);
@@ -238,7 +244,7 @@ function LibraryShell({
   const jumpBack = useMemo(() => jumpBackInClasses(classes), [classes]);
   const tagChips = [...new Set(activeTag ? [activeTag, ...knownTags] : knownTags)];
 
-  const chooseDiscipline = (next: 'all' | LibraryTemplate) => {
+  const chooseDiscipline = (next: DisciplineFilter) => {
     setDiscipline(next);
     if (activeTag) onSelectTag(null);
   };
@@ -431,7 +437,11 @@ function LibraryShell({
         >
           Start from a template
         </h2>
-        <div role="group" aria-label="Class templates" className="mt-4 grid grid-cols-2 gap-3">
+        <div
+          role="group"
+          aria-label="Class templates"
+          className="mt-4 grid grid-cols-1 gap-3 sm:grid-cols-3"
+        >
           {LIBRARY_TEMPLATES.map((tile) => (
             <button
               key={tile.template}
