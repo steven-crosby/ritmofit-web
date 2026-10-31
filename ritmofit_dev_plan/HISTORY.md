@@ -13,6 +13,41 @@ detail). Current focus and `main` vs production live in the "Now" block of
 
 ## Deploy and session log (newest first)
 
+> **Deploy 2026-10-31 — RF-108 queue wait on main `0a77110`.** Deployed `origin/main` `0a77110`
+> ([#669](https://github.com/steven-crosby/ritmofit-web/pull/669), RF-108). Remote D1: none to apply. New Worker
+> `61cdeb33-e106-4224-90ad-18ad0cb3173f`; rollback `ffcf858d-78b7-4bc6-8a7b-e4197f28f6e2`
+> (`97f4454`). SPA `assets/index-DTaSHnmL.js` (was `assets/index-CvzdWsbA.js`). Smoke checks and
+> security headers passed; the tail saw no traffic. Not done: the authed smoke, skipped because the
+> QA session is expired (RF-155). A later start-session on 2026-10-31 saw the same SPA entry on
+> three cache-busted fetches. Owed: the owner's iPhone Safari device check (RF-108).
+
+> **Merge 2026-10-31 — [#669](https://github.com/steven-crosby/ritmofit-web/pull/669) as `0a77110` (RF-108 queue wait).** Removes the
+> double start at its source (one timeline tap starts one adapter); a new Apple start waits for a
+> previous queue, bounded 2 s, instead of failing; a pending play is superseded, not waited on;
+> first playing state counts as started, with a 5 s `play()` cap. Two final reviews: the first found
+> five significant bugs, fixed in `f1fdcfd`, and the owner raised the cap from 3 s to 5 s; the second
+> found nothing blocking and its items are RF-161. Mock MusicKit only; not audible playback.
+
+> **Owner iPhone timing run 2026-10-31 on `97f4454`** (`?playback-timing=1`, relayed by the
+> conductor). Every timeline jump showed "still finishing a previous queue" with Retry. Cause: one
+> tap started two track loads about 60 ms apart, and a cancelled `setQueue` ran on for 129–1,125 ms.
+> `setQueue` took 27–247 ms; audio started 0.5–1.2 s after `play()`, and `play()` resolved after
+> 1.7–2.6 s. Start itself worked; Next and auto-advance were not measured. These numbers shaped #669
+> (RF-108 evidence).
+
+> **Deploy 2026-10-31 — RF-128 timing log and RF-147 on main `97f4454`.** Deployed `origin/main`
+> `97f4454` ([#668](https://github.com/steven-crosby/ritmofit-web/pull/668)). Remote D1: none to apply. New Worker
+> `ffcf858d-78b7-4bc6-8a7b-e4197f28f6e2`; rollback `765c9424-6007-480c-9b52-1e71426f0f18`
+> (`d888d28`). SPA `assets/index-CvzdWsbA.js` (was `assets/index-BAVpF1uf.js`). Smoke checks,
+> security headers and propagation passed; the five-minute tail saw no traffic. The authed smoke
+> returned 401 because the QA session is expired (RF-155).
+
+> **Merge 2026-10-31 — [#668](https://github.com/steven-crosby/ritmofit-web/pull/668) as `97f4454` (RF-128, RF-147).** The RF-128 debug
+> timing log (`?playback-timing=1` turns it on, `=0` turns it off) and RF-147 criteria 0, 1 and 3.
+> Playback is unchanged: after its fourth final review the owner chose "measure first", and the lock work
+> is preserved on `wip/rf-108-apple-locks` (`85442ac`). The last review's items 1–2 are RF-160;
+> items 3–8 are RF-128 evidence.
+
 > **Session 2026-10-30 — round r20261029a close and device results (docs only).** Two web lanes ran
 > under one orchestrator, partitioned by file: Lane A owned `apple-music-adapter.ts` and its test
 > (RF-123); Lane B owned `packages/music/`, `apps/api/src/lib/music/`, `routes/providers.ts`, the

@@ -7,7 +7,8 @@
   "priority": "P3",
   "parent": null,
   "dependsOn": [
-    "RF-92"
+    "RF-92",
+    "RF-151"
   ],
   "acceptance": [
     "With Spotify connected and its Web API answering, the RF-151 checkboxes, 15-song cap, selection bar and \"Create a class\" sheet work for Spotify likes as they do for Apple Music and SoundCloud, at 1440 and 390 wide.",

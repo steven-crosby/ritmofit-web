@@ -58,5 +58,5 @@ excluding recency timestamps. All 1,194 pre-existing evidence-file hashes match;
 HEADs/status/briefs, retained other-author handoffs and tags also match their baselines.
 Formatting, whitespace, touched relative links, JSON, screenshot formats and credential/portable-path
 checks pass. No product-source diff; code tests were not rerun for this docs/fixture-only cleanup.
-[Cleanup handoff](../../../ritmofit_dev_plan/handoffs/2026-10-13-session-cleanup.md) holds the
+[Cleanup handoff](https://github.com/steven-crosby/ritmofit-web/blob/0a77110ad9cd206410c3ccd6121a02ab4bc7ff2c/ritmofit_dev_plan/handoffs/2026-10-13-session-cleanup.md) holds the
 restart point and separate publication permissions.
