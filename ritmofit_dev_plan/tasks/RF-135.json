@@ -3,7 +3,7 @@
   "id": "RF-135",
   "title": "Copper marks identity and the one primary action per surface, never status",
   "kind": "task",
-  "status": "backlog",
+  "status": "in_progress",
   "priority": "P1",
   "parent": null,
   "dependsOn": [],
@@ -13,7 +13,7 @@
     "Landing CTAs are reviewed against §9.1 and the outcome recorded (judgment: header plus hero is a common pattern).",
     "The e2e screenshots at 1440 and 390 show one copper primary on Classes and Live."
   ],
-  "nextAction": "Files: apps/web/src/components/ClassesHome.tsx (status dot), Dashboard.tsx (LiveQueueCard buttons), MarketingPage.tsx. Choose which Live card keeps the primary (for example the next class she is likely to teach) and say so in the PR. Surface: web.",
+  "nextAction": "Branch feat/rf-135-copper-primary (N2 lane, stacked on RF-137 #672, 2026-10-31): caution status dot, one copper Live queue primary, landing CTA review. Restart: gate, then PR.",
   "blocker": null,
   "evidence": [
     {
@@ -33,6 +33,12 @@
       "ref": "docs/audits/ux-audit-2026-10-28/README.md",
       "summary": "2026-10-28 owner UX audit of production: Top priorities 5 and 10, and cross-cutting theme 2. Browser evidence; not re-observed at intake.",
       "checkedOn": "2026-10-29"
+    },
+    {
+      "kind": "observation",
+      "ref": "https://github.com/steven-crosby/ritmofit-web/pull/672",
+      "summary": "Owner set Ready on 2026-10-31, relayed from the Air conductor: \"Yes, approve both\" (RF-137 and RF-135). No separate Ready PR; this lane PR records it.",
+      "checkedOn": "2026-10-31"
     }
   ],
   "resolution": null,

@@ -711,7 +711,7 @@ function ClassRow({
             <span
               aria-hidden="true"
               data-readiness-dot=""
-              className="h-2 w-2 shrink-0 rounded-full bg-brand"
+              className="h-2 w-2 shrink-0 rounded-full bg-state-caution"
             />
           ) : null}
           {mark.label}
