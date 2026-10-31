@@ -34,7 +34,7 @@
     },
     {
       "kind": "observation",
-      "ref": "https://github.com/steven-crosby/ritmofit-web/pull/PRNUM",
+      "ref": "https://github.com/steven-crosby/ritmofit-web/pull/684",
       "summary": "Owner, 2026-10-31 (Air conductor session), after an iPhone recording of Music › Songs where tapping rows did nothing and screenshots of Spotify playlist Edit mode: rows must select, not play; preview must exist but as a secondary control. Chose option (a) \"always in pick mode\" (\"Let’s try a first\") over a Spotify-style Select button, and will smoke test it on Mac and iPhone to judge the feel.",
       "checkedOn": "2026-10-31"
     }
