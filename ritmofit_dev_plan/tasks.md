@@ -12,13 +12,13 @@ owner's queue: any agent may execute a Ready task. Publishing follows AGENTS.md 
 Evidence marked **recorded** is a carried-forward claim, not fresh verification.
 A checked PR proves its GitHub state, not product acceptance or production behavior.
 
-157 tasks. backlog: 53 · ready: 1 · in_progress: 1 · blocked: 1 · review: 9 · done: 90 · cancelled: 2.
+157 tasks. backlog: 53 · ready: 1 · in_progress: 0 · blocked: 1 · review: 10 · done: 90 · cancelled: 2.
 
 ## In progress
 
 | Task | Priority / kind | Relationships | Next action / resolution | Evidence |
 | --- | --- | --- | --- | --- |
-| [RF-108](tasks/RF-108.json) Scrubbing or pausing Live during a track start keeps music playing | P2 / task | needs RF-107; follow-ups RF-158, RF-159 | In progress on branch fix/rf-108-apple-queue-wait (owner-approved redesign of 2026-10-31 from the iPhone timing run on 97f4454): wait for a previous Apple setQueue/play (bounded 2 s) instead of failing, remove the double adapter start per timeline tap at its source, count first playing state as started with a 3 s play cap. Restart: continue on that branch's draft PR. | recorded; checked 2026-10-28; checked 2026-10-30 |
+| — | — | — | — | — |
 
 ## Blocked / waiting
 
@@ -34,6 +34,7 @@ A checked PR proves its GitHub state, not product acceptance or production behav
 | [RF-93](tasks/RF-93.json) Triage latent migration rebuild finding A-7 | P1 / plan | — | Review packet 4 and seek approval for a local guard. No historical or production data-loss claim. | recorded |
 | [RF-94](tasks/RF-94.json) Disposition the remaining engineering audit findings | P2 / plan | follow-ups RF-115, RF-116 | Review the remaining ranked findings with Steven before scheduling implementation. | recorded |
 | [RF-96](tasks/RF-96.json) Disposition legacy planning and handoff obligations | P2 / plan | — | Triage legacy planning and handoffs without treating their old approval or merge instructions as current authority. | recorded |
+| [RF-108](tasks/RF-108.json) Scrubbing or pausing Live during a track start keeps music playing | P2 / task | needs RF-107; follow-ups RF-158, RF-159 | PR #669 awaits owner review (owner-gated: playback). After merge and deploy, the owner runs the iPhone Safari check with ?playback-timing=1: one Start, three timeline taps within about 4 s, quick taps, Next right after a start, and one auto-advance. Criteria 0-2 and 6 are covered in code and mock tests; criteria 3-5 are the owed device checks. Spotify half: RF-158. Late-settle detection and clear-once: RF-159. | recorded; checked 2026-10-28; checked 2026-10-30; checked 2026-10-31 |
 | [RF-128](tasks/RF-128.json) Apple Music Start class sounds within 1 s on iPhone Safari | P2 / task | needs RF-124 | Instrumentation landed in PR #668: with ?playback-timing=1, each Apple adapter is numbered ("&#91;ritmo apple-music #N&#93; timing &lt;step&gt; +&lt;ms&gt;ms") and logs prepare, musickit-ready, config-fetched/configured when it runs, authorized, set-queue-start/-end and play-start/-end with duration and outcome (including calls from cancelled adapters that finish after a new start), cancelled, first-playing-state, and each "still finishing" error as it fires. Criterion 1 holds on main and is unchanged. Criterion 0 (audible within 1 s on 5G) waits on the owner's timed Start after deploy; record the lines here. If set-queue dominates, the open question in #668 (cue the first song before Start) is next. | checked 2026-10-28; checked 2026-10-29; checked 2026-10-30 |
 | [RF-147](tasks/RF-147.json) Apple Music adapter diagnostics and FairPlay flag handling match the legacy path RF-124 restored | P3 / task | — | Criteria 0, 1 and 2 are met in PR #668 (banner without the probe word; no com.apple.fps probe on iOS Safari; strict desktop Chrome test, accepted by the owner). Pending criterion 3: after #668 merges and deploys, the owner hears Start, Next and auto-advance in iPhone Safari Live (the same timing run as RF-128). FairPlay flag clearing is unchanged from main. The once-per-load clear, flag-log timing and late-settle checks are RF-159. | checked 2026-10-29; checked 2026-10-30 |
 | [RF-16](tasks/RF-16.json) Editorial Spotify playlist 404 still shares the outage envelope | untriaged / investigation | — | Reconfirm the 404/error mapping against current code. Spotify reopened by the owner on 2026-10-28; any provider change needs its own approved task. Resume risk: the Spotify developer app rejects the connected account ("The user is not registered for this application"), so Web API calls return 403. | recorded; checked 2026-10-28 |
