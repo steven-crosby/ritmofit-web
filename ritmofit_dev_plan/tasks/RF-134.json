@@ -3,7 +3,7 @@
   "id": "RF-134",
   "title": "Every readiness and connection label says only what it checked, in one vocabulary",
   "kind": "task",
-  "status": "in_progress",
+  "status": "done",
   "priority": "P1",
   "parent": null,
   "dependsOn": [
@@ -19,7 +19,7 @@
     "The new vocabulary is written into the design canon; iOS follows the canon wording.",
     "Judgment, if the owner accepts it: Classes home surfaces one next class and what is left on it."
   ],
-  "nextAction": "Branch feat/rf-134-readiness-vocabulary (Neo, 2026-10-31). One owner-gated PR (it touches apps/web/src/lib/providers.ts for the Account \"Authorized\" label). Restart: inventory label strings across readiness.ts, library-shell.ts, providers.ts, Dashboard.tsx, ConnectionStateMark.tsx and preflight; rename per RF-131 answer 2a; write the vocabulary into the design canon; tests; PR with needs-owner. The optional Classes-home judgment item waits for the owner.",
+  "nextAction": null,
   "blocker": null,
   "evidence": [
     {
@@ -60,11 +60,29 @@
     },
     {
       "kind": "observation",
-      "ref": "ritmofit_dev_plan/tasks/RF-134.json",
+      "ref": "https://github.com/steven-crosby/ritmofit-web/pull/683",
       "summary": "Owner set Ready 2026-10-31 in the Neo session (\"Yes\" to \"Should RF-134 go Ready for the Neo?\"), after RF-166 merged (#682, c0b60d4).",
+      "checkedOn": "2026-10-31"
+    },
+    {
+      "kind": "pr",
+      "ref": "https://github.com/steven-crosby/ritmofit-web/pull/683",
+      "summary": "Labels say what they checked (RF-131 answer 2a). readiness.ts music: \"Music linked on every track\" / \"Every track is linked to a music service. Live checks playback before you start.\" (no \"Live can play\"). providers.ts Account playback: \"Linked · Live checks this browser\" instead of \"Authorized\" (D24). Live queue count: \"N of M classes can run live: every track has a length.\" Classes row: class-scaffold.ts planGap gives each plan gap a short label from the same derivation as its lead (\"2 blocks empty\", \"1 song outside the plan\", \"1 block over time\"), carried as ClassNextStep.label; readinessLabel uses it and maps the rest to \"No tracks\", \"Music not linked\", \"Needs duration\", \"Needs cues\", \"Needs effort\" (no single \"Needs music\"; tempo is not a list label since RF-166). Connection words: the expired Music chip and Account card say \"Session expired\" (not \"Reconnect\"/\"Expired\"); \"Reconnect\" is only a button; Account \"Manage\" is \"Manage connections\". Design system 9.8 now holds the vocabulary table and the readiness rule. Considered and not changed: the Account capability ledger keeps its next-action hints (\"Reconnect account\", \"Connect account\") because a state word there repeats the row state mark.",
+      "checkedOn": "2026-10-31"
+    },
+    {
+      "kind": "test",
+      "ref": "apps/web/src/lib/class-scaffold.test.ts",
+      "summary": "New planGap label tests; ClassesHome \"names the exact plan gap on the row (RF-134)\"; readinessLabel table updated; providers, music-library, ProviderCapabilityLedger and Dashboard tests updated to the new words. Full local gate green on 8bc753c, 2026-10-31: web 1616, api 636, e2e 2 passed.",
+      "checkedOn": "2026-10-31"
+    },
+    {
+      "kind": "observation",
+      "ref": "ritmofit_design_system/ritmofit-design-system.md",
+      "summary": "iOS: the vocabulary lives in design system 9.8, which iOS reads from the web canon; ritmofit-design-system.md is not in the iOS web-contract snapshot, so no iOS PR is required now. iOS adopts the wording when it builds these surfaces.",
       "checkedOn": "2026-10-31"
     }
   ],
-  "resolution": null,
+  "resolution": "Readiness and connection labels say only what they checked, in one vocabulary written into design system 9.8 (#683). The optional judgment item (Classes home surfaces one next class) was not taken: its acceptance line is conditional on owner acceptance, which was not given; RF-171 still holds the other RF-133 review items.",
   "followUps": []
 }
