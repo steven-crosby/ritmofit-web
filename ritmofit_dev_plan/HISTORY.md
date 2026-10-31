@@ -13,6 +13,15 @@ detail). Current focus and `main` vs production live in the "Now" block of
 
 ## Deploy and session log (newest first)
 
+> **Session 2026-10-31 — Neo lanes N1 and N2 merged (no deploy).** Owner Ready set 2026-10-31
+> ("Yes, approve both"), relayed from the Air conductor. [#671](https://github.com/steven-crosby/ritmofit-web/pull/671) merged as `efcf1f9`
+> (records catch-up; RF-160 and RF-161 filed). [#672](https://github.com/steven-crosby/ritmofit-web/pull/672) merged as `579d7a9` (RF-137: Music
+> reopens on the last service and shelf; its final review found one bug, fixed in the PR; follow-ups
+> RF-164). [#673](https://github.com/steven-crosby/ritmofit-web/pull/673) merged as `9d9b5b4` (RF-135: caution status dots, one copper Live queue
+> action, landing CTAs kept; follow-ups RF-163). An RF-162 ID collision with the Air's #674 was
+> resolved by renumbering this session's record to RF-164. `main` is ahead of production; no deploy
+> or migration. Not checked in a real browser beyond the e2e smoke.
+
 > **Deploy 2026-10-31 — RF-108 queue wait on main `0a77110`.** Deployed `origin/main` `0a77110`
 > ([#669](https://github.com/steven-crosby/ritmofit-web/pull/669), RF-108). Remote D1: none to apply. New Worker
 > `61cdeb33-e106-4224-90ad-18ad0cb3173f`; rollback `ffcf858d-78b7-4bc6-8a7b-e4197f28f6e2`
