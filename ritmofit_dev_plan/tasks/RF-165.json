@@ -3,7 +3,7 @@
   "id": "RF-165",
   "title": "Classes home offers a HIIT template card beside Cycle and Pilates",
   "kind": "task",
-  "status": "in_progress",
+  "status": "done",
   "priority": "P2",
   "parent": null,
   "dependsOn": [],
@@ -12,7 +12,7 @@
     "The cards lay out cleanly with three: no orphan card on the two-column grid (for example three across on desktop, stacked at 390px), checked in the 1440 and 390 e2e screenshots.",
     "Choosing HIIT starts the same HIIT scaffold the Create dialog uses."
   ],
-  "nextAction": "In progress on branch feat/rf-165-hiit-template-card (lane A1, Air). Restart: add HIIT to LIBRARY_TEMPLATES, keep the ClassesHome filter type to Cycle and Pilates, three-across template grid on desktop and stacked at 390, then tests and e2e screenshots. Not owner-gated.",
+  "nextAction": null,
   "blocker": null,
   "evidence": [
     {
@@ -38,8 +38,20 @@
       "ref": "docs/audits/ux-audit-2026-10-28/run-decisions.md",
       "summary": "Owner approved this round in the Air conductor chat on 2026-10-31 (\"Corrected plan is approved\"), setting RF-165 to Ready; it implements RF-131 decision 4 (a), \"add the HIIT card\".",
       "checkedOn": "2026-10-31"
+    },
+    {
+      "kind": "pr",
+      "ref": "https://github.com/steven-crosby/ritmofit-web/pull/678",
+      "summary": "Adds HIIT to LIBRARY_TEMPLATES, lays the three cards stacked at 390 and three across from sm, keeps the discipline filter chips typed apart. Local gate and e2e green; 1440 and 390 classes screenshots show three across and stacked.",
+      "checkedOn": "2026-10-31"
+    },
+    {
+      "kind": "test",
+      "ref": "apps/web/src/components/Dashboard.test.tsx",
+      "summary": "Choosing the HIIT card opens the Create dialog with HIIT pressed and creates the hiit_45 scaffold recipe; ClassesHome and library-shell tests cover card order, grid classes, no HIIT filter chip and parity with SCAFFOLD_DISCIPLINES.",
+      "checkedOn": "2026-10-31"
     }
   ],
-  "resolution": null,
+  "resolution": "The Classes home now offers Cycle, Pilates and HIIT template cards, matching the Create dialog and D21. The cards stack on a phone and sit three across from the sm breakpoint, so there is no orphan. Choosing HIIT opens the same Create dialog scaffold flow with HIIT preselected. The library filter keeps only Cycle and Pilates chips; a HIIT chip was not added.",
   "followUps": []
 }

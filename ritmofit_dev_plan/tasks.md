@@ -12,13 +12,13 @@ owner's queue: any agent may execute a Ready task. Publishing follows AGENTS.md 
 Evidence marked **recorded** is a carried-forward claim, not fresh verification.
 A checked PR proves its GitHub state, not product acceptance or production behavior.
 
-166 tasks. backlog: 57 · ready: 1 · in_progress: 1 · blocked: 1 · review: 10 · done: 94 · cancelled: 2.
+166 tasks. backlog: 57 · ready: 1 · in_progress: 0 · blocked: 1 · review: 10 · done: 95 · cancelled: 2.
 
 ## In progress
 
 | Task | Priority / kind | Relationships | Next action / resolution | Evidence |
 | --- | --- | --- | --- | --- |
-| [RF-165](tasks/RF-165.json) Classes home offers a HIIT template card beside Cycle and Pilates | P2 / task | — | In progress on branch feat/rf-165-hiit-template-card (lane A1, Air). Restart: add HIIT to LIBRARY_TEMPLATES, keep the ClassesHome filter type to Cycle and Pilates, three-across template grid on desktop and stacked at 390, then tests and e2e screenshots. Not owner-gated. | checked 2026-10-31 |
+| — | — | — | — | — |
 
 ## Blocked / waiting
 
@@ -129,6 +129,7 @@ A checked PR proves its GitHub state, not product acceptance or production behav
 | [RF-95](tasks/RF-95.json) Implement the repository-owned RF task system | P2 / task | — | Repository-owned task tooling and migration completed; all acceptance checks passed locally. PR #640 publishes this result once merged. No deployment is required. | checked 2026-10-27 |
 | [RF-97](tasks/RF-97.json) Align session prompts with the canonical RF task lifecycle | P2 / task | follow-ups RF-98 | Codex's six corrections were reviewed and carried into the RF-98 branch from main on 2026-10-27 with their substance intact. Their 'permissions already granted' wording now resolves to the standing grant in AGENTS.md › Delegation And Merge Policy. Publication is tracked by RF-98. | checked 2026-10-27 |
 | [RF-123](tasks/RF-123.json) Apple Music retry is not blocked by a timed-out queue request | P2 / task | follow-ups RF-108 | Fixed in PR #664 (fix/rf-123-apple-queue-lock): setQueue() in apple-music-adapter.ts now deletes this generation's pendingQueueGenerations entry when its timeout fires, so a MusicKit setQueue that never settles no longer blocks Retry playback or a fresh Start once that timeout fires (before it fires, the lock still holds). The regression test 'a timed-out queue request does not block the next prepare (RF-123)' failed on main with 'still finishing a previous queue request' and passes with the fix. Known trade-off, not in scope: if the hung request settles after the retry's, MusicKit's own queue may hold the late request (same song for Retry); the generation guard rejects its result. #656 was closed as superseded. Deployed 2026-10-30 (Worker 765c9424); the owner's iPhone run that day recovered from the queue lock with Retry playback and no reload; whether the timeout path itself ran is not visible, so that post-deploy check (make setQueue hang, Retry without a reload) is carried by RF-108's device check. | checked 2026-10-28; checked 2026-10-30; checked 2026-10-29 |
+| [RF-165](tasks/RF-165.json) Classes home offers a HIIT template card beside Cycle and Pilates | P2 / task | — | The Classes home now offers Cycle, Pilates and HIIT template cards, matching the Create dialog and D21. The cards stack on a phone and sit three across from the sm breakpoint, so there is no orphan. Choosing HIIT opens the same Create dialog scaffold flow with HIIT preselected. The library filter keeps only Cycle and Pilates chips; a HIIT chip was not added. | checked 2026-10-31 |
 | [RF-156](tasks/RF-156.json) iOS web-contract snapshot picks up the RF-132 likes paging and search contract | P3 / task | follow-ups RF-162 | Met. iOS web-contract/ was re-copied from web main 0a77110 by the README refresh block (iOS #52, merged 2cc92e2); openapi.json and api.md now document likes ?cursor=, ?q=, X-RitmoFit-Next-Cursor and the 422. Cross-repository parity passed on the PR. No iOS wire model decodes the likes response, so none changed. Contract gaps found in review: RF-162. | checked 2026-10-30; checked 2026-10-31 |
 | [RF-1](tasks/RF-1.json) Desktop hold, BPM, and effort recorded on the QA cycle song | untriaged / task | — | Recorded complete on the imported board; product behavior was not re-tested during task migration. | recorded |
 | [RF-2](tasks/RF-2.json) Teaching-screen deploy record on main | untriaged / documentation | — | Recorded complete on the imported board; product behavior was not re-tested during task migration. | recorded; checked 2026-10-27 |
