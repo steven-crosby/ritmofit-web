@@ -59,6 +59,7 @@ export function LiveTimeline({
   clock,
   onSeekPreview,
   onSeekCommit,
+  onSeekRelease = onSeekCommit,
 }: {
   payload: RunPayload;
   /** The raw, frame-rate clock (SPC-18): subscribing directly to it here —
@@ -67,11 +68,19 @@ export function LiveTimeline({
   clock: ClockStore;
   /** Cheap, high-frequency position update while dragging — no provider call. */
   onSeekPreview: (ms: number) => void;
-  /** The authoritative seek: keyboard, tap, and drag release/cancel. */
+  /** The authoritative seek: keyboard (and pointer release unless `onSeekRelease` is given). */
   onSeekCommit: (ms: number) => void;
+  /**
+   * Pointer release/cancel with the position this gesture last previewed. The
+   * host may skip it when that position was already sent to the provider, so
+   * a tap or a resting drag does not start a second adapter (RF-108).
+   */
+  onSeekRelease?: (ms: number) => void;
 }) {
   const totalMs = payload.class.totalDurationMs;
   const trackRef = useRef<HTMLDivElement>(null);
+  /** The position this pointer gesture last previewed; release commits it. */
+  const gestureMs = useRef<number | null>(null);
   const elapsedMs = useSyncExternalStore(clock.subscribe, clock.getSnapshot);
   const { blocks, markers } = computeTimeline(payload.tracks, totalMs);
   // Nothing positionable to scrub (no track has a usable duration). Live mode is
@@ -84,7 +93,9 @@ export function LiveTimeline({
   const previewToClientX = (clientX: number) => {
     const rect = trackRef.current?.getBoundingClientRect();
     if (!rect || rect.width <= 0) return;
-    onSeekPreview(fractionToMs((clientX - rect.left) / rect.width, totalMs));
+    const ms = fractionToMs((clientX - rect.left) / rect.width, totalMs);
+    gestureMs.current = ms;
+    onSeekPreview(ms);
   };
 
   const onPointerDown = (e: PointerEvent<HTMLDivElement>) => {
@@ -98,9 +109,16 @@ export function LiveTimeline({
   };
   // Release and cancel both commit the current preview position — a cancelled
   // drag still ends coherent (the playhead and provider audio agree) rather
-  // than silently diverging from what's on screen.
-  const onPointerUp = () => onSeekCommit(elapsedMs);
-  const onPointerCancel = () => onSeekCommit(elapsedMs);
+  // than silently diverging from what's on screen. It is the position this
+  // gesture previewed, so the host can tell whether the provider already has
+  // it (RF-108).
+  const commitGesture = () => {
+    const ms = gestureMs.current ?? elapsedMs;
+    gestureMs.current = null;
+    onSeekRelease(ms);
+  };
+  const onPointerUp = commitGesture;
+  const onPointerCancel = commitGesture;
   const onKeyDown = (e: KeyboardEvent<HTMLDivElement>) => {
     const next = keyboardSeekMs(e.key, elapsedMs, totalMs);
     if (next === null) return;

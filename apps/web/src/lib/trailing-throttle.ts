@@ -3,11 +3,19 @@
  * final call once the window elapses, so a burst of calls with the same
  * (latest) value fires far fewer times than it's called. `flush` bypasses the
  * window entirely — used for a caller-guaranteed immediate call (e.g. commit
- * on pointer release) that also cancels anything still pending. */
+ * on pointer release) that also cancels anything still pending.
+ *
+ * `firedLast(value)` says whether `call` already ran `fn` with exactly this
+ * value and nothing is pending or called since. A Live timeline release uses
+ * it: when the gesture's position was already sent to the provider (a tap,
+ * or a drag that rested), the release sends nothing and leaves the clock to
+ * follow the provider. Re-sending it started a second provider adapter about
+ * 60 ms later (RF-108). */
 export interface TrailingThrottle<T> {
   call: (value: T) => void;
   flush: (value: T) => void;
   cancel: () => void;
+  firedLast: (value: T) => boolean;
 }
 
 export function createTrailingThrottle<T>(
@@ -17,6 +25,8 @@ export function createTrailingThrottle<T>(
 ): TrailingThrottle<T> {
   let lastFireAt = -Infinity;
   let pending: ReturnType<typeof setTimeout> | null = null;
+  /** The value `call` last fired, until the next `call`, `flush` or `cancel`. */
+  let calledFire: { value: T } | null = null;
 
   const clearPending = () => {
     if (pending !== null) {
@@ -25,24 +35,41 @@ export function createTrailingThrottle<T>(
     }
   };
 
-  const flush = (value: T) => {
-    clearPending();
+  const fire = (value: T) => {
     lastFireAt = now();
     fn(value);
   };
 
+  const flush = (value: T) => {
+    calledFire = null;
+    clearPending();
+    fire(value);
+  };
+
   const call = (value: T) => {
+    calledFire = null;
     const elapsed = now() - lastFireAt;
+    clearPending();
     if (elapsed >= waitMs) {
-      flush(value);
+      calledFire = { value };
+      fire(value);
       return;
     }
-    clearPending();
     pending = setTimeout(() => {
       pending = null;
-      flush(value);
+      calledFire = { value };
+      fire(value);
     }, waitMs - elapsed);
   };
 
-  return { call, flush, cancel: clearPending };
+  return {
+    call,
+    flush,
+    cancel: () => {
+      calledFire = null;
+      clearPending();
+    },
+    firedLast: (value) =>
+      pending === null && calledFire !== null && Object.is(calledFire.value, value),
+  };
 }

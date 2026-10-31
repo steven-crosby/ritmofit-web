@@ -2419,6 +2419,164 @@ describe('LiveMode screen-reader announcements', () => {
 });
 
 describe('LiveMode timeline scrubber', () => {
+  it('starts exactly one provider adapter for one timeline tap (RF-108)', async () => {
+    const prepared: number[] = [];
+    vi.mocked(listConnections).mockResolvedValue([soundcloudConnection]);
+    vi.mocked(soundcloudAdapterFactory).mockImplementation(() => {
+      const adapter = workingAdapter();
+      const prepare = adapter.prepare.bind(adapter);
+      adapter.prepare = (entry, window) => {
+        prepared.push(window.startMs);
+        return prepare(entry, window);
+      };
+      return adapter;
+    });
+    render(<LiveMode payload={payload} onExit={() => {}} />);
+    await screen.findByRole('list', { name: 'Track playback check' });
+    fireEvent.click(screen.getByRole('button', { name: 'Start class' }));
+    await screen.findByRole('button', { name: 'Pause' });
+    await waitFor(() => expect(soundcloudAdapterFactory).toHaveBeenCalledTimes(1));
+
+    // One tap: pointer down previews (and commits) the position, pointer up
+    // commits the same position ~60 ms later. On iPhone that was two adapter
+    // starts ~60 ms apart, the first cancelled mid-setQueue.
+    const slider = screen.getByRole('slider', { name: 'Seek class timeline' });
+    vi.spyOn(slider, 'getBoundingClientRect').mockReturnValue({
+      width: 180_000,
+      left: 0,
+      right: 180_000,
+      top: 0,
+      bottom: 40,
+      height: 40,
+      x: 0,
+      y: 0,
+      toJSON: () => ({}),
+    } as DOMRect);
+    fireEvent.pointerDown(slider, { clientX: 90_000, pointerId: 1 });
+    await act(async () => {
+      await new Promise((resolve) => setTimeout(resolve, 60));
+    });
+    fireEvent.pointerUp(slider);
+    await waitFor(() => expect(soundcloudAdapterFactory).toHaveBeenCalledTimes(2));
+    await act(async () => {
+      await new Promise((resolve) => setTimeout(resolve, 300));
+    });
+    expect(soundcloudAdapterFactory).toHaveBeenCalledTimes(2);
+    expect(prepared).toHaveLength(2);
+  });
+
+  /** A provider whose playhead runs on the wall clock from play(). */
+  function realtimeAdapter() {
+    let base = 0;
+    let playAt: number | null = null;
+    const positionNow = () => base + (playAt == null ? 0 : Date.now() - playAt);
+    const adapter: PlaybackAdapter = {
+      provider: 'soundcloud',
+      prepare: (entry, window) => {
+        base = window.startMs;
+        playAt = null;
+        return Promise.resolve({
+          provider: 'soundcloud' as const,
+          classTrackId: entry.classTrackId,
+        });
+      },
+      getTransport: async () => ({ positionMs: positionNow(), state: 'playing' }),
+      play: async () => {
+        playAt = Date.now();
+      },
+      pause: async () => {
+        base = positionNow();
+        playAt = null;
+      },
+      seek: async (ms) => {
+        base = ms;
+      },
+      stop: async () => {},
+      destroy: () => {},
+    };
+    return { adapter, positionNow };
+  }
+
+  async function startWithRealtimeProvider() {
+    const adapters: Array<ReturnType<typeof realtimeAdapter>> = [];
+    vi.mocked(listConnections).mockResolvedValue([soundcloudConnection]);
+    vi.mocked(soundcloudAdapterFactory).mockImplementation(() => {
+      const made = realtimeAdapter();
+      adapters.push(made);
+      return made.adapter;
+    });
+    render(<LiveMode payload={payload} onExit={() => {}} />);
+    await screen.findByRole('list', { name: 'Track playback check' });
+    fireEvent.click(screen.getByRole('button', { name: 'Start class' }));
+    await screen.findByRole('button', { name: 'Pause' });
+    await waitFor(() => expect(adapters).toHaveLength(1));
+    const slider = screen.getByRole('slider', { name: 'Seek class timeline' });
+    vi.spyOn(slider, 'getBoundingClientRect').mockReturnValue({
+      width: 180_000,
+      left: 0,
+      right: 180_000,
+      top: 0,
+      bottom: 40,
+      height: 40,
+      x: 0,
+      y: 0,
+      toJSON: () => ({}),
+    } as DOMRect);
+    return { adapters, slider };
+  }
+
+  const wait = (ms: number) =>
+    act(async () => {
+      await new Promise((resolve) => setTimeout(resolve, ms));
+    });
+
+  /** After release the clock follows the provider: both read the same playhead. */
+  async function expectClockMatchesProvider(
+    slider: HTMLElement,
+    provider: ReturnType<typeof realtimeAdapter>,
+    atLeast: number,
+  ) {
+    // Right at release: the clock must not jump back behind the audio.
+    expect(Number(slider.getAttribute('aria-valuenow'))).toBeGreaterThanOrEqual(atLeast);
+    await wait(400); // a few transport samples
+    const clock = Number(slider.getAttribute('aria-valuenow'));
+    expect(clock).toBeGreaterThanOrEqual(atLeast);
+    expect(Math.abs(clock - provider.positionNow())).toBeLessThan(500);
+  }
+
+  it('a hold then release leaves the clock and the provider agreeing, with one adapter (RF-108)', async () => {
+    const { adapters, slider } = await startWithRealtimeProvider();
+    fireEvent.pointerDown(slider, { clientX: 90_000, pointerId: 1 });
+    await wait(2_000); // the finger rests; the provider plays from 1:30
+    fireEvent.pointerUp(slider);
+    await expectClockMatchesProvider(slider, adapters.at(-1)!, 91_500);
+    expect(adapters).toHaveLength(2); // Start + the one tap
+  }, 10_000);
+
+  it('a drag that pauses then releases leaves the clock and the provider agreeing (RF-108)', async () => {
+    const { adapters, slider } = await startWithRealtimeProvider();
+    fireEvent.pointerDown(slider, { clientX: 30_000, pointerId: 1 });
+    fireEvent.pointerMove(slider, { clientX: 90_000, buttons: 1 });
+    await wait(2_000); // the throttle sends 1:30, then the finger rests
+    fireEvent.pointerUp(slider);
+    await expectClockMatchesProvider(slider, adapters.at(-1)!, 91_000);
+    // Start, the drag's leading 0:30 and trailing 1:30; release adds nothing.
+    expect(adapters).toHaveLength(3);
+  }, 10_000);
+
+  it('a release before the throttle sends the drag position still commits it once', async () => {
+    const { adapters, slider } = await startWithRealtimeProvider();
+    fireEvent.pointerDown(slider, { clientX: 30_000, pointerId: 1 });
+    fireEvent.pointerMove(slider, { clientX: 120_000, buttons: 1 });
+    fireEvent.pointerUp(slider); // within the 200 ms window
+    await wait(400);
+    expect(Number(slider.getAttribute('aria-valuenow'))).toBeGreaterThanOrEqual(120_000);
+    // The leading 0:30 seek is superseded before it builds an adapter; the
+    // release commits 2:00 once.
+    expect(adapters).toHaveLength(2);
+    await expectClockMatchesProvider(slider, adapters.at(-1)!, 120_000);
+  }, 10_000);
+
   it('seeks the virtual clock from the timeline (keyboard)', async () => {
     await renderLive();
     // The transport scrubber replaces the old plain range input.

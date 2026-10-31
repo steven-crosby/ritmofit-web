@@ -87,4 +87,24 @@ describe('createTrailingThrottle', () => {
     expect(fn).toHaveBeenCalledTimes(1);
     expect(fn).toHaveBeenCalledWith(5);
   });
+
+  it('firedLast is true only for the value call itself fired, with nothing pending (RF-108)', () => {
+    const clock = fakeNow();
+    const fn = vi.fn();
+    const throttle = createTrailingThrottle(fn, 200, clock.now);
+    throttle.call(60_000); // tap down: leading edge fires
+    expect(throttle.firedLast(60_000)).toBe(true);
+    expect(throttle.firedLast(61_000)).toBe(false);
+    clock.advance(10);
+    throttle.call(90_000); // drag: queued, not yet fired
+    expect(throttle.firedLast(90_000)).toBe(false);
+    vi.advanceTimersByTime(190); // trailing fires 90_000
+    expect(throttle.firedLast(90_000)).toBe(true);
+    throttle.flush(90_000); // flush always runs fn
+    expect(fn).toHaveBeenCalledTimes(3);
+    expect(throttle.firedLast(90_000)).toBe(false);
+    throttle.call(1);
+    throttle.cancel();
+    expect(throttle.firedLast(1)).toBe(false);
+  });
 });

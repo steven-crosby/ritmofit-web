@@ -642,8 +642,10 @@ export function LiveMode({
   // every pointer-move of a drag (SPC-16). `commitThrottle` coalesces a burst
   // of preview positions into the trailing one, at most once per window; `seek`
   // always flushes it immediately, so a discrete jump (keyboard, tap, release)
-  // never waits behind a pending drag commit. Built once per mount (a ref, not
-  // state) so the window survives across renders.
+  // never waits behind a pending drag commit. A timeline release skips a position
+  // the throttle already sent (see seekRelease), so one tap starts one
+  // provider adapter (RF-108). Built once per mount (a ref, not state) so
+  // the window survives across renders.
   const commitThrottleRef = useRef<ReturnType<typeof createTrailingThrottle<number>> | null>(null);
   commitThrottleRef.current ??= createTrailingThrottle((ms) => {
     // Re-cue provider playback at the new position (no-op while paused — the
@@ -676,6 +678,26 @@ export function LiveMode({
       commitThrottleRef.current!.call(clamped);
     },
     [clockPreviewSeek],
+  );
+
+  /** Timeline pointer release/cancel at the gesture's last previewed position.
+   * When the throttle already sent exactly that position to the provider (a
+   * tap, or a drag that rested past the window), send nothing and settle the
+   * clock where it already is (it has followed the provider since, so the two
+   * keep agreeing; this only refreshes the display tier). One tap starts one
+   * adapter, not two (RF-108). Otherwise it is a normal discrete seek. */
+  const seekRelease = useCallback(
+    (ms: number) => {
+      const target = Math.max(0, Math.min(ms, payload.class.totalDurationMs));
+      const throttle = commitThrottleRef.current!;
+      if (throttle.firedLast(target)) {
+        throttle.cancel();
+        clockSeek(clockStore.getSnapshot());
+        return;
+      }
+      seek(target);
+    },
+    [seek, clockSeek, clockStore, payload.class.totalDurationMs],
   );
 
   /** Start hands-free: build the coordinator and begin playback at 0 (a user gesture). */
@@ -1287,6 +1309,7 @@ export function LiveMode({
           clock={clockStore}
           onSeekPreview={seekPreview}
           onSeekCommit={seek}
+          onSeekRelease={seekRelease}
           playback={coordinatorRef.current ? playback : null}
           wakeStatus={wakeStatus}
           primaryButtonRef={primaryButtonRef}
@@ -2218,6 +2241,7 @@ function Transport({
   clock,
   onSeekPreview,
   onSeekCommit,
+  onSeekRelease,
   playback,
   wakeStatus,
   primaryButtonRef,
@@ -2237,6 +2261,7 @@ function Transport({
   clock: ClockStore;
   onSeekPreview: (ms: number) => void;
   onSeekCommit: (ms: number) => void;
+  onSeekRelease: (ms: number) => void;
   /** Coordinator status while music runs; null in prompter-only mode. */
   playback: CoordinatorStatus | null;
   /** Whether the screen wake lock is holding — surfaced beside the player rail. */
@@ -2326,6 +2351,7 @@ function Transport({
             clock={clock}
             onSeekPreview={onSeekPreview}
             onSeekCommit={onSeekCommit}
+            onSeekRelease={onSeekRelease}
           />
         </div>
       </div>

@@ -104,6 +104,21 @@ const DEFAULT_LIVENESS_INTERVAL_MS = 2_500;
  */
 const ENDPOINT_TOLERANCE_MS = 1_000;
 
+/**
+ * Upper bound on waiting for a retired adapter of the same provider to settle
+ * before the next track's prepare (RF-108). Adapters bound their own settle
+ * signal (Apple Music: 2 s from the cancel), so this is only a backstop.
+ */
+const RETIRED_SETTLE_WAIT_MS = 3_000;
+
+/**
+ * Destroyed adapters whose SDK calls have not settled yet (RF-108). Page-wide,
+ * not per coordinator: Live's Retry builds a new coordinator, and it must
+ * still wait for the call the failed one left running. Entries leave once
+ * their settle signal resolves, which the adapter bounds.
+ */
+let retired: Array<{ provider: Provider; idle: Promise<void> }> = [];
+
 export interface RuntimeCoordinatorOptions extends SelectionOptions {
   adapters: AdapterRegistry;
   onStatus?: (status: CoordinatorStatus) => void;
@@ -359,6 +374,17 @@ export class RuntimePlaybackCoordinator {
     }
 
     this.setStatus({ kind: 'preparing', index, provider: selection.provider });
+    // A singleton SDK (Apple Music) may still be finishing a queue request from
+    // an adapter this run (or a failed run before Retry) cancelled. This is
+    // the one bounded wait (the adapter bounds its own signal, 2 s from the
+    // cancel); skip the prepare entirely if the instructor moved on (RF-108).
+    const settling = retired
+      .filter((entry) => entry.provider === selection.provider)
+      .map((entry) => entry.idle);
+    if (settling.length > 0) {
+      await this.bounded(Promise.all(settling), RETIRED_SETTLE_WAIT_MS).catch(() => {});
+      if (epoch !== this.epoch) return;
+    }
     let authorizationAt: number | null = null;
     const adapter = factory({
       // FINISH requires fresh endpoint evidence; a short stream is a mismatch.
@@ -463,6 +489,23 @@ export class RuntimePlaybackCoordinator {
     } catch {
       // Teardown is best-effort.
     }
+    this.retire(job.adapter);
+  }
+
+  /** Track a destroyed adapter until its SDK calls settle; see enterTrack. */
+  private retire(adapter: PlaybackAdapter): void {
+    let idle: Promise<void> | null | undefined;
+    try {
+      idle = adapter.whenIdle?.();
+    } catch {
+      idle = null;
+    }
+    if (!idle) return;
+    const entry = { provider: adapter.provider, idle: idle.catch(() => {}) };
+    retired.push(entry);
+    void entry.idle.then(() => {
+      retired = retired.filter((other) => other !== entry);
+    });
   }
 
   /**
@@ -480,6 +523,7 @@ export class RuntimePlaybackCoordinator {
     } catch {
       // Cancellation must still settle the coordinator if teardown fails.
     }
+    this.retire(adapter);
   }
 
   /** A silent SDK promise must not hold preparation or teardown indefinitely. */
@@ -730,6 +774,7 @@ export class RuntimePlaybackCoordinator {
       } catch {
         // The error state stands regardless of teardown success.
       }
+      this.retire(this.active.adapter);
       this.active = null;
     }
     this.setStatus({ kind: 'error', error });
