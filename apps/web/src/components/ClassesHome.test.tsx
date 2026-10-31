@@ -146,6 +146,9 @@ describe('ClassesHome library shell', () => {
     expect(label.className).not.toContain('sr-only');
     const dot = label.parentElement?.querySelector('[data-readiness-dot]');
     expect(dot?.getAttribute('aria-hidden')).toBe('true');
+    // Status is caution, never copper: copper marks identity and the primary action (RF-135).
+    expect(dot?.className).toContain('bg-state-caution');
+    expect(dot?.className).not.toContain('bg-brand');
   });
 
   it('orders Recents by last opened, not last edited', () => {

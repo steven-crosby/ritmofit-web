@@ -1276,6 +1276,37 @@ describe('Dashboard class library states', () => {
     expect(recentsTitles()).toEqual(['Quiet ride', 'Edited ride']);
   });
 
+  it('gives copper to one Live queue card only, the one leading the queue (RF-135)', async () => {
+    const make = (title: string) => ({
+      ...makeClass(title, 'owner', 'me'),
+      trackCount: 1,
+      totalDurationMs: 60_000,
+    });
+    vi.mocked(api.listClasses).mockResolvedValue(
+      page([make('Alpha ride'), make('Beta ride'), make('Gamma ride')]),
+    );
+    const payload = liveRunPayload([{ classTrackId: 'ct-1', durationMs: 60_000 }]);
+    payload.sections = [];
+    vi.mocked(api.getRunPayload).mockResolvedValue(payload);
+    renderDashboard();
+
+    fireEvent.click(await screen.findByRole('button', { name: 'Live' }));
+    await screen.findByRole('button', { name: 'Preflight Gamma ride' });
+    await waitFor(() => {
+      const preflights = screen.getAllByRole('button', { name: /^Preflight / });
+      expect(preflights).toHaveLength(3);
+      expect(preflights.filter((b) => b.className.includes('rf-btn-primary'))).toHaveLength(1);
+    });
+    const [leading, ...rest] = screen
+      .getAllByRole('article')
+      .map((card) => within(card).getByRole('button', { name: /^Preflight / }));
+    expect(leading!.className).toContain('rf-btn-primary');
+    for (const button of rest) {
+      expect(button.className).not.toContain('rf-btn-primary');
+      expect(button.className).toContain('text-interactive');
+    }
+  });
+
   it('stamps last opened when Live starts, not when the queue is only listed', async () => {
     const alpha = {
       ...makeClass('Alpha ride', 'owner', 'me'),
