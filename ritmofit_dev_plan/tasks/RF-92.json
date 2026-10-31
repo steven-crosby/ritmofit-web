@@ -28,7 +28,7 @@
     },
     {
       "kind": "observation",
-      "ref": "https://github.com/steven-crosby/ritmofit-web/pull/680",
+      "ref": "https://github.com/steven-crosby/ritmofit-web/pull/685",
       "summary": "Read-only check on production a1b971d in the owner signed-in browser, 2026-10-31 (Neo): Music shows Spotify Connected and Music > Songs lists Spotify liked songs (Re-Arranged, High Speed, Paradise Circus and more) with no allowlist or 403 message. The Air conductor saw the same in the owner recording. So the developer app no longer rejects this account for likes; playlists, playback and other accounts were not checked.",
       "checkedOn": "2026-10-31"
     }
