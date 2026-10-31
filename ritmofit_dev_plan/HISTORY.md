@@ -13,6 +13,20 @@ detail). Current focus and `main` vs production live in the "Now" block of
 
 ## Deploy and session log (newest first)
 
+> **Session 2026-10-31 — Air conductor merges (no deploy), relayed to the Neo close.** All with
+> owner permission. [#670](https://github.com/steven-crosby/ritmofit-web/pull/670) merged as `eaec1d3` (RF-156 record, For review). ritmofit-ios
+> [#52](https://github.com/steven-crosby/ritmofit-ios/pull/52) merged as `2cc92e2` (web-contract snapshots refreshed from web `0a77110`; iOS
+> Cross-repository parity green again). [#674](https://github.com/steven-crosby/ritmofit-web/pull/674) merged as `01a28d6` (RF-156 Done; new
+> Backlog RF-162, owner-gated: OpenAPI describes the provider routes' 429s, the empty likes cursor
+> and long `q` as the server behaves). [#677](https://github.com/steven-crosby/ritmofit-web/pull/677) merged as `9fa76d2` (RF-131 answered and Done:
+> run rule (b), plan gaps are guidance and over-time blocks a warning; readiness labels (a), four
+> renamed dimensions; tempo (b), no BPM flag on the Classes list, GetSongBPM deferred; HIIT card (a);
+> Account Preferences (a), cut; Spotify (b), keep it visible and name the real cause). New Backlog
+> RF-165 (HIIT card), RF-166 (Classes BPM flag), RF-167 (Spotify allowlist message, owner-gated,
+> depends on RF-92) and RF-168 (owner decision on Live's "No BPM set"); RF-133, RF-134 (now depends on
+> RF-166) and RF-144 are unblocked but still need the owner's Ready. iOS #53 (RF-1014) is a Blocked
+> draft until the Air's simulator component is updated. Production unchanged at `0a77110`.
+
 > **Session 2026-10-31 — Neo lanes N1 and N2 merged (no deploy).** Owner Ready set 2026-10-31
 > ("Yes, approve both"), relayed from the Air conductor. [#671](https://github.com/steven-crosby/ritmofit-web/pull/671) merged as `efcf1f9`
 > (records catch-up; RF-160 and RF-161 filed). [#672](https://github.com/steven-crosby/ritmofit-web/pull/672) merged as `579d7a9` (RF-137: Music
