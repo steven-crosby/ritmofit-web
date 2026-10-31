@@ -1,19 +1,19 @@
 {
   "schemaVersion": 1,
   "id": "RF-162",
-  "title": "OpenAPI describes the likes endpoint as the server behaves: rate-limit 429s, empty cursor and long q",
+  "title": "OpenAPI describes provider routes as the server behaves: rate-limit 429s, empty likes cursor and long q",
   "kind": "task",
   "status": "backlog",
   "priority": "P3",
   "parent": null,
   "dependsOn": [],
   "acceptance": [
-    "The likes 429 response in apps/api/openapi/openapi.json covers the per-user rate limits (provider-likes 20/min, provider-likes-search 30/min) as well as PROVIDER_QUOTA_EXCEEDED, so a client can tell a short wait from a provider quota failure.",
-    "The cursor parameter states minLength 1 (the server answers an empty ?cursor= with 422), or the server treats an empty cursor as the first page; the spec and the code agree.",
-    "The q parameter matches the server: either the server rejects q over 200 characters with 422, or the spec says longer q is truncated to 200.",
+    "Every /providers/* route whose spec reuses the Spotify-quota 429 (search, playlists, track-import, playlist-import, likes) also documents its per-user rate-limit 429: the RATE_LIMITED error code and the Retry-After header from lib/rate-limit.ts, so a client can tell a short wait from PROVIDER_QUOTA_EXCEEDED. Limit values come from the limiter config rather than duplicated literals, or are stated once in api.md.",
+    "The likes cursor parameter states minLength 1 (the server answers an empty ?cursor= with 422), or the server treats an empty cursor as the first page; the spec and the code agree.",
+    "q on likes and on catalog search matches the server: either over-200 q is rejected with 422, or the spec says q is truncated to 200. The likes rate limiter and handler use the same trimmed and truncated q, so a padded q cannot spend the search budget and then return an unfiltered page.",
     "OpenAPI is regenerated, drift and contract-parity pass, and a later iOS PR refreshes web-contract/ (workspace rule: web first)."
   ],
-  "nextAction": "From the iOS #52 final review (2026-10-31). Files: apps/api/scripts/generate-openapi.ts and apps/api/openapi/openapi.json; a server-side change would touch apps/api/src/routes/providers.ts (owner-gated: provider). Agent-created: Backlog until the owner sets Ready.",
+  "nextAction": "Spun out of RF-156 (iOS #52 final review, 2026-10-31; scope widened by the #674 review). Owner-gated whichever way it is fixed: apps/api/scripts/generate-openapi.ts is CI/infrastructure and apps/api/src/routes/providers.ts is provider code (scripts/owner-gate.mjs). Agent-created: Backlog until the owner sets Ready.",
   "blocker": null,
   "evidence": [
     {
@@ -26,6 +26,12 @@
       "kind": "pr",
       "ref": "https://github.com/steven-crosby/ritmofit-web/pull/674",
       "summary": "Web record PR that created this record.",
+      "checkedOn": "2026-10-31"
+    },
+    {
+      "kind": "pr",
+      "ref": "https://github.com/steven-crosby/ritmofit-web/pull/674",
+      "summary": "Final review of #674: the 429 mismatch is the shared Spotify-quota 429 on all provider routes; RATE_LIMITED and Retry-After are undocumented; catalog search q is also silently truncated; the likes limiter trims q before truncation; generate-openapi.ts is owner-gated too.",
       "checkedOn": "2026-10-31"
     }
   ],
