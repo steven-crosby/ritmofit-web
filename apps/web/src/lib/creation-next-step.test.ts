@@ -57,7 +57,7 @@ describe('creationNextStep', () => {
     expect(step.detail).toBe('Empty draft');
   });
 
-  it('lets an unfinished plan outrank Live tempo on a mid-build scaffold', () => {
+  it('lets an unfinished plan outrank Live refinements on a mid-build scaffold', () => {
     const payloadTracks = [
       {
         classTrackId: '00000000-0000-4000-8000-0000000000a2',
@@ -80,7 +80,7 @@ describe('creationNextStep', () => {
     // The plan gap still names the step, but the class can run (RF-133): it keeps
     // its own Live standing instead of being demoted below an empty draft.
     const base = classNextStep(ready(payloadTracks as unknown as RunPayload['tracks']));
-    expect(base.action).toBe('Add the missing tempo');
+    expect(base.action).toBe('Add cues and moves');
     expect(step.action).toBe('Add music to the plan');
     expect(step.detail).toBe('Can run live · Block 1 still needs music');
     expect(step.teachable).toBe(false);
@@ -134,7 +134,8 @@ describe('creationNextStep', () => {
         tracks: [track('00000000-0000-4000-8000-0000000000a1', blockId)],
       },
     );
-    expect(step.action).toBe('Add the missing tempo');
+    // Tempo is not a list-level step (RF-166), so the cue gap leads.
+    expect(step.action).toBe('Add cues and moves');
   });
 
   it('ranks an unfinished plan closer to teachable than an empty draft', () => {

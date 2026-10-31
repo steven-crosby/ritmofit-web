@@ -79,7 +79,6 @@ describe('readinessLabel', () => {
     expect(readinessLabel(step('Ready to teach', 'Open class'))).toBe('Needs work');
 
     const gaps: Array<[string, string]> = [
-      ['Add the missing tempo', 'Needs tempo'],
       ['Set track durations', 'Needs duration'],
       ['Add cues and moves', 'Needs cues'],
       ['Score the effort arc', 'Needs effort'],
@@ -93,6 +92,10 @@ describe('readinessLabel', () => {
     for (const [action, label] of gaps) {
       expect(readinessMark(step('Refine before teaching', action))).toEqual({ label, dot: true });
     }
+    // Missing tempo is no longer a list label (RF-166).
+    expect(readinessLabel(step('Refine before teaching', 'Add the missing tempo'))).toBe(
+      'Needs work',
+    );
   });
 });
 

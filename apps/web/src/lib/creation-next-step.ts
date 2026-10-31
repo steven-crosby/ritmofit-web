@@ -1,7 +1,7 @@
 /**
  * Classes-home next step while the instructor is still building the class.
  * Live queue keeps `classNextStep` (payload-only readiness). This helper lets
- * an unfinished teaching plan outrank "Add the missing tempo" so a half-filled
+ * an unfinished teaching plan outrank Live refinements so a half-filled
  * scaffold is not promoted as closest to teachable.
  *
  * One run rule (RF-131 answer 1b, RF-133): plan gaps and over-time blocks are

@@ -158,14 +158,33 @@ describe('ClassesHome library shell', () => {
 
   it('shows readiness as text, with the dot only repeating it', async () => {
     vi.mocked(api.getClassShelfPayload).mockResolvedValue(payload('Class 1'));
-    renderHome([cls(1, { title: 'Needs a tempo' })]);
-    const label = await screen.findByText('Needs tempo');
+    renderHome([cls(1, { title: 'Needs choreography' })]);
+    const label = await screen.findByText('Needs cues');
     expect(label.className).not.toContain('sr-only');
     const dot = label.parentElement?.querySelector('[data-readiness-dot]');
     expect(dot?.getAttribute('aria-hidden')).toBe('true');
     // Status is caution, never copper: copper marks identity and the primary action (RF-135).
     expect(dot?.className).toContain('bg-state-caution');
     expect(dot?.className).not.toContain('bg-brand');
+  });
+
+  it('does not flag a class whose only gap is missing tempo (RF-166)', async () => {
+    const base = payload('Class 1');
+    const tempoOnly = {
+      ...base,
+      tracks: base.tracks.map((entry) => ({
+        ...entry,
+        providerRefs: [{ provider: 'spotify' }],
+        cues: [{ id: `${entry.classTrackId}-cue` }],
+        moves: [{ id: `${entry.classTrackId}-move` }],
+        displayBpm: null,
+      })),
+    } as unknown as RunPayload;
+    vi.mocked(api.getClassShelfPayload).mockResolvedValue(tempoOnly);
+    renderHome([cls(1, { title: 'No tempo yet' })]);
+    expect(await screen.findByText('Ready')).toBeTruthy();
+    expect(screen.queryByText('Needs tempo')).toBeNull();
+    expect(document.querySelector('[data-readiness-dot]')).toBeNull();
   });
 
   it('orders Recents by last opened, not last edited', () => {
@@ -311,7 +330,7 @@ describe('ClassesHome library shell', () => {
     vi.mocked(api.getClassShelfPayload).mockImplementation(async (id: string) => payload(id));
     renderHome(Array.from({ length: 3 }, (_, index) => cls(index + 1)));
     await waitFor(() => expect(api.getClassShelfPayload).toHaveBeenCalledTimes(3));
-    expect(await screen.findAllByText('Needs tempo')).toHaveLength(3);
+    expect(await screen.findAllByText('Needs cues')).toHaveLength(3);
   });
 
   it('keeps a failed detail distinct and retries without hiding the class', async () => {
@@ -322,7 +341,7 @@ describe('ClassesHome library shell', () => {
     expect(screen.getByRole('button', { name: 'Class 1' })).toBeTruthy();
     fireEvent.click(screen.getByRole('button', { name: 'More actions — Class 1' }));
     fireEvent.click(screen.getByRole('button', { name: 'Retry details — Class 1' }));
-    expect(await screen.findByText('Needs tempo')).toBeTruthy();
+    expect(await screen.findByText('Needs cues')).toBeTruthy();
     fireEvent.click(screen.getByRole('button', { name: 'More actions — Class 1' }));
     expect(screen.getByRole('button', { name: 'Rehearsal view — Class 1' })).toBeTruthy();
   });
@@ -363,7 +382,7 @@ describe('ClassesHome library shell', () => {
     expect(rowTitles()).toEqual(['First', 'Second']);
     releases[0]?.(payload('First'));
     releases[1]?.(payload('Second'));
-    await screen.findAllByText('Needs tempo');
+    await screen.findAllByText('Needs cues');
     expect(rowTitles()).toEqual(['First', 'Second']);
   });
 
