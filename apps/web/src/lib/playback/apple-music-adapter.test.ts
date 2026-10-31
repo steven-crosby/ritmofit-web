@@ -15,7 +15,7 @@ import {
   AppleMusicAdapter,
   appleMusicAuthorizationLostMessage,
   appleMusicPlayRejectedMessage,
-  appleMusicQueueReplacedMessage,
+  appleMusicPreviousSongStillFinishingMessage,
 } from './apple-music-adapter.js';
 import type { AdapterEvents, PlaybackAdapter } from './types.js';
 import { RuntimePlaybackCoordinator, resetRetiredAdaptersForTests } from './runtime.js';
@@ -1168,25 +1168,38 @@ describe('Apple Music SDK leases (RF-108)', () => {
     expect(adapter.whenIdle()).toBeNull();
   });
 
-  it('a cancelled play that never settles ends in a bounded, clear error, and Retry then plays', async () => {
+  it('a cancelled play that never settles fails clearly, and Retry never starts a second play while it is pending', async () => {
     const instance = new FakeInstance();
-    instance.playBehavior = () => new Promise<void>(() => {});
+    const cancelledPlay = deferred<void>();
+    instance.playBehavior = () => cancelledPlay.promise; // MusicKit ignores stop as well
     const make = build(instance, { settleTimeoutMs: 20 });
     const first = make();
     await first.prepare(makeEntry(), WINDOW_ZERO);
     void first.play().catch(() => {});
     first.destroy();
+    const plays = () => instance.calls.filter((call) => call === 'play').length;
 
-    const second = make();
-    await expect(second.prepare(makeEntry(), WINDOW_ZERO)).rejects.toThrow(
+    await new Promise((resolve) => setTimeout(resolve, 30));
+    await expect(make().prepare(makeEntry(), WINDOW_ZERO)).rejects.toThrow(
       /did not finish a cancelled play request within \d+ s\. Retry playback\./,
     );
+    // Retry stops the cancelled play and waits one more bound; it is still pending.
+    await expect(make().prepare(makeEntry(), WINDOW_ZERO)).rejects.toThrow(
+      appleMusicPreviousSongStillFinishingMessage(),
+    );
+    await expect(make().prepare(makeEntry(), WINDOW_ZERO)).rejects.toThrow(
+      appleMusicPreviousSongStillFinishingMessage(),
+    );
+    expect(plays()).toBe(1); // never a second instance.play() while the first is pending
 
-    // The bound released the cancelled play's lease, so Retry needs no reload.
+    // Once MusicKit settles the cancelled play, Retry plays without a reload.
     instance.playBehavior = async () => {};
+    cancelledPlay.resolve();
+    for (let i = 0; i < 10; i++) await Promise.resolve();
     const retry = make();
     await retry.prepare(makeEntry(), WINDOW_ZERO);
     await expect(retry.play()).resolves.toBeUndefined();
+    expect(plays()).toBe(2);
   });
 
   it('waits for a cancelled queue request to settle, then queues its own song', async () => {
@@ -1230,74 +1243,6 @@ describe('Apple Music SDK leases (RF-108)', () => {
     expect(setQueueCalls(instance)).toHaveLength(2);
   });
 
-  it('supersedes a timed-out setQueue generation, so its late settle cannot play the old song (RF-147)', async () => {
-    const instance = new FakeInstance();
-    instance.tracksQueue = true;
-    const late = deferred();
-    instance.setQueueBehavior = () => late.promise;
-    const make = build(instance, { prepareTimeoutMs: 5 });
-    // Not destroyed: the timeout alone must supersede the generation.
-    const timedOut = make();
-    await expect(
-      timedOut.prepare(makeEntry({ providerTrackId: 'am-old' }), WINDOW_ZERO),
-    ).rejects.toThrow(/timed out/i);
-
-    instance.setQueueBehavior = () => Promise.resolve();
-    const next = make();
-    await next.prepare(makeEntry({ providerTrackId: 'am-new' }), WINDOW_ZERO);
-    expect(instance.nowPlayingItem?.id).toBe('am-new');
-
-    // MusicKit finally answers the old request and replaces the queue with it.
-    late.resolve(undefined);
-    for (let i = 0; i < 10; i++) await Promise.resolve();
-    expect(instance.nowPlayingItem?.id).toBe('am-old');
-
-    await next.play();
-    expect(instance.nowPlayingItem?.id).toBe('am-new');
-    expect(instance.calls.slice(-2)).toEqual(['setQueue:0', 'play']);
-    expect(setQueueCalls(instance)).toHaveLength(3);
-  });
-
-  it('checks nowPlayingItem before play and re-cues only when it names another song', async () => {
-    const instance = new FakeInstance();
-    instance.tracksQueue = true;
-    const adapter = build(instance)();
-    await adapter.prepare(makeEntry({ providerTrackId: 'am-mine' }), WINDOW_ZERO);
-    instance.nowPlayingItem = { id: 'am-someone-else' };
-    await adapter.play();
-    expect(setQueueCalls(instance)).toHaveLength(2);
-    expect(instance.nowPlayingItem?.id).toBe('am-mine');
-
-    // A matching item (catalog id under playParams) plays with no extra queue request.
-    const other = build(instance)();
-    await other.prepare(makeEntry({ providerTrackId: 'am-cat' }), WINDOW_ZERO);
-    instance.nowPlayingItem = { id: 'i.library', playParams: { catalogId: 'am-cat' } };
-    await other.play();
-    expect(setQueueCalls(instance)).toHaveLength(3);
-  });
-
-  it('a cancelled queue request that settles after its successor cued is re-cued over before play', async () => {
-    const instance = new FakeInstance();
-    instance.tracksQueue = true;
-    const late = deferred();
-    instance.setQueueBehavior = () => late.promise;
-    const make = build(instance, { settleTimeoutMs: 20 });
-    const cancelled = make();
-    void cancelled.prepare(makeEntry({ providerTrackId: 'am-old' }), WINDOW_ZERO).catch(() => {});
-    await waitForSetQueueCalls(instance, 1);
-    cancelled.destroy();
-
-    instance.setQueueBehavior = () => Promise.resolve();
-    const next = make();
-    await next.prepare(makeEntry({ providerTrackId: 'am-new' }), WINDOW_ZERO);
-    late.resolve(undefined);
-    await Promise.resolve();
-    await Promise.resolve();
-    expect(instance.nowPlayingItem?.id).toBe('am-old');
-    await next.play();
-    expect(instance.nowPlayingItem?.id).toBe('am-new');
-  });
-
   it('stops counting a never-settling call as busy once it times out or its settle bound passes (#668 finding 1)', async () => {
     const instance = new FakeInstance();
     instance.setQueueBehavior = () => new Promise<never>(() => {});
@@ -1314,98 +1259,6 @@ describe('Apple Music SDK leases (RF-108)', () => {
     expect(idle).not.toBeNull();
     await idle; // resolves at the 20 ms settle bound although MusicKit never answers
     expect(abandoned.whenIdle()).toBeNull();
-  });
-
-  it('counts a superseded queue request that settles while the next cue is in flight (#668 finding 3)', async () => {
-    const instance = new FakeInstance();
-    const cancelledQueue = deferred();
-    const nextQueue = deferred();
-    let queues = 0;
-    instance.setQueueBehavior = () => {
-      queues++;
-      if (queues === 1) return cancelledQueue.promise;
-      if (queues === 2) return nextQueue.promise;
-      return Promise.resolve();
-    };
-    const make = build(instance, { settleTimeoutMs: 20 });
-    const cancelled = make();
-    void cancelled.prepare(makeEntry({ providerTrackId: 'am-old' }), WINDOW_ZERO).catch(() => {});
-    await waitForSetQueueCalls(instance, 1);
-    cancelled.destroy();
-
-    const next = make();
-    const preparing = next.prepare(makeEntry({ providerTrackId: 'am-new' }), WINDOW_ZERO);
-    // The new cue supersedes the cancelled one once the 20 ms settle bound passes.
-    await new Promise((resolve) => setTimeout(resolve, 50));
-    await waitForSetQueueCalls(instance, 2);
-    // The old request lands while the new cue is still in flight, then the new one resolves.
-    cancelledQueue.resolve(undefined);
-    for (let i = 0; i < 10; i++) await Promise.resolve();
-    nextQueue.resolve(undefined);
-    await preparing;
-    await next.play();
-    // MusicKit's queue order is unknown here, so play() re-cues before playing.
-    expect(setQueueCalls(instance)).toHaveLength(3);
-    expect(instance.calls.slice(-2)).toEqual(['setQueue:0', 'play']);
-  });
-
-  /** A cancelled cue whose MusicKit request lands only after the next song started. */
-  async function lateSettleAfterStart(tracksQueue: boolean) {
-    const instance = new FakeInstance();
-    instance.tracksQueue = tracksQueue;
-    const late = deferred();
-    let queues = 0;
-    instance.setQueueBehavior = () => (queues++ === 0 ? late.promise : Promise.resolve());
-    const errors: string[] = [];
-    const { music } = makeMusicKit(instance, { preconfigured: true });
-    const host = { loadMusicKit: async () => music, settleTimeoutMs: 20 };
-    const cancelled = new AppleMusicAdapter({}, host);
-    void cancelled.prepare(makeEntry({ providerTrackId: 'am-old' }), WINDOW_ZERO).catch(() => {});
-    await waitForSetQueueCalls(instance, 1);
-    cancelled.destroy();
-    const playing = new AppleMusicAdapter({ onError: ({ message }) => errors.push(message) }, host);
-    await playing.prepare(makeEntry({ providerTrackId: 'am-new' }), WINDOW_ZERO);
-    await playing.play();
-    const settle = async () => {
-      late.resolve(undefined); // MusicKit swaps in the old song mid-track
-      for (let i = 0; i < 20; i++) await Promise.resolve();
-    };
-    const counts = () => ({
-      plays: instance.calls.filter((call) => call === 'play').length,
-      queues: instance.calls.filter((call) => call.startsWith('setQueue:')).length,
-    });
-    return { instance, playing, errors, settle, counts };
-  }
-
-  it('reports Retry and never re-cues or plays when a late settle replaces the running song (owner decision)', async () => {
-    const { instance, errors, settle, counts } = await lateSettleAfterStart(true);
-    const before = counts();
-    await settle();
-    expect(instance.nowPlayingItem?.id).toBe('am-old');
-    expect(errors).toEqual([appleMusicQueueReplacedMessage('Baiana')]);
-    expect(counts()).toEqual(before);
-  });
-
-  it('treats an unknown nowPlayingItem after a late settle as fine', async () => {
-    const { errors, settle, counts } = await lateSettleAfterStart(false);
-    const before = counts();
-    await settle();
-    expect(errors).toEqual([]);
-    expect(counts()).toEqual(before);
-  });
-
-  it('a late settle while paused neither plays nor resumes; the next play re-cues first', async () => {
-    const { instance, playing, errors, settle, counts } = await lateSettleAfterStart(true);
-    await playing.pause();
-    const before = counts();
-    await settle();
-    expect(errors).toEqual([]);
-    expect(counts()).toEqual(before);
-    expect(instance.calls.at(-1)).toBe('pause');
-
-    await playing.play(); // the instructor resumes
-    expect(instance.calls.slice(-2)).toEqual(['setQueue:0', 'play']);
-    expect(instance.nowPlayingItem?.id).toBe('am-new');
   });
 
   it('two requests woken by one abandoned setQueue cannot both claim the queue (#668 second review, 3)', async () => {
@@ -1469,22 +1322,6 @@ describe('Apple Music SDK leases (RF-108)', () => {
     await retry.prepare(makeEntry({ providerTrackId: 'am-retry' }), WINDOW_ZERO);
     await retry.play();
     expect(order).toEqual(['cancelled-play-settled', 'retry-play']);
-  });
-
-  it('an in-time setQueue rejection does not count as a late settle (#668 second review, 8)', async () => {
-    const instance = new FakeInstance();
-    const make = build(instance);
-    const cued = make();
-    await cued.prepare(makeEntry({ providerTrackId: 'am-cued' }), WINDOW_ZERO);
-    instance.setQueueBehavior = () => Promise.reject(new Error('content unavailable'));
-    await expect(
-      make().prepare(makeEntry({ providerTrackId: 'am-bad' }), WINDOW_ZERO),
-    ).rejects.toThrow(/content unavailable/);
-    instance.setQueueBehavior = () => Promise.resolve();
-    await cued.play();
-    // No re-cue: the rejected request never replaced MusicKit's queue late.
-    expect(setQueueCalls(instance)).toHaveLength(2);
-    expect(instance.calls.at(-1)).toBe('play');
   });
 
   it('after a re-cue, waits for a cancelled play instead of refusing (#668 finding 5)', async () => {
@@ -1801,10 +1638,11 @@ describe('Apple Music quick timeline taps through the runtime (RF-108)', () => {
     }
   });
 
-  it('a start whose cancelled play never settles fails clearly, and Retry recovers without a reload', async () => {
+  it('a start whose cancelled play never settles fails clearly, and Retry recovers once MusicKit settles it', async () => {
     const instance = new FakeInstance();
     instance.tracksQueue = true;
-    instance.playBehavior = () => new Promise<void>(() => {});
+    const cancelledPlay = deferred<void>();
+    instance.playBehavior = () => cancelledPlay.promise;
     const errors: string[] = [];
     const coordinator = coordinatorFor(instance, errors, { settleTimeoutMs: 30, settleWaitMs: 10 });
     void coordinator.start(0);
@@ -1817,8 +1655,19 @@ describe('Apple Music quick timeline taps through the runtime (RF-108)', () => {
     expect(errors.at(-1)).toMatch(/did not finish a cancelled play request/);
     coordinator.destroy();
 
-    // Live's Retry builds a fresh coordinator and resumes at the held clock.
+    // Live's Retry builds a fresh coordinator. While MusicKit still holds the
+    // cancelled play, Retry fails clearly instead of starting a second play.
+    const plays = () => instance.calls.filter((call) => call === 'play').length;
+    const stuckErrors: string[] = [];
+    const stuck = coordinatorFor(instance, stuckErrors, { settleTimeoutMs: 30, settleWaitMs: 10 });
+    await stuck.resume(190_000);
+    expect(stuckErrors.at(-1)).toBe(appleMusicPreviousSongStillFinishingMessage());
+    expect(plays()).toBe(1);
+    stuck.destroy();
+
     instance.playBehavior = async () => {};
+    cancelledPlay.resolve();
+    await flush();
     const retryErrors: string[] = [];
     const retry = coordinatorFor(instance, retryErrors, { settleTimeoutMs: 30 });
     try {
@@ -1832,8 +1681,6 @@ describe('Apple Music quick timeline taps through the runtime (RF-108)', () => {
   });
 });
 
-// Replays the real 2026-10-04 MusicKit queue teardown through the actual adapter
-// and coordinator, so the runtime precision guard and job lifecycle are covered together.
 describe('Apple Music natural-boundary runtime regression', () => {
   it.each([
     { name: 'next track', endpoint: 223, hasNext: true, expected: 'buffering' },

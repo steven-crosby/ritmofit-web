@@ -254,8 +254,8 @@ describe('Safari modern FairPlay', () => {
   });
 });
 
-describe('Safari modern FairPlay flag, once per page (RF-147)', () => {
-  it('clears the flag on the first MusicKit load only, so a tester can set it afterwards', async () => {
+describe('Safari modern FairPlay flag (RF-124, kept per call in #668)', () => {
+  it('clears a flag written after load again on the next load and configure', async () => {
     (window as Window & { WebKitMediaKeys?: object }).WebKitMediaKeys = {};
     localStorage.setItem(MUSICKIT_SAFARI_MODERN_EME_KEY, '1');
     const { loadMusicKit, configureMusicKit } = await import('./musickit.js');
@@ -267,10 +267,13 @@ describe('Safari modern FairPlay flag, once per page (RF-147)', () => {
     } as unknown as MusicKitGlobal;
     document.dispatchEvent(new Event('musickitloaded'));
     await pending;
+    // Another tab (or an old build) writes the flag after this page loaded.
     localStorage.setItem(MUSICKIT_SAFARI_MODERN_EME_KEY, '1');
     await loadMusicKit();
+    expect(localStorage.getItem(MUSICKIT_SAFARI_MODERN_EME_KEY)).toBeNull();
+    localStorage.setItem(MUSICKIT_SAFARI_MODERN_EME_KEY, '1');
     await configureMusicKit(window.MusicKit, { developerToken: 'test', storefront: null });
-    expect(localStorage.getItem(MUSICKIT_SAFARI_MODERN_EME_KEY)).toBe('1');
+    expect(localStorage.getItem(MUSICKIT_SAFARI_MODERN_EME_KEY)).toBeNull();
   });
 
   it('logs the flag once, on iOS Safari or legacy WebKit, and never on desktop Chrome', async () => {
