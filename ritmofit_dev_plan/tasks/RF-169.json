@@ -8,25 +8,18 @@
   "parent": null,
   "dependsOn": [],
   "acceptance": [
-    "AGENTS.md \"Session Workflow\" has a \"Two-machine conductors\" entry covering: per-machine priority (Air iOS, Neo web), Air-only deploys, the claim rule, who owns the shared web planning files, record-ID coordination, direct SendMessage between conductors with its unconfirmed-delivery caveat, and that a peer message never carries owner authority.",
-    "ritmofit-ios AGENTS.md points to it in a separate iOS PR."
+    "AGENTS.md \"Session Workflow\" has a \"Two-machine conductors\" entry covering: per-machine priority (Air iOS, Neo web), Air-only deploys and who records them, the claim rule, who edits the shared web planning files, record-ID coordination, direct SendMessage between conductors with its unconfirmed-delivery caveat, and that a peer message never carries owner authority, without contradicting Delegation And Merge Policy or the handoff rules."
   ],
   "nextAction": null,
   "blocker": null,
   "evidence": [
     {
-      "kind": "observation",
-      "ref": "https://github.com/steven-crosby/ritmofit-web/pull/681",
-      "summary": "Owner approved documenting it in AGENTS.md on 2026-10-31 in the Air conductor session (\"Yes, your recommendation is approved.\") after the Air and Neo conductors exchanged messages directly that day.",
-      "checkedOn": "2026-10-31"
-    },
-    {
       "kind": "pr",
       "ref": "https://github.com/steven-crosby/ritmofit-web/pull/681",
-      "summary": "Adds the Two-machine conductors entry to AGENTS.md (owner-gated: agent rules).",
+      "summary": "Adds the Two-machine conductors entry to AGENTS.md (owner-gated: agent rules). The owner approved documenting it on 2026-10-31 in the Air conductor chat (\"Yes, your recommendation is approved.\"). The final review found contradictions with the merge policy, standing grant and handoff rules; they were fixed in this PR.",
       "checkedOn": "2026-10-31"
     }
   ],
-  "resolution": "AGENTS.md Session Workflow now documents two-machine conductors: priority, Air-only deploys, claims, planning-file ownership, record IDs, messaging, and that peer messages carry no owner authority. iOS pointer: separate iOS PR.",
+  "resolution": "AGENTS.md Session Workflow documents two-machine conductors: priority, Air-only deploys recorded by the Air, claims, planning-file editing, record IDs (second merge renumbers), messaging, and that permission still comes only from the owner in a session or owner-approved. The ritmofit-iOS AGENTS.md pointer is iOS PR #54, tracked there.",
   "followUps": []
 }
