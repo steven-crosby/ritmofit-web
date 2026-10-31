@@ -93,9 +93,11 @@ export function coverGradientClass(template: ClassTemplate | null | undefined): 
   }
 }
 
+/** Home template cards. Same disciplines, order and labels as the Create dialog (D21). */
 export const LIBRARY_TEMPLATES = [
   { template: 'cycle', label: 'Cycle', detail: 'Blocks for a ride.' },
   { template: 'sculpt', label: 'Pilates', detail: 'Blocks for the mat.' },
+  { template: 'hiit', label: 'HIIT', detail: 'Blocks for intervals.' },
 ] as const;
 
 export type LibraryTemplate = (typeof LIBRARY_TEMPLATES)[number]['template'];

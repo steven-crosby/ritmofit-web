@@ -4,6 +4,7 @@ import { cleanup, fireEvent, render, screen, waitFor, within } from '@testing-li
 import type { ClassListItem, ClassPlanBlock, RunPayload } from '@ritmofit/shared';
 import { ClassesHome } from './ClassesHome.js';
 import * as api from '../lib/api.js';
+import type { LibraryTemplate } from '../lib/library-shell.js';
 
 vi.mock('../lib/api.js');
 
@@ -66,7 +67,7 @@ function renderHome(
     onPreview?: (cls: ClassListItem) => void;
     onDelete?: (cls: ClassListItem) => Promise<void>;
     onStartClass?: (mode?: 'scaffold' | 'empty') => void;
-    onStartTemplate?: (template: 'cycle' | 'sculpt') => void;
+    onStartTemplate?: (template: LibraryTemplate) => void;
     onImportPlaylist?: () => void;
     onSelectTag?: (tag: string | null) => void;
   } = {},
@@ -119,24 +120,40 @@ describe('ClassesHome library shell', () => {
     expect(screen.getByRole('heading', { name: 'Your Classes' })).toBeTruthy();
   });
 
-  it('offers Cycle and Pilates templates and no HIIT tile', () => {
+  it('offers Cycle, Pilates and HIIT templates in the Create dialog order', () => {
     const onStartTemplate = vi.fn();
     renderHome([cls(1)], { onStartTemplate });
     const templates = screen.getByRole('group', { name: 'Class templates' });
     const tiles = within(templates).getAllByRole('button');
-    expect(tiles).toHaveLength(2);
-    expect(
-      within(templates).getByRole('button', { name: 'Start from the Cycle template' }),
-    ).toBeTruthy();
-    expect(
-      within(templates).getByRole('button', { name: 'Start from the Pilates template' }),
-    ).toBeTruthy();
-    expect(within(templates).queryByRole('button', { name: /HIIT/ })).toBeNull();
-    expect(screen.queryByRole('button', { name: /HIIT/ })).toBeNull();
+    expect(tiles.map((tile) => tile.getAttribute('aria-label'))).toEqual([
+      'Start from the Cycle template',
+      'Start from the Pilates template',
+      'Start from the HIIT template',
+    ]);
+    fireEvent.click(
+      within(templates).getByRole('button', { name: 'Start from the HIIT template' }),
+    );
+    expect(onStartTemplate).toHaveBeenCalledWith('hiit');
     fireEvent.click(
       within(templates).getByRole('button', { name: 'Start from the Cycle template' }),
     );
     expect(onStartTemplate).toHaveBeenCalledWith('cycle');
+  });
+
+  it('lays the three templates out with no orphan: stacked on a phone, three across from sm', () => {
+    renderHome([cls(1)]);
+    const classes = screen.getByRole('group', { name: 'Class templates' }).className.split(' ');
+    expect(classes).toContain('grid-cols-1');
+    expect(classes).toContain('sm:grid-cols-3');
+    expect(classes).not.toContain('grid-cols-2');
+  });
+
+  it('does not add a HIIT filter chip with the HIIT template', () => {
+    renderHome([cls(1)]);
+    const filters = screen.getByRole('group', { name: 'Filter classes' });
+    expect(within(filters).getByRole('button', { name: 'Cycle' })).toBeTruthy();
+    expect(within(filters).getByRole('button', { name: 'Pilates' })).toBeTruthy();
+    expect(within(filters).queryByRole('button', { name: /HIIT/ })).toBeNull();
   });
 
   it('shows readiness as text, with the dot only repeating it', async () => {
@@ -214,7 +231,7 @@ describe('ClassesHome library shell', () => {
     expect(screen.getByRole('heading', { name: 'Start from a template' })).toBeTruthy();
     expect(
       screen.getByRole('group', { name: 'Class templates' }).querySelectorAll('button'),
-    ).toHaveLength(2);
+    ).toHaveLength(3);
     expect(screen.queryByRole('region', { name: 'Jump back in' })).toBeNull();
   });
 
