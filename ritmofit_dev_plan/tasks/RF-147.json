@@ -17,7 +17,7 @@
     "Owner hears Start, Next and auto-advance in iPhone Safari Live after the change (provider code, CI cannot prove it).",
     "The #664 review items 1, 3, 4 and 5 are handled under RF-108's lock and supersession design, which must pass these checks: a timed-out setQueue generation is superseded; nowPlayingItem is checked before play, so a late settle cannot play the old song; a setQueue that settles after its timeout cannot start the old song; setQueue uses one try/finally; and a test covers a late settle and the not-destroyed path. The PR that lands RF-108's design meets this criterion."
   ],
-  "nextAction": "After PR #668 merges and deploys, the owner hears Start, Next and auto-advance in iPhone Safari Live (the same run as RF-108's device check). Owner decision owed on criterion 3: the #668 final review (finding 10) asked to restore the desktop Chrome test to \"removeItem is never called\", which this criterion asked to narrow; #668 now asserts never called. Either accept that as meeting the intent (no FairPlay key removal on desktop Chrome) or say which wording wins. When RF-108 is Done, the run passes and criterion 3 is settled, move this to Done.",
+  "nextAction": "After PR #668 merges and deploys, the owner hears Start, Next and auto-advance in iPhone Safari Live (the same run as RF-108's device check). When RF-108 is Done and that run passes, move this to Done.",
   "blocker": "Code for criteria 0-3 and 5 is in PR #668. Criterion 4 is the owner's iPhone Safari check, and this task now depends on RF-108 (owner of the setQueue/play lock design), which closes only after its own iPhone device check.",
   "evidence": [
     {
@@ -60,6 +60,12 @@
       "kind": "pr",
       "ref": "https://github.com/steven-crosby/ritmofit-web/pull/668",
       "summary": "Commit fe6a1d1: the late-settle guarantee for criterion 5 is now: before play, play() re-cues over a late settle; after start, a late settle that replaced the song shows Retry (never auto-plays). fairPlayFlagCleared resets with the probe test helper; the flag is still cleared once per page (the owner's passing runs before RF-147 cleared it per call; the device run checks song 2+).",
+      "checkedOn": "2026-10-30"
+    },
+    {
+      "kind": "observation",
+      "ref": "https://github.com/steven-crosby/ritmofit-web/pull/668#issuecomment-6536954882",
+      "summary": "Owner ruling in session 2026-10-30 (\"The stricter testing is acceptable\"), recorded in the #668 comment that applied owner-approved on 6595d3f: the desktop Chrome test asserting removeItem is never called meets criterion 3.",
       "checkedOn": "2026-10-30"
     }
   ],
