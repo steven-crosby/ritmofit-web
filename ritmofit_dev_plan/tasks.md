@@ -12,13 +12,13 @@ owner's queue: any agent may execute a Ready task. Publishing follows AGENTS.md 
 Evidence marked **recorded** is a carried-forward claim, not fresh verification.
 A checked PR proves its GitHub state, not product acceptance or production behavior.
 
-157 tasks. backlog: 53 · ready: 2 · in_progress: 0 · blocked: 1 · review: 9 · done: 90 · cancelled: 2.
+157 tasks. backlog: 53 · ready: 1 · in_progress: 1 · blocked: 1 · review: 9 · done: 90 · cancelled: 2.
 
 ## In progress
 
 | Task | Priority / kind | Relationships | Next action / resolution | Evidence |
 | --- | --- | --- | --- | --- |
-| — | — | — | — | — |
+| [RF-108](tasks/RF-108.json) Scrubbing or pausing Live during a track start keeps music playing | P2 / task | needs RF-107; follow-ups RF-158, RF-159 | In progress on branch fix/rf-108-apple-queue-wait (owner-approved redesign of 2026-10-31 from the iPhone timing run on 97f4454): wait for a previous Apple setQueue/play (bounded 2 s) instead of failing, remove the double adapter start per timeline tap at its source, count first playing state as started with a 3 s play cap. Restart: continue on that branch's draft PR. | recorded; checked 2026-10-28; checked 2026-10-30 |
 
 ## Blocked / waiting
 
@@ -44,7 +44,6 @@ A checked PR proves its GitHub state, not product acceptance or production behav
 
 | Task | Priority / kind | Relationships | Next action / resolution | Evidence |
 | --- | --- | --- | --- | --- |
-| [RF-108](tasks/RF-108.json) Scrubbing or pausing Live during a track start keeps music playing | P2 / task | needs RF-107; follow-ups RF-158, RF-159 | Owner's Ready set stands (decision 2026-10-30, option 1: measure first). Lock work preserved on branch wip/rf-108-apple-locks at 85442ac (leases, provider-scoped settle wait, hard caps, held-error attempt token, and tests). The four #668 final reviews are in the PR comments. Redesign after the owner's iPhone timing run (from #668's ?playback-timing=1 instrumentation: Start, three quick timeline taps, Next and one auto-advance), in a new PR. Spotify adapter settle work is RF-158 (after RF-92); late-settle detection is RF-159. Owner-gated (playback code); device check owed. | recorded; checked 2026-10-28; checked 2026-10-30 |
 | [RF-100](tasks/RF-100.json) Label changes rerun only the PR gates, not the full CI job | P3 / task | needs RF-98 | Owner set Ready on 2026-10-28. Design a gate-only path for labeled/unlabeled events (separate job or workflow) that keeps the required check name meaningful, so a label edit re-evaluates only the owner gate. Also key the concurrency group per PR (for example ci-${{ github.event.pull_request.number &#124;&#124; github.ref }}) so a label edit on a merged PR cannot cancel main's push run (acceptance 3). Until fixed, agents remove ready-to-merge before merging, never after. Owner-gated: the change edits .github/workflows/ci.yml. | checked 2026-10-27; checked 2026-10-28 |
 
 ## Backlog
