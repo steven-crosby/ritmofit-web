@@ -49,10 +49,12 @@
     {
       "kind": "pr",
       "ref": "https://github.com/steven-crosby/ritmofit-web/pull/672",
-      "summary": "Final review (/code-review medium 672) on b9674b7: one correctness bug, fixed in the same PR: a failed first connections load latched the provisional service, so a successful Retry never picked a connected one. Resolution now waits for a ready load; new test \"picks a connected service after a failed first load is retried\" fails before and passes after. isConnected now shared with libraryKindFor. Logged, not fixed: an OAuth return opens the remembered view rather than the just-connected service when Reconnect came from a non-selected chip; an expired remembered service falls back like a disconnected one.",
+      "summary": "Final review (/code-review medium 672) on b9674b7: one correctness bug, fixed in the same PR: a failed first connections load latched the provisional service, so a successful Retry never picked a connected one. Resolution now waits for a ready load; new test \"picks a connected service after a failed first load is retried\" fails before and passes after. isConnected now shared with libraryKindFor. Logged in RF-162, not fixed: an OAuth return opens the remembered view rather than the just-connected service when Reconnect came from a non-selected chip; an expired remembered service falls back like a disconnected one.",
       "checkedOn": "2026-10-31"
     }
   ],
   "resolution": "Music reopens on the last service and shelf (RF-137, #672). All four criteria are covered by component and unit tests; full local gate (incl. e2e smoke) green on 2026-10-31. No real-browser check beyond the e2e smoke.",
-  "followUps": []
+  "followUps": [
+    "RF-162"
+  ]
 }
