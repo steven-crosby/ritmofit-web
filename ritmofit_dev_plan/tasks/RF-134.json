@@ -3,7 +3,7 @@
   "id": "RF-134",
   "title": "Every readiness and connection label says only what it checked, in one vocabulary",
   "kind": "task",
-  "status": "backlog",
+  "status": "in_progress",
   "priority": "P1",
   "parent": null,
   "dependsOn": [
@@ -19,7 +19,7 @@
     "The new vocabulary is written into the design canon; iOS follows the canon wording.",
     "Judgment, if the owner accepts it: Classes home surfaces one next class and what is left on it."
   ],
-  "nextAction": "RF-131 answered 2026-10-31: option (a), keep four dimensions and rename each by what it checks. The tempo criterion is met only once RF-166 (decision 3b) is Done, hence dependsOn RF-166. The D24 Account fix needs no decision. Files: apps/web/src/lib/readiness.ts, library-shell.ts, providers.ts, Dashboard.tsx, ConnectionStateMark.tsx, ritmofit_design_system copy. providers.ts is owner-gated (scripts/owner-gate.mjs provider/playback paths), so a PR touching it needs owner-approved. Surface: web; iOS for canon wording only.",
+  "nextAction": "Branch feat/rf-134-readiness-vocabulary (Neo, 2026-10-31). One owner-gated PR (it touches apps/web/src/lib/providers.ts for the Account \"Authorized\" label). Restart: inventory label strings across readiness.ts, library-shell.ts, providers.ts, Dashboard.tsx, ConnectionStateMark.tsx and preflight; rename per RF-131 answer 2a; write the vocabulary into the design canon; tests; PR with needs-owner. The optional Classes-home judgment item waits for the owner.",
   "blocker": null,
   "evidence": [
     {
@@ -56,6 +56,12 @@
       "kind": "pr",
       "ref": "https://github.com/steven-crosby/ritmofit-web/pull/677",
       "summary": "Final review of #677 corrected file pointers, record links and the design system 10 §1a reading.",
+      "checkedOn": "2026-10-31"
+    },
+    {
+      "kind": "observation",
+      "ref": "ritmofit_dev_plan/tasks/RF-134.json",
+      "summary": "Owner set Ready 2026-10-31 in the Neo session (\"Yes\" to \"Should RF-134 go Ready for the Neo?\"), after RF-166 merged (#682, c0b60d4).",
       "checkedOn": "2026-10-31"
     }
   ],
