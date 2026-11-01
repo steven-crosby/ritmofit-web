@@ -16,10 +16,10 @@
 
 **Current actionable state:** [RF board](./tasks.md), backed by canonical [task records](./tasks/README.md).
 The order of work is [Phases](#phases) below; each phase lists RF records, not a second backlog.
-**Main vs production (checked 2026-11-01 from git, not wrangler):** production is main `67496ab`
-(Worker `feac7dde-dc10-4462-bd2d-79075d289bda`; SPA `assets/index-ChxMwIpX.js`; rollback
-`e50f1fd3-bdd1-4541-bc3f-4c2cd483a167`), deployed from the Air on 2026-10-31. Every later main commit is records and docs only, so no deploy is
-due. See [HISTORY](./HISTORY.md).
+**Main vs production (production last observed 2026-10-31; git checked 2026-11-01):** production
+is main `67496ab` (Worker `feac7dde-dc10-4462-bd2d-79075d289bda`; SPA `assets/index-ChxMwIpX.js`;
+rollback `e50f1fd3-bdd1-4541-bc3f-4c2cd483a167`), deployed from the Air on 2026-10-31. Every later
+main commit is records and docs only, so no deploy is due. See [HISTORY](./HISTORY.md).
 **In flight:** the D25 provider matrix (#654), unchanged since 2026-10-29.
 **Next step:** the owner's Mac and iPhone check of [RF-151](./tasks/RF-151.json) (Music › Songs pick
 mode: a row tap ticks and never plays, the 15 cap, Create a class) and RF-134's live labels, on Apple
