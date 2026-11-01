@@ -4,24 +4,24 @@
   "title": "Music Songs: ▶ preview on the song artwork",
   "kind": "task",
   "status": "backlog",
-  "priority": "P2",
+  "priority": "P1",
   "parent": "RF-138",
   "dependsOn": [
     "RF-151"
   ],
   "acceptance": [
-    "On Music › Songs each row's artwork becomes a ▶ preview button that sits beside the row's selection label (RF-151), not inside it. Tapping it previews the song; tapping the rest of the row still selects and never plays.",
+    "On Music › Songs each row's artwork becomes a ▶ preview button. This moves the artwork out of the row's selection <label> (RF-151 keeps it inside and toggling until this ships) so the button sits beside the label, not inside it; RF-151's artwork-toggle tests are updated to match. Tapping ▶ previews the song; tapping the rest of the row still selects and never plays.",
     "Preview reuses the builder TrackPreview path and plays only through the official provider SDK or widget; nothing is cached.",
     "The button is keyboard reachable, labeled with the song name, at least 44px, and axe WCAG 2.2 AA clean at 1440 and 390 wide with no nested interactive controls.",
     "Component tests cover that ▶ starts preview without toggling selection; the PR names the real-browser preview check CI cannot prove."
   ],
-  "nextAction": "Owner, 2026-10-31: preview is a ▶ on the artwork, never the row tap. Starts after RF-151 is Done. Files: apps/web/src/components/Dashboard.tsx (Songs rows), TrackPreview.tsx; playback code under apps/web/src/lib/playback/ is owner-gated. Agent-created: Backlog until the owner sets Ready.",
+  "nextAction": "Owner, 2026-10-31: preview is a ▶ on the artwork, never the row tap. Starts after RF-151 is Done, which waits on the owner's Mac and iPhone smoke test of pick mode; if the owner switches to a Select button instead, revisit this record first. Files: apps/web/src/components/SongPicks.tsx (SongPickList rows), apps/web/src/lib/song-picks.ts (selection), TrackPreview.tsx; playback code under apps/web/src/lib/playback/ is owner-gated. Agent-created: Backlog until the owner sets Ready. P1 to match its parent RF-138, which cannot close until this does.",
   "blocker": null,
   "evidence": [
     {
-      "kind": "observation",
-      "ref": "https://github.com/steven-crosby/ritmofit-web/pull/684",
-      "summary": "Owner, 2026-10-31 (Air conductor session), after an iPhone recording of Music › Songs where tapping rows did nothing and screenshots of Spotify playlist Edit mode: rows must select, not play; preview must exist but as a secondary control. Chose option (a) \"always in pick mode\" (\"Let’s try a first\") over a Spotify-style Select button, and will smoke test it on Mac and iPhone to judge the feel. Recording and screenshots shared in session; not stored in the repo.",
+      "kind": "document",
+      "ref": "ritmofit_dev_plan/tasks/RF-151.json",
+      "summary": "Owner decision of 2026-10-31 on Music › Songs (option (a), always in pick mode; preview as a secondary control): recorded in full in RF-151's evidence.",
       "checkedOn": "2026-10-31"
     },
     {
