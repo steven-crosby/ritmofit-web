@@ -1,0 +1,36 @@
+{
+  "schemaVersion": 1,
+  "id": "RF-172",
+  "title": "Music Songs: ▶ preview on the song artwork",
+  "kind": "task",
+  "status": "backlog",
+  "priority": "P2",
+  "parent": "RF-138",
+  "dependsOn": [
+    "RF-151"
+  ],
+  "acceptance": [
+    "On Music › Songs each row's artwork becomes a ▶ preview button that sits beside the row's selection label (RF-151), not inside it. Tapping it previews the song; tapping the rest of the row still selects and never plays.",
+    "Preview reuses the builder TrackPreview path and plays only through the official provider SDK or widget; nothing is cached.",
+    "The button is keyboard reachable, labeled with the song name, at least 44px, and axe WCAG 2.2 AA clean at 1440 and 390 wide with no nested interactive controls.",
+    "Component tests cover that ▶ starts preview without toggling selection; the PR names the real-browser preview check CI cannot prove."
+  ],
+  "nextAction": "Owner, 2026-10-31: preview is a ▶ on the artwork, never the row tap. Starts after RF-151 is Done. Files: apps/web/src/components/Dashboard.tsx (Songs rows), TrackPreview.tsx; playback code under apps/web/src/lib/playback/ is owner-gated. Agent-created: Backlog until the owner sets Ready.",
+  "blocker": null,
+  "evidence": [
+    {
+      "kind": "observation",
+      "ref": "https://github.com/steven-crosby/ritmofit-web/pull/684",
+      "summary": "Owner, 2026-10-31 (Air conductor session), after an iPhone recording of Music › Songs where tapping rows did nothing and screenshots of Spotify playlist Edit mode: rows must select, not play; preview must exist but as a secondary control. Chose option (a) \"always in pick mode\" (\"Let’s try a first\") over a Spotify-style Select button, and will smoke test it on Mac and iPhone to judge the feel. Recording and screenshots shared in session; not stored in the repo.",
+      "checkedOn": "2026-10-31"
+    },
+    {
+      "kind": "pr",
+      "ref": "https://github.com/steven-crosby/ritmofit-web/pull/684",
+      "summary": "Records PR: split from RF-138 so playlist-detail work is not blocked on RF-151.",
+      "checkedOn": "2026-10-31"
+    }
+  ],
+  "resolution": null,
+  "followUps": []
+}
