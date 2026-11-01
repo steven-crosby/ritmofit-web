@@ -22,6 +22,12 @@
       "ref": "https://github.com/steven-crosby/ritmofit-web/pull/667",
       "summary": "Final review of #667, item 1: RF-151 depending on RF-92 would block its Apple and SoundCloud work.",
       "checkedOn": "2026-10-30"
+    },
+    {
+      "kind": "observation",
+      "ref": "https://github.com/steven-crosby/ritmofit-web/pull/688",
+      "summary": "On production 67496ab (RF-151 pick mode), the Neo's desktop Chrome check in the owner's signed-in browser listed Spotify liked songs on Music › Songs and selection worked on them; nothing was saved. So Spotify likes already reach the pick-mode list; whether this record still needs work, and whether it still waits on RF-92, is for the owner to decide.",
+      "checkedOn": "2026-10-31"
     }
   ],
   "resolution": null,

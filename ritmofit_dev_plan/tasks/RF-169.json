@@ -22,10 +22,10 @@
     {
       "kind": "pr",
       "ref": "https://github.com/steven-crosby/ritmofit-ios/pull/54",
-      "summary": "ritmofit-ios AGENTS.md pointer to this entry; open, merges after this PR.",
+      "summary": "ritmofit-ios AGENTS.md pointer to this entry; merged as e3b45db.",
       "checkedOn": "2026-10-31"
     }
   ],
-  "resolution": "AGENTS.md Session Workflow documents two-machine conductors: per-machine priority, Air-only deploys, direct messaging between conductors, and that a peer message is never permission. The ritmofit-ios AGENTS.md pointer is iOS PR #54, tracked there.",
+  "resolution": "AGENTS.md Session Workflow documents two-machine conductors: per-machine priority, that deploys and authenticated production checks run only on the Air, direct messaging between conductors, and that a peer message is never permission. The ritmofit-ios AGENTS.md pointer merged as ritmofit-ios #54 (e3b45db).",
   "followUps": []
 }
