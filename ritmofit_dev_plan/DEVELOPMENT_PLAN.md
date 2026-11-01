@@ -31,8 +31,8 @@ Later main commits are records and docs only. See [HISTORY](./HISTORY.md).
 **In flight:** the Neo's RF-151 production-check record (#688); the D25 provider matrix (#654).
 **Next step:** the owner's iPhone smoke test of [RF-151](./tasks/RF-151.json) (Music › Songs pick
 mode: a row tap ticks and never plays, the 15 cap, Create a class; the Neo's desktop Chrome check is
-#688) and RF-134's live labels on Music and Account. Still owed: the owner's iPhone Safari device check (the 7 steps in the
-#669 PR body, with `?playback-timing=1`) for [RF-108](./tasks/RF-108.json),
+#688) and RF-134's live labels on Music and Account. Still owed: the owner's iPhone Safari device
+check (the 7 steps in the #669 PR body, with `?playback-timing=1`) for [RF-108](./tasks/RF-108.json),
 [RF-128](./tasks/RF-128.json) and [RF-147](./tasks/RF-147.json).
 **Window:** the Apple Music subscription ends around 2026-11-27, so anything that needs a live Apple
 account (Phase 1) goes first. Spotify is reopened (owner, 2026-10-28); on 2026-10-31 the owner's
