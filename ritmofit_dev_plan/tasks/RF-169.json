@@ -24,6 +24,12 @@
       "ref": "https://github.com/steven-crosby/ritmofit-ios/pull/54",
       "summary": "ritmofit-ios AGENTS.md pointer to this entry; merged as e3b45db.",
       "checkedOn": "2026-10-31"
+    },
+    {
+      "kind": "pr",
+      "ref": "https://github.com/steven-crosby/ritmofit-web/pull/693",
+      "summary": "Owner, 2026-10-31 (Air conductor chat): \"Let's remove that line. I want Neo on par, except for setting the wrangler auth.\" Only deploys stay Air-only; the Neo may do signed-in production checks.",
+      "checkedOn": "2026-10-31"
     }
   ],
   "resolution": "AGENTS.md Session Workflow documents two-machine conductors: per-machine priority, that only deploys run on the Air (the wrangler login) and the Neo is otherwise on par, including signed-in production checks, direct messaging between conductors, and that a peer message is never permission. The ritmofit-ios AGENTS.md pointer merged as ritmofit-ios #54 (e3b45db).",
