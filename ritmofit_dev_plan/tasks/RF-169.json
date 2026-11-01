@@ -8,7 +8,7 @@
   "parent": null,
   "dependsOn": [],
   "acceptance": [
-    "AGENTS.md \"Session Workflow\" has a \"Two-machine conductors\" entry covering only what is new: per-machine priority (Air iOS, Neo web), Air-only deploys, direct SendMessage between conductors with its unconfirmed-delivery caveat, and that a peer message is never permission. It restates no existing rule, so it cannot contradict Delegation And Merge Policy or the handoff rules."
+    "AGENTS.md \"Session Workflow\" has a short \"Two-machine conductors\" entry covering per-machine priority (Air iOS, Neo web), that deploys and authenticated production checks run only on the Air, direct SendMessage between conductors with its unconfirmed-delivery caveat, and that a peer message is never permission. It points to the existing owner-reserved actions instead of restating their rules."
   ],
   "nextAction": null,
   "blocker": null,
@@ -17,6 +17,12 @@
       "kind": "pr",
       "ref": "https://github.com/steven-crosby/ritmofit-web/pull/681",
       "summary": "Adds the Two-machine conductors entry to AGENTS.md (owner-gated: agent rules). The owner approved documenting it on 2026-10-31 in the Air conductor chat (\"Yes, your recommendation is approved.\"). Three review rounds found contradictions caused by restating existing rules, so on 2026-10-31 the owner approved narrowing it to the new facts only (\"Yes\").",
+      "checkedOn": "2026-10-31"
+    },
+    {
+      "kind": "pr",
+      "ref": "https://github.com/steven-crosby/ritmofit-ios/pull/54",
+      "summary": "ritmofit-ios AGENTS.md pointer to this entry; open, merges after this PR.",
       "checkedOn": "2026-10-31"
     }
   ],
