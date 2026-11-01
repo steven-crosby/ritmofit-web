@@ -50,6 +50,12 @@
       "ref": "https://github.com/steven-crosby/ritmofit-web/pull/686",
       "summary": "Pick mode on Music › Songs: one-label rows, 15 cap with a note, selection bar, name-and-template sheet; Create class from liked songs and its picker removed. Component tests (SongPicks, song-picks, Dashboard) and the e2e smoke (two mock SoundCloud songs to a class, 1440 and 390, axe clean apart from the RF-173 chip mismatch) pass locally.",
       "checkedOn": "2026-10-31"
+    },
+    {
+      "kind": "observation",
+      "ref": "https://github.com/steven-crosby/ritmofit-web/pull/686",
+      "summary": "Neo, in the owner's signed-in Mac Chrome on production 67496ab (SPA assets/index-ChxMwIpX.js), 1920 wide, without saving anything. Music › Songs listed 200 Spotify liked songs, each row one <label> with one checkbox and no other control, inside data-build-class-slot=\"song\"; the old button was gone. A click on a title and on an artwork each ticked once (\"2 of 15 selected\"), and no audio, video or iframe appeared. At 15 the 16th row was disabled with the note, and unticking one re-enabled it. The sheet asked only for a name (\"Spotify likes\") and a template; Cancel closed it and Clear selection emptied the list. No class was created. Phone width and iPhone Safari were not checked (the window would not resize), so the owner's device check is still owed.",
+      "checkedOn": "2026-10-31"
     }
   ],
   "resolution": null,
