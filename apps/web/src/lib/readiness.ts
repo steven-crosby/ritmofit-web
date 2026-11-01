@@ -152,8 +152,10 @@ export function classReadiness(payload: RunPayload): ClassReadiness {
       ? {
           key: 'music',
           level: 'ready',
-          label: 'Music ready',
-          detail: 'Every track is linked to a music service Live can play.',
+          // Checks links only; whether this browser can play them is preflight's job (RF-134).
+          label: 'Music linked on every track',
+          detail:
+            'Every track is linked to a music service. Live checks playback before you start.',
           tracks: [],
         }
       : missingProvider.length === count

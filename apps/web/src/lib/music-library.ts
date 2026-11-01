@@ -258,7 +258,8 @@ export function musicChipBadge(input: {
     return { kind: 'unverified', label: 'Unavailable' };
   }
   if (input.connectionState === 'connected') return { kind: 'connected', label: 'Connected' };
-  if (input.connectionState === 'expired') return { kind: 'expired', label: 'Reconnect' };
+  // A state, not an action: "Reconnect" is only ever a button (RF-134).
+  if (input.connectionState === 'expired') return { kind: 'expired', label: 'Session expired' };
   return { kind: 'catalog-only', label: 'Catalog only' };
 }
 

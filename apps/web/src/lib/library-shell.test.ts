@@ -82,16 +82,20 @@ describe('readinessLabel', () => {
       ['Set track durations', 'Needs duration'],
       ['Add cues and moves', 'Needs cues'],
       ['Score the effort arc', 'Needs effort'],
-      ['Add the first track', 'Needs music'],
-      ['Link music to tracks', 'Needs music'],
-      ['Add music to the plan', 'Needs music'],
-      ['Put songs in the plan', 'Needs music'],
-      ['Fix overflowing blocks', 'Over time'],
+      ['Add the first track', 'No tracks'],
+      ['Link music to tracks', 'Music not linked'],
       ['Finish refinements', 'Needs work'],
     ];
     for (const [action, label] of gaps) {
       expect(readinessMark(step('Refine before teaching', action))).toEqual({ label, dot: true });
     }
+    // Plan gaps carry their own label naming the exact gap (RF-134).
+    expect(
+      readinessMark({
+        ...step('Refine before teaching', 'Add music to the plan'),
+        label: '2 blocks empty',
+      }),
+    ).toEqual({ label: '2 blocks empty', dot: true });
     // Missing tempo is no longer a list label (RF-166).
     expect(readinessLabel(step('Refine before teaching', 'Add the missing tempo'))).toBe(
       'Needs work',

@@ -3166,7 +3166,8 @@ function LiveWorkspace({
         ? 'No classes with tracks yet.'
         : !allResolved
           ? `Checking readiness for ${candidates.length} ${candidates.length === 1 ? 'class' : 'classes'}…`
-          : `${summary.runnable} of ${candidates.length} ${candidates.length === 1 ? 'class' : 'classes'} ready for Live.`;
+          : // Counts what it checked (RF-134): every track has a length, so the class can run.
+            `${summary.runnable} of ${candidates.length} ${candidates.length === 1 ? 'class' : 'classes'} can run live: every track has a length.`;
 
   return (
     <section className="min-w-0">
@@ -3728,7 +3729,7 @@ function AccountWorkspace({
               onClick={onOpenConnections}
               className="min-h-11 rounded-control border border-interactive/35 px-4 font-ui text-sm font-semibold text-interactive hover:bg-interactive/10 sm:rounded-pill"
             >
-              Manage
+              Manage connections
             </button>
           </div>
           <div className="mt-4 grid gap-2">
@@ -3885,7 +3886,7 @@ export function ProviderShelfCard({
       : connected
         ? 'Connected'
         : connectionState === 'expired'
-          ? 'Expired'
+          ? 'Session expired'
           : connectionStatus === 'loading'
             ? 'Checking'
             : 'Catalog only';

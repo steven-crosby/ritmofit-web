@@ -186,16 +186,33 @@ export function formatPlannedDurationInput(ms: number): string {
  * still empty, filling it leads — overflow stays on the card and must not steal
  * the fill job.
  */
-export function planNextStep(
+export type PlanGap = {
+  /** The sentence the builder and the Classes detail show. */
+  lead: string;
+  /** The short Classes-row label naming the same gap (RF-134). */
+  label: string;
+};
+
+const count = (n: number, one: string, many: string): string => `${n} ${n === 1 ? one : many}`;
+
+/** {@link planNextStep} plus a short label for the same gap, from one derivation. */
+export function planGap(
   blocks: readonly ClassPlanBlock[],
   tracks: readonly ClassTrack[],
   payload: RunPayload | null,
-): string | null {
+): PlanGap | null {
   if (blocks.length === 0) return null;
 
   const unassigned = unassignedClassTracks(tracks);
-  if (unassigned.length === 1) return '1 song is not in a plan block';
-  if (unassigned.length > 1) return `${unassigned.length} songs are not in a plan block`;
+  if (unassigned.length > 0) {
+    return {
+      lead:
+        unassigned.length === 1
+          ? '1 song is not in a plan block'
+          : `${unassigned.length} songs are not in a plan block`,
+      label: `${count(unassigned.length, 'song', 'songs')} outside the plan`,
+    };
+  }
 
   const fits = blocks.map((block) => ({
     block,
@@ -203,19 +220,37 @@ export function planNextStep(
   }));
 
   const empty = fits.filter((row) => tracksForPlanBlock(row.block.id, tracks).length === 0);
-  if (empty.length === 1) {
-    return `Block ${empty[0]!.block.position + 1} still needs music`;
+  if (empty.length > 0) {
+    return {
+      lead:
+        empty.length === 1
+          ? `Block ${empty[0]!.block.position + 1} still needs music`
+          : `${empty.length} blocks still need music`,
+      label: `${count(empty.length, 'block', 'blocks')} empty`,
+    };
   }
-  if (empty.length > 1) return `${empty.length} blocks still need music`;
 
   const over = fits.filter((row) => row.fit === 'over').sort((a, b) => b.deltaMs - a.deltaMs);
-  if (over.length === 1) {
+  if (over.length > 0) {
     const row = over[0]!;
-    return `Block ${row.block.position + 1} is ${formatDuration(row.deltaMs)} over`;
+    return {
+      lead:
+        over.length === 1
+          ? `Block ${row.block.position + 1} is ${formatDuration(row.deltaMs)} over`
+          : `${over.length} blocks are over their planned time`,
+      label: `${count(over.length, 'block', 'blocks')} over time`,
+    };
   }
-  if (over.length > 1) return `${over.length} blocks are over their planned time`;
 
   return null;
+}
+
+export function planNextStep(
+  blocks: readonly ClassPlanBlock[],
+  tracks: readonly ClassTrack[],
+  payload: RunPayload | null,
+): string | null {
+  return planGap(blocks, tracks, payload)?.lead ?? null;
 }
 
 /**
