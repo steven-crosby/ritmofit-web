@@ -12,6 +12,22 @@ detail). Current focus and `main` vs production live in the "Now" block of
 ---
 
 ## Deploy and session log (newest first)
+> **Deploy 2026-10-31 — RF-166, RF-134 and RF-151 on main `67496ab`** (from the Air, owner "yes
+> deploy"). Remote D1: none to apply. New Worker `feac7dde-dc10-4462-bd2d-79075d289bda`; rollback
+> `e50f1fd3-bdd1-4541-bc3f-4c2cd483a167` (`a1b971d`). SPA `assets/index-ChxMwIpX.js` (was
+> `assets/index-DCUUNJcv.js`). Gates passed; propagation 3/3; status smoke and all six security
+> headers passed; a tail of about 15 minutes saw 55 events, 0 exceptions and 0 5xx. Not done: the
+> authed smoke, skipped because the QA session is expired (RF-155), and the owner's Mac and iPhone
+> smoke test of RF-151 (For review) and RF-134's live labels.
+
+> **Session 2026-10-31 — Air conductor merges.** All with owner permission per PR:
+> [#684](https://github.com/steven-crosby/ritmofit-web/pull/684) as `909182e` (RF-151 pick-mode
+> spec, RF-172 created, RF-138 narrowed, RF-170 created),
+> [#681](https://github.com/steven-crosby/ritmofit-web/pull/681) as `9bc9a09` (RF-169: AGENTS.md
+> two-machine conductors, owner-gated) and
+> [#687](https://github.com/steven-crosby/ritmofit-web/pull/687) as `e4d27f2` (RF-172 and RF-138
+> spec fixes). ritmofit-ios #54 merged as `e3b45db` (AGENTS.md pointer to the two-machine rules).
+> From the Neo: #683 as `411bdba` (RF-134), #685 as `b1468ec` (docs) and #686 as `67496ab` (RF-151).
 
 > **Session 2026-10-31 (Neo) — second round merged; Spotify likes observed.** With owner permission
 > per PR: [#679](https://github.com/steven-crosby/ritmofit-web/pull/679) as `62c3cee` (RF-144: design brief §9.8 provider capabilities, D21 Account

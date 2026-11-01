@@ -37,13 +37,7 @@
     {
       "kind": "pr",
       "ref": "https://github.com/steven-crosby/ritmofit-web/pull/684",
-      "summary": "Records PR: row tap selects on playlist detail too; Songs ▶ split into child RF-172.",
-      "checkedOn": "2026-10-31"
-    },
-    {
-      "kind": "pr",
-      "ref": "https://github.com/steven-crosby/ritmofit-web/pull/684",
-      "summary": "The owner approved \"rows select, never play\" for playlist detail rows too, as part of the #684 review-fix list (Air conductor session, 2026-10-31: \"Yes\"); the fix list is in the #684 conversation.",
+      "summary": "Records PR: Songs ▶ split into child RF-172. The owner approved \"rows select, never play\" for playlist detail rows too, as one item of the #684 review-fix list, in the Air conductor chat on 2026-10-31 (\"Yes\"); the chat is not stored in the repo, and the #684 thread holds only the agent's summary.",
       "checkedOn": "2026-10-31"
     }
   ],
