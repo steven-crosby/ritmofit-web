@@ -40,6 +40,8 @@ writeFileSync(
     `BETTER_AUTH_URL=${ORIGIN}`,
     `WEB_ORIGIN=${ORIGIN}`,
     'MOCK_PROVIDERS=true',
+    // The mock connect seam still encrypts its placeholder tokens (Music › Songs, RF-151).
+    'ENCRYPTION_KEY=e2e-local-only-encryption-key-never-used-outside-this-run',
     '',
   ].join('\n'),
 );

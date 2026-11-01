@@ -82,6 +82,7 @@ import {
   avgBpm,
   formatDuration,
   cardSummaryFromPayload,
+  CREATE_TEMPLATE_OPTIONS,
   formatTemplateLabel,
 } from '../lib/class-summary.js';
 import { formatLastOpened } from '../lib/relative-time.js';
@@ -127,7 +128,6 @@ import {
   defaultLibraryKind,
   filterLibrary,
   LIBRARY_SORT_OPTIONS,
-  likesSubsetNote,
   serverSongSearchState,
   shouldAutoLoadForSearch,
   SONG_SEARCH_AUTOLOAD_BOUND,
@@ -141,7 +141,6 @@ import {
   musicLibraryKinds,
   orderLibrary,
   playlistMetaLine,
-  songMetaLine,
   SPOTIFY_ALLOWLIST_CODE,
   PROVIDER_QUOTA_CODE,
   libraryFailureExplainsItself,
@@ -166,6 +165,8 @@ import { TrackSearch, providerTrackKeysFromRun } from './TrackSearch.js';
 import { CreateClassDialog, type CreateClassMode } from './CreateClassDialog.js';
 import { ClassPlanBlocks, planBlockOptionLabel, type PlanBlockTarget } from './ClassPlanBlocks.js';
 import { SourceList, sourceCandidateKey } from './SourceList.js';
+import { SongPickBar, SongPickCreateDialog, SongPickList } from './SongPicks.js';
+import { orderPicks, songPickScope, useSongPicks } from '../lib/song-picks.js';
 import {
   consumeOnboardingVideoPending,
   markOnboardingVideoDismissed,
@@ -308,12 +309,6 @@ export function Dashboard({
     provider: Provider;
     playlists: ProviderPlaylistSummary[];
     playlistId: string;
-  } | null>(null);
-  const [likesBrowse, setLikesBrowse] = useState<{
-    provider: Provider;
-    tracks: TrackSearchResult[];
-    /** More liked songs exist than were loaded: the dialog says it used a subset. */
-    hasMore: boolean;
   } | null>(null);
   const [onboardingVideoOpen, setOnboardingVideoOpen] = useState(false);
   const [oauthResult, setOauthResult] = useState<{ connected?: string; error?: string } | null>(
@@ -808,7 +803,6 @@ export function Dashboard({
         session,
         songBlocks,
       });
-      setLikesBrowse(null);
       setDestination('classes');
       await openClass({ ...cls, accessLevel: 'owner' });
     },
@@ -1014,15 +1008,6 @@ export function Dashboard({
             initialPlaylistId={playlistBrowse.playlistId}
             onClose={() => setPlaylistBrowse(null)}
             onCreateClass={handleCreateClassFromPlaylist}
-          />
-        )}
-        {likesBrowse && (
-          <LikesBrowserDialog
-            provider={likesBrowse.provider}
-            tracks={likesBrowse.tracks}
-            hasMore={likesBrowse.hasMore}
-            onClose={() => setLikesBrowse(null)}
-            onCreateClass={handleCreateClassFromLikes}
           />
         )}
         {cardPreview && (
@@ -1242,9 +1227,6 @@ export function Dashboard({
               onOpenConnections={() => setConnectionsOpen(true)}
               onOpenPlaylist={(provider, playlists, playlistId) =>
                 setPlaylistBrowse({ provider, playlists, playlistId })
-              }
-              onBrowseLikes={(provider, tracks, hasMore) =>
-                setLikesBrowse({ provider, tracks, hasMore })
               }
               onCreateClass={handleCreateClassFromLikes}
             />
@@ -1675,16 +1657,6 @@ function ArtCollage({ urls, classId }: { urls: string[]; classId: string }) {
   );
 }
 
-/**
- * The create-class chooser's D21 templates. Pilates maps to the shared `sculpt`
- * enum until the contract earns a rename; labels are presentation-only.
- */
-const CREATE_TEMPLATE_OPTIONS: ReadonlyArray<{ value: ClassTemplate | null; label: string }> = [
-  { value: 'cycle', label: 'Cycle' },
-  { value: 'sculpt', label: 'Pilates' },
-  { value: 'hiit', label: 'HIIT' },
-];
-
 function retainConnectedProviderState<T>(
   state: Partial<Record<Provider, T>>,
   connectedProviders: ReadonlySet<Provider>,
@@ -1999,7 +1971,6 @@ function MusicWorkspace({
   onViewChange,
   onOpenConnections,
   onOpenPlaylist,
-  onBrowseLikes,
   onCreateClass,
 }: {
   userId: string;
@@ -2012,11 +1983,11 @@ function MusicWorkspace({
     playlists: ProviderPlaylistSummary[],
     playlistId: string,
   ) => void;
-  onBrowseLikes: (provider: Provider, tracks: TrackSearchResult[], hasMore: boolean) => void;
   onCreateClass: (
     tracks: TrackSearchResult[],
     title: string,
     template: ClassTemplate,
+    songBlocks?: boolean,
   ) => Promise<void>;
 }) {
   const {
@@ -2267,6 +2238,11 @@ function MusicWorkspace({
   const label = providerLabel(selectedProvider);
   const connection = connections.find((row) => row.provider === selectedProvider);
   const connectionState = providerConnectionState(selectedProvider, connection, Date.now());
+  // Songs pick mode (RF-151): one selection per provider account.
+  const songPicks = useSongPicks(
+    songPickScope(selectedProvider, connectionState === 'connected', connection),
+  );
+  const [songPickCreateOpen, setSongPickCreateOpen] = useState(false);
   const statusMark = musicConnectionMark(connectionsStatus, connectionState);
   const truth = providerCapabilityTruth(selectedProvider, connection, Date.now());
   const connectBusy = !!flow.operation && !flow.operation.error && flow.operation.stage !== 'ready';
@@ -2633,11 +2609,15 @@ function MusicWorkspace({
                 }
               : null
           }
-          onCreateClass={
-            likedTracks && likedTracks.length > 0
-              ? () => onBrowseLikes(selectedProvider, likedTracks, likesHasMore)
-              : null
-          }
+          picks={{
+            selectedKeys: songPicks.keys,
+            count: songPicks.tracks.length,
+            cap: songPicks.cap,
+            full: songPicks.full,
+            onToggle: songPicks.toggle,
+            onClear: songPicks.clear,
+            onCreate: () => setSongPickCreateOpen(true),
+          }}
         />
       ) : (
         <section className="min-w-0">
@@ -2746,6 +2726,25 @@ function MusicWorkspace({
             </div>
           ) : null}
         </section>
+      )}
+      {songPickCreateOpen && songPicks.tracks.length > 0 && (
+        <SongPickCreateDialog
+          count={songPicks.tracks.length}
+          defaultTitle={`${label} likes`}
+          onClose={() => setSongPickCreateOpen(false)}
+          onCreate={(title, chosenTemplate) =>
+            onCreateClass(
+              // The class follows the list order the instructor sees.
+              orderPicks(
+                songPicks.tracks,
+                orderLibrary(likedTracks ?? [], sort, (row) => row.title),
+              ),
+              title,
+              chosenTemplate,
+              true,
+            )
+          }
+        />
       )}
     </section>
   );
@@ -2906,7 +2905,7 @@ function SongShelf({
   searching = false,
   note = null,
   loadMore = null,
-  onCreateClass,
+  picks,
 }: {
   label: string;
   loading: boolean;
@@ -2927,8 +2926,27 @@ function SongShelf({
     error: string | null;
     onLoadMore: () => void;
   } | null;
-  onCreateClass: (() => void) | null;
+  /** Pick mode (RF-151): the selection for this provider account. */
+  picks: {
+    selectedKeys: ReadonlySet<string>;
+    count: number;
+    cap: number;
+    full: boolean;
+    onToggle: (track: TrackSearchResult) => void;
+    onClear: () => void;
+    onCreate: () => void;
+  };
 }) {
+  // The bar outlives an empty search so the selection stays reachable.
+  const bar =
+    rows.length > 0 || picks.count > 0 ? (
+      <SongPickBar
+        count={picks.count}
+        cap={picks.cap}
+        onClear={picks.onClear}
+        onCreate={picks.onCreate}
+      />
+    ) : null;
   const footer =
     note || loadMore ? (
       <div className="flex flex-col items-start gap-2">
@@ -2983,53 +3001,33 @@ function SongShelf({
     );
   }
   if (rows.length === 0) {
-    if (searching) return footer;
+    if (searching)
+      return (
+        <div className="flex flex-col gap-2">
+          {footer}
+          {bar}
+        </div>
+      );
     return (
       <div className="flex flex-col gap-2">
         <p role="status" className="font-ui text-sm text-text-secondary">
           {filtered ? 'No matches.' : 'No liked songs'}
         </p>
         {footer}
+        {bar}
       </div>
     );
   }
   return (
     <div className="flex flex-col gap-2">
-      {onCreateClass && (
-        <button
-          type="button"
-          onClick={onCreateClass}
-          className="min-h-11 self-start rounded-control border border-interactive/35 px-3 font-ui text-sm font-semibold text-interactive rf-focus-ring"
-        >
-          Create class from liked songs
-        </button>
-      )}
-      <ul aria-label="Liked songs" className="flex flex-col gap-1">
-        {rows.map((track) => (
-          <li
-            key={`${track.provider}:${track.providerTrackId}`}
-            data-build-class-slot="song"
-            className="flex min-h-11 items-center gap-3 px-1"
-          >
-            {/* Build a class (pull request C) mounts at the end of this row. */}
-            <TrackArt
-              url={track.albumArtUrl}
-              identity={`${track.title}:${track.artist}`}
-              size={44}
-              className="max-h-11 max-w-11"
-            />
-            <span className="min-w-0">
-              <span className="block truncate font-ui text-sm font-semibold text-text-primary">
-                {track.title}
-              </span>
-              <span className="block truncate font-ui text-xs text-text-secondary">
-                {songMetaLine(track.artist, track.durationMs)}
-              </span>
-            </span>
-          </li>
-        ))}
-      </ul>
+      <SongPickList
+        rows={rows}
+        selectedKeys={picks.selectedKeys}
+        full={picks.full}
+        onToggle={picks.onToggle}
+      />
       {footer}
+      {bar}
     </div>
   );
 }
@@ -4288,209 +4286,6 @@ function PlaylistBrowserDialog({
           ))}
         </ul>
       )}
-    </Dialog>
-  );
-}
-
-/**
- * Browse a provider's liked tracks and spin up a class from them. Unlike saved
- * playlists (many named lists), likes are one collection — so this dialog previews
- * the tracks, takes an editable class name + discipline template, and creates a
- * single class that imports all of them (best-effort, concurrency-bounded).
- */
-function LikesBrowserDialog({
-  provider,
-  tracks,
-  hasMore = false,
-  onClose,
-  onCreateClass,
-}: {
-  provider: Provider;
-  tracks: TrackSearchResult[];
-  /** More liked songs exist than were loaded: say the class draws from a subset. */
-  hasMore?: boolean;
-  onClose: () => void;
-  onCreateClass: (
-    tracks: TrackSearchResult[],
-    title: string,
-    template: ClassTemplate,
-    songBlocks?: boolean,
-  ) => Promise<void>;
-}) {
-  const label = providerLabel(provider);
-  const subsetNote = likesSubsetNote(tracks.length, hasMore);
-  const [template, setTemplate] = useState<ClassTemplate>('cycle');
-  const [title, setTitle] = useState(`${label} likes`);
-  const [creating, setCreating] = useState(false);
-  const [error, setError] = useState<string | null>(null);
-  const [picking, setPicking] = useState(false);
-
-  const submit = async (chosen: TrackSearchResult[]) => {
-    if (!title.trim() || creating) return;
-    setPicking(false);
-    setCreating(true);
-    setError(null);
-    try {
-      await onCreateClass(chosen, title.trim(), template, true);
-    } catch (e) {
-      setError(errMessage(e));
-      setCreating(false);
-    }
-  };
-
-  const handleCreate = async () => {
-    if (!title.trim() || creating || tracks.length === 0) return;
-    if (tracks.length > PLAYLIST_SONG_BLOCK_CAP) {
-      setPicking(true);
-      return;
-    }
-    await submit(tracks);
-  };
-
-  if (picking) {
-    return (
-      <PlaylistSongPicker
-        mode="create"
-        items={tracks.map((track, index) => ({
-          id: String(index),
-          position: index + 1,
-          title: track.title,
-          artist: track.artist,
-          durationMs: track.durationMs,
-        }))}
-        onCancel={() => setPicking(false)}
-        onConfirm={(ids) => {
-          const chosen = ids
-            .map((id) => tracks[Number(id)])
-            .filter((track): track is TrackSearchResult => track != null);
-          void submit(chosen);
-        }}
-      />
-    );
-  }
-
-  return (
-    <Dialog
-      label={`Browse ${label} likes`}
-      onClose={onClose}
-      panelClassName="max-h-[calc(100dvh-2rem)] w-full max-w-lg overflow-y-auto rounded-card bg-bg-raised p-6 shadow-overlay"
-    >
-      <div className="mb-5 flex items-start justify-between gap-4">
-        <div>
-          <p className="font-ui text-xs uppercase tracking-wide text-text-tertiary">
-            Music sources
-          </p>
-          <h2 className="mt-1 font-display text-xl font-semibold text-text-primary">
-            {label} likes
-          </h2>
-        </div>
-        <button
-          type="button"
-          onClick={onClose}
-          aria-label="Close likes browser"
-          className="min-h-11 shrink-0 rounded-pill border border-interactive/30 px-3 font-ui text-xs text-text-secondary hover:text-text-primary"
-        >
-          Close
-        </button>
-      </div>
-
-      <MusicCarryPath
-        source={`${label} likes`}
-        destination={`New ${formatTemplateLabel(template)} class`}
-      />
-
-      {/* Likes have no source title to borrow, so the instructor names the class. */}
-      <div className="mb-4">
-        <label
-          htmlFor="likes-class-title"
-          className="mb-2 block font-ui text-xs font-semibold text-text-secondary"
-        >
-          New class name
-        </label>
-        <input
-          id="likes-class-title"
-          type="text"
-          value={title}
-          onChange={(e) => setTitle(e.target.value)}
-          className="min-h-11 w-full rounded-control border border-interactive/20 bg-bg-base px-3 font-ui text-sm text-text-primary"
-        />
-      </div>
-
-      {/* Template picker — applies to the created class. */}
-      <div className="mb-4">
-        <p className="mb-2 font-ui text-xs font-semibold text-text-secondary">New class template</p>
-        <div role="group" aria-label="Class template" className="flex gap-1.5">
-          {CREATE_TEMPLATE_OPTIONS.map(({ value, label: tLabel }) => {
-            if (!value) return null;
-            const selected = template === value;
-            return (
-              <button
-                key={value}
-                type="button"
-                aria-pressed={selected}
-                onClick={() => setTemplate(value)}
-                className={`min-h-11 rounded-pill border px-3 font-ui text-xs ${
-                  selected
-                    ? 'border-interactive bg-interactive/15 text-text-primary'
-                    : 'border-interactive/30 text-text-secondary hover:text-text-primary'
-                }`}
-              >
-                {tLabel}
-              </button>
-            );
-          })}
-        </div>
-      </div>
-
-      {error && (
-        <p role="alert" className="mb-3 font-ui text-sm text-state-danger">
-          {error}
-        </p>
-      )}
-
-      {subsetNote && (
-        <p role="note" className="mb-3 font-ui text-xs text-text-secondary">
-          {subsetNote}
-        </p>
-      )}
-
-      <div className="mb-3 flex flex-col items-stretch gap-3 sm:flex-row sm:items-center sm:justify-between">
-        <p className="font-ui text-xs text-text-secondary">
-          {tracks.length > PLAYLIST_SONG_BLOCK_CAP
-            ? 'Choose up to 15 songs. Liked songs become the class blocks.'
-            : `${tracks.length} liked ${tracks.length === 1 ? 'track' : 'tracks'} will become the class blocks.`}
-        </p>
-        <button
-          type="button"
-          onClick={() => void handleCreate()}
-          disabled={creating || !title.trim() || tracks.length === 0}
-          aria-label={`Create class from ${tracks.length} liked tracks`}
-          className="min-h-11 w-full rounded-pill rf-btn-primary px-3 font-ui text-xs font-semibold text-text-on-accent disabled:opacity-50 sm:w-auto sm:shrink-0"
-        >
-          {creating ? 'Creating…' : `Create class from ${tracks.length} liked tracks`}
-        </button>
-      </div>
-
-      <ul className="flex max-h-[50vh] flex-col gap-2 overflow-y-auto">
-        {tracks.map((track) => (
-          <li
-            key={`${track.provider}:${track.providerTrackId}`}
-            className="flex items-center gap-3 rounded-card border border-interactive/10 bg-bg-base p-3"
-          >
-            <TrackArt
-              url={track.albumArtUrl}
-              identity={`${track.title}:${track.artist}`}
-              size={44}
-            />
-            <div className="min-w-0 flex-1">
-              <p className="truncate font-ui text-sm font-semibold text-text-primary">
-                {track.title}
-              </p>
-              <p className="truncate font-ui text-xs text-text-secondary">{track.artist}</p>
-            </div>
-          </li>
-        ))}
-      </ul>
     </Dialog>
   );
 }

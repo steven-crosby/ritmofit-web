@@ -229,15 +229,6 @@ export function songSearchScopeNote(
   return `Searched your first ${count} liked songs.`;
 }
 
-/**
- * The note in "Create class from liked songs" when more songs exist than were
- * loaded, so the instructor knows the class draws from a subset.
- */
-export function likesSubsetNote(loadedCount: number, hasMore: boolean): string | null {
-  if (!hasMore) return null;
-  return `Using your first ${loadedCount.toLocaleString('en-US')} liked songs. Load more on Music › Songs to choose from more.`;
-}
-
 export function musicChipBadge(input: {
   fetchStatus: 'loading' | 'ready' | 'error';
   connectionState: ProviderConnectionState;
