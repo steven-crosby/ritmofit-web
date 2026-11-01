@@ -13,6 +13,25 @@ detail). Current focus and `main` vs production live in the "Now" block of
 
 ## Deploy and session log (newest first)
 
+> **Session 2026-10-31 (Neo) — second round merged; Spotify likes observed.** With owner permission
+> per PR: [#679](https://github.com/steven-crosby/ritmofit-web/pull/679) as `62c3cee` (RF-144: design brief §9.8 provider capabilities, D21 Account
+> sections), [#680](https://github.com/steven-crosby/ritmofit-web/pull/680) as `a1b971d` (RF-133: one run rule, plan gaps are guidance; follow-ups
+> RF-171) and [#682](https://github.com/steven-crosby/ritmofit-web/pull/682) as `c0b60d4` (RF-166: the Classes list stops flagging missing tempo).
+> From the Air: [#678](https://github.com/steven-crosby/ritmofit-web/pull/678) as `dbcb514` (RF-165: HIIT template card). Read-only check of the
+> `a1b971d` deploy in the owner's signed-in browser passed: HIIT card; one copper primary on Classes
+> and in the Live queue; a scaffold with seven empty blocks keeps Run live enabled and is in the
+> queue; Music reopens on Apple Music › Songs after leaving and after a reload. The open tab needed the
+> app's "Reload now" prompt to leave the old service-worker shell. Also observed: Music › Songs lists
+> the owner's Spotify liked songs with no allowlist error (RF-92). Writes from the check: one
+> last-opened stamp on a QA class and the Music view in local storage. `main` is ahead by RF-166.
+
+> **Deploy 2026-10-31 — RF-137, RF-135, RF-165 and RF-133 on main `a1b971d`** (from the Air, owner
+> "Yes deploy"). Remote D1: none to apply. New Worker `e50f1fd3-bdd1-4541-bc3f-4c2cd483a167`; rollback
+> `61cdeb33-e106-4224-90ad-18ad0cb3173f` (`0a77110`). SPA `assets/index-DCUUNJcv.js` (was
+> `assets/index-DTaSHnmL.js`). Gates passed; propagation 3/3; status smoke and all six security
+> headers passed; the five-minute tail saw 0 events. Not done: the authed smoke, skipped because the
+> QA session is expired (RF-155). The Neo's read-only browser check is in the session entry above.
+
 > **Session 2026-10-31 — Air conductor merges (no deploy), relayed to the Neo close.** All with
 > owner permission. [#670](https://github.com/steven-crosby/ritmofit-web/pull/670) merged as `eaec1d3` (RF-156 record, For review). ritmofit-ios
 > [#52](https://github.com/steven-crosby/ritmofit-ios/pull/52) merged as `2cc92e2` (web-contract snapshots refreshed from web `0a77110`; iOS

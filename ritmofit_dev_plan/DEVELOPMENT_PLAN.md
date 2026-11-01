@@ -17,28 +17,31 @@
 <!-- Claude Code, 2026-10-30: Owner set the Apple hardening Ready set (RF-108, RF-128, RF-147). -->
 <!-- Claude Code, 2026-10-31: #668 and #669 deployed; Now names the device check, the 2026-10-31 Ready set and RF-151's Ready decision. -->
 <!-- Claude Code, 2026-10-31: RF-137 (#672) and RF-135 (#673) merged, undeployed; main is ahead of production. -->
+<!-- Claude Code, 2026-10-31: a1b971d deployed from the Air; Now names RF-166 and RF-134 ahead, #684 in flight, and the Spotify likes observation. -->
 <!-- Claude Code, 2026-10-31: Close: RF-131 answered (#677, follow-ups RF-133, RF-134, RF-144, RF-165 to RF-168); RF-168 is the open owner decision. -->
 
 **Current actionable state:** [RF board](./tasks.md), backed by canonical [task records](./tasks/README.md).
 The order of work is [Phases](#phases) below; each phase lists RF records, not a second backlog.
-**Main vs production (2026-10-31):** production is main `0a77110`: SPA `assets/index-DTaSHnmL.js`
-on three cache-busted fetches, matching the deploy record (Worker `61cdeb33-e106-4224-90ad-18ad0cb3173f`
-per that record; not checked from this environment). It adds #668 (RF-128, RF-147) and #669 (RF-108)
-to `d888d28`. Rollback is `ffcf858d-78b7-4bc6-8a7b-e4197f28f6e2` (`97f4454`). See [HISTORY](./HISTORY.md).
-**Main is ahead:** `9d9b5b4` adds [RF-137](./tasks/RF-137.json) (#672, Music reopens on the last
-service and view) and [RF-135](./tasks/RF-135.json) (#673, one copper primary per surface), both web
-UI only, no migration. Not deployed; a deploy needs the owner.
-**In flight:** the D25 provider matrix (#654). From the 2026-10-31 Ready set, RF-137, RF-135 and
-RF-156 are Done; iOS RF-1014 (ritmofit-ios #53, draft) waits on the Air's simulator update.
-**Next step:** the owner's iPhone Safari device check on `0a77110` (the 7 steps in the #669 PR body,
-with `?playback-timing=1`) for [RF-108](./tasks/RF-108.json), [RF-128](./tasks/RF-128.json) and
+**Main vs production (2026-10-31):** production is main `a1b971d`, deployed from the Air (Worker
+`e50f1fd3-bdd1-4541-bc3f-4c2cd483a167` per the deploy record; SPA `assets/index-DCUUNJcv.js` on three
+cache-busted fetches from the Neo). It adds RF-137, RF-135, RF-165 and RF-133 to `0a77110`. Rollback
+is `61cdeb33-e106-4224-90ad-18ad0cb3173f`. See [HISTORY](./HISTORY.md).
+**Main is ahead:** [RF-166](./tasks/RF-166.json) (#682, the Classes list stops flagging missing
+tempo) and [RF-134](./tasks/RF-134.json) (#683 at `411bdba`, readiness and connection labels say
+what they checked; it touches `providers.ts` labels, so name a live connection check). Web UI only,
+no migration. Not deployed; a deploy is the owner's call, from the Air.
+**In flight:** the Air's records PR #684 (RF-151 pick-mode decision, RF-138, RF-170); #681 (two-machine rules); the D25
+provider matrix (#654); iOS RF-1014 (ritmofit-ios #53).
+**Next step:** the owner's iPhone Safari device check (the 7 steps in the #669 PR body, with
+`?playback-timing=1`) for [RF-108](./tasks/RF-108.json), [RF-128](./tasks/RF-128.json) and
 [RF-147](./tasks/RF-147.json). Review follow-ups are [RF-160](./tasks/RF-160.json) and
 [RF-161](./tasks/RF-161.json).
 **Window:** the Apple Music subscription ends around 2026-11-27, so anything that needs a live Apple
-account (Phase 1) goes first. Spotify is reopened (owner, 2026-10-28) but every Web API call returns
-`403` until the developer app accepts the connected account.
-**Open owner decisions:** whether [RF-151](./tasks/RF-151.json) (tick up to 15 songs on Music ›
-Songs, then create a class) moves to Ready; whether Live stops showing "No BPM set" on every cue
+account (Phase 1) goes first. Spotify is reopened (owner, 2026-10-28); on 2026-10-31 the owner's
+Spotify liked songs loaded in production, so the developer-app `403` looks lifted for that account
+(playlists and playback not yet rechecked; [RF-92](./tasks/RF-92.json)).
+**Open owner decisions:** whether [RF-151](./tasks/RF-151.json) (Music › Songs pick mode, decided
+2026-10-31 in #684) moves to Ready; whether Live stops showing "No BPM set" on every cue
 ([RF-168](./tasks/RF-168.json)); the review queue
 (RF-91, RF-93, RF-94, RF-96, RF-16, RF-23, RF-32); whether [RF-80](./tasks/RF-80.json) is cancelled or
 rescoped now that RF-124 found the playback root cause; Live finish placement (see Backlog).

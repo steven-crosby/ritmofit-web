@@ -11,7 +11,7 @@
     "Reconfirm expired-grant and retry/reconnect classification on current main.",
     "Agree packet 3 and an actual browser/audio acceptance procedure before implementing provider changes."
   ],
-  "nextAction": "Spotify reopened by the owner on 2026-10-28. Await owner Ready; Apple work comes first until the Apple Music subscription ends around 2026-11-27. Resume risk: the Spotify developer app rejects the connected account (\"The user is not registered for this application\"), so Web API calls return 403.",
+  "nextAction": "Spotify reopened by the owner on 2026-10-28. Await owner Ready; Apple work comes first until the Apple Music subscription ends around 2026-11-27. Resume risk, updated 2026-10-31: liked songs now load for the owner account (evidence), so the 403 allowlist block appears lifted for it; recheck playlists and playback before starting.",
   "blocker": null,
   "evidence": [
     {
@@ -25,6 +25,12 @@
       "ref": "https://github.com/steven-crosby/ritmofit-web/pull/646",
       "summary": "Owner decision in session on 2026-10-28: Spotify work is reopened (the family now has Spotify Family). The Apple Music subscription ends around 2026-11-27, so Apple hardening and Apple device checks come first in that window.",
       "checkedOn": "2026-10-28"
+    },
+    {
+      "kind": "observation",
+      "ref": "https://github.com/steven-crosby/ritmofit-web/pull/685",
+      "summary": "Read-only check on production a1b971d in the owner signed-in browser, 2026-10-31 (Neo): Music shows Spotify Connected and Music > Songs lists Spotify liked songs (Re-Arranged, High Speed, Paradise Circus and more) with no allowlist or 403 message. The Air conductor saw the same in the owner recording. So the developer app no longer rejects this account for likes; playlists, playback and other accounts were not checked.",
+      "checkedOn": "2026-10-31"
     }
   ],
   "resolution": null,
