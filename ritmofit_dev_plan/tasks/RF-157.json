@@ -28,6 +28,12 @@
       "ref": "https://github.com/steven-crosby/ritmofit-web/pull/688",
       "summary": "On production 67496ab (RF-151 pick mode), the Neo's desktop Chrome check in the owner's signed-in browser listed Spotify liked songs on Music › Songs and selection worked on them; nothing was saved. So Spotify likes already reach the pick-mode list; whether this record still needs work, and whether it still waits on RF-92, is for the owner to decide.",
       "checkedOn": "2026-10-31"
+    },
+    {
+      "kind": "pr",
+      "ref": "https://github.com/steven-crosby/ritmofit-web/pull/695",
+      "summary": "Rescope: dropped the RF-92 dependency and cut acceptance to Spotify at phone width, tick-then-switch-provider, and a mock-provider test. Owner decision \"Yes rescope\" was given in the Air session and relayed by the Air.",
+      "checkedOn": "2026-11-01"
     }
   ],
   "resolution": null,
