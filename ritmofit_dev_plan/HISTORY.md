@@ -12,6 +12,11 @@ detail). Current focus and `main` vs production live in the "Now" block of
 ---
 
 ## Deploy and session log (newest first)
+> **Session 2026-10-31 — addendum to the Air merges entry below.** Also merged that day:
+> ritmofit-ios #53 as `fc0166e` (RF-1014: tests report skipped without a local backend), and, with
+> owner permission given in the Air session, the Neo's #688 as `1b4e5cf` (RF-151 desktop production
+> observation, on Spotify likes) and the Air's #689 as `4f83f03` (the `67496ab` deploy record).
+
 > **Deploy 2026-10-31 — RF-166, RF-134 and RF-151 on main `67496ab`** (from the Air, owner "yes
 > deploy"). Remote D1: none to apply. New Worker `feac7dde-dc10-4462-bd2d-79075d289bda`; rollback
 > `e50f1fd3-bdd1-4541-bc3f-4c2cd483a167` (`a1b971d`). SPA `assets/index-ChxMwIpX.js` (was
