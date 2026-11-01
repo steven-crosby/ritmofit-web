@@ -7,14 +7,14 @@
   "priority": "P3",
   "parent": null,
   "dependsOn": [
-    "RF-92",
     "RF-151"
   ],
   "acceptance": [
-    "With Spotify connected and its Web API answering, the RF-151 checkboxes, 15-song cap, selection bar and \"Create a class\" sheet work for Spotify likes as they do for Apple Music and SoundCloud, at 1440 and 390 wide.",
-    "Selection clears on switching to or from Spotify, and a component or e2e test covers the Spotify likes list with the mock provider."
+    "At an emulated phone width (390 or narrower), the RF-151 checkboxes, 15-song cap, selection bar and \"Create a class\" sheet work for Spotify likes as they do for Apple Music and SoundCloud.",
+    "Ticking Spotify songs and then switching to another provider clears the selection, and switching back to Spotify starts empty.",
+    "A component or e2e test covers the Spotify likes list in pick mode with the mock provider."
   ],
-  "nextAction": "Split from RF-151 on 2026-10-30 (#667 final review) so RF-151 does not wait on Spotify. No parent on purpose: an open child would block RF-151 from Done. Start after RF-92 and RF-151 are Done. Agent-created: Backlog until the owner sets Ready.",
+  "nextAction": "Rescoped on 2026-11-01 (owner: \"Yes rescope\", given in the Air session and relayed by the Air) to the three checks that remain now that Spotify likes reach pick mode on production (desktop check, 2026-10-31): Spotify at phone width, tick then switch provider, and a mock-provider test. No longer waits on RF-92; still starts after RF-151 is Done. No parent on purpose: an open child would block RF-151 from Done. Agent-created: Backlog until the owner sets Ready.",
   "blocker": null,
   "evidence": [
     {
@@ -28,6 +28,12 @@
       "ref": "https://github.com/steven-crosby/ritmofit-web/pull/688",
       "summary": "On production 67496ab (RF-151 pick mode), the Neo's desktop Chrome check in the owner's signed-in browser listed Spotify liked songs on Music › Songs and selection worked on them; nothing was saved. So Spotify likes already reach the pick-mode list; whether this record still needs work, and whether it still waits on RF-92, is for the owner to decide.",
       "checkedOn": "2026-10-31"
+    },
+    {
+      "kind": "pr",
+      "ref": "https://github.com/steven-crosby/ritmofit-web/pull/695",
+      "summary": "Rescope: dropped the RF-92 dependency and cut acceptance to Spotify at phone width, tick-then-switch-provider, and a mock-provider test. Owner decision \"Yes rescope\" was given in the Air session and relayed by the Air.",
+      "checkedOn": "2026-11-01"
     }
   ],
   "resolution": null,
