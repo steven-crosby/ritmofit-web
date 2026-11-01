@@ -53,5 +53,7 @@
     }
   ],
   "resolution": "The Classes home now offers Cycle, Pilates and HIIT template cards, matching the Create dialog and D21. The cards stack on a phone and sit three across from the sm breakpoint, so there is no orphan. Choosing HIIT opens the same Create dialog scaffold flow with HIIT preselected. The library filter keeps only Cycle and Pilates chips; a HIIT chip was not added.",
-  "followUps": []
+  "followUps": [
+    "RF-170"
+  ]
 }

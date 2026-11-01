@@ -8,16 +8,17 @@
   "parent": null,
   "dependsOn": [],
   "acceptance": [
-    "On Music › Songs, every song row has a labeled, keyboard-accessible checkbox. Ticking a song selects it; tapping the rest of the row keeps today's row behavior.",
-    "At most 15 songs can be selected. At 15, the remaining checkboxes are disabled with a short note saying why.",
+    "On Music › Songs the list is always in pick mode: tapping a song row toggles its selection, and the row never starts playback. Each row holds one <label> (song text and artwork) for its checkbox, so a tap or click toggles exactly once. Any other row control sits beside that label, never inside it: the existing Build a class slot (data-build-class-slot=\"song\") and, later, the RF-172 ▶ preview, so axe finds no nested interactive controls. Until RF-172 ships, tapping the artwork toggles the row like the rest of it.",
+    "At most 15 songs can be selected. At 15, unselected rows (checkbox and row tap alike) are disabled with a short note saying why; selected rows can still be unticked.",
     "A selection bar shows \"N of 15 selected\", a way to clear the selection, and a \"Create a class\" button once at least one song is selected.",
     "The selection survives search, Load more and sort changes within the same provider. Switching provider, disconnecting, or a different account's list clears it.",
     "\"Create a class\" opens a short sheet that asks only for the class name and the template (Cycle, Pilates or HIIT), with the selected songs already chosen, then creates the class with those songs as its blocks. There is no second song picker.",
     "The separate \"Create class from liked songs\" button and its song-picker step are removed from Music › Songs. Playlist import keeps its own flow.",
     "It works the same for Apple Music and SoundCloud likes, at 1440 and 390 wide, with no horizontal overflow and axe WCAG 2.2 AA clean.",
-    "Component tests cover selection, the 15 cap, persistence across Load more and search, clearing on provider switch, and the create sheet. The e2e smoke covers creating a class from selected songs."
+    "Component tests cover: one tap or click on a row toggles exactly once; a row tap never starts playback; selection; the 15 cap on both checkbox and row tap, with selected rows still untickable; persistence across Load more and search; clearing on provider switch; and the create sheet. The e2e smoke covers creating a class from selected songs.",
+    "After deploy, the owner smoke tests pick mode on Mac and iPhone and confirms the feel, or asks for the Spotify-style Select button instead."
   ],
-  "nextAction": "Owner, 2026-10-30, after using \"Create class from liked songs\" on production: the 15-song limit is a good gut check, but the separate button is lazy; songs on Music › Songs should have checkboxes, up to 15, and a \"Create a class\" button once some are selected. Owner chose option A for what follows the button: a sheet with class name and template only. Today the button is in apps/web/src/components/Dashboard.tsx (around line 2948), its note comes from apps/web/src/lib/music-library.ts, and the 15-song picker pattern is apps/web/src/components/PlaylistSongPicker.tsx. Song order in the class: follow the list order the user sees unless the owner decides otherwise at Ready. Agent-created: Backlog until the owner sets Ready. Spotify likes are RF-157, which waits on RF-92 (Spotify Web API 403), so this record can reach Ready and Done without Spotify.",
+  "nextAction": "Owner, 2026-10-31: option (a), always in pick mode (row tap selects, never plays; preview later as a ▶ on the artwork via RF-172); the owner will smoke test the feel on Mac and iPhone after deploy. Owner, 2026-10-30, after using \"Create class from liked songs\" on production: the 15-song limit is a good gut check, but the separate button is lazy; songs on Music › Songs should be selectable, up to 15, and a \"Create a class\" button once some are selected. Owner chose option A for what follows the button: a sheet with class name and template only. Today the button is in apps/web/src/components/Dashboard.tsx (around line 3004; the Songs list follows it), its note comes from apps/web/src/lib/music-library.ts, and the 15-song picker pattern is apps/web/src/components/PlaylistSongPicker.tsx. Song order in the class: follow the list order the user sees unless the owner decides otherwise at Ready. Agent-created: Backlog until the owner sets Ready. Spotify likes are RF-157, which waits on RF-92 (Spotify Web API 403), so this record can reach Ready and Done without Spotify.",
   "blocker": null,
   "evidence": [
     {
@@ -31,6 +32,18 @@
       "ref": "apps/web/src/components/PlaylistSongPicker.tsx",
       "summary": "The existing 15-song picker (\"Choose up to 15 songs\") that the liked-songs flow reuses today. Checked on main d888d28.",
       "checkedOn": "2026-10-30"
+    },
+    {
+      "kind": "observation",
+      "ref": "https://github.com/steven-crosby/ritmofit-web/pull/684",
+      "summary": "Owner, 2026-10-31 (Air conductor session), after an iPhone recording of Music › Songs where tapping rows did nothing and screenshots of Spotify playlist Edit mode: rows must select, not play; preview must exist but as a secondary control. Chose option (a) \"always in pick mode\" (\"Let’s try a first\") over a Spotify-style Select button, and will smoke test it on Mac and iPhone to judge the feel. Recording and screenshots shared in session; not stored in the repo.",
+      "checkedOn": "2026-10-31"
+    },
+    {
+      "kind": "pr",
+      "ref": "https://github.com/steven-crosby/ritmofit-web/pull/684",
+      "summary": "Records PR: pick-mode acceptance (2026-10-31 owner decision), row label structure, row-tap cap and tests.",
+      "checkedOn": "2026-10-31"
     }
   ],
   "resolution": null,

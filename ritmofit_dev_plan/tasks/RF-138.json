@@ -8,12 +8,12 @@
   "parent": null,
   "dependsOn": [],
   "acceptance": [
-    "Playlist detail and Songs rows offer preview and select, reusing the builder's TrackPreview path, and an \"Add selected\" or \"Start class from selected\" action (D21).",
+    "Playlist detail rows offer preview and select, reusing the builder TrackPreview path, with an \"Add selected\" or \"Start class from selected\" action (D21). As on Music › Songs, a row tap selects and never starts playback; preview is a separate control. Music › Songs preview is the child RF-172; RF-151 owns Songs selection and its Create a class action.",
     "The playlist header shows a track count when the provider reports one, and the 15-song import limit is stated before Start class.",
     "Preview plays only through the official provider SDK or widget; nothing is cached.",
     "Keyboard and screen-reader access match the existing builder preview."
   ],
-  "nextAction": "Design pass first: where selection lives and what it adds to (new class or an open class). Files: apps/web/src/components/Dashboard.tsx (Music song rows and playlist dialog), TrackPreview.tsx, PlaylistSongPicker.tsx. Check scripts/owner-gate.mjs for the files the PR actually touches; playback code under apps/web/src/lib/playback/ is gated. Either way the PR needs a real-browser preview check, which CI cannot prove. Surface: web.",
+  "nextAction": "Owner, 2026-10-31: preview is a secondary control and never the row tap; rows select. Songs ▶ preview is the child RF-172, which waits on RF-151; this playlist-detail work does not. Design pass first for playlist detail: what selection adds to (new class or an open class). Files: apps/web/src/components/Dashboard.tsx (playlist dialog), TrackPreview.tsx, PlaylistSongPicker.tsx. Check scripts/owner-gate.mjs for the files the PR actually touches; playback code under apps/web/src/lib/playback/ is gated. Either way the PR needs a real-browser preview check, which CI cannot prove. Surface: web.",
   "blocker": null,
   "evidence": [
     {
@@ -27,6 +27,18 @@
       "ref": "docs/audits/ux-audit-2026-10-28/README.md",
       "summary": "2026-10-28 owner UX audit of production: Top priority 6 and the Music rows on preview, counts and the 15-song cap. Browser evidence; not re-observed at intake.",
       "checkedOn": "2026-10-29"
+    },
+    {
+      "kind": "observation",
+      "ref": "https://github.com/steven-crosby/ritmofit-web/pull/684",
+      "summary": "Owner, 2026-10-31 (Air conductor session), after an iPhone recording of Music › Songs where tapping rows did nothing and screenshots of Spotify playlist Edit mode: rows must select, not play; preview must exist but as a secondary control. Chose option (a) \"always in pick mode\" (\"Let’s try a first\") over a Spotify-style Select button, and will smoke test it on Mac and iPhone to judge the feel. Recording and screenshots shared in session; not stored in the repo.",
+      "checkedOn": "2026-10-31"
+    },
+    {
+      "kind": "pr",
+      "ref": "https://github.com/steven-crosby/ritmofit-web/pull/684",
+      "summary": "Records PR: row tap selects on playlist detail too; Songs ▶ split into child RF-172.",
+      "checkedOn": "2026-10-31"
     }
   ],
   "resolution": null,
