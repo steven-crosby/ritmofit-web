@@ -1,0 +1,26 @@
+{
+  "schemaVersion": 1,
+  "id": "RF-173",
+  "title": "Music service chips: accessible name matches the visible text (axe label-content-name-mismatch)",
+  "kind": "task",
+  "status": "backlog",
+  "priority": "P3",
+  "parent": null,
+  "dependsOn": [],
+  "acceptance": [
+    "Each Music › service chip (for example \"SoundCloud, Connected\") has an accessible name that contains its visible text in the same order, so axe label-content-name-mismatch (WCAG 2.5.3 Label in Name) no longer fires on Music.",
+    "The 'Music songs' entry is removed from KNOWN_AXE in e2e/smoke.spec.ts and the smoke stays green at 1440 and 390 wide."
+  ],
+  "nextAction": "Found by #686 (RF-151), whose e2e smoke is the first to visit Music: axe flags the three service chips in apps/web/src/components/Dashboard.tsx (aria-label \"<Service>, <state>\"), and #686 lists it in KNOWN_AXE for 'Music songs'. Likely fix: drop the aria-label and let the visible service name and state mark form the name. Agent-created: Backlog until the owner sets Ready.",
+  "blocker": null,
+  "evidence": [
+    {
+      "kind": "pr",
+      "ref": "https://github.com/steven-crosby/ritmofit-web/pull/686",
+      "summary": "Local e2e smoke on the RF-151 branch: label-content-name-mismatch (serious) on button[aria-label=\"SoundCloud, Connected\"], \"Spotify, Catalog only\" and \"Apple Music, Catalog only\". Recorded as known for 'Music songs'.",
+      "checkedOn": "2026-10-31"
+    }
+  ],
+  "resolution": null,
+  "followUps": []
+}

@@ -3,12 +3,12 @@
   "id": "RF-151",
   "title": "Music Songs: tick up to 15 songs in the list, then create a class from them",
   "kind": "task",
-  "status": "in_progress",
+  "status": "review",
   "priority": "P2",
   "parent": null,
   "dependsOn": [],
   "acceptance": [
-    "On Music › Songs the list is always in pick mode: tapping a song row toggles its selection, and the row never starts playback. Each row holds one <label> (song text and artwork) for its checkbox, so a tap or click toggles exactly once. Any other row control sits beside that label, never inside it: the existing Build a class slot (data-build-class-slot=\"song\") and, later, the RF-172 ▶ preview, so axe finds no nested interactive controls. Until RF-172 ships, tapping the artwork toggles the row like the rest of it.",
+    "On Music › Songs the list is always in pick mode: tapping a song row toggles its selection, and the row never starts playback. Each row holds one <label> (song text and artwork) for its checkbox, so a tap or click toggles exactly once. The <label> sits inside the <li data-build-class-slot=\"song\"> (the slot is an attribute on the row, not a control); any control that later mounts in that slot, and the RF-172 ▶ preview, sits beside the label, never inside it, so axe finds no nested interactive controls. Until RF-172 ships, tapping the artwork toggles the row like the rest of it.",
     "At most 15 songs can be selected. At 15, unselected rows (checkbox and row tap alike) are disabled with a short note saying why; selected rows can still be unticked.",
     "A selection bar shows \"N of 15 selected\", a way to clear the selection, and a \"Create a class\" button once at least one song is selected.",
     "The selection survives search, Load more and sort changes within the same provider. Switching provider, disconnecting, or a different account's list clears it.",
@@ -18,7 +18,7 @@
     "Component tests cover: one tap or click on a row toggles exactly once; a row tap never starts playback; selection; the 15 cap on both checkbox and row tap, with selected rows still untickable; persistence across Load more and search; clearing on provider switch; and the create sheet. The e2e smoke covers creating a class from selected songs.",
     "After deploy, the owner smoke tests pick mode on Mac and iPhone and confirms the feel, or asks for the Spotify-style Select button instead."
   ],
-  "nextAction": "Owner set Ready and asked to start it, 2026-10-31 (Neo session). Building on feat/rf-151-songs-pick-mode: a one-label pick row in Music › Songs (checkbox, artwork and song text in one <label> inside the <li data-build-class-slot=\"song\">; anything that later mounts in that slot stays outside the label), a selection bar (N of 15, Clear, Create a class), a name-and-template sheet, and removal of \"Create class from liked songs\" and its picker. Restart: finish the components and tests on that branch, run the full gate, then set For review (the owner smoke test is an acceptance item). Owner, 2026-10-31: option (a), always in pick mode (row tap selects, never plays; preview later as a ▶ on the artwork via RF-172); the owner will smoke test the feel on Mac and iPhone after deploy. Owner, 2026-10-30: the 15-song limit is a good gut check, but the separate button is lazy; option A for what follows the button, a sheet with class name and template only. Song order in the class follows the list order the user sees. Spotify likes are RF-157, which waits on RF-92.",
+  "nextAction": "For review: the owner smoke tests pick mode on Mac and iPhone after the deploy that ships #686 (acceptance item 9), then either confirms the feel (set Done; RF-172 can start) or asks for the Spotify-style Select button instead. Built in #686: one <label> per row (checkbox, artwork, song text) in apps/web/src/components/SongPicks.tsx, selection scoped to the provider account in apps/web/src/lib/song-picks.ts, class songs in the list order the instructor sees. Spotify likes are RF-157, which waits on RF-92.",
   "blocker": null,
   "evidence": [
     {
@@ -44,10 +44,18 @@
       "ref": "https://github.com/steven-crosby/ritmofit-web/pull/684",
       "summary": "Records PR: pick-mode acceptance (2026-10-31 owner decision), row label structure, row-tap cap and tests.",
       "checkedOn": "2026-10-31"
+    },
+    {
+      "kind": "pr",
+      "ref": "https://github.com/steven-crosby/ritmofit-web/pull/686",
+      "summary": "Pick mode on Music › Songs: one-label rows, 15 cap with a note, selection bar, name-and-template sheet; Create class from liked songs and its picker removed. Component tests (SongPicks, song-picks, Dashboard) and the e2e smoke (two mock SoundCloud songs to a class, 1440 and 390, axe clean apart from the RF-173 chip mismatch) pass locally.",
+      "checkedOn": "2026-10-31"
     }
   ],
   "resolution": null,
   "followUps": [
-    "RF-157"
+    "RF-157",
+    "RF-172",
+    "RF-173"
   ]
 }
