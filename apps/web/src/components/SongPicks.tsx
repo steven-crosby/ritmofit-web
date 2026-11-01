@@ -96,7 +96,11 @@ export function SongPickBar({
       className="sticky bottom-2 z-10 flex min-w-0 flex-col gap-2 rounded-card border border-interactive/20 bg-bg-overlay p-3 shadow-overlay sm:flex-row sm:items-center sm:justify-between"
     >
       <div className="min-w-0">
-        <p role="status" aria-live="polite" className="font-data text-sm font-semibold text-text-primary">
+        <p
+          role="status"
+          aria-live="polite"
+          className="font-data text-sm font-semibold text-text-primary"
+        >
           {count === 0
             ? `Tick up to ${cap} songs to create a class.`
             : `${count} of ${cap} selected`}
