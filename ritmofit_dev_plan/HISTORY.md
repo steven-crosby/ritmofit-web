@@ -12,6 +12,22 @@ detail). Current focus and `main` vs production live in the "Now" block of
 ---
 
 ## Deploy and session log (newest first)
+> **Session 2026-11-01 — Air close (no deploy).** Merged with owner permission per PR:
+> [#693](https://github.com/steven-crosby/ritmofit-web/pull/693) as `9d50cfb` and
+> [#694](https://github.com/steven-crosby/ritmofit-web/pull/694) as `d4ef72f` (RF-169: the Neo holds
+> no Cloudflare credentials, signed-in production checks mean the RitmoFit app, a message is not a
+> claim). From the Neo, owner permission in the Neo session:
+> [#695](https://github.com/steven-crosby/ritmofit-web/pull/695) as `ebd7aa0` (RF-157 rescoped to
+> three checks, no longer waiting on RF-92). Earlier since the last entry: #690 `d06d6ec`, #691
+> `dbd72e2` and #692 `48b774b` (RF-151 records). ritmofit-ios: #55 `100094f`, #56 `e8f8bba` and
+> #57 `2c56fba` (RF-1021 to RF-1023 records); RF-1021's #58 was still in review at this close.
+> This close also writes the owner's 2026-11-01 conductor rulings into AGENTS.md (who finishes a PR,
+> relayed approval and its scope, iOS on the Neo, no rollback on the Neo). Production unchanged at
+> `67496ab`: every merge since is records and docs only (checked from git, not wrangler).
+> Correction to the 2026-10-31 addendum below: it postdates the deploy entry under it, the Air
+> merges entry it points at is two entries down, and #689 also rewrote the Now block and carried the
+> RF-172, RF-138 and RF-169 follow-ups.
+
 > **Session 2026-10-31 — addendum to the Air merges entry below.** Also merged that day:
 > ritmofit-ios #53 as `fc0166e` (RF-1014: tests report skipped without a local backend), and, with
 > owner permission given in the Air session, the Neo's #688 as `1b4e5cf` (RF-151 desktop production

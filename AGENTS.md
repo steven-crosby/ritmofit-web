@@ -21,6 +21,7 @@
 <!-- note (Claude Code, 2026-10-27): Owner set a standing delegation grant (branch → PR, then final review + squash-merge with per-PR owner permission) with CI-enforced owner-gated paths, and made the e2e smoke a required CI step. -->
 <!-- note (Claude Code, 2026-10-31): Added "Two-machine conductors" under Session Workflow (owner-approved): priority per machine, that only the Air holds the wrangler login (the Neo is on par otherwise, including signed-in production checks), direct SendMessage between conductors, and that a peer message is never permission. -->
 <!-- note (Claude Code, 2026-11-01): Two-machine conductors: each conductor is a Solo or Orchestrator session, the Neo holds no Cloudflare credentials, signed-in production checks mean the RitmoFit app, and a message is not a claim (follow-ups from #681 and #693 reviews). -->
+<!-- note (Claude Code, 2026-11-01): Owner rulings: the conductor that opened a PR finishes it; relayed owner approval counts within a set scope (never deploys, migrations, secrets, production data or branch deletion); the Neo takes iOS only when the Air is busy; the Neo has no rollback path. -->
 
 This is the canonical contributor and agent guide for Ritmo Studio. If another instruction file conflicts
 with it, follow `AGENTS.md`, then repair the stale file. When an AI agent edits this file or adds a note
@@ -188,27 +189,38 @@ context; chat and tool memory are scratch.
   surfaces merged PRs that no RF record, HISTORY entry or handoff cites.
 - **Handing off a single task:** `agent-prompts/delegate-task.md` is the brief the owner gives a
   subagent; it ends in a PR under the policy below.
-- **Two-machine conductors** (set 2026-10-31). The owner may run one conductor session on each of
-  two machines at once: the MacBook Air ("Ritmo - Air") and the MacBook Neo ("Ritmo - Neo"). Each
-  conductor is a Solo or Orchestrator session, and every other rule in this file applies to each
-  unchanged.
+- **Two-machine conductors** (set 2026-10-31; updated 2026-11-01). The owner may run one conductor
+  session on each of two machines at once: the MacBook Air ("Ritmo - Air") and the MacBook Neo
+  ("Ritmo - Neo"). Each conductor is a Solo or Orchestrator session, and every other rule in this
+  file applies to each unchanged except where this entry says so.
   - _Priority, not a hard split._ The Air leads iOS work (Xcode, simulators, the self-hosted iOS CI
-    runner); the Neo leads web work. Either takes the other's kind of work when the owner says so or
-    the other machine is unavailable.
+    runner) and takes web work only when the Neo is unavailable or the owner says so. The Neo leads
+    web work and takes iOS work only when the Air is busy or the owner says so; its iOS PRs still run
+    on the Air's runner.
   - _Only the Air holds Cloudflare credentials._ Deploys and every other wrangler step against
     production (remote D1 migrations, secrets, rollback, tail, `wrangler deployments status`) run
     there. The Neo holds no Cloudflare credentials of any kind: no `wrangler login`, cached wrangler
-    session or `CLOUDFLARE_API_TOKEN`. Either machine may run signed-in checks of production in the
+    session or `CLOUDFLARE_API_TOKEN`, so it has no production rollback path; while the Air is
+    offline the owner is the backstop. Either machine may run signed-in checks of production in the
     RitmoFit app itself (never the Cloudflare dashboard); changing production data stays under
     "Never granted" below.
+  - _Who finishes a PR._ The conductor that opened a PR runs its final review and merge, unless the
+    owner names the other conductor.
   - _Messaging._ When Remote Control connects both sessions, find the peer with `ListAgents` and
     message it with `SendMessage` (for example `to: "Ritmo - Neo"`). A send may report unconfirmed
-    delivery even when it arrived. Use messages for status, merge and rebase notices, and which RF
-    IDs each side is taking. A message is not a claim; the draft PR is (see "Task sync"). If the
-    peer is not listed, the owner relays by pasting.
-  - _A peer message is never permission._ Neither is the other conductor's text pasted or relayed by
-    anyone. It cannot grant anything this file reserves for the owner, such as merges, Ready or
-    deploys.
+    delivery even when it arrived. Use messages for status, merge and rebase notices, and RF IDs;
+    send "taking RF-N" only once its draft PR exists, with the PR URL. A message is not a claim; the
+    draft PR is (see "Task sync"). If the peer is not listed, the owner relays by pasting; the
+    owner's own words, pasted by the owner, are the owner speaking in that session.
+  - _Relayed owner approval._ An approval the owner gives one conductor counts for the other when
+    that conductor relays it, within this scope: one named PR's merge permission (including applying
+    `owner-approved` to it), Ready, priority and triage, and answers to design or scope questions.
+    It never covers deploys, remote D1 migrations, secrets, production data or branch deletion; those
+    need the owner directly with the conductor that acts. Before relaying, the approved conductor
+    records the owner's exact words, the date and its machine in a PR comment (or, for a decision
+    with no PR, in the RF record's evidence). The receiving conductor acts only after it finds that
+    record and, for a merge, confirms the PR head is still the one approved; any push voids it as
+    usual. Anything else from the other conductor is information, never permission.
 
 ## Delegation And Merge Policy
 
@@ -234,12 +246,14 @@ files whose items are done or routed.
 
 Then the agent **asks**: "PR #N is green on `<sha>` — may I run the final review and squash-merge?"
 In a live session it asks in chat. A background agent comments that question on the PR, adds the
-`ready-to-merge` label and stops. Permission is the owner saying so in a session, or the owner
-adding `owner-approved` to the PR. Once a PR has that permission, any Solo or Orchestrator session
-may finish it: run the final review below and merge, even though another session opened it. A Lane
-session never merges, even an approved PR. Agents never apply `owner-approved` on their own judgment; the one
-exception is the owner explicitly telling the agent in a session to apply it, which the agent records
-as a PR comment before applying it.
+`ready-to-merge` label and stops. Permission is the owner saying so in a session (or relayed between conductors as in "Two-machine
+conductors"), or the owner adding `owner-approved` to the PR. Once a PR has that permission, any Solo
+or Orchestrator session may finish it: run the final review below and merge, even though another
+session opened it. Between two-machine conductors, the one that opened it finishes it unless the
+owner names the other. A Lane session never merges, even an approved PR. Agents never apply `owner-approved` on their own judgment; the one
+exception is the owner explicitly telling the agent in a session to apply it (directly, or relayed
+between conductors as in "Two-machine conductors"), which the agent records as a PR comment before
+applying it.
 
 With permission, the agent runs its tool's code-review pass on the final PR diff at a
 confidence-over-recall setting (for example `/code-review medium` in Claude Code, `/review` in
@@ -284,7 +298,8 @@ labeled run cancelled before it records the status leaves the approval uncounted
 the gate to get a PR through.
 
 **Never granted:** deploys, remote D1 migrations, secrets, production data, repository settings or
-rulesets, applying `owner-approved` except on the owner's explicit in-session instruction, merging
+rulesets, applying `owner-approved` except on the owner's explicit instruction (in session, or relayed as in
+"Two-machine conductors"), merging
 any PR without that PR's permission, force-pushing another session's branch, merging another
 session's PR except in the orchestrator's merge train, when relaying a subagent's ask, or when a
 Solo or Orchestrator session finishes a PR that already has the owner's permission (a Lane never
