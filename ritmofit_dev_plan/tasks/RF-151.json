@@ -3,7 +3,7 @@
   "id": "RF-151",
   "title": "Music Songs: tick up to 15 songs in the list, then create a class from them",
   "kind": "task",
-  "status": "backlog",
+  "status": "in_progress",
   "priority": "P2",
   "parent": null,
   "dependsOn": [],
@@ -18,7 +18,7 @@
     "Component tests cover: one tap or click on a row toggles exactly once; a row tap never starts playback; selection; the 15 cap on both checkbox and row tap, with selected rows still untickable; persistence across Load more and search; clearing on provider switch; and the create sheet. The e2e smoke covers creating a class from selected songs.",
     "After deploy, the owner smoke tests pick mode on Mac and iPhone and confirms the feel, or asks for the Spotify-style Select button instead."
   ],
-  "nextAction": "Owner, 2026-10-31: option (a), always in pick mode (row tap selects, never plays; preview later as a ▶ on the artwork via RF-172); the owner will smoke test the feel on Mac and iPhone after deploy. Owner, 2026-10-30, after using \"Create class from liked songs\" on production: the 15-song limit is a good gut check, but the separate button is lazy; songs on Music › Songs should be selectable, up to 15, and a \"Create a class\" button once some are selected. Owner chose option A for what follows the button: a sheet with class name and template only. Today the button is in apps/web/src/components/Dashboard.tsx (around line 3004; the Songs list follows it), its note comes from apps/web/src/lib/music-library.ts, and the 15-song picker pattern is apps/web/src/components/PlaylistSongPicker.tsx. Song order in the class: follow the list order the user sees unless the owner decides otherwise at Ready. Agent-created: Backlog until the owner sets Ready. Spotify likes are RF-157, which waits on RF-92 (Spotify Web API 403), so this record can reach Ready and Done without Spotify.",
+  "nextAction": "Owner set Ready and asked to start it, 2026-10-31 (Neo session). Building on feat/rf-151-songs-pick-mode: a one-label pick row in Music › Songs (checkbox, artwork and song text in one <label> inside the <li data-build-class-slot=\"song\">; anything that later mounts in that slot stays outside the label), a selection bar (N of 15, Clear, Create a class), a name-and-template sheet, and removal of \"Create class from liked songs\" and its picker. Restart: finish the components and tests on that branch, run the full gate, then set For review (the owner smoke test is an acceptance item). Owner, 2026-10-31: option (a), always in pick mode (row tap selects, never plays; preview later as a ▶ on the artwork via RF-172); the owner will smoke test the feel on Mac and iPhone after deploy. Owner, 2026-10-30: the 15-song limit is a good gut check, but the separate button is lazy; option A for what follows the button, a sheet with class name and template only. Song order in the class follows the list order the user sees. Spotify likes are RF-157, which waits on RF-92.",
   "blocker": null,
   "evidence": [
     {
