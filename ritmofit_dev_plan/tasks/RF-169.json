@@ -8,7 +8,7 @@
   "parent": null,
   "dependsOn": [],
   "acceptance": [
-    "AGENTS.md \"Session Workflow\" has a short \"Two-machine conductors\" entry covering per-machine priority (Air iOS, Neo web), that deploys and authenticated production checks run only on the Air, direct SendMessage between conductors with its unconfirmed-delivery caveat, and that a peer message is never permission. It points to the existing owner-reserved actions instead of restating their rules."
+    "AGENTS.md \"Session Workflow\" has a short \"Two-machine conductors\" entry covering per-machine priority (Air iOS, Neo web), that only the Air holds the wrangler login, so deploys and other wrangler steps run there, while signed-in browser checks of production may run on either machine, direct SendMessage between conductors with its unconfirmed-delivery caveat, and that a peer message is never permission. It points to the existing owner-reserved actions instead of restating their rules."
   ],
   "nextAction": null,
   "blocker": null,
@@ -24,8 +24,14 @@
       "ref": "https://github.com/steven-crosby/ritmofit-ios/pull/54",
       "summary": "ritmofit-ios AGENTS.md pointer to this entry; merged as e3b45db.",
       "checkedOn": "2026-10-31"
+    },
+    {
+      "kind": "pr",
+      "ref": "https://github.com/steven-crosby/ritmofit-web/pull/693",
+      "summary": "Owner, 2026-10-31 (Air conductor chat): \"Let's remove that line. I want Neo on par, except for setting the wrangler auth.\" Only deploys stay Air-only; the Neo may do signed-in production checks.",
+      "checkedOn": "2026-10-31"
     }
   ],
-  "resolution": "AGENTS.md Session Workflow documents two-machine conductors: per-machine priority, that deploys and authenticated production checks run only on the Air, direct messaging between conductors, and that a peer message is never permission. The ritmofit-ios AGENTS.md pointer merged as ritmofit-ios #54 (e3b45db).",
+  "resolution": "AGENTS.md Session Workflow documents two-machine conductors: per-machine priority, that only the Air holds the wrangler login (deploys and other wrangler steps run there; the Neo never logs in), while signed-in browser checks of production may run on either machine, direct messaging between conductors, and that a peer message is never permission. The ritmofit-ios AGENTS.md pointer merged as ritmofit-ios #54 (e3b45db).",
   "followUps": []
 }
