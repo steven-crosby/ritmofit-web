@@ -22,7 +22,8 @@ detail). Current focus and `main` vs production live in the "Now" block of
 > `dbd72e2` and #692 `48b774b` (RF-151 records). ritmofit-ios: #55 `100094f`, #56 `e8f8bba` and
 > #57 `2c56fba` (RF-1021 to RF-1023 records); RF-1021's #58 was still in review at this close.
 > This close also writes the owner's 2026-11-01 conductor rulings into AGENTS.md (who finishes a PR,
-> relayed approval and its scope, iOS on the Neo, no rollback on the Neo). Production unchanged at
+> relayed approval and its scope, iOS on the Neo, no rollback on the Neo). With the owner's yes, the
+> Air removed its empty `lanes/web-a` and `lanes/web-b` folders and other stale local worktrees. Production unchanged at
 > `67496ab`: every merge since is records and docs only (checked from git, not wrangler).
 > Correction to the 2026-10-31 addendum below: it postdates the deploy entry under it, the Air
 > merges entry it points at is two entries down, and #689 also rewrote the Now block and carried the

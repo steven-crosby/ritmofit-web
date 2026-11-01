@@ -22,9 +22,9 @@ rollback `e50f1fd3-bdd1-4541-bc3f-4c2cd483a167`), deployed from the Air on 2026-
 main commit is records and docs only, so no deploy is due. See [HISTORY](./HISTORY.md).
 **In flight:** the D25 provider matrix (#654), unchanged since 2026-10-29.
 **Next step:** the owner's Mac and iPhone check of [RF-151](./tasks/RF-151.json) (Music › Songs pick
-mode: a row tap ticks and never plays, the 15 cap, Create a class) and RF-134's live labels, on Apple
-Music and SoundCloud likes at 1440 and 390. Still owed: the iPhone Safari device check (the 7 steps in
-the #669 PR body, with `?playback-timing=1`) for [RF-108](./tasks/RF-108.json),
+mode: a row tap ticks and never plays, the 15 cap, Create a class) on Apple Music and SoundCloud likes
+at 1440 and 390, and RF-134's live labels on Music and Account. Still owed: the iPhone Safari device
+check (the 7 steps in the #669 PR body, with `?playback-timing=1`) for [RF-108](./tasks/RF-108.json),
 [RF-128](./tasks/RF-128.json) and [RF-147](./tasks/RF-147.json).
 **Window:** the Apple Music subscription ends around 2026-11-27, so Phase 1 work that needs a live
 Apple account goes first. Spotify is reopened; liked songs load in production for the owner account
