@@ -17,7 +17,7 @@
 <!-- Claude Code, 2026-10-30: Owner set the Apple hardening Ready set (RF-108, RF-128, RF-147). -->
 <!-- Claude Code, 2026-10-31: #668 and #669 deployed; Now names the device check, the 2026-10-31 Ready set and RF-151's Ready decision. -->
 <!-- Claude Code, 2026-10-31: RF-137 (#672) and RF-135 (#673) merged, undeployed; main is ahead of production. -->
-<!-- Claude Code, 2026-10-31: a1b971d deployed from the Air; Now names RF-166 ahead, #683 and #684, and the Spotify likes observation. -->
+<!-- Claude Code, 2026-10-31: a1b971d deployed from the Air; Now names RF-166 and RF-134 ahead, #684 in flight, and the Spotify likes observation. -->
 <!-- Claude Code, 2026-10-31: Close: RF-131 answered (#677, follow-ups RF-133, RF-134, RF-144, RF-165 to RF-168); RF-168 is the open owner decision. -->
 
 **Current actionable state:** [RF board](./tasks.md), backed by canonical [task records](./tasks/README.md).
@@ -26,11 +26,11 @@ The order of work is [Phases](#phases) below; each phase lists RF records, not a
 `e50f1fd3-bdd1-4541-bc3f-4c2cd483a167` per the deploy record; SPA `assets/index-DCUUNJcv.js` on three
 cache-busted fetches from the Neo). It adds RF-137, RF-135, RF-165 and RF-133 to `0a77110`. Rollback
 is `61cdeb33-e106-4224-90ad-18ad0cb3173f`. See [HISTORY](./HISTORY.md).
-**Main is ahead:** `c0b60d4` adds [RF-166](./tasks/RF-166.json) (#682, the Classes list stops
-flagging missing tempo), web UI only, no migration. Not deployed; a deploy is the owner's call, from
-the Air.
-**In flight:** [RF-134](./tasks/RF-134.json) (#683, owner-gated wording, awaiting the owner); the
-Air's records PR #684 (RF-151 pick-mode decision, RF-138, RF-170); #681 (two-machine rules); the D25
+**Main is ahead:** [RF-166](./tasks/RF-166.json) (#682, the Classes list stops flagging missing
+tempo) and [RF-134](./tasks/RF-134.json) (#683 at `411bdba`, readiness and connection labels say
+what they checked; it touches `providers.ts` labels, so name a live connection check). Web UI only,
+no migration. Not deployed; a deploy is the owner's call, from the Air.
+**In flight:** the Air's records PR #684 (RF-151 pick-mode decision, RF-138, RF-170); #681 (two-machine rules); the D25
 provider matrix (#654); iOS RF-1014 (ritmofit-ios #53).
 **Next step:** the owner's iPhone Safari device check (the 7 steps in the #669 PR body, with
 `?playback-timing=1`) for [RF-108](./tasks/RF-108.json), [RF-128](./tasks/RF-128.json) and
