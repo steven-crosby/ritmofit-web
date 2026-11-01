@@ -10,9 +10,8 @@
 <!-- note (Claude Code, 2026-10-06): Added Session Workflow (solo/lane/orchestrator roles, per-session handoff files under ritmofit_dev_plan/handoffs/), archived the unused remote maintenance loop (remote-prompts, SCHEDULE.md, agent-reports) to ritmofit_dev_plan/archive/remote-loop/, and added a CLAUDE.md that only imports this file — reversing the 2026-07-12 wrapper removal so the Claude Code CLI loads this canon; it carries no rules of its own. -->
 <!-- note (Claude, 2026-07-25): Replaced the hardcoded `~/repos/ritmostudio/` workspace path with portable discovery commands (split containers are now possible, and ritmofit-ios clones can live in either), noted cross-round machine contention, and pointed at the new parallel-round runbook. -->
 <!-- note (Claude Code, 2026-10-27): Owner restored a tracked CLAUDE.md, superseding the 2026-10-25 removal. It imports this file and holds only a Claude-facing architecture map and test commands; do not delete it, and keep rules here. -->
-<!-- note (Claude Code, 2026-10-31): Added "Two-machine conductors" under Session Workflow (owner-approved): priority per machine, Air-only deploys, direct SendMessage between conductors, and that a peer message is never permission. -->
-
-<!-- note (Claude Code, 2026-10-31): Owner: only deploys (the wrangler login) are Air-only; the Neo is on par for signed-in production checks. --><!-- note (Grok, 2026-10-26): Agents leave other tools' local files unmentioned. -->
+<!-- note (Claude Code, 2026-10-31): Added "Two-machine conductors" under Session Workflow (owner-approved): priority per machine, that only the Air holds the wrangler login (the Neo is on par otherwise, including signed-in production checks), direct SendMessage between conductors, and that a peer message is never permission. -->
+<!-- note (Grok, 2026-10-26): Agents leave other tools' local files unmentioned. -->
 <!-- note (Cursor, 2026-10-27): Listed the web bundle budget that now ends the SPA build. -->
 
 <!-- note (Codex, 2026-10-27): Made repository RF records canonical and added task validation gates. -->
@@ -194,8 +193,9 @@ context; chat and tool memory are scratch.
   - _Priority, not a hard split._ The Air has priority for iOS (Xcode, simulators, the self-hosted
     iOS CI runner); the Neo has priority for web. The Air takes web work only when the Neo is
     unavailable or the owner says so.
-  - _Deploys run only on the Air_, which holds the wrangler login. Otherwise the two conductors are
-    on par, including signed-in checks of production.
+  - _Only the Air holds the wrangler login._ Deploys and every other wrangler step against
+    production (remote D1 migrations, secrets, rollback, tail) run there; the Neo never runs
+    `wrangler login`. Signed-in browser checks of production may run on either machine.
   - _Messaging._ When Remote Control connects both sessions, find the peer with `ListAgents` and
     message it with `SendMessage` (for example `to: "Ritmo - Neo"`). A send may report unconfirmed
     delivery even when it arrived. Use messages for status, claims, merge and rebase notices, and
