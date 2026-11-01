@@ -52,7 +52,6 @@ If a breadcrumb doesn't fit any home, it probably isn't worth keeping — delete
 
 <!-- newest at top; one per line -->
 
-
 <!-- 2026-07-27: the two 2026-07-25 design-audit breadcrumbs were routed to
      docs/audits/claude-design-audit-2026-07-24/IMPLEMENTATION-KICKOFF.md as F-01 (dead Tailwind
      color classes — the sweep found 12 uses across 5 files, not just AccountDialog) and F-02
