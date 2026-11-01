@@ -65,6 +65,16 @@ export function formatDuration(ms: number): string {
 }
 
 /**
+ * The create-class choices for the D21 templates. Pilates maps to the shared
+ * `sculpt` enum until the contract earns a rename; labels are presentation-only.
+ */
+export const CREATE_TEMPLATE_OPTIONS: ReadonlyArray<{ value: ClassTemplate; label: string }> = [
+  { value: 'cycle', label: 'Cycle' },
+  { value: 'sculpt', label: 'Pilates' },
+  { value: 'hiit', label: 'HIIT' },
+];
+
+/**
  * Human-friendly label for a class template/discipline (shape).
  * Leads the card meta so the rail reads as a music-forward creation queue
  * (shape first). Matches labels from the create form where possible.

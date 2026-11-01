@@ -219,10 +219,14 @@ async function openSavedPlaylist(service: string, playlistName: string) {
   fireEvent.click(await screen.findByRole('button', { name: `Open ${playlistName}` }));
 }
 
-async function openLikedSongs(service = 'Spotify') {
+/** Tick every liked song on Music › Songs, then open the Create a class sheet (RF-151). */
+async function pickLikedSongs(service = 'Spotify') {
   await selectMusicService(service);
   fireEvent.click(screen.getByRole('button', { name: 'Songs' }));
-  fireEvent.click(await screen.findByRole('button', { name: 'Create class from liked songs' }));
+  const list = await screen.findByRole('list', { name: 'Liked songs' });
+  for (const box of within(list).getAllByRole('checkbox')) fireEvent.click(box);
+  fireEvent.click(screen.getByRole('button', { name: 'Create a class' }));
+  return screen.findByRole('dialog', { name: 'Create a class' });
 }
 
 function installLocalStorage() {
@@ -685,17 +689,11 @@ describe('Dashboard class library states', () => {
     expect(await screen.findByText('Levels')).toBeTruthy();
     expect(screen.getByText('Song · Avicii · 3:20')).toBeTruthy();
 
-    // The existing likes browser still holds class creation. Build a class does not.
-    fireEvent.click(screen.getByRole('button', { name: 'Create class from liked songs' }));
-    const likesDialog = await screen.findByRole('dialog', { name: 'Browse Spotify likes' });
-    expect(within(likesDialog).getByText('Levels')).toBeTruthy();
-    const createButton = within(likesDialog).getByRole('button', {
-      name: 'Create class from 2 liked tracks',
-    });
-    expect(createButton.parentElement?.className).toContain('flex-col');
-    expect(createButton.parentElement?.className).toContain('sm:flex-row');
-    expect(createButton.className).toContain('w-full');
-    expect(createButton.className).toContain('sm:w-auto');
+    // Pick mode (RF-151): every row is a checkbox, and the old button is gone.
+    expect(screen.queryByRole('button', { name: 'Create class from liked songs' })).toBeNull();
+    const list = screen.getByRole('list', { name: 'Liked songs' });
+    expect(within(list).getAllByRole('checkbox')).toHaveLength(2);
+    expect(screen.getByText('Tick up to 15 songs to create a class.')).toBeTruthy();
   });
 
   it('does not create a class when the provider collection fetch fails', async () => {
@@ -895,8 +893,8 @@ describe('Dashboard class library states', () => {
 
     renderDashboard();
     fireEvent.click(await screen.findByRole('button', { name: 'Music' }));
-    await openLikedSongs();
-    fireEvent.click(screen.getByRole('button', { name: 'Create class from 2 liked tracks' }));
+    const sheet = await pickLikedSongs();
+    fireEvent.click(within(sheet).getByRole('button', { name: 'Create class' }));
 
     const retry = await screen.findByRole('button', { name: 'Retry 1 failed' });
     expect(screen.getByText(/1 of 2 tracks imported/)).toBeTruthy();
@@ -1167,17 +1165,15 @@ describe('Dashboard class library states', () => {
 
     renderDashboard();
     fireEvent.click(await screen.findByRole('button', { name: 'Music' }));
-    await openLikedSongs();
-    const createBtn = await screen.findByRole('button', {
-      name: 'Create class from 2 liked tracks',
-    });
+    const sheet = await pickLikedSongs();
+    const createBtn = within(sheet).getByRole('button', { name: 'Create class' });
 
     await act(async () => {
       fireEvent.click(createBtn);
     });
 
-    // Creates the class with the dialog title + default template, then imports
-    // every liked track before opening the builder.
+    // Creates the class with the sheet's title + default template, then imports
+    // every picked song before opening the builder.
     await waitFor(() => {
       expect(vi.mocked(api.createClass)).toHaveBeenCalledWith({
         title: 'Spotify likes',
@@ -3751,8 +3747,8 @@ describe('Dashboard track focus management', () => {
         });
       renderDashboard();
       fireEvent.click(await screen.findByRole('button', { name: 'Music' }));
-      await openLikedSongs();
-      fireEvent.click(screen.getByRole('button', { name: 'Create class from 2 liked tracks' }));
+      const sheet = await pickLikedSongs();
+      fireEvent.click(within(sheet).getByRole('button', { name: 'Create class' }));
       const retry = await screen.findByRole('button', { name: 'Retry 1 failed' });
       await screen.findByRole('heading', { name: 'Spotify likes' });
       fireEvent.click(retry);
@@ -5390,39 +5386,84 @@ describe('Music Songs paging and search (RF-132)', () => {
     expect(screen.getByRole('button', { name: 'Load more songs' })).toBeTruthy();
   });
 
-  it('says when "Create class from liked songs" used a subset of the library', async () => {
+  it('keeps the song selection across search and Load more, and creates in list order (RF-151)', async () => {
     vi.mocked(api.listClasses).mockResolvedValue(page([]));
     vi.mocked(api.listConnections).mockResolvedValue([spotifyConnection()]);
-    vi.mocked(api.listLikesPage).mockResolvedValue({
-      items: [song('1', 'Levels'), song('2', 'Wake Me Up')],
-      nextCursor: 'cursor-1',
+    vi.mocked(api.listLikesPage).mockImplementation(
+      async (_provider: Provider, options: LikesQuery = {}) =>
+        options.cursor
+          ? { items: [song('3', 'Clarity')], nextCursor: null }
+          : { items: [song('1', 'Levels'), song('2', 'Wake Me Up')], nextCursor: 'cursor-1' },
+    );
+    vi.mocked(api.createClass).mockResolvedValue(
+      makeClass('Spotify likes') as Awaited<ReturnType<typeof api.createClass>>,
+    );
+    vi.mocked(api.importTrack).mockImplementation(
+      async (_provider: Provider, id: string) =>
+        ({ id: `imported-${id}` }) as Awaited<ReturnType<typeof api.importTrack>>,
+    );
+    vi.mocked(api.listClassTracks).mockResolvedValue([]);
+    vi.mocked(api.getRunPayload).mockRejectedValue(new Error('no payload'));
+
+    await openSongs('Spotify');
+    // Ticked out of list order: Wake Me Up, then Levels.
+    fireEvent.click(await screen.findByRole('checkbox', { name: /Wake Me Up/ }));
+    fireEvent.click(screen.getByRole('checkbox', { name: /Levels/ }));
+    expect(screen.getByText('2 of 15 selected')).toBeTruthy();
+
+    fireEvent.change(screen.getByRole('searchbox', { name: 'Search songs' }), {
+      target: { value: 'Levels' },
+    });
+    await waitFor(() => expect(screen.queryByRole('checkbox', { name: /Wake Me Up/ })).toBeNull());
+    expect(screen.getByText('2 of 15 selected')).toBeTruthy();
+    fireEvent.change(screen.getByRole('searchbox', { name: 'Search songs' }), {
+      target: { value: '' },
     });
 
-    renderDashboard();
-    fireEvent.click(await screen.findByRole('button', { name: 'Music' }));
-    await openLikedSongs('Spotify');
+    const loadMore = await screen.findByRole('button', { name: 'Load more songs' });
+    fireEvent.click(loadMore);
+    expect(await screen.findByRole('checkbox', { name: /Clarity/ })).toBeTruthy();
+    expect(screen.getByText('2 of 15 selected')).toBeTruthy();
+    expect((screen.getByRole('checkbox', { name: /Wake Me Up/ }) as HTMLInputElement).checked).toBe(
+      true,
+    );
 
-    const dialog = await screen.findByRole('dialog', { name: 'Browse Spotify likes' });
-    expect(
-      within(dialog).getByText(
-        'Using your first 2 liked songs. Load more on Music › Songs to choose from more.',
-      ),
-    ).toBeTruthy();
+    fireEvent.click(screen.getByRole('button', { name: 'Create a class' }));
+    const sheet = await screen.findByRole('dialog', { name: 'Create a class' });
+    await act(async () => {
+      fireEvent.click(within(sheet).getByRole('button', { name: 'Create class' }));
+    });
+    await waitFor(() => expect(api.importClassTracks).toHaveBeenCalledTimes(1));
+    expect(vi.mocked(api.importTrack).mock.calls.map((call: unknown[]) => call[1])).toEqual([
+      '1',
+      '2',
+    ]);
   });
 
-  it('does not claim a subset when every liked song is loaded', async () => {
+  it('clears the song selection when the provider changes (RF-151)', async () => {
     vi.mocked(api.listClasses).mockResolvedValue(page([]));
-    vi.mocked(api.listConnections).mockResolvedValue([spotifyConnection()]);
-    vi.mocked(api.listLikesPage).mockResolvedValue({
-      items: [song('1', 'Levels')],
+    vi.mocked(api.listConnections).mockResolvedValue([
+      spotifyConnection(),
+      { ...spotifyConnection(), id: 'conn-apple', provider: 'apple_music', providerUserId: null },
+    ]);
+    vi.mocked(api.listPlaylists).mockResolvedValue([]);
+    vi.mocked(api.listLikesPage).mockImplementation(async (provider: Provider) => ({
+      items: [song(`${provider}-1`, `${provider} song`, provider)],
       nextCursor: null,
-    });
+    }));
 
-    renderDashboard();
-    fireEvent.click(await screen.findByRole('button', { name: 'Music' }));
-    await openLikedSongs('Spotify');
+    await openSongs('Spotify');
+    fireEvent.click(await screen.findByRole('checkbox', { name: /spotify song/ }));
+    expect(screen.getByText('1 of 15 selected')).toBeTruthy();
 
-    const dialog = await screen.findByRole('dialog', { name: 'Browse Spotify likes' });
-    expect(within(dialog).queryByText(/Using your first/)).toBeNull();
+    await selectMusicService('Apple Music');
+    fireEvent.click(screen.getByRole('button', { name: 'Songs' }));
+    expect(await screen.findByRole('checkbox', { name: /apple_music song/ })).toBeTruthy();
+    expect(screen.getByText('Tick up to 15 songs to create a class.')).toBeTruthy();
+
+    await selectMusicService('Spotify');
+    fireEvent.click(screen.getByRole('button', { name: 'Songs' }));
+    const box = (await screen.findByRole('checkbox', { name: /spotify song/ })) as HTMLInputElement;
+    expect(box.checked).toBe(false);
   });
 });

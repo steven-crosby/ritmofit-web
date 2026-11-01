@@ -3,11 +3,13 @@ import { expect, test, type Page } from '@playwright/test';
 
 // The signed-in core loop on a fresh local D1 with mock providers: sign up, create an empty
 // Cycle class, add two mock tracks, write cues, run it live without music, play, End Class.
+// Music › Songs pick mode also creates a class from two ticked liked songs (RF-151).
 // Every destination is checked for sideways overflow (jsdom has no layout) and for WCAG 2.2
 // AA violations. Each viewport project signs up its own instructor.
 
 // A long title is what widened the phone Classes page before #615.
 const CLASS_TITLE = 'Sunrise Climb Intervals With A Deliberately Long Title For Phones';
+const PICKED_TITLE = 'Picked Songs Ride';
 const NAME = 'E2E Tester';
 const WCAG_22_AA = ['wcag2a', 'wcag2aa', 'wcag21a', 'wcag21aa', 'wcag22aa'];
 
@@ -40,6 +42,8 @@ const KNOWN_AXE: Record<string, string[]> = {
   // WCAG 2.5.3 Label in Name: the class row, Jump back in card, and template tile buttons set an
   // aria-label that leaves out part of their visible text. axe 4.14 enables this rule by default.
   Classes: ['label-content-name-mismatch'],
+  // The Music service chips ("SoundCloud, Connected") have the same mismatch (RF-173).
+  'Music songs': ['label-content-name-mismatch'],
 };
 
 async function expectNoAxeViolations(page: Page, where: string) {
@@ -106,8 +110,26 @@ async function addCue(page: Page, move: string, at: string) {
   await expect(page.getByRole('button', { name: `Edit cue ${move}` })).toBeVisible();
 }
 
-async function openDestination(page: Page, name: 'Classes' | 'Account') {
+async function openDestination(page: Page, name: 'Classes' | 'Account' | 'Music') {
   await page.getByRole('button', { name, exact: true }).click();
+}
+
+// RF-151: tick liked songs on Music › Songs, then name the class in the sheet.
+async function createClassFromPickedSongs(page: Page) {
+  await openDestination(page, 'Music');
+  await page.getByRole('button', { name: /^SoundCloud,/ }).click();
+  await page.getByRole('button', { name: 'Songs', exact: true }).click();
+  await page.getByRole('button', { name: 'Connect SoundCloud' }).first().click();
+  const list = page.getByRole('list', { name: 'Liked songs' });
+  await list.getByText('Instinct').click();
+  await list.getByText('Baianá').click();
+  await expect(page.getByText('2 of 15 selected')).toBeVisible();
+  await checkPage(page, 'Music songs');
+  await page.getByRole('button', { name: 'Create a class' }).click();
+  const sheet = page.getByRole('dialog', { name: 'Create a class' });
+  await sheet.getByLabel('Class name').fill(PICKED_TITLE);
+  await sheet.getByRole('button', { name: 'Create class' }).click();
+  await expect(page.getByRole('heading', { name: PICKED_TITLE })).toBeVisible();
 }
 
 test('signed-in core loop: build a class, run it live, End Class', async ({ page }, testInfo) => {
@@ -133,6 +155,8 @@ test('signed-in core loop: build a class, run it live, End Class', async ({ page
   await openDestination(page, 'Account');
   await expect(page.getByRole('heading', { name: NAME })).toBeVisible();
   await checkPage(page, 'Account');
+
+  await createClassFromPickedSongs(page);
 
   await openDestination(page, 'Classes');
   await page

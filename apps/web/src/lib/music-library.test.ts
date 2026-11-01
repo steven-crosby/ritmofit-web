@@ -2,7 +2,6 @@ import { afterEach, describe, expect, it, vi } from 'vitest';
 import {
   appendSongPage,
   LIBRARY_SORT_OPTIONS,
-  likesSubsetNote,
   serverSongSearchState,
   shouldAutoLoadForSearch,
   SONG_SEARCH_AUTOLOAD_BOUND,
@@ -313,13 +312,6 @@ describe('Songs paging and search (RF-132)', () => {
     expect(songSearchScopeNote({ ...base, loadedCount: 400, failed: true })).toBe(
       'Searched your first 400 liked songs.',
     );
-  });
-
-  it('tells "Create class from liked songs" when it used a subset', () => {
-    expect(likesSubsetNote(200, true)).toBe(
-      'Using your first 200 liked songs. Load more on Music › Songs to choose from more.',
-    );
-    expect(likesSubsetNote(42, false)).toBeNull();
   });
 });
 
