@@ -47,6 +47,12 @@
       "ref": "https://github.com/steven-crosby/ritmofit-web/pull/700",
       "summary": "Live approval test on 22421a7 failed: owner-gate.yml run 41434803378 passed in 15 s and recorded owner-approval, but the PR stayed BLOCKED. The ruleset and statusCheckRollup read the required check across every check suite, and ci.yml run 41402534763 still held a failed run under the required name (its owner gate step), so a newer success in another suite cannot replace it. Owner chose option 1: the owner gate becomes the latest-wins `owner-gate` commit status and the required CI job never fails on it.",
       "checkedOn": "2026-11-02"
+    },
+    {
+      "kind": "observation",
+      "ref": "https://github.com/steven-crosby/ritmofit-web/actions/runs/41440901095",
+      "summary": "Status design on f21f8fa: CI run 41440215069 passed the required check and its owner gate status job (it voided the stale owner-approved label, since f21f8fa has no approval) and wrote owner-gate = failure ('Owner-gated paths need owner-approved on f21f8fa'). Adding then removing ready-to-merge started Owner gate runs 41440901095 and 41441024681 (~18 s, record job skipped, no CI run) that each rewrote owner-gate = failure. Rollup: required check SUCCESS, owner-gate FAILURE, mergeStateStatus UNSTABLE (BLOCKED once the ruleset requires owner-gate).",
+      "checkedOn": "2026-11-02"
     }
   ],
   "resolution": null,
