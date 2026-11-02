@@ -118,8 +118,8 @@ from verified sources and state what orientation evidence is missing.
 - [ ] Before merge, all RF/handoff/docs changes must be on the PR branch. Wait for checks on the
   **final PR head**, record that SHA, and ensure merge eligibility. An earlier green revision is
   insufficient after task or documentation edits. Use an expected-head guard when merging.
-- **Own finished PR, Solo:** when final-head checks pass (for an owner-gated PR: every step except
-  the final owner-gate step), ask: "PR #N is green on `<sha>` — may I
+- **Own finished PR, Solo:** when the required CI check passes on the final head (an owner-gated
+  PR's `owner-gate` status stays failed until approval), ask: "PR #N is green on `<sha>` — may I
   run the final review and squash-merge?" In a live session ask in chat; otherwise comment that on
   the PR, add `ready-to-merge` and stop. Owner-gated PRs also get `needs-owner` and the manual check
   left. Permission is the owner saying so in a session or adding `owner-approved`; an owner-gated PR
