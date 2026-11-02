@@ -13,7 +13,7 @@
     "Adding or removing a label (ready-to-merge, needs-owner, owner-approved) re-evaluates the owner gate without re-running install, tests, build and the e2e smoke, and the required `owner-gate` commit status reflects the gate result for the current head.",
     "A label-only rerun can no longer turn a green PR red through a flaky e2e or cancel an in-flight run.",
     "A label edit on an already-merged PR can no longer cancel the post-merge push run on main (a closed PR's pull_request run shares the ci-refs/heads/main concurrency group today).",
-    "Correction 2026-11-02: since RF-176 (#702) only owner-gate.yml writes the status; ci.yml writes none. Original: The required CI check fails only on real checks, never on the owner gate: the owner gate is the `owner-gate` commit status (latest-wins), written by ci.yml on every PR run and by owner-gate.yml on label changes, success for non-gated PRs and fail-closed on errors; owner-gate.yml creates no run of the required check."
+    "The required CI check fails only on real checks, never on the owner gate: the owner gate is the `owner-gate` commit status (latest-wins), written only by owner-gate.yml on every PR event (ci.yml writes none), success for non-gated PRs and fail-closed on errors; owner-gate.yml creates no run of the required check. (Corrected 2026-11-02 for RF-176 #702; original wording: \"The required CI check fails only on real checks, never on the owner gate: the owner gate is the `owner-gate` commit status (latest-wins), written by ci.yml on every PR run and by owner-gate.yml on label changes, success for non-gated PRs and fail-closed on errors; owner-gate.yml creates no run of the required check.\")"
   ],
   "nextAction": null,
   "blocker": null,
@@ -64,6 +64,12 @@
       "kind": "observation",
       "ref": "https://github.com/steven-crosby/ritmofit-web/pull/706#issuecomment-6588571439",
       "summary": "Owner approved closing RF-100 and RF-176 (\"Yes to both\") in the Air session on 2026-11-02, recorded on #706. Gate observed on #705 (https://github.com/steven-crosby/ritmofit-web/pull/705): owner-gate stayed failure until owner-approved was recorded on 8a4078a, and the PR was BLOCKED only on owner-gate while the required CI check was green.",
+      "checkedOn": "2026-11-02"
+    },
+    {
+      "kind": "observation",
+      "ref": "https://github.com/steven-crosby/ritmofit-web/pull/708#issuecomment-6588794141",
+      "summary": "Acceptance item 4 restated in full after the #708 review, keeping the original wording.",
       "checkedOn": "2026-11-02"
     }
   ],
