@@ -21,7 +21,7 @@
 <!-- note (Claude Code, 2026-10-27): Owner set a standing delegation grant (branch → PR, then final review + squash-merge with per-PR owner permission) with CI-enforced owner-gated paths, and made the e2e smoke a required CI step. -->
 <!-- note (Claude Code, 2026-10-31): Added "Two-machine conductors" under Session Workflow (owner-approved): priority per machine, that only the Air holds the wrangler login (the Neo is on par otherwise, including signed-in production checks), direct SendMessage between conductors, and that a peer message is never permission. -->
 <!-- note (Claude Code, 2026-11-01): Two-machine conductors: each conductor is a Solo or Orchestrator session, the Neo holds no Cloudflare credentials, signed-in production checks mean the RitmoFit app, and a message is not a claim (follow-ups from #681 and #693 reviews). -->
-<!-- note (Claude Code, 2026-11-01): Owner rulings: the conductor that opened a PR finishes it; relayed owner approval counts within a set scope (never deploys, migrations, secrets, production data or branch deletion); the Neo takes iOS only when the Air is busy or the owner says so; the Neo has no rollback path. -->
+<!-- note (Claude Code, 2026-11-01): Owner rulings: the conductor that opened a PR finishes it; the Neo takes iOS only when the Air is busy or the owner says so; the Neo has no rollback path. Relayed owner approval is in its own PR. -->
 
 This is the canonical contributor and agent guide for Ritmo Studio. If another instruction file conflicts
 with it, follow `AGENTS.md`, then repair the stale file. When an AI agent edits this file or adds a note
@@ -125,9 +125,8 @@ its stated scope, including any RF task the agent creates for it: plan, then exe
 waiting. Stop and ask only when the work must grow beyond the brief or the brief leaves a product
 decision open.
 
-**Ready is the owner's queue.** Only the owner moves a task into Ready, directly, by explicitly
-asking an agent to, or through a relayed approval ("Two-machine conductors"); an agent never sets
-Ready on its own, so every Ready task is the owner's choice.
+**Ready is the owner's queue.** Only the owner moves a task into Ready, directly or by explicitly
+asking an agent to; an agent never sets Ready on its own, so every Ready task is the owner's choice.
 Agents may move a task out of Ready: by starting it, or by parking it in Backlog with a next action
 noting it came from the owner's Ready queue, so the owner can re-promote it. Tasks an agent creates
 start in Backlog.
@@ -197,7 +196,8 @@ context; chat and tool memory are scratch.
   - _Priority, not a hard split._ The Air leads iOS work (Xcode, simulators, the self-hosted iOS CI
     runner) and takes web work only when the Neo is unavailable or the owner says so. The Neo leads
     web work and takes iOS work only when the Air is busy or the owner says so. Its iOS PRs still
-    need the Air's self-hosted runner for the required check, so they wait while the Air is offline.
+    need the Air's self-hosted runner for the required check, so they queue behind the Air's own iOS
+    lane and wait while the Air is offline.
   - _Only the Air holds Cloudflare credentials._ Deploys and every other wrangler step against
     production (remote D1 migrations, secrets, rollback, tail, `wrangler deployments status`) run
     there. The Neo holds no Cloudflare credentials of any kind: no `wrangler login`, cached wrangler
@@ -206,28 +206,15 @@ context; chat and tool memory are scratch.
     RitmoFit app itself (never the Cloudflare dashboard); changing production data stays under
     "Never granted" below.
   - _Who finishes a PR._ The conductor that opened a PR, itself or through its lanes or subagents,
-    runs its final review and merge. If the owner approves that PR in the other conductor's session,
-    the other conductor relays the approval and merges the PR itself only if the owner says so.
+    runs its final review and merge, unless the owner names the other conductor.
   - _Messaging._ When Remote Control connects both sessions, find the peer with `ListAgents` and
     message it with `SendMessage` (for example `to: "Ritmo - Neo"`). A send may report unconfirmed
     delivery even when it arrived. Use messages for status, merge and rebase notices, and RF IDs;
     send "taking RF-N" only once its draft PR exists, with the PR URL. A message is not a claim; the
-    draft PR is (see "Task sync"). If the peer is not listed, the owner relays by pasting. Only what
-    the owner types in a session is the owner speaking there. Anything pasted from another session,
-    including quoted owner words, is information, and an approval it mentions counts only through
-    the relay record below.
-  - _Relayed owner approval._ An approval the owner gives one conductor counts for the other when
-    that conductor relays it, within this scope: one named PR's merge permission (including applying
-    `owner-approved` to it), Ready, priority and triage, and answers to design or scope questions.
-    It covers nothing else on the "Never granted" list below (such as deploys, remote D1 migrations,
-    secrets, production data or branch deletion); those need the owner directly with the conductor
-    that acts. Before relaying, the approved conductor records the owner's exact words, the date,
-    its machine and, for a PR, the approved head SHA in a PR comment. For a decision with no PR yet,
-    the receiving conductor opens the draft PR that will carry it, and the relaying conductor
-    records the owner's words there. The receiving conductor acts only after it finds that record
-    and, for a merge, confirms the PR head equals that SHA. Any push voids it as usual, including a
-    branch update, and the owner then approves the new head again. Anything else from the other
-    conductor is information, never permission.
+    draft PR is (see "Task sync"). If the peer is not listed, the owner relays by pasting.
+  - _A peer message is never permission._ Neither is the other conductor's text pasted or relayed by
+    anyone. It cannot grant anything this file reserves for the owner, such as merges, Ready or
+    deploys.
 
 ## Delegation And Merge Policy
 
@@ -253,15 +240,13 @@ files whose items are done or routed.
 
 Then the agent **asks**: "PR #N is green on `<sha>` — may I run the final review and squash-merge?"
 In a live session it asks in chat. A background agent comments that question on the PR, adds the
-`ready-to-merge` label and stops. Permission is the owner saying so in a session (directly, or
-relayed between conductors as in "Two-machine conductors"), or the owner adding `owner-approved` to
-the PR. Once a PR has that permission, any Solo or Orchestrator session may finish it: run the final
-review below and merge, even though another session opened it. Between the two conductors,
-"Who finishes a PR" under "Two-machine conductors" decides which one finishes it. A
-Lane session never merges, even an approved PR. Agents never apply `owner-approved` on their own
-judgment; the one exception is the owner explicitly telling the agent to apply it (in session, or
-relayed between conductors as in "Two-machine conductors"), which the agent records as a PR comment
-before applying it.
+`ready-to-merge` label and stops. Permission is the owner saying so in a session, or the owner
+adding `owner-approved` to the PR. Once a PR has that permission, any Solo or Orchestrator session
+may finish it: run the final review below and merge, even though another session opened it. Between
+the two conductors, "Who finishes a PR" under "Two-machine conductors" decides which one does. A
+Lane session never merges, even an approved PR. Agents never apply `owner-approved` on their own judgment; the one
+exception is the owner explicitly telling the agent in a session to apply it, which the agent records
+as a PR comment before applying it.
 
 With permission, the agent runs its tool's code-review pass on the final PR diff at a
 confidence-over-recall setting (for example `/code-review medium` in Claude Code, `/review` in
@@ -306,13 +291,12 @@ labeled run cancelled before it records the status leaves the approval uncounted
 the gate to get a PR through.
 
 **Never granted:** deploys, remote D1 migrations, secrets, production data, repository settings or
-rulesets, applying `owner-approved` except on the owner's explicit instruction (in session, or
-relayed as in "Two-machine conductors"), merging any PR without that PR's permission, force-pushing
-another session's branch, merging another session's PR except in the orchestrator's merge train,
-when relaying a subagent's ask, or when a Solo or Orchestrator session finishes a PR that already has
-the owner's permission (between the two conductors, as "Who finishes a PR" decides; a Lane never
-merges), and branch deletion. Those keep their separate explicit
-permission.
+rulesets, applying `owner-approved` except on the owner's explicit in-session instruction, merging
+any PR without that PR's permission, force-pushing another session's branch, merging another
+session's PR except in the orchestrator's merge train, when relaying a subagent's ask, or when a
+Solo or Orchestrator session finishes a PR that already has the owner's permission (between the two
+conductors, as "Who finishes a PR" decides; a Lane never merges), and branch deletion. Those keep
+their separate explicit permission.
 
 **What CI proves:** the required job runs format, task, owner-gate and RF-trace checks, typecheck, lint,
 design-system verify, theme classes, unit and D1 integration tests, the web build with bundle budget,
