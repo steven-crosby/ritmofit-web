@@ -63,7 +63,7 @@ export const GATES = [
     name: 'CI / deploy / infrastructure',
     match: (p) =>
       p.startsWith('.github/') ||
-      /^scripts\/(deploy|owner-gate|rf-trace|required-secrets|production-smoke)[^/]*$/.test(p) ||
+      /^scripts\/(deploy|owner-gate|pr-gates|rf-trace|required-secrets|production-smoke)[^/]*$/.test(p) ||
       p === 'apps/api/wrangler.toml' ||
       p === 'apps/web/public/_headers' ||
       p === 'pnpm-workspace.yaml' ||

@@ -23,7 +23,7 @@
     "tasks:render": "node scripts/tasks.mjs render",
     "tasks:check": "node scripts/tasks.mjs check",
     "tasks:test": "node --test scripts/tasks.test.mjs",
-    "owner-gate:test": "node --test scripts/owner-gate.test.mjs",
+    "owner-gate:test": "node --test scripts/owner-gate.test.mjs scripts/pr-gates.test.mjs",
     "rf-trace:test": "node --test scripts/rf-trace.test.mjs"
   },
   "devDependencies": {

@@ -74,11 +74,11 @@ jobs:
             .github
             scripts
 
-      # Hygiene: drop an `owner-approved` that was added before the head was pushed and has no
-      # approval on it, so the PR shows it needs a fresh one. It keeps a label added after the
-      # push (RF-176). Runs on every event, so a replaced pending job loses nothing. The binding
-      # already makes a stale label count for nothing, so a failure here must not skip the gate.
-      # GITHUB_TOKEN edits do not trigger another run.
+      # Best-effort hygiene: drop an `owner-approved` that was added before the head was pushed and
+      # has no approval on it, so the PR shows it needs a fresh one. It keeps a label added after
+      # the push, or one it cannot date (RF-176). Runs on every event, so a replaced pending job
+      # loses nothing. The binding already makes a stale label count for nothing, so a failure
+      # here must not skip the gate. GITHUB_TOKEN edits do not trigger another run.
       - name: Void a stale owner approval
         continue-on-error: true
         env:
@@ -91,7 +91,8 @@ jobs:
           GH_TOKEN: ${{ github.token }}
           PR_NUMBER: ${{ github.event.pull_request.number }}
           BASE_REF: ${{ github.event.pull_request.base.ref }}
-          # A failed or refused recording says so instead of "need owner-approved".
+          # This run's refused or failed recording says so; otherwise a label without an approval
+          # on the head reads "remove and re-add it", so a later event never hides a refusal.
           UNAPPROVED_DESCRIPTION: ${{ needs.record-approval.result == 'failure' && (needs.record-approval.outputs.refusal || 'Recording owner approval failed; re-run the job or re-add the label') || '' }}
         run: bash .github/scripts/pr-gates.sh gate-status
 

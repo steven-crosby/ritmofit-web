@@ -23,7 +23,7 @@
 <!-- note (Claude Code, 2026-11-01): Two-machine conductors: each conductor is a Solo or Orchestrator session, the Neo holds no Cloudflare credentials, signed-in production checks mean the RitmoFit app, and a message is not a claim (follow-ups from #681 and #693 reviews). -->
 <!-- note (Claude Code, 2026-11-01): Owner rulings: the conductor that opened a PR finishes it; the Neo takes iOS only when the Air is busy or the owner says so; the Neo has no rollback path. Relayed owner approval is in its own PR. -->
 <!-- note (Claude Code, 2026-11-02): RF-100: the owner gate is the required `owner-gate` commit status, not a step of the required CI job; label changes re-evaluate only that status. -->
-<!-- note (Claude Code, 2026-11-02): RF-176: only the Owner gate workflow writes `owner-gate`; an approval given within two minutes of a push is refused; label edits never rerun or cancel CI, so the remove-`ready-to-merge`-before-merging and no-label-edits-on-merged-PRs rules are retired. -->
+<!-- note (Claude Code, 2026-11-02): RF-176: only the Owner gate workflow writes `owner-gate`; an approval given within two minutes of a push is refused; label edits never rerun or cancel CI, so the remove-`ready-to-merge`-before-merging and no-label-edits-on-merged-PRs rules are retired. Stale-label cleanup is best-effort; refusals vs transient failures. -->
 
 This is the canonical contributor and agent guide for Ritmo Studio. If another instruction file conflicts
 with it, follow `AGENTS.md`, then repair the stale file. When an AI agent edits this file or adds a note
@@ -268,11 +268,12 @@ cited in a PR comment, and does not block. Then:
   new push, so it needs green CI again and a fresh permission. Any push after permission voids it:
   approval counts only for the commit it was given on. When the owner adds `owner-approved`, the
   `Owner gate` workflow records an `owner-approval` commit status on that exact head, and the gate
-  requires both the label and that status on the current head; the workflow also drops a label
-  added before new commits arrived. It refuses to record an approval given less than two minutes
-  after the head was pushed (the owner may not have seen that commit): `owner-gate` then says so,
-  and the owner removes and re-adds the label. The agent asks again. Agents never create the `owner-approval` or `owner-gate`
-  status by hand.
+  requires both the label and that status on the current head. After new commits the workflow
+  also drops a label added before them; that cleanup is best-effort (a label it cannot date stays),
+  and the gate never counts a label without an approval on the current head. The workflow refuses
+  to record an approval given less than two minutes after the head was pushed (the owner may not
+  have seen that commit), or one whose label or push time it cannot read. The agent asks again.
+  Agents never create the `owner-approval` or `owner-gate` status by hand.
 
 Auto-merge is off and branches must be current, so concurrent agents merge **one at a time**: update
 the branch, wait for CI on the new head, ask, review, merge, then the next.
@@ -296,8 +297,12 @@ open PR is the review, so a rejected PR never reaches `main`. The authoritative 
 **The owner gate is a guardrail, not a security boundary.** It catches an agent misjudging its own
 change. It cannot stop a deliberate bypass: every agent pushes as the owner's account, and a
 `pull_request` run uses the PR's own workflows, so a PR could edit the gate or forge a status. An
-approval whose recording job fails leaves it uncounted, and a gate run that errors writes
-`owner-gate` as failure; both fail closed (re-run the job or re-add the label). The real backstop is
+approval that is not recorded leaves it uncounted, and a gate run that errors writes `owner-gate` as
+failure; all fail closed. `owner-gate`'s description says which: a **refusal** (the head was
+pushed under two minutes before the label, or a time could not be read, or `owner-approved` is on
+the PR but not recorded for the current head) means the owner reviews the head, then removes and
+re-adds the label; a **transient failure** ("Recording owner approval failed" or "Owner gate
+errored") means re-run the job or re-add the label. The real backstop is
 the owner's permission for every merge; agents never edit the gate to get a PR through.
 
 **Never granted:** deploys, remote D1 migrations, secrets, production data, repository settings or
@@ -351,7 +356,8 @@ Use Node `>=22.13` and pnpm `>=11.4`.
   vendored iOS snapshot allowlist.
 - `pnpm e2e`: build the SPA and run the Playwright smoke (mock providers, fresh local D1, port 8798).
   Once per machine: `pnpm --filter @ritmofit/e2e exec playwright install chromium`.
-- `pnpm owner-gate:test`: test the owner-gated path list in `scripts/owner-gate.mjs`.
+- `pnpm owner-gate:test`: test the owner-gated path list in `scripts/owner-gate.mjs` and the
+  approval, void and status decisions in `.github/scripts/pr-gates.sh` (against a fake `gh`).
 - `pnpm rf-trace:test`: test `scripts/rf-trace.mjs`, which requires product PRs to cite an RF record.
 
 The root `pnpm test` uses `--if-present`. When a workspace package gains its first tests, add an

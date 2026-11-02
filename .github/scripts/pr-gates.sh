@@ -101,25 +101,55 @@ approvals() {
     awk '{ total += $1 } END { print total + 0 }'
 }
 
+# A just-written push or label event can take a moment to appear in the activity and timeline
+# APIs. Lookups that may lag retry RETRIES times, RETRY_DELAY seconds apart (tests set 0).
+RETRIES=4
+RETRY_DELAY=${PR_GATES_RETRY_DELAY:-5}
+# A run is created seconds after its event; a label event further back is not this run's.
+EVENT_MATCH_SECONDS=60
+
+# Runs "$@" until it prints something, at most RETRIES times, and prints that answer (or nothing).
+retry_until_known() {
+  local i out
+  for ((i = 1; i <= RETRIES; i++)); do
+    out=$("$@")
+    if [ -n "$out" ]; then
+      printf '%s\n' "$out"
+      return 0
+    fi
+    if [ "$i" -lt "$RETRIES" ]; then sleep "$RETRY_DELAY"; fi
+  done
+  return 0
+}
+
 # Epoch seconds of the latest push that made $2 the tip of the PR's branch ($1 is the PR JSON),
-# from the repository activity API: the time GitHub received the push, which a commit's own dates
-# cannot tell. Empty when unknown (a fork's branch, or no listed push); callers decide which way
-# an unknown time fails.
+# at or before $3 when given, from the repository activity API: the time GitHub received the
+# push, which a commit's own dates cannot tell. Empty when unknown (a fork's branch, or no listed
+# push); callers decide which way an unknown time fails.
 pushed_at() {
-  local repo ref
+  local repo ref before=${3:-}
   repo=$(jq -r '.head.repo.full_name // ""' <<< "$1")
   ref=$(jq -r '.head.ref // ""' <<< "$1")
   [ "$repo" = "$GITHUB_REPOSITORY" ] && [ -n "$ref" ] || return 0
   gh api -X GET "repos/$GITHUB_REPOSITORY/activity" -f ref="refs/heads/$ref" -f per_page=100 \
-    --jq "[.[] | select(.after == \"$2\") | .timestamp | fromdateiso8601] | max // empty"
+    --jq "[.[] | select(.after == \"$2\") | .timestamp | fromdateiso8601
+      | select(\"$before\" == \"\" or . <= (\"${before:-0}\" | tonumber))] | max // empty"
 }
 
-# Epoch seconds of the latest time owner-approved was added to the PR (issue timeline); empty
-# when none is listed.
-labeled_at() {
+# The PR's owner-approved add/remove events in timeline order, one "<epoch s> labeled|unlabeled"
+# line each.
+label_events() {
   gh api "repos/$GITHUB_REPOSITORY/issues/$PR_NUMBER/timeline" --paginate \
-    --jq "[.[] | select(.event == \"labeled\" and .label.name == \"$APPROVAL_LABEL\")
-      | .created_at | fromdateiso8601] | max // empty" | sort -n | tail -n 1
+    --jq ".[] | select((.event == \"labeled\" or .event == \"unlabeled\")
+      and .label.name == \"$APPROVAL_LABEL\") | \"\(.created_at | fromdateiso8601) \(.event)\""
+}
+
+# Epoch seconds of the owner-approved add that started this run: the newest add at most
+# EVENT_MATCH_SECONDS before the run was created ($1). An older add is not this run's event, so
+# a lagging timeline answers nothing rather than an older time.
+label_time_for_run() {
+  label_events | awk -v c="$1" -v w="$EVENT_MATCH_SECONDS" \
+    '$2 == "labeled" && $1 <= c && c - $1 <= w { t = $1 } END { if (t != "") print t }'
 }
 
 write_status() {
@@ -131,24 +161,32 @@ write_status() {
 
 # Approval covers only the commit the owner saw, so it binds to the head in the label event. A
 # push that lands seconds before the owner labels would bind the approval to a commit the owner
-# never saw (the page was loaded before the push). Refuse when the head became the branch tip
-# less than APPROVAL_SETTLE_SECONDS before the label, or when either time is unknown: the owner
-# re-adds the label once the page shows the new head. The refusal message is the job's
-# `refusal` output, which the gate job writes as the owner-gate description. Residual risk: a
-# page left open longer than the window across a push; GitHub's live "new commits" banner is
-# the owner's cue there.
+# never saw (the page was loaded before the push). The label time is this run's own event (not
+# the newest add, which a lagging timeline may not show yet); the push time is the latest push
+# of that head at or before the label, so the age is never negative. Refuse when that push came
+# less than APPROVAL_SETTLE_SECONDS before the label, or when either time stays unknown after
+# retries: the owner reviews the head, then removes and re-adds the label. The refusal message is
+# the job's `refusal` output, which the gate job writes as the owner-gate description; any other
+# failure here reads as a transient recording failure. Residual risk: a page left open longer
+# than the window across a push; GitHub's live "new commits" banner is the owner's cue there.
 record_approval() {
-  need GH_TOKEN GITHUB_REPOSITORY PR_NUMBER HEAD_SHA GITHUB_OUTPUT
-  local pr pushed labeled age short=${HEAD_SHA:0:7}
+  need GH_TOKEN GITHUB_REPOSITORY PR_NUMBER HEAD_SHA GITHUB_OUTPUT GITHUB_RUN_ID
+  local pr created labeled pushed age short=${HEAD_SHA:0:7}
   pr=$(pr_json)
-  pushed=$(pushed_at "$pr" "$HEAD_SHA")
-  labeled=$(labeled_at)
-  if [ -z "$pushed" ] || [ -z "$labeled" ]; then
-    refuse_approval "Could not confirm when $short was pushed; remove and re-add $APPROVAL_LABEL"
+  # A re-run keeps its run's created_at, so it still matches the same label event.
+  created=$(gh api "repos/$GITHUB_REPOSITORY/actions/runs/$GITHUB_RUN_ID" \
+    --jq '.created_at | fromdateiso8601')
+  labeled=$(retry_until_known label_time_for_run "$created")
+  if [ -z "$labeled" ]; then
+    refuse_approval "Could not read when $APPROVAL_LABEL was added; remove and re-add it"
+  fi
+  pushed=$(retry_until_known pushed_at "$pr" "$HEAD_SHA" "$labeled")
+  if [ -z "$pushed" ]; then
+    refuse_approval "Could not read when $short was pushed; remove and re-add $APPROVAL_LABEL"
   fi
   age=$((labeled - pushed))
   if [ "$age" -lt "$APPROVAL_SETTLE_SECONDS" ]; then
-    refuse_approval "$short was pushed ${age}s before $APPROVAL_LABEL; review it, then re-add the label"
+    refuse_approval "$short was pushed ${age}s before $APPROVAL_LABEL; review it, then remove and re-add the label"
   fi
   gh api "repos/$GITHUB_REPOSITORY/statuses/$HEAD_SHA" -f state=success \
     -f context="$APPROVAL_CONTEXT" -f description="$APPROVAL_LABEL was applied to this commit" > /dev/null
@@ -161,94 +199,117 @@ refuse_approval() {
   exit 1
 }
 
-# Hygiene after new commits: the label counts only with an approval on the head, so drop it when
-# the live head has none. Live labels and head, not the event's copy. Only a label added before
-# the head was pushed is stale: one added after it is the owner's fresh approval of this head,
-# whose record-approval job may still be running (RF-176 push race; a GITHUB_TOKEN deletion
-# starts no new run, so it would stand). When either time is unknown the label stays: the
-# binding already makes a stale label count for nothing.
-void_approval() {
-  need GH_TOKEN GITHUB_REPOSITORY PR_NUMBER
-  local pr head bound pushed labeled
-  pr=$(pr_json)
-  head=$(jq -r .head.sha <<< "$pr")
-  # Read both times on every run, so each run's log shows the APIs answering.
-  pushed=$(pushed_at "$pr" "$head")
-  labeled=$(labeled_at)
-  echo "$head pushed at ${pushed:-unknown}; $APPROVAL_LABEL last added at ${labeled:-never} (epoch s)."
-  if ! jq -e --arg l "$APPROVAL_LABEL" '[.labels[].name] | index($l) != null' <<< "$pr" > /dev/null; then
-    echo "No '$APPROVAL_LABEL' label on PR #$PR_NUMBER."
-    return
+# Succeeds (and says why) when the owner-approved label on PR JSON $1 is stale for head $2: its
+# add, the newest owner-approved event in the timeline, came before $2 was pushed. Fails, keeping
+# the label, when it was added at or after the push, or when the push or the add is not listed
+# (yet): cleanup is best-effort, and the gate never counts a label without an approval on the
+# head. API errors also keep it, since this runs as a condition.
+stale_label() {
+  local pushed last
+  pushed=$(retry_until_known pushed_at "$1" "$2")
+  if [ -z "$pushed" ]; then
+    echo "Keeping '$APPROVAL_LABEL': the push of $2 is not listed; cleanup is best-effort and the gate does not count it."
+    return 1
   fi
-  bound=$(approvals "$head")
-  if [ "$bound" -gt 0 ]; then
-    echo "Keeping '$APPROVAL_LABEL': the owner approved the current head $head."
-    return
+  last=$(label_events | tail -n 1)
+  if [ "${last#* }" != labeled ]; then
+    echo "Keeping '$APPROVAL_LABEL': the timeline does not show it being added yet."
+    return 1
   fi
-  if [ -z "$pushed" ] || [ -z "$labeled" ]; then
-    echo "Keeping '$APPROVAL_LABEL': cannot tell whether it predates the push of $head."
-    return
+  if [ "${last%% *}" -ge "$pushed" ]; then
+    echo "Keeping '$APPROVAL_LABEL': added after $2 was pushed; record-approval judges it."
+    return 1
   fi
-  if [ "$labeled" -ge "$pushed" ]; then
-    echo "Keeping '$APPROVAL_LABEL': added after $head was pushed; record-approval judges it."
-    return
-  fi
-  gh api -X DELETE "repos/$GITHUB_REPOSITORY/issues/$PR_NUMBER/labels/$APPROVAL_LABEL" > /dev/null
-  echo "Removed '$APPROVAL_LABEL': added before $head was pushed, and $head has no owner approval."
+  echo "'$APPROVAL_LABEL' was added at ${last%% *}, before $2 was pushed at $pushed (epoch s)."
 }
 
-# Approval covers only the commit the owner saw: the label counts only while this exact head
-# carries a successful `owner-approval` status. No retry for an approval still being recorded:
-# owner-gate.yml runs its gate job after recording, so a later write sees it.
-owner_gate() {
-  need GH_TOKEN GITHUB_REPOSITORY PR_NUMBER HEAD_SHA RUNNER_TEMP
-  local labels bound
-  labels=$(pr_json | jq -c '[.labels[].name]')
-  bound=$(approvals "$HEAD_SHA")
-  if [ "$bound" -eq 0 ]; then
-    echo "No $APPROVAL_CONTEXT status on $HEAD_SHA; $APPROVAL_LABEL (if present) is not counted."
-    labels=$(jq -c --arg l "$APPROVAL_LABEL" 'map(select(. != $l))' <<< "$labels")
-  fi
-  OWNER_GATE_LABELS="$labels" node "$RUNNER_TEMP/owner-gate.mjs" < "$RUNNER_TEMP/pr-files.txt"
+# Hygiene after new commits: the label counts only with an approval on the head, so drop it when
+# the live head has none and it was added before that head was pushed. One added after the push
+# is the owner's fresh approval of this head, whose record-approval job may still be running
+# (RF-176 push race; a GITHUB_TOKEN deletion starts no new run, so it would stand). The decision
+# is made twice, RETRY_DELAY apart, on fresh reads, so an add still reaching the timeline
+# survives. Labels are checked first, so a PR without the label costs one API call.
+void_approval() {
+  need GH_TOKEN GITHUB_REPOSITORY PR_NUMBER
+  local pr head bound pass
+  for pass in 1 2; do
+    if [ "$pass" -eq 2 ]; then sleep "$RETRY_DELAY"; fi
+    pr=$(pr_json)
+    head=$(jq -r .head.sha <<< "$pr")
+    if ! jq -e --arg l "$APPROVAL_LABEL" '[.labels[].name] | index($l) != null' <<< "$pr" > /dev/null; then
+      echo "No '$APPROVAL_LABEL' label on PR #$PR_NUMBER."
+      return
+    fi
+    bound=$(approvals "$head")
+    if [ "$bound" -gt 0 ]; then
+      echo "Keeping '$APPROVAL_LABEL': the owner approved the current head $head."
+      return
+    fi
+    stale_label "$pr" "$head" || return 0
+  done
+  gh api -X DELETE "repos/$GITHUB_REPOSITORY/issues/$PR_NUMBER/labels/$APPROVAL_LABEL" > /dev/null
+  echo "Removed '$APPROVAL_LABEL': $head has no owner approval."
 }
 
 # Judges the PR's live head, not the event's: gate jobs run one at a time and each reads the
 # head, files, labels and approvals as they are now (one PR fetch), so the last write matches the
-# PR. The verdict comes from the checker's OWNER_GATE_RESULT file, never its log text; no file
-# means no verdict. A verdict exits 0; an error exits non-zero and the workflow's error step
-# writes failure. UNAPPROVED_DESCRIPTION, when set, replaces the description of an unapproved
-# verdict (the approval's recording failed or was refused).
+# PR. Approval covers only the commit the owner saw: the label counts only while this exact head
+# carries a successful `owner-approval` status. The verdict comes from the checker's
+# OWNER_GATE_RESULT file, never its log text. Any error before or in the checker (prepare, a
+# missing checker, no verdict) exits non-zero, and the workflow's error step writes failure.
+# The description of an unapproved verdict says what to do: UNAPPROVED_DESCRIPTION when this
+# run's approval was refused or failed to record, else "remove and re-add" when the label is on
+# the PR without an approval on this head, else "need owner-approved".
 gate_status() {
   need GH_TOKEN GITHUB_REPOSITORY PR_NUMBER RUNNER_TEMP
-  local pr head result rc verdict state description
+  local pr head checker labels labelled=false bound result rc verdict unapproved state description
   pr=$(pr_json)
   head=$(jq -r '.head.sha // ""' <<< "$pr")
   [ -n "$head" ] || { echo "pr-gates: no head SHA for PR #$PR_NUMBER." >&2; exit 1; }
+  PR_JSON="$pr" prepare
+  checker="$RUNNER_TEMP/owner-gate.mjs"
+  [ -s "$checker" ] && [ -s "$RUNNER_TEMP/pr-files.txt" ] ||
+    { echo "pr-gates: prepare left no checker or no changed files." >&2; exit 1; }
+  labels=$(jq -c '[.labels[].name]' <<< "$pr")
+  if jq -e --arg l "$APPROVAL_LABEL" 'index($l) != null' <<< "$labels" > /dev/null; then
+    labelled=true
+  fi
+  bound=$(approvals "$head")
+  if [ "$bound" -eq 0 ]; then
+    echo "No $APPROVAL_CONTEXT status on $head; $APPROVAL_LABEL (if present) is not counted."
+    labels=$(jq -c --arg l "$APPROVAL_LABEL" 'map(select(. != $l))' <<< "$labels")
+  fi
   result="$RUNNER_TEMP/owner-gate-result.json"
   rm -f "$result"
   set +e
-  (set -e; PR_JSON="$pr" prepare; PR_JSON="$pr" HEAD_SHA="$head" OWNER_GATE_RESULT="$result" owner_gate)
+  OWNER_GATE_LABELS="$labels" OWNER_GATE_RESULT="$result" node "$checker" < "$RUNNER_TEMP/pr-files.txt"
   rc=$?
   set -e
   verdict=''
-  if [ -s "$result" ]; then verdict=$(jq -r '.result // ""' "$result"); fi
-  # Transitional: main's checker before RF-176 merged writes no result file and exits 1 for both
-  # an unapproved PR and an error. Only that checker (it lacks OWNER_GATE_RESULT) reads as
-  # "legacy"; both of its failures fail closed.
-  if [ -z "$verdict" ] && ! grep -qF OWNER_GATE_RESULT "$RUNNER_TEMP/owner-gate.mjs" 2> /dev/null; then
-    verdict="legacy-$rc"
+  if [ -s "$result" ]; then
+    verdict=$(jq -r '.result // ""' "$result")
+  elif ! grep -qF OWNER_GATE_RESULT "$checker"; then
+    # Transitional: main's checker before RF-176 merged writes no verdict and exits 1 both for
+    # an unapproved PR and for its own errors (both fail closed). Only a checker that ran and is
+    # known not to write one reads as legacy; a checker that supports verdicts and wrote none
+    # errored.
+    verdict=legacy
+  fi
+  unapproved=${UNAPPROVED_DESCRIPTION:-}
+  if [ -z "$unapproved" ] && [ "$labelled" = true ]; then
+    unapproved="$APPROVAL_LABEL is on the PR but not recorded for ${head:0:7}; remove and re-add it"
   fi
   case "$rc:$verdict" in
     0:clean) state=success description='No owner-gated paths changed' ;;
     0:approved) state=success description="Owner-gated paths; owner-approved on ${head:0:7}" ;;
     1:unapproved)
       state=failure
-      description=${UNAPPROVED_DESCRIPTION:-"Owner-gated paths need owner-approved on ${head:0:7}"}
+      description=${unapproved:-"Owner-gated paths need owner-approved on ${head:0:7}"}
       ;;
-    0:legacy-0) state=success description="Owner gate passed on ${head:0:7}" ;;
-    *:legacy-*)
+    0:legacy) state=success description="Owner gate passed on ${head:0:7}" ;;
+    1:legacy)
       state=failure
-      description="Owner-gated paths need owner-approved on ${head:0:7}, or the gate failed; see the run"
+      description=${unapproved:-"Owner-gated paths need owner-approved on ${head:0:7}, or the gate failed; see the run"}
       ;;
     *)
       echo "pr-gates: the owner gate could not evaluate $head (exit $rc, verdict '${verdict}')." >&2

@@ -54,6 +54,7 @@ test('every gated class is caught', () => {
     'scripts/deploy.sh': 'CI / deploy / infrastructure',
     'scripts/owner-gate.mjs': 'CI / deploy / infrastructure',
     'scripts/rf-trace.mjs': 'CI / deploy / infrastructure',
+    'scripts/pr-gates.test.mjs': 'CI / deploy / infrastructure',
     'apps/api/wrangler.toml': 'CI / deploy / infrastructure',
     'pnpm-workspace.yaml': 'CI / deploy / infrastructure',
     'AGENTS.md': 'agent rules',
