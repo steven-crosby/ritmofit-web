@@ -1,81 +1,119 @@
 name: Owner gate
 
-# Label changes re-evaluate only the owner gate (RF-100). Adding or removing a label (owner-approved,
-# needs-owner, ready-to-merge, ...) used to rerun all of ci.yml: ~5 minutes, a flaky e2e could turn a
-# green PR red, and a label edit on a merged PR could cancel main's push run. This workflow installs
-# and builds nothing and creates no run of the required check: it writes only the `owner-gate`
-# commit status (required by the ruleset), the same status ci.yml's owner-gate job writes. Full CI
-# stays covered by ci.yml's required check. Policy: AGENTS.md › "Delegation And Merge Policy".
+# The owner gate (RF-100, RF-176). Every PR event (new commits and label changes alike) runs
+# only this workflow's gate job: it installs and builds nothing and creates no run of the required
+# check. It writes the `owner-gate` commit status (required by the ruleset). ci.yml runs the
+# required check and writes no status, so a label event can never replace a job inside a CI run
+# and leave it "cancelled". Policy: AGENTS.md › "Delegation And Merge Policy".
 on:
   pull_request:
-    types: [labeled, unlabeled]
+    types: [opened, synchronize, reopened, labeled, unlabeled]
 
-# statuses: write records the approval and writes `owner-gate`; pull-requests: read reads the live
-# labels and changed files.
 permissions:
   contents: read
-  pull-requests: read
-  statuses: write
 
 jobs:
   # Approval covers only the commit the owner saw. When the owner adds `owner-approved`, this job
-  # records an `owner-approval` commit status on that exact head; the gate requires both the label
-  # and that status on the current head, and ci.yml drops the label on new commits. It sits outside
-  # the concurrency group so a newer label event can never cancel it before it records. Agents never
-  # create this status by hand.
+  # records an `owner-approval` commit status on the labelled head, unless that head was pushed
+  # moments before the label (pr-gates.sh record-approval explains the window). The gate requires
+  # both the label and that status on the current head, and the gate job drops a stale label on
+  # new commits. It sits outside the concurrency group so a newer event can never cancel it
+  # before it records. Agents never create this status by hand.
   record-approval:
     name: record owner approval
     if: github.event.pull_request.state == 'open' && github.event.action == 'labeled' && github.event.label.name == 'owner-approved'
     runs-on: ubuntu-latest
+    # contents: read lists pushes (activity API); issues: read reads the label's time (timeline).
+    permissions:
+      contents: read
+      issues: read
+      pull-requests: read
+      statuses: write
+    outputs:
+      refusal: ${{ steps.record.outputs.refusal }}
     steps:
+      - uses: actions/checkout@v4
+        with:
+          sparse-checkout: .github
+
       - name: Record owner approval for this head
+        id: record
         env:
           GH_TOKEN: ${{ github.token }}
+          PR_NUMBER: ${{ github.event.pull_request.number }}
           HEAD_SHA: ${{ github.event.pull_request.head.sha }}
-        run: |
-          gh api "repos/$GITHUB_REPOSITORY/statuses/$HEAD_SHA" -f state=success \
-            -f context=owner-approval -f description="owner-approved was applied to this commit"
+        run: bash .github/scripts/pr-gates.sh record-approval
 
   gate:
     # Not the required check's name: a second check suite under that name could never replace a
     # failed run in ci.yml's suite. .github/scripts/pr-gates.sh self-check enforces this.
-    name: owner gate status (label change)
+    name: owner gate status
     needs: record-approval
-    # Runs after the approval is recorded (or skipped). A closed PR cannot merge, and reopening it
-    # runs ci.yml again.
+    # Runs after the approval is recorded (or skipped, or failed: the gate then says so). A closed
+    # PR cannot merge, and reopening it runs this job again.
     if: ${{ !cancelled() && github.event.pull_request.state == 'open' }}
     runs-on: ubuntu-latest
     timeout-minutes: 10
-    # Per PR, shared with ci.yml's owner-gate job, so status writes never interleave. Not
-    # cancel-in-progress: a running job always finishes its write, and GitHub replaces a pending
-    # job only with a newer one, which reads later state. The approval is recorded outside this
-    # group, so no cancellation can lose it.
+    # statuses: write writes `owner-gate`; pull-requests: write drops a stale `owner-approved`.
+    permissions:
+      contents: read
+      issues: read
+      pull-requests: write
+      statuses: write
+    # Per PR: every status write comes from this job, one at a time. Not cancel-in-progress: a
+    # running job always finishes its write, and GitHub replaces a pending job only with a newer
+    # one, which reads later state. A replaced job cancels only its own Owner gate run, never CI.
+    # The approval is recorded outside this group, so no cancellation can lose it.
     concurrency:
       group: owner-gate-pr-${{ github.event.pull_request.number }}
       cancel-in-progress: false
+    # In a step, failure() and success() also see a failed ancestor job (record-approval), so
+    # the steps that must run anyway say `!cancelled()`, and the error step judges only this
+    # job's own steps: a refused or failed recording must never overwrite the status the gate
+    # step wrote for it, nor flip a correct success on an already-approved head.
     steps:
-      - uses: actions/checkout@v4
+      - id: checkout
+        if: ${{ !cancelled() }}
+        uses: actions/checkout@v4
         with:
           sparse-checkout: |
             .github
             scripts
 
+      # Best-effort hygiene: drop an `owner-approved` that was added before the head was pushed and
+      # has no approval on it, so the PR shows it needs a fresh one. It keeps a label added after
+      # the push, or one it cannot date (RF-176). Runs on every event, so a replaced pending job
+      # loses nothing. The binding already makes a stale label count for nothing, so a failure
+      # here must not skip the gate. GITHUB_TOKEN edits do not trigger another run.
+      - name: Void a stale owner approval
+        id: void
+        if: ${{ !cancelled() }}
+        continue-on-error: true
+        env:
+          GH_TOKEN: ${{ github.token }}
+          PR_NUMBER: ${{ github.event.pull_request.number }}
+        run: bash .github/scripts/pr-gates.sh void-approval
+
       - name: Owner gate (owner-gated paths need owner-approved)
+        id: gate
+        if: ${{ !cancelled() }}
         env:
           GH_TOKEN: ${{ github.token }}
           PR_NUMBER: ${{ github.event.pull_request.number }}
           BASE_REF: ${{ github.event.pull_request.base.ref }}
+          # This run's refused or failed recording says so; otherwise a label without an approval
+          # on the head reads "remove and re-add it", so a later event never hides a refusal.
+          RECORD_FAILED: ${{ needs.record-approval.result == 'failure' }}
+          RECORD_REFUSAL: ${{ needs.record-approval.outputs.refusal }}
         run: bash .github/scripts/pr-gates.sh gate-status
 
-      # Fail closed: an error anywhere above must not leave an older `success` standing.
+      # Fail closed: an error in this job (checkout or the gate step; the void step is best-effort)
+      # must not leave an older `success` standing. The gate step fails whenever checkout did,
+      # and writes no status when it fails, so its outcome alone decides.
       - name: Record owner gate error
-        if: failure()
+        if: ${{ !cancelled() && steps.gate.outcome == 'failure' }}
         env:
           GH_TOKEN: ${{ github.token }}
           PR_NUMBER: ${{ github.event.pull_request.number }}
           EVENT_SHA: ${{ github.event.pull_request.head.sha }}
-        run: |
-          head=$(gh api "repos/$GITHUB_REPOSITORY/pulls/$PR_NUMBER" --jq .head.sha) || head=$EVENT_SHA
-          gh api "repos/$GITHUB_REPOSITORY/statuses/${head:-$EVENT_SHA}" -f state=failure \
-            -f context=owner-gate -f description="Owner gate errored; re-run this job" \
-            -f target_url="$GITHUB_SERVER_URL/$GITHUB_REPOSITORY/actions/runs/$GITHUB_RUN_ID"
+        run: bash .github/scripts/pr-gates.sh gate-error

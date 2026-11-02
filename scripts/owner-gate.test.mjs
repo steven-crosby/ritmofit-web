@@ -1,7 +1,7 @@
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
 import { spawnSync } from 'node:child_process';
-import { mkdtempSync, symlinkSync } from 'node:fs';
+import { existsSync, mkdtempSync, readFileSync, symlinkSync } from 'node:fs';
 import { tmpdir } from 'node:os';
 import { join } from 'node:path';
 import { fileURLToPath } from 'node:url';
@@ -9,12 +9,20 @@ import { evaluate, APPROVAL_LABEL } from './owner-gate.mjs';
 
 const SCRIPT = fileURLToPath(new URL('./owner-gate.mjs', import.meta.url));
 
-const run = (stdin, labels) =>
+const run = (stdin, labels, extraEnv = {}) =>
   spawnSync(process.execPath, [SCRIPT], {
     input: stdin,
-    env: { ...process.env, OWNER_GATE_LABELS: labels },
+    env: { ...process.env, OWNER_GATE_LABELS: labels, ...extraEnv },
     encoding: 'utf8',
   });
+
+// Runs the CLI with OWNER_GATE_RESULT set; returns the exit status and the parsed result file
+// (null when the checker wrote none).
+const runForResult = (stdin, labels) => {
+  const file = join(mkdtempSync(join(tmpdir(), 'owner-gate-result-')), 'result.json');
+  const { status } = run(stdin, labels, { OWNER_GATE_RESULT: file });
+  return { status, verdict: existsSync(file) ? JSON.parse(readFileSync(file, 'utf8')) : null };
+};
 
 test('every gated class is caught', () => {
   const cases = {
@@ -46,6 +54,7 @@ test('every gated class is caught', () => {
     'scripts/deploy.sh': 'CI / deploy / infrastructure',
     'scripts/owner-gate.mjs': 'CI / deploy / infrastructure',
     'scripts/rf-trace.mjs': 'CI / deploy / infrastructure',
+    'scripts/pr-gates.test.mjs': 'CI / deploy / infrastructure',
     'apps/api/wrangler.toml': 'CI / deploy / infrastructure',
     'pnpm-workspace.yaml': 'CI / deploy / infrastructure',
     'AGENTS.md': 'agent rules',
@@ -99,6 +108,32 @@ test('CLI fails closed on gated paths, empty input and malformed labels', () => 
   assert.equal(run('', '["owner-approved"]').status, 1);
   assert.equal(run('AGENTS.md\n', '["owner-approved"]').status, 0);
   assert.equal(run('README.md\napps/web/src/App.tsx\n', '[]').status, 0);
+});
+
+test('evaluate reports a machine-readable result', () => {
+  assert.equal(evaluate(['README.md'], []).result, 'clean');
+  assert.equal(evaluate(['AGENTS.md'], []).result, 'unapproved');
+  assert.equal(evaluate(['AGENTS.md'], [APPROVAL_LABEL]).result, 'approved');
+});
+
+test('CLI writes its verdict to OWNER_GATE_RESULT, and only after evaluating', () => {
+  const clean = runForResult('README.md\n', '[]');
+  assert.equal(clean.status, 0);
+  assert.deepEqual(clean.verdict, { result: 'clean', gated: [] });
+
+  const approved = runForResult('AGENTS.md\n', '["owner-approved"]');
+  assert.equal(approved.status, 0);
+  assert.equal(approved.verdict.result, 'approved');
+  assert.deepEqual(approved.verdict.gated, [{ path: 'AGENTS.md', gate: 'agent rules' }]);
+
+  const unapproved = runForResult('AGENTS.md\n', 'not json');
+  assert.equal(unapproved.status, 1);
+  assert.equal(unapproved.verdict.result, 'unapproved');
+
+  // Unusable input is an error, not a verdict: no file, so pr-gates.sh cannot read it as one.
+  const empty = runForResult('', '["owner-approved"]');
+  assert.equal(empty.status, 1);
+  assert.equal(empty.verdict, null);
 });
 
 test('CLI still runs the gate when invoked through a symlinked path', () => {

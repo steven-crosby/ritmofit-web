@@ -7,9 +7,16 @@
 // owner-gated path and does not carry the `owner-approved` label. It guards against an agent
 // misjudging its own change, not against one deliberately applying the label.
 //
-// Usage (CI): OWNER_GATE_LABELS='["a","b"]' node scripts/owner-gate.mjs < changed-files.txt
+// Usage (CI): OWNER_GATE_LABELS='["a","b"]' OWNER_GATE_RESULT=result.json \
+//   node scripts/owner-gate.mjs < changed-files.txt
+//
+// Exit 0 when the gate passes, 1 when it fails or the input is unusable. When OWNER_GATE_RESULT
+// names a file, the checker writes its verdict there as JSON before exiting, and only once it
+// has evaluated the input: { "result": "clean" | "approved" | "unapproved", "gated": [...] }.
+// .github/scripts/pr-gates.sh reads that file instead of this script's log text, so a missing
+// file always means the checker did not reach a verdict (RF-176).
 
-import { readFileSync, realpathSync } from 'node:fs';
+import { readFileSync, realpathSync, writeFileSync } from 'node:fs';
 import { fileURLToPath } from 'node:url';
 
 export const APPROVAL_LABEL = 'owner-approved';
@@ -56,7 +63,7 @@ export const GATES = [
     name: 'CI / deploy / infrastructure',
     match: (p) =>
       p.startsWith('.github/') ||
-      /^scripts\/(deploy|owner-gate|rf-trace|required-secrets|production-smoke)[^/]*$/.test(p) ||
+      /^scripts\/(deploy|owner-gate|pr-gates|rf-trace|required-secrets|production-smoke)[^/]*$/.test(p) ||
       p === 'apps/api/wrangler.toml' ||
       p === 'apps/web/public/_headers' ||
       p === 'pnpm-workspace.yaml' ||
@@ -80,7 +87,10 @@ export const GATES = [
   },
 ];
 
-/** Returns { gated: [{ path, gate }], approved, pass }. */
+/**
+ * Returns { gated: [{ path, gate }], approved, pass, result }. `result` is the machine-readable
+ * verdict: 'clean' (nothing owner-gated), 'approved' or 'unapproved'.
+ */
 export function evaluate(paths, labels) {
   const gated = [];
   for (const path of paths) {
@@ -88,7 +98,13 @@ export function evaluate(paths, labels) {
     if (gate) gated.push({ path, gate: gate.name });
   }
   const approved = labels.includes(APPROVAL_LABEL);
-  return { gated, approved, pass: gated.length === 0 || approved };
+  const result = gated.length === 0 ? 'clean' : approved ? 'approved' : 'unapproved';
+  return { gated, approved, pass: result !== 'unapproved', result };
+}
+
+function writeResult(result, gated) {
+  const file = process.env.OWNER_GATE_RESULT;
+  if (file) writeFileSync(file, `${JSON.stringify({ result, gated })}\n`);
 }
 
 function parseLabels(raw) {
@@ -110,7 +126,8 @@ function main() {
     console.error('owner-gate: no changed files read from stdin; refusing to pass blind.');
     process.exit(1);
   }
-  const { gated, pass } = evaluate(paths, parseLabels(process.env.OWNER_GATE_LABELS));
+  const { gated, pass, result } = evaluate(paths, parseLabels(process.env.OWNER_GATE_LABELS));
+  writeResult(result, gated);
   if (gated.length === 0) {
     console.log(
       `owner-gate: ${paths.length} changed files, none owner-gated. ` +

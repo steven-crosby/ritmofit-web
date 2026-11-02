@@ -15,7 +15,7 @@
     "A label edit on an already-merged PR can no longer cancel the post-merge push run on main (a closed PR's pull_request run shares the ci-refs/heads/main concurrency group today).",
     "The required CI check fails only on real checks, never on the owner gate: the owner gate is the `owner-gate` commit status (latest-wins), written by ci.yml on every PR run and by owner-gate.yml on label changes, success for non-gated PRs and fail-closed on errors; owner-gate.yml creates no run of the required check."
   ],
-  "nextAction": "Owner adds `owner-gate` as a required status check in the main ruleset (Settings → Rules → Rulesets → main ruleset → Require status checks → add `owner-gate`) BEFORE merging #700; until then owner-gated PRs are unprotected after merge. Then the owner reviews and approves #700 at its new head; the label run records the approval and rewrites `owner-gate` to success. The interim rule (remove ready-to-merge before merging, never after) applies until merged.",
+  "nextAction": "#700 merged as 8f26519 under a one-time owner waiver (2026-11-02) with the ruleset requiring `owner-gate`; its known issues are fixed in RF-176. Owner decides whether RF-100 closes now or with RF-176. The interim ready-to-merge rule is retired by RF-176.",
   "blocker": null,
   "evidence": [
     {
@@ -53,10 +53,17 @@
       "ref": "https://github.com/steven-crosby/ritmofit-web/actions/runs/41440901095",
       "summary": "Status design on f21f8fa: CI run 41440215069 passed the required check and its owner gate status job (it voided the stale owner-approved label, since f21f8fa has no approval) and wrote owner-gate = failure ('Owner-gated paths need owner-approved on f21f8fa'). Adding then removing ready-to-merge started Owner gate runs 41440901095 and 41441024681 (~18 s, record job skipped, no CI run) that each rewrote owner-gate = failure. Rollup: required check SUCCESS, owner-gate FAILURE, mergeStateStatus UNSTABLE (BLOCKED once the ruleset requires owner-gate).",
       "checkedOn": "2026-11-02"
+    },
+    {
+      "kind": "observation",
+      "ref": "https://github.com/steven-crosby/ritmofit-web/commit/8f26519",
+      "summary": "Correction (2026-11-02): #700's body called the void race 'fixed', and the f21f8fa evidence above reads as if voiding were safe. It was not: void-approval could still remove an owner-approved label applied seconds after a push, before record-approval wrote owner-approval on the new head. #700 merged under a one-time owner waiver with that and four other fail-closed issues listed in the squash message; RF-176 fixes them.",
+      "checkedOn": "2026-11-02"
     }
   ],
   "resolution": null,
   "followUps": [
-    "RF-175"
+    "RF-175",
+    "RF-176"
   ]
 }
