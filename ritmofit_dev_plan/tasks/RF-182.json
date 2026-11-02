@@ -3,7 +3,7 @@
   "id": "RF-182",
   "title": "Two-machine conductors: the lead follows the owner, and owner decisions cross only as GitHub records",
   "kind": "documentation",
-  "status": "in_progress",
+  "status": "done",
   "priority": "P2",
   "parent": null,
   "dependsOn": [
@@ -15,9 +15,22 @@
     "\"Who finishes a PR\" follows the merge permission rather than who opened the PR.",
     "web CLAUDE.md and the ritmofit-ios AGENTS.md and CLAUDE.md pointers state the rule briefly and point to AGENTS.md."
   ],
-  "nextAction": "Owner reviews the draft PR; the ritmofit-ios pointer PR follows.",
+  "nextAction": null,
   "blocker": null,
-  "evidence": [],
-  "resolution": null,
+  "evidence": [
+    {
+      "kind": "observation",
+      "ref": "https://github.com/steven-crosby/ritmofit-web/pull/707#issuecomment-6588547025",
+      "summary": "Owner's request and decisions in the Neo session: the lead is whoever the owner is talking to; decisions cross as durable GitHub records; the Neo makes the change.",
+      "checkedOn": "2026-11-02"
+    },
+    {
+      "kind": "pr",
+      "ref": "https://github.com/steven-crosby/ritmofit-web/pull/707",
+      "summary": "AGENTS.md Two-machine conductors rewritten (lead follows the owner, decisions as GitHub records, who finishes a PR follows the merge permission); CLAUDE.md pointer.",
+      "checkedOn": "2026-11-02"
+    }
+  ],
+  "resolution": "AGENTS.md \"Two-machine conductors\" now makes whichever conductor the owner is directing the lead for both repos and lets owner decisions reach the other conductor only through GitHub records; CLAUDE.md points to it. The ritmofit-ios pointers follow in their own PR.",
   "followUps": []
 }
