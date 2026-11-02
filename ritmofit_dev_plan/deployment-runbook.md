@@ -5,6 +5,11 @@ Canonical operational procedure for the single Cloudflare Worker that serves `ht
 get owner confirmation before deploying (`AGENTS.md`). All commands run from the repo root unless noted;
 API-scoped Wrangler commands use `pnpm --filter @ritmofit/api exec wrangler …`.
 
+**Which machine.** Every Wrangler command against production in this runbook (deploy, tail,
+`deployments status`, rollback, secrets, remote D1) runs only on the machine that holds the Cloudflare
+credentials, the MacBook Air (`AGENTS.md` › "Two-machine conductors"). Never run `wrangler login`
+elsewhere to get past an auth error; if the Air is offline, stop and ask the owner.
+
 ## Environment matrix
 
 | Where                             | Contents                                                                                                                                                               | Notes                                                                               |

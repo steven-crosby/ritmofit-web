@@ -12,38 +12,27 @@
 
 ## Now
 
-<!-- Claude Code, 2026-10-29: Rewrote Now around the phased plan after the 2026-10-28 UX audit intake; superseded text moved to HISTORY. -->
-<!-- Claude Code, 2026-10-30: Round r20261029a closed (#664, #665 deployed); Now points at the next round. -->
-<!-- Claude Code, 2026-10-30: Owner set the Apple hardening Ready set (RF-108, RF-128, RF-147). -->
-<!-- Claude Code, 2026-10-31: #668 and #669 deployed; Now names the device check, the 2026-10-31 Ready set and RF-151's Ready decision. -->
-<!-- Claude Code, 2026-10-31: RF-137 (#672) and RF-135 (#673) merged, undeployed; main is ahead of production. -->
-<!-- Claude Code, 2026-10-31: a1b971d deployed from the Air; Now names RF-166 and RF-134 ahead, #684 in flight, and the Spotify likes observation. -->
-<!-- Claude Code, 2026-10-31: Close: RF-131 answered (#677, follow-ups RF-133, RF-134, RF-144, RF-165 to RF-168); RF-168 is the open owner decision. -->
-<!-- Claude Code, 2026-10-31: 67496ab deployed from the Air (RF-166, RF-134, RF-151); Now names the RF-151 smoke test. -->
+<!-- Claude Code, 2026-11-01: Close trimmed Now; older Now notes and superseded text are in git history and HISTORY. Production unchanged since 67496ab; RF-157 rescoped (#695). -->
 
 **Current actionable state:** [RF board](./tasks.md), backed by canonical [task records](./tasks/README.md).
 The order of work is [Phases](#phases) below; each phase lists RF records, not a second backlog.
-**Main vs production (2026-10-31):** production is main `67496ab`, deployed from the Air (Worker
-`feac7dde-dc10-4462-bd2d-79075d289bda`; SPA `assets/index-ChxMwIpX.js` on three cache-busted
-fetches). It adds [RF-166](./tasks/RF-166.json), [RF-134](./tasks/RF-134.json) and
-[RF-151](./tasks/RF-151.json) to `a1b971d`. Rollback is `e50f1fd3-bdd1-4541-bc3f-4c2cd483a167`.
-Later main commits are records and docs only. See [HISTORY](./HISTORY.md).
-**In flight:** the D25 provider matrix (#654).
-**Next step:** the owner's Mac and iPhone smoke test of [RF-151](./tasks/RF-151.json) (Music ›
-Songs pick mode: a row tap ticks and never plays, the 15 cap, Create a class; the Neo's desktop
-Chrome check, on Spotify likes, is in RF-151's evidence) and RF-134's live labels on Music and
-Account. Still owed: the owner's iPhone Safari device check (the 7 steps in the #669 PR body, with
-`?playback-timing=1`) for [RF-108](./tasks/RF-108.json), [RF-128](./tasks/RF-128.json) and
-[RF-147](./tasks/RF-147.json).
-**Window:** the Apple Music subscription ends around 2026-11-27, so anything that needs a live Apple
-account (Phase 1) goes first. Spotify is reopened (owner, 2026-10-28); on 2026-10-31 the owner's
-Spotify liked songs loaded in production, so the developer-app `403` looks lifted for that account
-(playlists and playback not yet rechecked; [RF-92](./tasks/RF-92.json)).
-**Open owner decisions:** whether [RF-157](./tasks/RF-157.json) is rescoped or cancelled now that
-Spotify likes already list and select in pick mode on production; whether Live stops showing "No BPM
-set" on every cue ([RF-168](./tasks/RF-168.json)); the review queue (RF-91, RF-93, RF-94, RF-96,
-RF-16, RF-23, RF-32); whether [RF-80](./tasks/RF-80.json) is cancelled or rescoped now that RF-124
-found the playback root cause; Live finish placement (see Backlog).
+**Main vs production (production last observed 2026-10-31; git checked 2026-11-01):** production
+is main `67496ab` (Worker `feac7dde-dc10-4462-bd2d-79075d289bda`; SPA `assets/index-ChxMwIpX.js`;
+rollback `e50f1fd3-bdd1-4541-bc3f-4c2cd483a167`), deployed from the Air on 2026-10-31. Every later
+main commit is records and docs only, so no deploy is due. See [HISTORY](./HISTORY.md).
+**In flight:** the D25 provider matrix (#654), unchanged since 2026-10-29.
+**Next step:** the owner's Mac and iPhone check of [RF-151](./tasks/RF-151.json) (Music › Songs pick
+mode on real likes: a row tap ticks and never plays, the 15 cap, Create a class) and RF-134's live
+labels on Music and Account. Still owed: the iPhone Safari device check (the 7 steps in the #669 PR
+body, with `?playback-timing=1`) for [RF-108](./tasks/RF-108.json), [RF-128](./tasks/RF-128.json)
+and [RF-147](./tasks/RF-147.json).
+**Window:** the Apple Music subscription ends around 2026-11-27, so Phase 1 work that needs a live
+Apple account goes first. Spotify is reopened; liked songs load in production for the owner account
+(playlists and playback not rechecked; [RF-92](./tasks/RF-92.json)).
+**Open owner decisions:** whether Live stops showing "No BPM set" on every cue
+([RF-168](./tasks/RF-168.json)); the review queue (RF-91, RF-93, RF-94, RF-96, RF-16, RF-23, RF-32);
+whether [RF-80](./tasks/RF-80.json) is cancelled or rescoped after RF-124's root cause; Live finish
+placement (see Backlog); keep or close #654.
 
 ## Phases
 

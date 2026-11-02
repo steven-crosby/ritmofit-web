@@ -52,8 +52,6 @@ If a breadcrumb doesn't fit any home, it probably isn't worth keeping — delete
 
 <!-- newest at top; one per line -->
 
-- [ ] (2026-10-31) Owner approved housekeeping 2026-10-31. Done from the Neo: 24 merged remote branches and `wip/rf-108-apple-locks` deleted. The Air removed the r20261029a lane worktrees `lanes/web-a` and `lanes/web-b` on 2026-10-30; two empty folders are left on the Air for the owner to delete by hand (`rmdir` in the Air's workspace `lanes/` folder). Delete this line once they are gone. — #fact
-
 <!-- 2026-07-27: the two 2026-07-25 design-audit breadcrumbs were routed to
      docs/audits/claude-design-audit-2026-07-24/IMPLEMENTATION-KICKOFF.md as F-01 (dead Tailwind
      color classes — the sweep found 12 uses across 5 files, not just AccountDialog) and F-02

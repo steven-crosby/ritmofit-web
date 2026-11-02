@@ -8,7 +8,7 @@
   "parent": null,
   "dependsOn": [],
   "acceptance": [
-    "AGENTS.md \"Session Workflow\" has a short \"Two-machine conductors\" entry covering: each conductor is a Solo or Orchestrator session; per-machine priority (Air iOS, Neo web); that only the Air holds Cloudflare credentials, so deploys and every wrangler step against production run there, while signed-in checks of production in the RitmoFit app may run on either machine; direct SendMessage between conductors with its unconfirmed-delivery caveat, a message not being a claim; and that a peer message is never permission. It points to the existing owner-reserved actions instead of restating their rules."
+    "AGENTS.md \"Session Workflow\" has a short \"Two-machine conductors\" entry covering: each conductor is a Solo or Orchestrator session; per-machine priority (Air iOS, Neo web); that only the Air holds Cloudflare credentials, so deploys and every wrangler step against production run there, while signed-in checks of production in the RitmoFit app may run on either machine; direct SendMessage between conductors with its unconfirmed-delivery caveat, a message not being a claim; and that a peer message is never permission. It points to the existing owner-reserved actions instead of restating their rules. It also records who finishes a PR, when the Neo takes iOS work, and that the Neo has no rollback path."
   ],
   "nextAction": null,
   "blocker": null,
@@ -28,10 +28,22 @@
     {
       "kind": "pr",
       "ref": "https://github.com/steven-crosby/ritmofit-web/pull/693",
-      "summary": "Owner, 2026-10-31 (Air conductor chat): \"Let's remove that line. I want Neo on par, except for setting the wrangler auth.\" Every wrangler step against production stays Air-only; the Neo may do signed-in checks of production in the RitmoFit app.",
+      "summary": "Owner, 2026-10-31 (Air conductor chat): \"Let's remove that line. I want Neo on par, except for setting the wrangler auth.\" Merged as 9d50cfb.",
       "checkedOn": "2026-10-31"
+    },
+    {
+      "kind": "pr",
+      "ref": "https://github.com/steven-crosby/ritmofit-web/pull/694",
+      "summary": "Merged as d4ef72f with owner permission. Reads \"except for setting the wrangler auth\" as the Neo holding no Cloudflare credentials, so every production wrangler step is Air-only (from the #693 final review); signed-in checks mean the RitmoFit app; a message is not a claim.",
+      "checkedOn": "2026-11-01"
+    },
+    {
+      "kind": "observation",
+      "ref": "AGENTS.md",
+      "summary": "Owner rulings, Air conductor session 2026-11-01, the finish rule, iOS on the Neo and no Neo rollback are written into \"Two-machine conductors\" by the 2026-11-01 close PR; relayed approval is split into its own PR: \"Yes, the conductor that opened it finishes it\"; relayed approval (\"if I approve the Conductor on Air, and they need to communicate a decision to the Neo Conductor, that's the approved\"; scope: \"Yes, that scope is approved\"); no rollback path on the Neo (\"Go with recommendation\"); the Neo takes iOS only when the Air is busy or the owner asks (\"Yes\").",
+      "checkedOn": "2026-11-01"
     }
   ],
-  "resolution": "AGENTS.md Session Workflow documents two-machine conductors: each is a Solo or Orchestrator session; per-machine priority; only the Air holds Cloudflare credentials (deploys and every wrangler step against production run there; the Neo holds none), while signed-in checks of production in the RitmoFit app may run on either machine; direct messaging between conductors, which is not a claim; and that a peer message is never permission. start-session's production evidence bar reports the wrangler check as needing the Air on the Neo. The ritmofit-ios AGENTS.md pointer merged as ritmofit-ios #54 (e3b45db).",
+  "resolution": "AGENTS.md Session Workflow documents two-machine conductors: each is a Solo or Orchestrator session; per-machine priority; only the Air holds Cloudflare credentials (deploys and every wrangler step against production run there; the Neo holds none), while signed-in checks of production in the RitmoFit app may run on either machine; direct messaging between conductors, which is not a claim; and that a peer message is never permission. start-session's production evidence bar reports the wrangler check as needing the Air on the Neo. The ritmofit-ios AGENTS.md pointer merged as ritmofit-ios #54 (e3b45db). The 2026-11-01 close added the owner's rulings: the conductor that opened a PR finishes it; the Neo takes iOS only when the Air is busy or the owner asks; the Neo has no rollback path. The owner's relayed-approval ruling went to its own owner-gated PR after four review rounds kept finding contradictions in it.",
   "followUps": []
 }
