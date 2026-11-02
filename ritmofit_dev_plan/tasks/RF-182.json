@@ -1,0 +1,42 @@
+{
+  "schemaVersion": 1,
+  "id": "RF-182",
+  "title": "Two-machine conductors: the lead follows the owner, and owner decisions cross only as GitHub records",
+  "kind": "documentation",
+  "status": "done",
+  "priority": "P2",
+  "parent": null,
+  "dependsOn": [
+    "RF-169"
+  ],
+  "acceptance": [
+    "AGENTS.md \"Two-machine conductors\" replaces the per-repo priority (Air leads iOS, Neo leads web) with: whichever conductor the owner is directing leads both repos, the other finishes its in-flight work and takes only what the owner or the lead hands it, and either answers the owner fully in its own session.",
+    "AGENTS.md says an owner decision reaches the other conductor only as a GitHub record (a PR comment with the owner's words, owner-approved on the owner's instruction, task decisions in RF evidence), never as a peer message or relayed text; machine limits (Cloudflare on the Air, iOS CI runner on the Air) are unchanged.",
+    "\"Who finishes a PR\" follows the merge permission rather than who opened the PR.",
+    "web CLAUDE.md and the ritmofit-ios AGENTS.md and CLAUDE.md pointers state the rule briefly and point to AGENTS.md."
+  ],
+  "nextAction": null,
+  "blocker": null,
+  "evidence": [
+    {
+      "kind": "observation",
+      "ref": "https://github.com/steven-crosby/ritmofit-web/pull/707#issuecomment-6588547025",
+      "summary": "Owner's request and decisions in the Neo session: the lead is whoever the owner is talking to; decisions cross as durable GitHub records; the Neo makes the change.",
+      "checkedOn": "2026-11-02"
+    },
+    {
+      "kind": "pr",
+      "ref": "https://github.com/steven-crosby/ritmofit-web/pull/707",
+      "summary": "AGENTS.md Two-machine conductors rewritten (lead follows the owner, decisions as GitHub records, who finishes a PR follows the merge permission); CLAUDE.md pointer.",
+      "checkedOn": "2026-11-02"
+    },
+    {
+      "kind": "pr",
+      "ref": "https://github.com/steven-crosby/ritmofit-ios/pull/79",
+      "summary": "ritmofit-ios AGENTS.md and CLAUDE.md pointers; its merge gate accepts an approval recorded as a PR comment naming the approved head SHA.",
+      "checkedOn": "2026-11-02"
+    }
+  ],
+  "resolution": "AGENTS.md \"Two-machine conductors\" now makes whichever conductor the owner is directing the lead for both repos and lets owner decisions reach the other conductor only through GitHub records; CLAUDE.md points to it. The ritmofit-ios pointers are ritmofit-ios #79, where the record is a PR comment naming the approved head SHA.",
+  "followUps": []
+}
