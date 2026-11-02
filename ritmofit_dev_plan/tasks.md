@@ -18,7 +18,7 @@ A checked PR proves its GitHub state, not product acceptance or production behav
 
 | Task | Priority / kind | Relationships | Next action / resolution | Evidence |
 | --- | --- | --- | --- | --- |
-| [RF-100](tasks/RF-100.json) Label changes rerun only the PR gates, not the full CI job | P3 / task | needs RF-98 | In progress on branch ci/rf-100-label-gate-only (Air conductor lane, 2026-11-01). Restart: move the label-triggered path out of ci.yml into a gate-only workflow whose job reuses the required check name, waits for this head's full ci.yml result and re-evaluates the owner gate; key ci.yml concurrency per PR; then set For review once CI is green except the owner gate. Owner-gated: edits .github/workflows. Until merged, agents remove ready-to-merge before merging, never after. | checked 2026-10-27; checked 2026-10-28 |
+| [RF-100](tasks/RF-100.json) Label changes rerun only the PR gates, not the full CI job | P3 / task | needs RF-98 | In progress on branch ci/rf-100-label-gate-only (Air conductor lane, 2026-11-01). Restart: move the label-triggered path out of ci.yml into a gate-only workflow whose job reuses the required check name, waits for this head's full ci.yml result and re-evaluates the owner gate; key ci.yml concurrency per PR; then set For review once CI is green except the owner gate. Owner-gated: edits .github/workflows. Until merged, agents remove ready-to-merge before merging, never after. | checked 2026-10-27; checked 2026-10-28; checked 2026-11-01 |
 
 ## Blocked / waiting
 

@@ -34,6 +34,12 @@
       "ref": "https://github.com/steven-crosby/ritmofit-web/actions/runs/40768428224",
       "summary": "Post-merge push runs on main for 9166826 (#649) and 492e181 (#650) were cancelled ('a higher priority waiting request for ci-refs/heads/main exists') by pull_request unlabeled runs started 4 s later when ready-to-merge was removed from the merged PR. Until fixed, remove ready-to-merge before merging, not after.",
       "checkedOn": "2026-10-28"
+    },
+    {
+      "kind": "pr",
+      "ref": "https://github.com/steven-crosby/ritmofit-web/pull/700",
+      "summary": "Draft PR claiming RF-100: gate-only workflow for label events and per-PR CI concurrency.",
+      "checkedOn": "2026-11-01"
     }
   ],
   "resolution": null,
