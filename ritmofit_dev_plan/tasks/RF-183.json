@@ -1,7 +1,7 @@
 {
   "schemaVersion": 1,
   "id": "RF-183",
-  "title": "Standalone auth deploy of RF-177/RF-178 (#703, #705), coordinated with iOS RF-1012",
+  "title": "Standalone auth deploy of RF-177/RF-178 (#703, #705), after RF-180 and with iOS RF-1012",
   "kind": "release",
   "status": "backlog",
   "priority": "P2",
@@ -11,18 +11,30 @@
   ],
   "acceptance": [
     "The owner has decided RF-180 (native sign-out Origin), and main carries that decision.",
-    "Deployed from the Air on its own (auth changes only) via deployment-runbook.md, with the owner's explicit deploy permission; HISTORY records the Worker version, rollback version and smoke results.",
-    "Post-deploy: POST /api/v1/auth/session on an aged session returns 200 with no Set-Cookie and extends the row; a native-shaped sign-out revokes the session (per the RF-180 decision); browser sign-in and get-session refresh still work.",
+    "Deployed from the Air via deployment-runbook.md with the owner's explicit deploy permission, shipping main's auth changes (#703, #705, plus any RF-180 change) and nothing outside auth; HISTORY records the Worker version, rollback version and smoke results.",
+    "Post-deploy: POST /api/v1/auth/session on an aged session returns 200 with no Set-Cookie and extends the row; a sign-out from the shipped iOS client revokes the session, and sign-outs the RF-180 decision rejects are refused; browser sign-in and get-session refresh still work.",
     "iOS RF-1012 (cookie with no client-side expiry, /auth/session at launch and foreground) ships to the owner's devices close to this deploy, since a pre-RF-1012 build keeps its 7-day client expiry and gets no refreshed cookie after option C."
   ],
-  "nextAction": "Owner decides RF-180, then gives deploy permission on the Air.",
+  "nextAction": "1) Owner decides RF-180. 2) An iOS RF-1012 build is on the owner's devices (or ready to install). 3) Owner gives deploy permission on the Air.",
   "blocker": null,
   "evidence": [
     {
       "kind": "pr",
-      "ref": "https://github.com/steven-crosby/ritmofit-web/pull/705",
-      "summary": "#703 (1897a6d) and #705 (14d0b32) are on main and not deployed; production is 67496ab as last observed 2026-11-01.",
+      "ref": "https://github.com/steven-crosby/ritmofit-web/pull/703",
+      "summary": "#703 merged as 1897a6d (RF-177: native sign-out exception, refresh only on /auth/session); not deployed.",
       "checkedOn": "2026-11-02"
+    },
+    {
+      "kind": "pr",
+      "ref": "https://github.com/steven-crosby/ritmofit-web/pull/705",
+      "summary": "#705 merged as 14d0b32 (RF-178: /auth/session sets no cookie); not deployed.",
+      "checkedOn": "2026-11-02"
+    },
+    {
+      "kind": "observation",
+      "ref": "ritmofit_dev_plan/HISTORY.md",
+      "summary": "Production last observed at the 2026-11-01 start-session: main 67496ab, Worker feac7dde-dc10-4462-bd2d-79075d289bda, SPA assets/index-ChxMwIpX.js. Not rechecked since.",
+      "checkedOn": "2026-11-01"
     }
   ],
   "resolution": null,
