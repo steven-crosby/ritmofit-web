@@ -22,7 +22,7 @@
     },
     {
       "kind": "observation",
-      "ref": "https://github.com/steven-crosby/ritmofit-web/pull/706",
+      "ref": "https://github.com/steven-crosby/ritmofit-web/pull/706#issuecomment-6588563673",
       "summary": "Final review of #706: withNativeSignOutOrigin is on main (#703) but not in production, so the decision should precede the auth deploy; raised to P2 and made a prerequisite of RF-183.",
       "checkedOn": "2026-11-02"
     }

@@ -21,9 +21,10 @@ The order of work is [Phases](#phases) below; each phase lists RF records, not a
 **Main vs production:** production is main `67496ab` (Worker `feac7dde-dc10-4462-bd2d-79075d289bda`;
 SPA `assets/index-ChxMwIpX.js`; rollback `e50f1fd3-bdd1-4541-bc3f-4c2cd483a167`), deployed from the
 Air on 2026-10-31 and observed at the 2026-11-01 start-session. `main` is ahead: the auth changes
-[RF-177](./tasks/RF-177.json) (#703) and [RF-178](./tasks/RF-178.json) (#705) need a standalone
-auth deploy from the Air (the only machine with Cloudflare credentials), with the owner's
-permission. The other merges since are CI, records and docs. See [HISTORY](./HISTORY.md).
+[RF-177](./tasks/RF-177.json) (#703) and [RF-178](./tasks/RF-178.json) (#705) await the standalone
+auth deploy [RF-183](./tasks/RF-183.json) from the Air, which waits on the owner's
+[RF-180](./tasks/RF-180.json) decision and an iOS RF-1012 build. The other merges since are CI,
+records and docs. See [HISTORY](./HISTORY.md).
 **In flight:** the Air is paused for dev work. iOS: the Neo refreshes `web-contract/` from `14d0b32`
 and builds the AuthStore change for iOS RF-1012 (cookie without client-side expiry, `/auth/session`
 at launch and foreground, 401 means signed out).
