@@ -8,11 +8,11 @@ import { Hono } from 'hono';
 import { eq } from 'drizzle-orm';
 import { updateUserProfileSchema } from '@ritmofit/shared';
 import type { AppEnv } from '../lib/types.js';
-import { betaAccessMode, createAuth, hasAppleSignInConfig } from '../lib/auth.js';
-import { requireSession } from '../middleware/auth.js';
+import { betaAccessMode, hasAppleSignInConfig } from '../lib/auth.js';
+import { refreshSession, requireSession } from '../middleware/auth.js';
 import { createDb } from '../lib/db.js';
 import { users } from '../db/schema.js';
-import { serializeUser, serializeUserRow } from '../lib/serialize.js';
+import { serializeUserRow } from '../lib/serialize.js';
 import { HttpError } from '../lib/errors.js';
 
 export const authRoutes = new Hono<AppEnv>();
@@ -33,17 +33,12 @@ authRoutes.get('/capabilities', (c) =>
  * session and returns the canonical profile. Better Auth's adapter already created
  * the `users` row and, via field mapping, populated display_name / image_url, so in
  * M1 this is a reconciling read rather than an upsert. 401 when unauthenticated.
+ * Native clients call it at launch to keep a session alive. It is the only REST
+ * route that refreshes the session: when the session is older than updateAge the
+ * 200 carries `Set-Cookie` with the extended lifetime (`refreshSession`). A 401
+ * carries no cookie; the client drops its own.
  */
-authRoutes.post('/session', async (c) => {
-  const auth = createAuth(c.env);
-  const session = await auth.api.getSession({ headers: c.req.raw.headers });
-
-  if (!session) {
-    return c.json({ error: { code: 'UNAUTHORIZED', message: 'Authentication required.' } }, 401);
-  }
-
-  return c.json(serializeUser(session.user));
-});
+authRoutes.post('/session', refreshSession, (c) => c.json(c.get('user')));
 
 /**
  * GET /auth/me — the canonical caller, behind `requireSession`. Doubles as the

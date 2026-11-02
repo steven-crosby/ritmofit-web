@@ -4,7 +4,7 @@ import { ZodError } from 'zod';
 import { API_VERSION, CLASS_LIST_NEXT_CURSOR_HEADER, uuidSchema } from '@ritmofit/shared';
 import { ProviderError, ProviderQuotaExceededError } from '@ritmofit/music';
 import type { AppEnv, Env } from './lib/types.js';
-import { createAuth } from './lib/auth.js';
+import { createAuth, withNativeSignOutOrigin } from './lib/auth.js';
 import { createDb } from './lib/db.js';
 import { drainPurgeQueue, createD1PurgeStore } from './lib/music/purge.js';
 import { pruneRateLimits } from './lib/rate-limit.js';
@@ -152,7 +152,11 @@ app.use(
 );
 
 // Better Auth's own routes (sign-up / sign-in / social callbacks), library-managed.
-app.on(['GET', 'POST'], '/api/auth/*', (c) => createAuth(c.env).handler(c.req.raw));
+// A native client's sign-out gets the server's own Origin so Better Auth's CSRF
+// origin check stops refusing it; see `withNativeSignOutOrigin` for the trust boundary.
+app.on(['GET', 'POST'], '/api/auth/*', (c) =>
+  createAuth(c.env).handler(withNativeSignOutOrigin(c.req.raw, c.env)),
+);
 
 // Our REST surface under /api/v1.
 const api = app.basePath(`/api/${API_VERSION}`);

@@ -1,0 +1,82 @@
+{
+  "schemaVersion": 1,
+  "id": "RF-177",
+  "title": "Native clients keep a refreshed session and can revoke it on sign-out (web half of iOS RF-1012)",
+  "kind": "task",
+  "status": "done",
+  "priority": "P2",
+  "parent": null,
+  "dependsOn": [],
+  "acceptance": [
+    "AUD-007: a session older than Better Auth updateAge gets a Set-Cookie with a later expiry from POST /api/v1/auth/session, the only /api/v1 route that refreshes; every other requireSession route resolves with refresh disabled, so it sets no session cookie and leaves the row due for the next /auth/session; browsers still refresh through Better Auth's get-session; a younger session gets no session Set-Cookie; no 401 carries a Set-Cookie (integration and unit tests).",
+    "AUD-009: a native-shaped POST /api/auth/sign-out (cookie, JSON, no Origin/Referer/Sec-Fetch-*) revokes the session, and re-injecting the old cookie gets 401 from POST /api/v1/auth/session (integration test).",
+    "Browser CSRF protection is unchanged: sign-out with an untrusted or null Origin, an untrusted Referer, fetch metadata, or a form-shaped body revokes nothing, and other cookie-bearing auth POSTs without Origin are still refused (integration and unit tests).",
+    "OpenAPI documents the refresh Set-Cookie header only on POST /auth/session's 200, and api.md, authorization.md and conventions.md describe the /auth/session-only refresh, the no-cookie 401, the client-side current-cookie guard and the sign-out trust boundary; the iOS web-contract snapshots are refreshed in a separate iOS PR."
+  ],
+  "nextAction": null,
+  "blocker": null,
+  "evidence": [
+    {
+      "kind": "document",
+      "ref": "https://github.com/steven-crosby/ritmofit-ios/blob/main/agent-reports/audits/code-audit-2026-10-27-ee874fc/findings.md",
+      "summary": "iOS code audit AUD-007 (probable 7-day hard expiry) and AUD-009 (probable unrevoked sign-out); both carried by iOS RF-1012.",
+      "checkedOn": null
+    },
+    {
+      "kind": "observation",
+      "ref": "https://github.com/steven-crosby/ritmofit-ios/pull/71#issuecomment-6580904411",
+      "summary": "Owner approved this web change for RF-1012 in the Air session on 2026-11-02.",
+      "checkedOn": "2026-11-02"
+    },
+    {
+      "kind": "test",
+      "ref": "apps/api/test/native-session.integration.test.ts",
+      "summary": "Before the fix on 8f26519 both findings reproduced: the aged session row was extended but no Set-Cookie reached the client (AUD-007), and native sign-out got 403 MISSING_OR_NULL_ORIGIN with the session still valid (AUD-009). All 13 cases pass after the fix.",
+      "checkedOn": "2026-11-02"
+    },
+    {
+      "kind": "pr",
+      "ref": "https://github.com/steven-crosby/ritmofit-web/pull/703",
+      "summary": "Correction 2026-11-02 (third review, owner's narrower redesign): requireSession no longer refreshes or forwards a cookie; only POST /api/v1/auth/session does. Original entry: Forwards refreshed session cookies from /auth/session and requireSession routes, adds withNativeSignOutOrigin for native sign-out, and documents both in OpenAPI and the dev-plan docs. Full local gate green on 0f1438e.",
+      "checkedOn": "2026-11-02"
+    },
+    {
+      "kind": "observation",
+      "ref": "apps/api/src/lib/auth.ts",
+      "summary": "Against a local wrangler dev (port 8799, throwaway vars, MOCK_PROVIDERS): a session aged 2 days got Set-Cookie Max-Age=604800 from POST /api/v1/auth/session; a no-Origin JSON sign-out returned 200 and the old cookie then got 401 from POST /api/v1/auth/session.",
+      "checkedOn": "2026-11-02"
+    },
+    {
+      "kind": "test",
+      "ref": "apps/api/test/native-session.integration.test.ts",
+      "summary": "Correction 2026-11-02 (third review, owner's narrower redesign): provider connect now keeps its own cookie and gets no session cookie (refresh disabled on ordinary routes); the c.header append fix still applies to /auth/session. Original entry: Final review of #703 at 55adab7 found that forwardSetCookies' c.res assignment let Hono 4.13.14's res setter drop the session cookie on routes that set their own cookie. The new provider-connect case fails with that code (no session cookie) and passes with c.header append. Also added: refresh forwarded exactly once behind many requireSession routers, and the clearing cookie on 401 from /auth/session and /auth/me. 17 integration cases pass.",
+      "checkedOn": "2026-11-02"
+    },
+    {
+      "kind": "test",
+      "ref": "apps/api/src/middleware/auth.test.ts",
+      "summary": "Correction 2026-11-02 (third review, owner's narrower redesign): the stacked-router unit test now asserts one resolve with disableRefresh, no session cookie forwarded, the route cookie kept and no Set-Cookie on 401. Original entry: Three stacked requireSession routers resolve the session once (getSession called once), forward the refresh once, keep the route's own cookie, and forward the clearing cookie on 401.",
+      "checkedOn": "2026-11-02"
+    },
+    {
+      "kind": "test",
+      "ref": "apps/api/test/native-session.integration.test.ts",
+      "summary": "Second final review of #703 at 31ff13a: forwarding Better Auth's Max-Age=0 clearing cookie on 401 could let a slow request carrying user A's dead cookie delete user B's cookie after a sign-out and new sign-in (same cookie name). 401s now carry no Set-Cookie (integration and unit tests assert it); the unreachable fallback in forwardSetCookies is removed. The residual race it named (a refresh issued for A arriving after B's sign-in) blocked the third review and led to the redesign below.",
+      "checkedOn": "2026-11-02"
+    },
+    {
+      "kind": "observation",
+      "ref": "https://github.com/steven-crosby/ritmofit-web/pull/703",
+      "summary": "Deferred review items, updated after the third review: (1) the native sign-out origin-handling design itself, for the owner; (2) resolved: the once-per-request short-circuit now keys on a sessionResolved flag set only by the session middleware, not userId; (3) c.header copies a finalized Response once per forwarded cookie, now only on POST /auth/session; (4) resolved: the OpenAPI security: [] opt-out is gone with the shared header (the refresh header is only on /auth/session's 200).",
+      "checkedOn": "2026-11-02"
+    },
+    {
+      "kind": "test",
+      "ref": "apps/api/test/native-session.integration.test.ts",
+      "summary": "Third review of #703 at d0a2428: a refresh Set-Cookie on any 200 could carry account A's token onto B's sign-in. Redesign: only POST /api/v1/auth/session refreshes and forwards the cookie; other routes call getSession with disableRefresh. Integration tests: an aged session on GET /auth/me, GET /explore and provider connect gets no session cookie and an unchanged row; the next /auth/session with the same cookie gets Max-Age=604800 and a later expiry; a fresh session gets none; Better Auth's GET /api/auth/get-session (the SPA's useSession) still refreshes; 401s carry no Set-Cookie. 18 integration and 4 unit cases pass.",
+      "checkedOn": "2026-11-02"
+    }
+  ],
+  "resolution": "Both audit findings were real and reproduced in integration tests before the fix. After three review rounds, only POST /api/v1/auth/session refreshes the session and returns the refresh cookie; other routes resolve with refresh disabled, no 401 sets a cookie, and native sign-out revokes the session with browser CSRF behaviour pinned by tests. Deferred review items are in the evidence and the PR. The iOS half (persist /auth/session's Set-Cookie only while the request's cookie is still current, treat 401 as signed out, log failed sign-out, reinstall handling) ships in iOS RF-1012/RF-1032 after its web-contract snapshots are refreshed.",
+  "followUps": []
+}

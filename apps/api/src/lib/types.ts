@@ -111,6 +111,8 @@ export interface AppVariables {
   userId: string;
   /** Canonical profile, shaped by the shared `userSchema`. */
   user: User;
+  /** Set only by the session middleware, so stacked `requireSession` runs resolve once. */
+  sessionResolved: boolean;
 }
 
 /** Hono generic env for this app. */
