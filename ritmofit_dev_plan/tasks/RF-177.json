@@ -3,7 +3,7 @@
   "id": "RF-177",
   "title": "Native clients keep a refreshed session and can revoke it on sign-out (web half of iOS RF-1012)",
   "kind": "task",
-  "status": "in_progress",
+  "status": "done",
   "priority": "P2",
   "parent": null,
   "dependsOn": [],
@@ -13,7 +13,7 @@
     "Browser CSRF protection is unchanged: sign-out with an untrusted or null Origin, an untrusted Referer, fetch metadata, or a form-shaped body revokes nothing, and other cookie-bearing auth POSTs without Origin are still refused (integration and unit tests).",
     "OpenAPI, api.md, authorization.md and conventions.md describe the refresh cookie and the sign-out trust boundary; the iOS web-contract snapshots are refreshed in a separate iOS PR."
   ],
-  "nextAction": "Session on branch fix/rf-177-native-auth-session (worktree lanes/web-rf-1012): open the owner-gated PR, set the final state, and hand the iOS half (RF-1012 + RF-1032) to the Neo.",
+  "nextAction": null,
   "blocker": null,
   "evidence": [
     {
@@ -33,8 +33,20 @@
       "ref": "apps/api/test/native-session.integration.test.ts",
       "summary": "Before the fix on 8f26519 both findings reproduced: the aged session row was extended but no Set-Cookie reached the client (AUD-007), and native sign-out got 403 MISSING_OR_NULL_ORIGIN with the session still valid (AUD-009). All 13 cases pass after the fix.",
       "checkedOn": "2026-11-02"
+    },
+    {
+      "kind": "pr",
+      "ref": "https://github.com/steven-crosby/ritmofit-web/pull/703",
+      "summary": "Forwards refreshed session cookies from /auth/session and requireSession routes, adds withNativeSignOutOrigin for native sign-out, and documents both in OpenAPI and the dev-plan docs. Full local gate green on 0f1438e.",
+      "checkedOn": "2026-11-02"
+    },
+    {
+      "kind": "observation",
+      "ref": "apps/api/src/lib/auth.ts",
+      "summary": "Against a local wrangler dev (port 8799, throwaway vars, MOCK_PROVIDERS): a session aged 2 days got Set-Cookie Max-Age=604800 from POST /api/v1/auth/session; a no-Origin JSON sign-out returned 200 and the old cookie then got 401 from POST /api/v1/auth/session.",
+      "checkedOn": "2026-11-02"
     }
   ],
-  "resolution": null,
+  "resolution": "Both audit findings were real and reproduced in integration tests before the fix. The web side now returns refreshed session cookies to native clients and revokes a native sign-out, with browser CSRF behaviour pinned by tests. The iOS half (persist refreshed cookies, log failed sign-out, reinstall handling) ships in iOS RF-1012/RF-1032 after its web-contract snapshots are refreshed.",
   "followUps": []
 }
