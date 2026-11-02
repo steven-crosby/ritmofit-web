@@ -186,18 +186,9 @@ const doc = {
       post: {
         summary: 'Validate session, return canonical profile',
         description:
-          'Native clients call this at launch to keep a session alive. When the session is older than Better Auth updateAge (1 day), the server extends it and the response carries the refreshed session cookie; persist it. Any other authed response may carry the same refresh.',
+          'Native clients call this at launch to keep a session alive. Like every session-authenticated operation, the response may carry the shared SessionSetCookie header: a refreshed session cookie to persist, or on 401 a clearing cookie.',
         responses: {
-          '200': {
-            ...jsonResp('User', 'Canonical profile'),
-            headers: {
-              'Set-Cookie': {
-                description:
-                  'Present only when this call refreshed the session: the Better Auth session cookie with a new Max-Age (7 days). Absent otherwise.',
-                schema: { type: 'string' },
-              },
-            },
-          },
+          '200': jsonResp('User', 'Canonical profile'),
           '401': { description: 'Not authenticated' },
         },
       },
@@ -923,6 +914,8 @@ const doc = {
           { name: 'code', in: 'query', required: false, schema: { type: 'string' } },
           { name: 'state', in: 'query', required: false, schema: { type: 'string' } },
         ],
+        // Public: authenticated by its encrypted state cookie, not the session.
+        security: [],
         responses: { '302': { description: 'Redirect to the web app (connected or error)' } },
       },
     },
@@ -1080,9 +1073,36 @@ const doc = {
       sessionCookie: { type: 'apiKey', in: 'cookie', name: 'better-auth.session_token' },
     },
     schemas,
+    headers: {
+      SessionSetCookie: {
+        description:
+          'Better Auth session cookie, set by requireSession on any session-authenticated response (RF-177). Present when this request refreshed a session older than updateAge (1 day): the same token with a new Max-Age (7 days); persist it. On 401 for a revoked or expired session: a clearing cookie (Max-Age=0); discard the stored cookie. Absent otherwise. Browsers apply it automatically; native clients must save it from any authed response.',
+        schema: { type: 'string' },
+      },
+    },
   },
   security: [{ sessionCookie: [] }],
 };
+
+// Every operation that does not opt out of the session (`security: []`) runs
+// requireSession, so each of its responses may carry the session cookie.
+type OperationLike = { security?: unknown[]; responses?: Record<string, Record<string, unknown>> };
+for (const pathItem of Object.values(doc.paths) as Record<string, OperationLike>[]) {
+  for (const [method, op] of Object.entries(pathItem)) {
+    if (method === 'parameters' || !op.responses) continue;
+    if (Array.isArray(op.security) && op.security.length === 0) continue;
+    for (const [status, response] of Object.entries(op.responses)) {
+      // Copy: response helpers may share objects between operations.
+      op.responses[status] = {
+        ...response,
+        headers: {
+          ...(response.headers as Record<string, unknown> | undefined),
+          'Set-Cookie': { $ref: '#/components/headers/SessionSetCookie' },
+        },
+      };
+    }
+  }
+}
 
 const outDir = join(dirname(fileURLToPath(import.meta.url)), '..', 'openapi');
 mkdirSync(outDir, { recursive: true });

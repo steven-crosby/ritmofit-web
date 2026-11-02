@@ -9,10 +9,10 @@ import { eq } from 'drizzle-orm';
 import { updateUserProfileSchema } from '@ritmofit/shared';
 import type { AppEnv } from '../lib/types.js';
 import { betaAccessMode, hasAppleSignInConfig } from '../lib/auth.js';
-import { forwardSetCookies, requireSession, resolveSession } from '../middleware/auth.js';
+import { requireSession } from '../middleware/auth.js';
 import { createDb } from '../lib/db.js';
 import { users } from '../db/schema.js';
-import { serializeUser, serializeUserRow } from '../lib/serialize.js';
+import { serializeUserRow } from '../lib/serialize.js';
 import { HttpError } from '../lib/errors.js';
 
 export const authRoutes = new Hono<AppEnv>();
@@ -35,21 +35,10 @@ authRoutes.get('/capabilities', (c) =>
  * M1 this is a reconciling read rather than an upsert. 401 when unauthenticated.
  * Native clients call it at launch to keep a session alive: when Better Auth
  * refreshes the session (older than updateAge) the response carries `Set-Cookie`
- * with the extended lifetime.
+ * with the extended lifetime; a 401 for a dead session carries the clearing cookie.
+ * Both come from `requireSession`, so every authed route behaves the same way.
  */
-authRoutes.post('/session', async (c) => {
-  const { session, setCookies } = await resolveSession(c.env, c.req.raw.headers);
-
-  if (!session) {
-    return c.json({ error: { code: 'UNAUTHORIZED', message: 'Authentication required.' } }, 401);
-  }
-
-  // When this call rolled the session forward, return the refreshed cookie so a
-  // native client can persist the later expiry (AUD-007, RF-177).
-  c.res = c.json(serializeUser(session.user));
-  forwardSetCookies(c, setCookies);
-  return c.res;
-});
+authRoutes.post('/session', requireSession, (c) => c.json(c.get('user')));
 
 /**
  * GET /auth/me — the canonical caller, behind `requireSession`. Doubles as the

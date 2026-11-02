@@ -98,6 +98,47 @@ describe('AUD-007: native session refresh reaches the client', () => {
     expect(await sessionExpiresAt(user.userId)).toBe(before);
   });
 
+  it('a cookie-setting authed route returns both its own cookie and the refreshed session cookie', async () => {
+    // POST /providers/:provider/connect sets the OAuth state cookie. Turn off the
+    // mock seam (which skips the cookie) and give Spotify placeholder credentials.
+    const mutableEnv = env as typeof env & {
+      MOCK_PROVIDERS?: string;
+      SPOTIFY_CLIENT_ID?: string;
+      SPOTIFY_CLIENT_SECRET?: string;
+    };
+    const previous = { ...mutableEnv };
+    mutableEnv.MOCK_PROVIDERS = 'false';
+    mutableEnv.SPOTIFY_CLIENT_ID = 'test-spotify-client';
+    mutableEnv.SPOTIFY_CLIENT_SECRET = 'test-spotify-secret';
+    try {
+      const user = await signUpUser();
+      await ageSession(user.userId, 2 * DAY_MS);
+      const res = await nativePost('/api/v1/providers/spotify/connect', user.cookie);
+      expect(res.status).toBe(200);
+      const cookies = res.headers.getSetCookie();
+      expect(cookies.filter((c) => c.startsWith('rf_oauth_state='))).toHaveLength(1);
+      expect(cookies.filter((c) => c.startsWith(`${SESSION_COOKIE}=`))).toHaveLength(1);
+      expect(sessionSetCookie(res)).toMatch(/Max-Age=604800/i);
+    } finally {
+      mutableEnv.MOCK_PROVIDERS = previous.MOCK_PROVIDERS;
+      mutableEnv.SPOTIFY_CLIENT_ID = previous.SPOTIFY_CLIENT_ID;
+      mutableEnv.SPOTIFY_CLIENT_SECRET = previous.SPOTIFY_CLIENT_SECRET;
+    }
+  });
+
+  it('a route behind many requireSession routers forwards the refresh exactly once', async () => {
+    // /explore is served by one of the last routers mounted at '/', so every earlier
+    // root router's `use('*', requireSession)` also runs on this request.
+    const user = await signUpUser();
+    await ageSession(user.userId, 2 * DAY_MS);
+    const res = await call('/api/v1/explore', { headers: { cookie: user.cookie } });
+    expect(res.status).toBe(200);
+    const sessionCookies = res.headers
+      .getSetCookie()
+      .filter((c) => c.startsWith(`${SESSION_COOKIE}=`));
+    expect(sessionCookies).toHaveLength(1);
+  });
+
   it('an unauthenticated /auth/session is still a JSON 401', async () => {
     const res = await nativePost('/api/v1/auth/session', `${SESSION_COOKIE}=bogus.sig`);
     expect(res.status).toBe(401);
@@ -117,6 +158,22 @@ describe('AUD-009: native sign-out revokes the server session', () => {
     // Re-inject the old cookie: the server must no longer honour it.
     expect(await sessionStatus(user.cookie)).toBe(401);
   });
+
+  it.each(['/api/v1/auth/session', '/api/v1/auth/me'])(
+    'a revoked cookie gets 401 from %s with a clearing Set-Cookie (Max-Age=0)',
+    async (path) => {
+      const user = await signUpUser();
+      expect((await nativePost('/api/auth/sign-out', user.cookie)).status).toBe(200);
+
+      const res =
+        path === '/api/v1/auth/me'
+          ? await call(path, { headers: { cookie: user.cookie } })
+          : await nativePost(path, user.cookie);
+      expect(res.status).toBe(401);
+      expect(await res.json()).toMatchObject({ error: { code: 'UNAUTHORIZED' } });
+      expect(sessionSetCookie(res)).toMatch(/Max-Age=0/i);
+    },
+  );
 
   it('a native client that sends its own base-URL Origin can also sign out', async () => {
     const user = await signUpUser();

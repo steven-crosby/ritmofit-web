@@ -14,7 +14,7 @@
     "/auth/session": {
       "post": {
         "summary": "Validate session, return canonical profile",
-        "description": "Native clients call this at launch to keep a session alive. When the session is older than Better Auth updateAge (1 day), the server extends it and the response carries the refreshed session cookie; persist it. Any other authed response may carry the same refresh.",
+        "description": "Native clients call this at launch to keep a session alive. Like every session-authenticated operation, the response may carry the shared SessionSetCookie header: a refreshed session cookie to persist, or on 401 a clearing cookie.",
         "responses": {
           "200": {
             "description": "Canonical profile",
@@ -27,15 +27,17 @@
             },
             "headers": {
               "Set-Cookie": {
-                "description": "Present only when this call refreshed the session: the Better Auth session cookie with a new Max-Age (7 days). Absent otherwise.",
-                "schema": {
-                  "type": "string"
-                }
+                "$ref": "#/components/headers/SessionSetCookie"
               }
             }
           },
           "401": {
-            "description": "Not authenticated"
+            "description": "Not authenticated",
+            "headers": {
+              "Set-Cookie": {
+                "$ref": "#/components/headers/SessionSetCookie"
+              }
+            }
           }
         }
       }
@@ -52,10 +54,20 @@
                   "$ref": "#/components/schemas/User"
                 }
               }
+            },
+            "headers": {
+              "Set-Cookie": {
+                "$ref": "#/components/headers/SessionSetCookie"
+              }
             }
           },
           "401": {
-            "description": "Not authenticated"
+            "description": "Not authenticated",
+            "headers": {
+              "Set-Cookie": {
+                "$ref": "#/components/headers/SessionSetCookie"
+              }
+            }
           }
         }
       },
@@ -80,13 +92,28 @@
                   "$ref": "#/components/schemas/User"
                 }
               }
+            },
+            "headers": {
+              "Set-Cookie": {
+                "$ref": "#/components/headers/SessionSetCookie"
+              }
             }
           },
           "401": {
-            "description": "Not authenticated"
+            "description": "Not authenticated",
+            "headers": {
+              "Set-Cookie": {
+                "$ref": "#/components/headers/SessionSetCookie"
+              }
+            }
           },
           "422": {
-            "description": "Profile failed validation"
+            "description": "Profile failed validation",
+            "headers": {
+              "Set-Cookie": {
+                "$ref": "#/components/headers/SessionSetCookie"
+              }
+            }
           }
         }
       }
@@ -146,11 +173,19 @@
                 "schema": {
                   "type": "string"
                 }
+              },
+              "Set-Cookie": {
+                "$ref": "#/components/headers/SessionSetCookie"
               }
             }
           },
           "422": {
-            "description": "Invalid pagination parameters or cursor"
+            "description": "Invalid pagination parameters or cursor",
+            "headers": {
+              "Set-Cookie": {
+                "$ref": "#/components/headers/SessionSetCookie"
+              }
+            }
           }
         }
       },
@@ -174,6 +209,11 @@
                 "schema": {
                   "$ref": "#/components/schemas/Class"
                 }
+              }
+            },
+            "headers": {
+              "Set-Cookie": {
+                "$ref": "#/components/headers/SessionSetCookie"
               }
             }
           }
@@ -202,10 +242,20 @@
                   "$ref": "#/components/schemas/ClassWithAccess"
                 }
               }
+            },
+            "headers": {
+              "Set-Cookie": {
+                "$ref": "#/components/headers/SessionSetCookie"
+              }
             }
           },
           "404": {
-            "description": "Not found / hidden"
+            "description": "Not found / hidden",
+            "headers": {
+              "Set-Cookie": {
+                "$ref": "#/components/headers/SessionSetCookie"
+              }
+            }
           }
         }
       },
@@ -230,6 +280,11 @@
                   "$ref": "#/components/schemas/Class"
                 }
               }
+            },
+            "headers": {
+              "Set-Cookie": {
+                "$ref": "#/components/headers/SessionSetCookie"
+              }
             }
           }
         }
@@ -238,7 +293,12 @@
         "summary": "Delete a class (owner)",
         "responses": {
           "204": {
-            "description": "Deleted"
+            "description": "Deleted",
+            "headers": {
+              "Set-Cookie": {
+                "$ref": "#/components/headers/SessionSetCookie"
+              }
+            }
           }
         }
       }
@@ -266,10 +326,20 @@
                   "$ref": "#/components/schemas/Class"
                 }
               }
+            },
+            "headers": {
+              "Set-Cookie": {
+                "$ref": "#/components/headers/SessionSetCookie"
+              }
             }
           },
           "404": {
-            "description": "Not found / hidden"
+            "description": "Not found / hidden",
+            "headers": {
+              "Set-Cookie": {
+                "$ref": "#/components/headers/SessionSetCookie"
+              }
+            }
           }
         }
       }
@@ -295,6 +365,11 @@
                 "schema": {
                   "$ref": "#/components/schemas/RunPayload"
                 }
+              }
+            },
+            "headers": {
+              "Set-Cookie": {
+                "$ref": "#/components/headers/SessionSetCookie"
               }
             }
           }
@@ -333,10 +408,20 @@
                   "$ref": "#/components/schemas/Class"
                 }
               }
+            },
+            "headers": {
+              "Set-Cookie": {
+                "$ref": "#/components/headers/SessionSetCookie"
+              }
             }
           },
           "404": {
-            "description": "Source class not found / hidden"
+            "description": "Source class not found / hidden",
+            "headers": {
+              "Set-Cookie": {
+                "$ref": "#/components/headers/SessionSetCookie"
+              }
+            }
           }
         }
       }
@@ -383,13 +468,28 @@
                   "$ref": "#/components/schemas/Class"
                 }
               }
+            },
+            "headers": {
+              "Set-Cookie": {
+                "$ref": "#/components/headers/SessionSetCookie"
+              }
             }
           },
           "400": {
-            "description": "Missing file, or not a JPEG/PNG/WebP image"
+            "description": "Missing file, or not a JPEG/PNG/WebP image",
+            "headers": {
+              "Set-Cookie": {
+                "$ref": "#/components/headers/SessionSetCookie"
+              }
+            }
           },
           "413": {
-            "description": "Cover image exceeds 5 MiB"
+            "description": "Cover image exceeds 5 MiB",
+            "headers": {
+              "Set-Cookie": {
+                "$ref": "#/components/headers/SessionSetCookie"
+              }
+            }
           }
         }
       }
@@ -448,10 +548,20 @@
                   ]
                 }
               }
+            },
+            "headers": {
+              "Set-Cookie": {
+                "$ref": "#/components/headers/SessionSetCookie"
+              }
             }
           },
           "422": {
-            "description": "Invalid tag, or the class already has 20 unique tags"
+            "description": "Invalid tag, or the class already has 20 unique tags",
+            "headers": {
+              "Set-Cookie": {
+                "$ref": "#/components/headers/SessionSetCookie"
+              }
+            }
           }
         }
       }
@@ -479,7 +589,12 @@
         "summary": "Remove a tag from a class (edit)",
         "responses": {
           "204": {
-            "description": "Removed"
+            "description": "Removed",
+            "headers": {
+              "Set-Cookie": {
+                "$ref": "#/components/headers/SessionSetCookie"
+              }
+            }
           }
         }
       }
@@ -509,6 +624,11 @@
                   }
                 }
               }
+            },
+            "headers": {
+              "Set-Cookie": {
+                "$ref": "#/components/headers/SessionSetCookie"
+              }
             }
           }
         }
@@ -533,6 +653,11 @@
                 "schema": {
                   "$ref": "#/components/schemas/ClassSection"
                 }
+              }
+            },
+            "headers": {
+              "Set-Cookie": {
+                "$ref": "#/components/headers/SessionSetCookie"
               }
             }
           }
@@ -571,6 +696,11 @@
                   "$ref": "#/components/schemas/ClassSection"
                 }
               }
+            },
+            "headers": {
+              "Set-Cookie": {
+                "$ref": "#/components/headers/SessionSetCookie"
+              }
             }
           }
         }
@@ -579,7 +709,12 @@
         "summary": "Delete a segment band (edit)",
         "responses": {
           "204": {
-            "description": "Deleted"
+            "description": "Deleted",
+            "headers": {
+              "Set-Cookie": {
+                "$ref": "#/components/headers/SessionSetCookie"
+              }
+            }
           }
         }
       }
@@ -625,25 +760,60 @@
                   "$ref": "#/components/schemas/PlaylistPreviewResponse"
                 }
               }
+            },
+            "headers": {
+              "Set-Cookie": {
+                "$ref": "#/components/headers/SessionSetCookie"
+              }
             }
           },
           "400": {
-            "description": "Invalid or unsupported playlist URL, or empty playlist"
+            "description": "Invalid or unsupported playlist URL, or empty playlist",
+            "headers": {
+              "Set-Cookie": {
+                "$ref": "#/components/headers/SessionSetCookie"
+              }
+            }
           },
           "403": {
-            "description": "PROVIDER_FORBIDDEN — Spotify denied this playlist to the connected user. Reconnecting does not grant access. No writes."
+            "description": "PROVIDER_FORBIDDEN — Spotify denied this playlist to the connected user. Reconnecting does not grant access. No writes.",
+            "headers": {
+              "Set-Cookie": {
+                "$ref": "#/components/headers/SessionSetCookie"
+              }
+            }
           },
           "409": {
-            "description": "NOT_CONNECTED — Connect Spotify to import this playlist. REAUTH_REQUIRED — Reconnect Spotify to import this playlist. No writes."
+            "description": "NOT_CONNECTED — Connect Spotify to import this playlist. REAUTH_REQUIRED — Reconnect Spotify to import this playlist. No writes.",
+            "headers": {
+              "Set-Cookie": {
+                "$ref": "#/components/headers/SessionSetCookie"
+              }
+            }
           },
           "422": {
-            "description": "Playlist has more than 100 songs"
+            "description": "Playlist has more than 100 songs",
+            "headers": {
+              "Set-Cookie": {
+                "$ref": "#/components/headers/SessionSetCookie"
+              }
+            }
           },
           "429": {
-            "description": "PROVIDER_QUOTA_EXCEEDED — Spotify's usage limit for Ritmo is used up. Try again later. Not retried. No writes."
+            "description": "PROVIDER_QUOTA_EXCEEDED — Spotify's usage limit for Ritmo is used up. Try again later. Not retried. No writes.",
+            "headers": {
+              "Set-Cookie": {
+                "$ref": "#/components/headers/SessionSetCookie"
+              }
+            }
           },
           "504": {
-            "description": "PROVIDER_TIMEOUT — the playlist took too long to load. Try again. No writes."
+            "description": "PROVIDER_TIMEOUT — the playlist took too long to load. Try again. No writes.",
+            "headers": {
+              "Set-Cookie": {
+                "$ref": "#/components/headers/SessionSetCookie"
+              }
+            }
           }
         }
       }
@@ -705,6 +875,11 @@
                   }
                 }
               }
+            },
+            "headers": {
+              "Set-Cookie": {
+                "$ref": "#/components/headers/SessionSetCookie"
+              }
             }
           }
         }
@@ -730,10 +905,20 @@
                   "$ref": "#/components/schemas/ClassTrack"
                 }
               }
+            },
+            "headers": {
+              "Set-Cookie": {
+                "$ref": "#/components/headers/SessionSetCookie"
+              }
             }
           },
           "409": {
-            "description": "Class layout changed during add; refresh and retry"
+            "description": "Class layout changed during add; refresh and retry",
+            "headers": {
+              "Set-Cookie": {
+                "$ref": "#/components/headers/SessionSetCookie"
+              }
+            }
           }
         }
       }
@@ -773,13 +958,28 @@
                   }
                 }
               }
+            },
+            "headers": {
+              "Set-Cookie": {
+                "$ref": "#/components/headers/SessionSetCookie"
+              }
             }
           },
           "409": {
-            "description": "Stale snapshot or reused operation ID; standard error envelope"
+            "description": "Stale snapshot or reused operation ID; standard error envelope",
+            "headers": {
+              "Set-Cookie": {
+                "$ref": "#/components/headers/SessionSetCookie"
+              }
+            }
           },
           "422": {
-            "description": "A songBlocks commit accepts at most 15 placements in that request. Tracks already on the class do not count. The commit rejects planBlockId, with no partial write."
+            "description": "A songBlocks commit accepts at most 15 placements in that request. Tracks already on the class do not count. The commit rejects planBlockId, with no partial write.",
+            "headers": {
+              "Set-Cookie": {
+                "$ref": "#/components/headers/SessionSetCookie"
+              }
+            }
           }
         }
       }
@@ -809,6 +1009,11 @@
                   }
                 }
               }
+            },
+            "headers": {
+              "Set-Cookie": {
+                "$ref": "#/components/headers/SessionSetCookie"
+              }
             }
           }
         }
@@ -833,6 +1038,11 @@
                 "schema": {
                   "$ref": "#/components/schemas/ClassPlanBlock"
                 }
+              }
+            },
+            "headers": {
+              "Set-Cookie": {
+                "$ref": "#/components/headers/SessionSetCookie"
               }
             }
           }
@@ -874,6 +1084,11 @@
                   }
                 }
               }
+            },
+            "headers": {
+              "Set-Cookie": {
+                "$ref": "#/components/headers/SessionSetCookie"
+              }
             }
           }
         }
@@ -911,6 +1126,11 @@
                   "$ref": "#/components/schemas/ClassPlanBlock"
                 }
               }
+            },
+            "headers": {
+              "Set-Cookie": {
+                "$ref": "#/components/headers/SessionSetCookie"
+              }
             }
           }
         }
@@ -919,7 +1139,12 @@
         "summary": "Delete an empty class plan block",
         "responses": {
           "204": {
-            "description": "Deleted"
+            "description": "Deleted",
+            "headers": {
+              "Set-Cookie": {
+                "$ref": "#/components/headers/SessionSetCookie"
+              }
+            }
           }
         }
       }
@@ -959,6 +1184,11 @@
                   }
                 }
               }
+            },
+            "headers": {
+              "Set-Cookie": {
+                "$ref": "#/components/headers/SessionSetCookie"
+              }
             }
           }
         }
@@ -996,6 +1226,11 @@
                   "$ref": "#/components/schemas/ClassTrack"
                 }
               }
+            },
+            "headers": {
+              "Set-Cookie": {
+                "$ref": "#/components/headers/SessionSetCookie"
+              }
             }
           }
         }
@@ -1004,7 +1239,12 @@
         "summary": "Remove a class_track",
         "responses": {
           "204": {
-            "description": "Removed"
+            "description": "Removed",
+            "headers": {
+              "Set-Cookie": {
+                "$ref": "#/components/headers/SessionSetCookie"
+              }
+            }
           }
         }
       }
@@ -1040,6 +1280,11 @@
                 "schema": {
                   "$ref": "#/components/schemas/ClassTrack"
                 }
+              }
+            },
+            "headers": {
+              "Set-Cookie": {
+                "$ref": "#/components/headers/SessionSetCookie"
               }
             }
           }
@@ -1078,6 +1323,11 @@
                   "$ref": "#/components/schemas/ClassTrack"
                 }
               }
+            },
+            "headers": {
+              "Set-Cookie": {
+                "$ref": "#/components/headers/SessionSetCookie"
+              }
             }
           }
         }
@@ -1108,6 +1358,11 @@
                   }
                 }
               }
+            },
+            "headers": {
+              "Set-Cookie": {
+                "$ref": "#/components/headers/SessionSetCookie"
+              }
             }
           }
         }
@@ -1132,6 +1387,11 @@
                 "schema": {
                   "$ref": "#/components/schemas/Cue"
                 }
+              }
+            },
+            "headers": {
+              "Set-Cookie": {
+                "$ref": "#/components/headers/SessionSetCookie"
               }
             }
           }
@@ -1170,6 +1430,11 @@
                   "$ref": "#/components/schemas/Cue"
                 }
               }
+            },
+            "headers": {
+              "Set-Cookie": {
+                "$ref": "#/components/headers/SessionSetCookie"
+              }
             }
           }
         }
@@ -1178,7 +1443,12 @@
         "summary": "Delete a cue",
         "responses": {
           "204": {
-            "description": "Deleted"
+            "description": "Deleted",
+            "headers": {
+              "Set-Cookie": {
+                "$ref": "#/components/headers/SessionSetCookie"
+              }
+            }
           }
         }
       }
@@ -1208,6 +1478,11 @@
                   }
                 }
               }
+            },
+            "headers": {
+              "Set-Cookie": {
+                "$ref": "#/components/headers/SessionSetCookie"
+              }
             }
           }
         }
@@ -1232,6 +1507,11 @@
                 "schema": {
                   "$ref": "#/components/schemas/ClassTrackMove"
                 }
+              }
+            },
+            "headers": {
+              "Set-Cookie": {
+                "$ref": "#/components/headers/SessionSetCookie"
               }
             }
           }
@@ -1270,6 +1550,11 @@
                   "$ref": "#/components/schemas/ClassTrackMove"
                 }
               }
+            },
+            "headers": {
+              "Set-Cookie": {
+                "$ref": "#/components/headers/SessionSetCookie"
+              }
             }
           }
         }
@@ -1278,7 +1563,12 @@
         "summary": "Remove a placed move",
         "responses": {
           "204": {
-            "description": "Removed"
+            "description": "Removed",
+            "headers": {
+              "Set-Cookie": {
+                "$ref": "#/components/headers/SessionSetCookie"
+              }
+            }
           }
         }
       }
@@ -1307,6 +1597,11 @@
                     "$ref": "#/components/schemas/Move"
                   }
                 }
+              }
+            },
+            "headers": {
+              "Set-Cookie": {
+                "$ref": "#/components/headers/SessionSetCookie"
               }
             }
           }
@@ -1338,6 +1633,11 @@
                   }
                 }
               }
+            },
+            "headers": {
+              "Set-Cookie": {
+                "$ref": "#/components/headers/SessionSetCookie"
+              }
             }
           }
         }
@@ -1357,6 +1657,11 @@
                     "$ref": "#/components/schemas/UserMove"
                   }
                 }
+              }
+            },
+            "headers": {
+              "Set-Cookie": {
+                "$ref": "#/components/headers/SessionSetCookie"
               }
             }
           }
@@ -1382,6 +1687,11 @@
                 "schema": {
                   "$ref": "#/components/schemas/UserMove"
                 }
+              }
+            },
+            "headers": {
+              "Set-Cookie": {
+                "$ref": "#/components/headers/SessionSetCookie"
               }
             }
           }
@@ -1420,6 +1730,11 @@
                   "$ref": "#/components/schemas/UserMove"
                 }
               }
+            },
+            "headers": {
+              "Set-Cookie": {
+                "$ref": "#/components/headers/SessionSetCookie"
+              }
             }
           }
         }
@@ -1428,7 +1743,12 @@
         "summary": "Delete a custom move",
         "responses": {
           "204": {
-            "description": "Deleted"
+            "description": "Deleted",
+            "headers": {
+              "Set-Cookie": {
+                "$ref": "#/components/headers/SessionSetCookie"
+              }
+            }
           }
         }
       }
@@ -1458,10 +1778,20 @@
                   }
                 }
               }
+            },
+            "headers": {
+              "Set-Cookie": {
+                "$ref": "#/components/headers/SessionSetCookie"
+              }
             }
           },
           "404": {
-            "description": "Not found or not owned"
+            "description": "Not found or not owned",
+            "headers": {
+              "Set-Cookie": {
+                "$ref": "#/components/headers/SessionSetCookie"
+              }
+            }
           }
         }
       }
@@ -1487,6 +1817,11 @@
                 "schema": {
                   "$ref": "#/components/schemas/Track"
                 }
+              }
+            },
+            "headers": {
+              "Set-Cookie": {
+                "$ref": "#/components/headers/SessionSetCookie"
               }
             }
           }
@@ -1515,6 +1850,11 @@
                   "$ref": "#/components/schemas/TrackWithProviderIds"
                 }
               }
+            },
+            "headers": {
+              "Set-Cookie": {
+                "$ref": "#/components/headers/SessionSetCookie"
+              }
             }
           }
         }
@@ -1539,6 +1879,11 @@
                 "schema": {
                   "$ref": "#/components/schemas/Track"
                 }
+              }
+            },
+            "headers": {
+              "Set-Cookie": {
+                "$ref": "#/components/headers/SessionSetCookie"
               }
             }
           }
@@ -1577,10 +1922,20 @@
                   "$ref": "#/components/schemas/TrackProviderId"
                 }
               }
+            },
+            "headers": {
+              "Set-Cookie": {
+                "$ref": "#/components/headers/SessionSetCookie"
+              }
             }
           },
           "409": {
-            "description": "Duplicate provider id"
+            "description": "Duplicate provider id",
+            "headers": {
+              "Set-Cookie": {
+                "$ref": "#/components/headers/SessionSetCookie"
+              }
+            }
           }
         }
       }
@@ -1617,10 +1972,20 @@
                   "$ref": "#/components/schemas/ResolveProviderResult"
                 }
               }
+            },
+            "headers": {
+              "Set-Cookie": {
+                "$ref": "#/components/headers/SessionSetCookie"
+              }
             }
           },
           "404": {
-            "description": "Not found"
+            "description": "Not found",
+            "headers": {
+              "Set-Cookie": {
+                "$ref": "#/components/headers/SessionSetCookie"
+              }
+            }
           }
         }
       }
@@ -1647,13 +2012,28 @@
                   "$ref": "#/components/schemas/Track"
                 }
               }
+            },
+            "headers": {
+              "Set-Cookie": {
+                "$ref": "#/components/headers/SessionSetCookie"
+              }
             }
           },
           "404": {
-            "description": "Not found"
+            "description": "Not found",
+            "headers": {
+              "Set-Cookie": {
+                "$ref": "#/components/headers/SessionSetCookie"
+              }
+            }
           },
           "503": {
-            "description": "BPM provider not configured"
+            "description": "BPM provider not configured",
+            "headers": {
+              "Set-Cookie": {
+                "$ref": "#/components/headers/SessionSetCookie"
+              }
+            }
           }
         }
       }
@@ -1673,7 +2053,12 @@
         "summary": "Remove a provider id",
         "responses": {
           "204": {
-            "description": "Removed"
+            "description": "Removed",
+            "headers": {
+              "Set-Cookie": {
+                "$ref": "#/components/headers/SessionSetCookie"
+              }
+            }
           }
         }
       }
@@ -1718,16 +2103,36 @@
                   }
                 }
               }
+            },
+            "headers": {
+              "Set-Cookie": {
+                "$ref": "#/components/headers/SessionSetCookie"
+              }
             }
           },
           "429": {
-            "description": "PROVIDER_QUOTA_EXCEEDED — Spotify's usage limit for Ritmo is used up. Try again later. Not retried. No writes."
+            "description": "PROVIDER_QUOTA_EXCEEDED — Spotify's usage limit for Ritmo is used up. Try again later. Not retried. No writes.",
+            "headers": {
+              "Set-Cookie": {
+                "$ref": "#/components/headers/SessionSetCookie"
+              }
+            }
           },
           "501": {
-            "description": "Provider not yet integrated"
+            "description": "Provider not yet integrated",
+            "headers": {
+              "Set-Cookie": {
+                "$ref": "#/components/headers/SessionSetCookie"
+              }
+            }
           },
           "503": {
-            "description": "Provider not configured"
+            "description": "Provider not configured",
+            "headers": {
+              "Set-Cookie": {
+                "$ref": "#/components/headers/SessionSetCookie"
+              }
+            }
           }
         }
       }
@@ -1792,26 +2197,59 @@
                 "schema": {
                   "type": "string"
                 }
+              },
+              "Set-Cookie": {
+                "$ref": "#/components/headers/SessionSetCookie"
               }
             }
           },
           "403": {
-            "description": "SPOTIFY_DEVELOPMENT_MODE — this Spotify account is not on the app allowlist. Reconnect does not add it."
+            "description": "SPOTIFY_DEVELOPMENT_MODE — this Spotify account is not on the app allowlist. Reconnect does not add it.",
+            "headers": {
+              "Set-Cookie": {
+                "$ref": "#/components/headers/SessionSetCookie"
+              }
+            }
           },
           "409": {
-            "description": "Not connected / reconnect required"
+            "description": "Not connected / reconnect required",
+            "headers": {
+              "Set-Cookie": {
+                "$ref": "#/components/headers/SessionSetCookie"
+              }
+            }
           },
           "422": {
-            "description": "Invalid or foreign cursor, q on a provider without library search, or q with cursor"
+            "description": "Invalid or foreign cursor, q on a provider without library search, or q with cursor",
+            "headers": {
+              "Set-Cookie": {
+                "$ref": "#/components/headers/SessionSetCookie"
+              }
+            }
           },
           "429": {
-            "description": "PROVIDER_QUOTA_EXCEEDED — Spotify's usage limit for Ritmo is used up. Try again later. Not retried. No writes."
+            "description": "PROVIDER_QUOTA_EXCEEDED — Spotify's usage limit for Ritmo is used up. Try again later. Not retried. No writes.",
+            "headers": {
+              "Set-Cookie": {
+                "$ref": "#/components/headers/SessionSetCookie"
+              }
+            }
           },
           "501": {
-            "description": "Provider not yet integrated"
+            "description": "Provider not yet integrated",
+            "headers": {
+              "Set-Cookie": {
+                "$ref": "#/components/headers/SessionSetCookie"
+              }
+            }
           },
           "503": {
-            "description": "Provider not configured"
+            "description": "Provider not configured",
+            "headers": {
+              "Set-Cookie": {
+                "$ref": "#/components/headers/SessionSetCookie"
+              }
+            }
           }
         }
       }
@@ -1846,22 +2284,52 @@
                   }
                 }
               }
+            },
+            "headers": {
+              "Set-Cookie": {
+                "$ref": "#/components/headers/SessionSetCookie"
+              }
             }
           },
           "403": {
-            "description": "SPOTIFY_DEVELOPMENT_MODE — this Spotify account is not on the app allowlist. Reconnect does not add it."
+            "description": "SPOTIFY_DEVELOPMENT_MODE — this Spotify account is not on the app allowlist. Reconnect does not add it.",
+            "headers": {
+              "Set-Cookie": {
+                "$ref": "#/components/headers/SessionSetCookie"
+              }
+            }
           },
           "409": {
-            "description": "Not connected / reconnect required"
+            "description": "Not connected / reconnect required",
+            "headers": {
+              "Set-Cookie": {
+                "$ref": "#/components/headers/SessionSetCookie"
+              }
+            }
           },
           "429": {
-            "description": "PROVIDER_QUOTA_EXCEEDED — Spotify's usage limit for Ritmo is used up. Try again later. Not retried. No writes."
+            "description": "PROVIDER_QUOTA_EXCEEDED — Spotify's usage limit for Ritmo is used up. Try again later. Not retried. No writes.",
+            "headers": {
+              "Set-Cookie": {
+                "$ref": "#/components/headers/SessionSetCookie"
+              }
+            }
           },
           "501": {
-            "description": "Provider saved playlists not integrated"
+            "description": "Provider saved playlists not integrated",
+            "headers": {
+              "Set-Cookie": {
+                "$ref": "#/components/headers/SessionSetCookie"
+              }
+            }
           },
           "503": {
-            "description": "Provider not configured"
+            "description": "Provider not configured",
+            "headers": {
+              "Set-Cookie": {
+                "$ref": "#/components/headers/SessionSetCookie"
+              }
+            }
           }
         }
       }
@@ -1904,19 +2372,44 @@
                   }
                 }
               }
+            },
+            "headers": {
+              "Set-Cookie": {
+                "$ref": "#/components/headers/SessionSetCookie"
+              }
             }
           },
           "409": {
-            "description": "Not connected / reconnect required"
+            "description": "Not connected / reconnect required",
+            "headers": {
+              "Set-Cookie": {
+                "$ref": "#/components/headers/SessionSetCookie"
+              }
+            }
           },
           "429": {
-            "description": "PROVIDER_QUOTA_EXCEEDED — Spotify's usage limit for Ritmo is used up. Try again later. Not retried. No writes."
+            "description": "PROVIDER_QUOTA_EXCEEDED — Spotify's usage limit for Ritmo is used up. Try again later. Not retried. No writes.",
+            "headers": {
+              "Set-Cookie": {
+                "$ref": "#/components/headers/SessionSetCookie"
+              }
+            }
           },
           "501": {
-            "description": "Provider saved playlists not integrated"
+            "description": "Provider saved playlists not integrated",
+            "headers": {
+              "Set-Cookie": {
+                "$ref": "#/components/headers/SessionSetCookie"
+              }
+            }
           },
           "503": {
-            "description": "Provider not configured"
+            "description": "Provider not configured",
+            "headers": {
+              "Set-Cookie": {
+                "$ref": "#/components/headers/SessionSetCookie"
+              }
+            }
           }
         }
       }
@@ -1956,6 +2449,11 @@
                   "$ref": "#/components/schemas/ProviderPlaylistImportResult"
                 }
               }
+            },
+            "headers": {
+              "Set-Cookie": {
+                "$ref": "#/components/headers/SessionSetCookie"
+              }
             }
           },
           "201": {
@@ -1966,22 +2464,52 @@
                   "$ref": "#/components/schemas/ProviderPlaylistImportResult"
                 }
               }
+            },
+            "headers": {
+              "Set-Cookie": {
+                "$ref": "#/components/headers/SessionSetCookie"
+              }
             }
           },
           "409": {
-            "description": "Not connected / reconnect required"
+            "description": "Not connected / reconnect required",
+            "headers": {
+              "Set-Cookie": {
+                "$ref": "#/components/headers/SessionSetCookie"
+              }
+            }
           },
           "422": {
-            "description": "Playlist has too many distinct tracks to import at once"
+            "description": "Playlist has too many distinct tracks to import at once",
+            "headers": {
+              "Set-Cookie": {
+                "$ref": "#/components/headers/SessionSetCookie"
+              }
+            }
           },
           "429": {
-            "description": "PROVIDER_QUOTA_EXCEEDED — Spotify's usage limit for Ritmo is used up. Try again later. Not retried. No writes."
+            "description": "PROVIDER_QUOTA_EXCEEDED — Spotify's usage limit for Ritmo is used up. Try again later. Not retried. No writes.",
+            "headers": {
+              "Set-Cookie": {
+                "$ref": "#/components/headers/SessionSetCookie"
+              }
+            }
           },
           "501": {
-            "description": "Provider saved playlists not integrated"
+            "description": "Provider saved playlists not integrated",
+            "headers": {
+              "Set-Cookie": {
+                "$ref": "#/components/headers/SessionSetCookie"
+              }
+            }
           },
           "503": {
-            "description": "Provider not configured"
+            "description": "Provider not configured",
+            "headers": {
+              "Set-Cookie": {
+                "$ref": "#/components/headers/SessionSetCookie"
+              }
+            }
           }
         }
       }
@@ -2008,6 +2536,11 @@
                   "$ref": "#/components/schemas/TrackWithProviderIds"
                 }
               }
+            },
+            "headers": {
+              "Set-Cookie": {
+                "$ref": "#/components/headers/SessionSetCookie"
+              }
             }
           },
           "201": {
@@ -2018,13 +2551,28 @@
                   "$ref": "#/components/schemas/TrackWithProviderIds"
                 }
               }
+            },
+            "headers": {
+              "Set-Cookie": {
+                "$ref": "#/components/headers/SessionSetCookie"
+              }
             }
           },
           "404": {
-            "description": "No such provider track"
+            "description": "No such provider track",
+            "headers": {
+              "Set-Cookie": {
+                "$ref": "#/components/headers/SessionSetCookie"
+              }
+            }
           },
           "409": {
-            "description": "Another user's library already holds this provider ref"
+            "description": "Another user's library already holds this provider ref",
+            "headers": {
+              "Set-Cookie": {
+                "$ref": "#/components/headers/SessionSetCookie"
+              }
+            }
           }
         }
       }
@@ -2043,6 +2591,11 @@
                     "$ref": "#/components/schemas/MusicConnectionView"
                   }
                 }
+              }
+            },
+            "headers": {
+              "Set-Cookie": {
+                "$ref": "#/components/headers/SessionSetCookie"
               }
             }
           }
@@ -2076,13 +2629,28 @@
                   "$ref": "#/components/schemas/ConnectProviderResponse"
                 }
               }
+            },
+            "headers": {
+              "Set-Cookie": {
+                "$ref": "#/components/headers/SessionSetCookie"
+              }
             }
           },
           "501": {
-            "description": "Provider not yet integrated"
+            "description": "Provider not yet integrated",
+            "headers": {
+              "Set-Cookie": {
+                "$ref": "#/components/headers/SessionSetCookie"
+              }
+            }
           },
           "503": {
-            "description": "Provider not configured"
+            "description": "Provider not configured",
+            "headers": {
+              "Set-Cookie": {
+                "$ref": "#/components/headers/SessionSetCookie"
+              }
+            }
           }
         }
       }
@@ -2123,6 +2691,7 @@
             }
           }
         ],
+        "security": [],
         "responses": {
           "302": {
             "description": "Redirect to the web app (connected or error)"
@@ -2150,7 +2719,12 @@
         "summary": "Disconnect a provider (immediate token forget)",
         "responses": {
           "204": {
-            "description": "Disconnected"
+            "description": "Disconnected",
+            "headers": {
+              "Set-Cookie": {
+                "$ref": "#/components/headers/SessionSetCookie"
+              }
+            }
           }
         }
       }
@@ -2167,13 +2741,28 @@
                   "$ref": "#/components/schemas/AppleMusicClientConfig"
                 }
               }
+            },
+            "headers": {
+              "Set-Cookie": {
+                "$ref": "#/components/headers/SessionSetCookie"
+              }
             }
           },
           "401": {
-            "description": "Authentication required"
+            "description": "Authentication required",
+            "headers": {
+              "Set-Cookie": {
+                "$ref": "#/components/headers/SessionSetCookie"
+              }
+            }
           },
           "503": {
-            "description": "Apple Music not configured"
+            "description": "Apple Music not configured",
+            "headers": {
+              "Set-Cookie": {
+                "$ref": "#/components/headers/SessionSetCookie"
+              }
+            }
           }
         }
       }
@@ -2190,16 +2779,36 @@
                   "$ref": "#/components/schemas/SpotifyPlaybackToken"
                 }
               }
+            },
+            "headers": {
+              "Set-Cookie": {
+                "$ref": "#/components/headers/SessionSetCookie"
+              }
             }
           },
           "401": {
-            "description": "Authentication required"
+            "description": "Authentication required",
+            "headers": {
+              "Set-Cookie": {
+                "$ref": "#/components/headers/SessionSetCookie"
+              }
+            }
           },
           "409": {
-            "description": "Not connected, or reconnect required for playback scope"
+            "description": "Not connected, or reconnect required for playback scope",
+            "headers": {
+              "Set-Cookie": {
+                "$ref": "#/components/headers/SessionSetCookie"
+              }
+            }
           },
           "503": {
-            "description": "Spotify not configured"
+            "description": "Spotify not configured",
+            "headers": {
+              "Set-Cookie": {
+                "$ref": "#/components/headers/SessionSetCookie"
+              }
+            }
           }
         }
       }
@@ -2219,16 +2828,36 @@
         },
         "responses": {
           "204": {
-            "description": "Stored"
+            "description": "Stored",
+            "headers": {
+              "Set-Cookie": {
+                "$ref": "#/components/headers/SessionSetCookie"
+              }
+            }
           },
           "401": {
-            "description": "Authentication required"
+            "description": "Authentication required",
+            "headers": {
+              "Set-Cookie": {
+                "$ref": "#/components/headers/SessionSetCookie"
+              }
+            }
           },
           "422": {
-            "description": "Invalid request body"
+            "description": "Invalid request body",
+            "headers": {
+              "Set-Cookie": {
+                "$ref": "#/components/headers/SessionSetCookie"
+              }
+            }
           },
           "503": {
-            "description": "Apple Music not configured"
+            "description": "Apple Music not configured",
+            "headers": {
+              "Set-Cookie": {
+                "$ref": "#/components/headers/SessionSetCookie"
+              }
+            }
           }
         }
       }
@@ -2258,6 +2887,11 @@
                   }
                 }
               }
+            },
+            "headers": {
+              "Set-Cookie": {
+                "$ref": "#/components/headers/SessionSetCookie"
+              }
             }
           }
         }
@@ -2285,6 +2919,11 @@
                   "$ref": "#/components/schemas/TrackWithProviderIds"
                 }
               }
+            },
+            "headers": {
+              "Set-Cookie": {
+                "$ref": "#/components/headers/SessionSetCookie"
+              }
             }
           },
           "201": {
@@ -2294,6 +2933,11 @@
                 "schema": {
                   "$ref": "#/components/schemas/TrackWithProviderIds"
                 }
+              }
+            },
+            "headers": {
+              "Set-Cookie": {
+                "$ref": "#/components/headers/SessionSetCookie"
               }
             }
           }
@@ -2338,6 +2982,11 @@
                   }
                 }
               }
+            },
+            "headers": {
+              "Set-Cookie": {
+                "$ref": "#/components/headers/SessionSetCookie"
+              }
             }
           }
         }
@@ -2357,6 +3006,11 @@
                     "$ref": "#/components/schemas/TeamWithRole"
                   }
                 }
+              }
+            },
+            "headers": {
+              "Set-Cookie": {
+                "$ref": "#/components/headers/SessionSetCookie"
               }
             }
           }
@@ -2382,6 +3036,11 @@
                 "schema": {
                   "$ref": "#/components/schemas/Team"
                 }
+              }
+            },
+            "headers": {
+              "Set-Cookie": {
+                "$ref": "#/components/headers/SessionSetCookie"
               }
             }
           }
@@ -2409,6 +3068,11 @@
                 "schema": {
                   "$ref": "#/components/schemas/Team"
                 }
+              }
+            },
+            "headers": {
+              "Set-Cookie": {
+                "$ref": "#/components/headers/SessionSetCookie"
               }
             }
           }
@@ -2440,6 +3104,11 @@
                   }
                 }
               }
+            },
+            "headers": {
+              "Set-Cookie": {
+                "$ref": "#/components/headers/SessionSetCookie"
+              }
             }
           }
         }
@@ -2458,7 +3127,12 @@
         },
         "responses": {
           "201": {
-            "description": "Added"
+            "description": "Added",
+            "headers": {
+              "Set-Cookie": {
+                "$ref": "#/components/headers/SessionSetCookie"
+              }
+            }
           }
         }
       }
@@ -2486,7 +3160,12 @@
         "summary": "Remove a member (owner/admin or self)",
         "responses": {
           "204": {
-            "description": "Removed"
+            "description": "Removed",
+            "headers": {
+              "Set-Cookie": {
+                "$ref": "#/components/headers/SessionSetCookie"
+              }
+            }
           }
         }
       }
@@ -2516,6 +3195,11 @@
                   }
                 }
               }
+            },
+            "headers": {
+              "Set-Cookie": {
+                "$ref": "#/components/headers/SessionSetCookie"
+              }
             }
           }
         }
@@ -2543,6 +3227,11 @@
                   "$ref": "#/components/schemas/Share"
                 }
               }
+            },
+            "headers": {
+              "Set-Cookie": {
+                "$ref": "#/components/headers/SessionSetCookie"
+              }
             }
           },
           "201": {
@@ -2552,6 +3241,11 @@
                 "schema": {
                   "$ref": "#/components/schemas/Share"
                 }
+              }
+            },
+            "headers": {
+              "Set-Cookie": {
+                "$ref": "#/components/headers/SessionSetCookie"
               }
             }
           }
@@ -2590,6 +3284,11 @@
                   "$ref": "#/components/schemas/Share"
                 }
               }
+            },
+            "headers": {
+              "Set-Cookie": {
+                "$ref": "#/components/headers/SessionSetCookie"
+              }
             }
           }
         }
@@ -2598,7 +3297,12 @@
         "summary": "Revoke a share",
         "responses": {
           "204": {
-            "description": "Revoked"
+            "description": "Revoked",
+            "headers": {
+              "Set-Cookie": {
+                "$ref": "#/components/headers/SessionSetCookie"
+              }
+            }
           }
         }
       }
@@ -8351,6 +9055,14 @@
           }
         },
         "additionalProperties": false
+      }
+    },
+    "headers": {
+      "SessionSetCookie": {
+        "description": "Better Auth session cookie, set by requireSession on any session-authenticated response (RF-177). Present when this request refreshed a session older than updateAge (1 day): the same token with a new Max-Age (7 days); persist it. On 401 for a revoked or expired session: a clearing cookie (Max-Age=0); discard the stored cookie. Absent otherwise. Browsers apply it automatically; native clients must save it from any authed response.",
+        "schema": {
+          "type": "string"
+        }
       }
     }
   },
