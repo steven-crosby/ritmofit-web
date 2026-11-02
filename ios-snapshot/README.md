@@ -28,7 +28,7 @@ the contract surface above.
 
 ## Provenance
 
-- Synced from `ritmofit-ios` `main` at commit `9924c42` on 2026-11-01 (refreshed `Core/Models/PendingMutation.swift` for outbox schema V2, iOS RF-1028; the other files already matched).
+- Synced from `ritmofit-ios` `main` at commit `5ad7149` on 2026-11-02 (refreshed `Core/Networking/AuthStore.swift` for RF-1010 option A, iOS #70; the other files already matched).
 
 ## Refreshing
 
