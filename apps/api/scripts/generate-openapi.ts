@@ -186,19 +186,10 @@ const doc = {
       post: {
         summary: 'Validate session, return canonical profile',
         description:
-          'Native clients call this at launch to keep a session alive. It is the only REST operation that refreshes the session: when the session is older than Better Auth updateAge (1 day), the server extends it and the 200 carries the refreshed session cookie. Other operations neither refresh nor set a session cookie, and no 401 sets one.',
+          'Native clients call this at launch and on foreground to keep a session alive. It is the only REST operation that refreshes the session: when the session is older than Better Auth updateAge (1 day), the server extends it. No response sets a session cookie; the client keeps its cookie unchanged, and a 401 means signed out.',
         responses: {
-          '200': {
-            ...jsonResp('User', 'Canonical profile'),
-            headers: {
-              'Set-Cookie': {
-                description:
-                  'Present only when this call refreshed the session: the Better Auth session cookie with the same token and a new Max-Age (7 days). Absent otherwise. A native client should persist it only if the request carried the cookie that is still current in its jar when the response arrives (the cookie name is the same for every account).',
-                schema: { type: 'string' },
-              },
-            },
-          },
-          '401': { description: 'Not authenticated' },
+          '200': jsonResp('User', 'Canonical profile'),
+          '401': { description: 'Not authenticated (signed out); no cookie is set' },
         },
       },
     },

@@ -75,8 +75,16 @@
       "ref": "apps/api/test/native-session.integration.test.ts",
       "summary": "Third review of #703 at d0a2428: a refresh Set-Cookie on any 200 could carry account A's token onto B's sign-in. Redesign: only POST /api/v1/auth/session refreshes and forwards the cookie; other routes call getSession with disableRefresh. Integration tests: an aged session on GET /auth/me, GET /explore and provider connect gets no session cookie and an unchanged row; the next /auth/session with the same cookie gets Max-Age=604800 and a later expiry; a fresh session gets none; Better Auth's GET /api/auth/get-session (the SPA's useSession) still refreshes; 401s carry no Set-Cookie. 18 integration and 4 unit cases pass.",
       "checkedOn": "2026-11-02"
+    },
+    {
+      "kind": "document",
+      "ref": "ritmofit_dev_plan/tasks/RF-178.json",
+      "summary": "Note 2026-11-02, after merge: the owner chose option C (\"Go with C\", Air session, recorded on #703). RF-178 supersedes this task's /auth/session Set-Cookie forwarding: the endpoint still extends the session server-side but sets no cookie, and iOS keeps its cookie without client-side expiry.",
+      "checkedOn": "2026-11-02"
     }
   ],
   "resolution": "Both audit findings were real and reproduced in integration tests before the fix. After three review rounds, only POST /api/v1/auth/session refreshes the session and returns the refresh cookie; other routes resolve with refresh disabled, no 401 sets a cookie, and native sign-out revokes the session with browser CSRF behaviour pinned by tests. Deferred review items are in the evidence and the PR. The iOS half (persist /auth/session's Set-Cookie only while the request's cookie is still current, treat 401 as signed out, log failed sign-out, reinstall handling) ships in iOS RF-1012/RF-1032 after its web-contract snapshots are refreshed.",
-  "followUps": []
+  "followUps": [
+    "RF-178"
+  ]
 }
