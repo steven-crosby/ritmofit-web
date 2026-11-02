@@ -20,7 +20,7 @@
     "The duplicated 'Record owner gate error' step is a `pr-gates.sh gate-error` subcommand, and gate-status fetches the PR JSON once.",
     "scripts/pr-gates.test.mjs (run by `pnpm owner-gate:test`, owner-gated) tests record-approval, void-approval, gate-status and gate-error against a fake gh, including lagging timelines and pushes, negative ages, the legacy checker, and the real prepare failing (files API error, no checker on main or in the PR) as a gate error; mutations that reintroduce each fixed bug fail it."
   ],
-  "nextAction": "Owner reviews #702 at its new head and, if satisfied, adds owner-approved at least 120 s after the last push. Then the final review and squash-merge. Remaining review findings are in RF-175.",
+  "nextAction": "#702 merged (127d05e) under a one-time waiver; the error-step and `edited` follow-up PR is open on ci/rf-176-error-step-edited. Owner decides whether RF-176 closes with that PR. Remaining review findings are in RF-175.",
   "blocker": null,
   "evidence": [
     {
@@ -45,6 +45,12 @@
       "kind": "observation",
       "ref": "https://github.com/steven-crosby/ritmofit-web/pull/702",
       "summary": "Owner approved #702 at f660136: the record path worked live again (owner-gate success, CLEAN). The final review blocked it on: the error step's failure() also firing on a failed record-approval (overwriting the refusal status or flipping a success), the legacy branch showing refusal or re-add text when the checker may have crashed, and no test of a real failing prepare. Owner chose a tight-scope fix; the remaining findings went to RF-175.",
+      "checkedOn": "2026-11-02"
+    },
+    {
+      "kind": "pr",
+      "ref": "https://github.com/steven-crosby/ritmofit-web/commit/127d05e",
+      "summary": "#702 merged as 127d05e under a one-time owner waiver (2026-11-02) for two final-review findings, both fail-closed: the gate job's error step ran pr-gates.sh, so it could not write when checkout failed; and owner-gate.yml did not run on `edited`, so a base retarget left the status unrevised. The follow-up PR on ci/rf-176-error-step-edited fixes both.",
       "checkedOn": "2026-11-02"
     }
   ],

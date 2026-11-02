@@ -19,6 +19,8 @@ import { fileURLToPath } from 'node:url';
 
 const SCRIPT = fileURLToPath(new URL('../.github/scripts/pr-gates.sh', import.meta.url));
 const CHECKER = fileURLToPath(new URL('./owner-gate.mjs', import.meta.url));
+const WORKFLOW = fileURLToPath(new URL('../.github/workflows/owner-gate.yml', import.meta.url));
+const CI_WORKFLOW = fileURLToPath(new URL('../.github/workflows/ci.yml', import.meta.url));
 const REPO = 'acme/app';
 const PR = '7';
 const HEAD = 'a'.repeat(40);
@@ -434,7 +436,80 @@ test('gate-status with the real prepare: a failed prepare or a missing checker i
   assert.equal(ownerGateWrite(noChecker.writes), undefined, 'no verdict, legacy or otherwise');
 });
 
-test('gate-error writes failure on the live head', () => {
-  const r = run(setup(), 'gate-error');
-  assert.match(ownerGateWrite(r.writes), /statuses\/a+ state=failure .*Owner gate errored/);
+// owner-gate.yml's "Record owner gate error" step, as the runner would run it: inline, in a
+// directory with no checkout, so it must not need pr-gates.sh.
+function errorStepScript() {
+  const lines = readFileSync(WORKFLOW, 'utf8').split('\n');
+  const start = lines.findIndex((l) => l.trim() === '- name: Record owner gate error');
+  const run = lines.findIndex((l, i) => i > start && l.trim() === 'run: |');
+  const body = [];
+  for (const line of lines.slice(run + 1)) {
+    if (line.trim() && !line.startsWith('          ')) break;
+    body.push(line.slice(10));
+  }
+  return body.join('\n');
+}
+
+test('the workflow error step writes failure without a checkout, falling back to the event head', () => {
+  const env = setup();
+  const empty = join(env.dir, 'no-checkout');
+  mkdirSync(empty);
+  writeFileSync(join(env.dir, 'error-step.sh'), errorStepScript());
+  const step = () =>
+    spawnSync('bash', ['-e', join(env.dir, 'error-step.sh')], {
+      cwd: empty,
+      env: {
+        ...process.env,
+        PATH: `${env.bin}:${process.env.PATH}`,
+        FAKE_GH: env.fake,
+        GH_TOKEN: 'x',
+        GITHUB_REPOSITORY: REPO,
+        GITHUB_SERVER_URL: 'https://github.example',
+        GITHUB_RUN_ID: RUN_ID,
+        PR_NUMBER: PR,
+        EVENT_SHA: 'e'.repeat(40),
+      },
+      encoding: 'utf8',
+    });
+  const live = step();
+  assert.equal(live.status, 0, live.stderr);
+  const writes = () => readFileSync(join(env.fake, 'writes.log'), 'utf8');
+  assert.match(writes(), /statuses\/a{40} state=failure context=owner-gate .*Owner gate errored/);
+
+  rmSync(join(env.fake, `pulls_${PR}.json`));
+  rmSync(join(env.fake, 'writes.log'));
+  const fallback = step();
+  assert.equal(fallback.status, 0, fallback.stderr);
+  assert.match(writes(), /statuses\/e{40} state=failure context=owner-gate/);
+});
+
+// self-check against a copy of the workflows with one line changed.
+function selfCheck(mutate = (s) => s) {
+  const dir = mkdtempSync(join(tmpdir(), 'pr-gates-self-'));
+  mkdirSync(join(dir, '.github', 'workflows'), { recursive: true });
+  writeFileSync(join(dir, '.github', 'workflows', 'ci.yml'), readFileSync(CI_WORKFLOW, 'utf8'));
+  writeFileSync(
+    join(dir, '.github', 'workflows', 'owner-gate.yml'),
+    mutate(readFileSync(WORKFLOW, 'utf8')),
+  );
+  return spawnSync('bash', [SCRIPT, 'self-check'], { cwd: dir, encoding: 'utf8' });
+}
+
+test('self-check enforces the inline error step, its checkout condition and the edited trigger', () => {
+  assert.equal(selfCheck().status, 0);
+  const broken = {
+    'no edited trigger': (s) => s.replace('opened, edited, synchronize', 'opened, synchronize'),
+    'error step ignores a failed checkout': (s) =>
+      s.replace(" || steps.checkout.outcome == 'failure'", ''),
+    'error step needs the script': (s) =>
+      s.replace(
+        /run: \|\n          head=\$\(gh api[\s\S]*?GITHUB_RUN_ID"/,
+        'run: bash .github/scripts/pr-gates.sh gate-error',
+      ),
+  };
+  for (const [name, mutate] of Object.entries(broken)) {
+    const mutated = mutate(readFileSync(WORKFLOW, 'utf8'));
+    assert.notEqual(mutated, readFileSync(WORKFLOW, 'utf8'), `${name}: mutation applied`);
+    assert.equal(selfCheck(mutate).status, 1, name);
+  }
 });

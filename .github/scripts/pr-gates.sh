@@ -8,7 +8,8 @@
 #   pr-gates.sh record-approval  record the owner's approval on the labelled head, or refuse
 #   pr-gates.sh void-approval    drop a stale owner-approved label from the PR's live head
 #   pr-gates.sh gate-status      evaluate the owner gate on the live head, write the owner-gate status
-#   pr-gates.sh gate-error [msg] write owner-gate = failure on the live head (fail closed)
+#
+# owner-gate.yml's error step writes its failure inline, so it works even when checkout failed.
 #
 # The owner gate's result is the `owner-gate` commit status, not a check run: statuses with one
 # context are latest-wins on a commit, while the ruleset reads every check suite's run of a
@@ -48,10 +49,20 @@ self_check() {
     { echo "pr-gates: ci.yml must not write commit statuses; owner-gate.yml owns '$STATUS_CONTEXT'." >&2; exit 1; }
   grep -qxF "      group: $GATE_GROUP" "$dir/owner-gate.yml" ||
     { echo "pr-gates: owner-gate.yml's gate job is not in concurrency group '$GATE_GROUP'." >&2; exit 1; }
-  for sub in gate-status gate-error; do
+  for sub in record-approval void-approval gate-status; do
     grep -qF "pr-gates.sh $sub" "$dir/owner-gate.yml" ||
       { echo "pr-gates: owner-gate.yml does not run '$sub'." >&2; exit 1; }
   done
+  # The error step must not need the checkout: it writes inline, and runs when checkout failed.
+  ! grep -qF 'pr-gates.sh gate-error' "$dir/owner-gate.yml" ||
+    { echo "pr-gates: owner-gate.yml's error step must write inline, not through this script." >&2; exit 1; }
+  grep -qF -- "-f context=$STATUS_CONTEXT " "$dir/owner-gate.yml" ||
+    { echo "pr-gates: owner-gate.yml's error step does not write '$STATUS_CONTEXT'." >&2; exit 1; }
+  grep -qF "steps.checkout.outcome == 'failure'" "$dir/owner-gate.yml" ||
+    { echo "pr-gates: owner-gate.yml's error step does not run when checkout failed." >&2; exit 1; }
+  # A base retarget changes what the gate judges.
+  grep -qE '^    types: \[(.*, )?edited(, .*)?\]$' "$dir/owner-gate.yml" ||
+    { echo "pr-gates: owner-gate.yml does not run on 'edited' (base retargets)." >&2; exit 1; }
   echo "pr-gates: ci.yml's job is '$REQUIRED_JOB'; owner-gate.yml alone writes '$STATUS_CONTEXT' in '$GATE_GROUP'."
 }
 
@@ -331,24 +342,14 @@ gate_status() {
   write_status "$head" "$state" "$description"
 }
 
-# Fail closed: an error must not leave an older `success` standing. Writes on the live head,
-# falling back to the event's head when the API cannot say.
-gate_error() {
-  need GH_TOKEN GITHUB_REPOSITORY PR_NUMBER EVENT_SHA
-  local head
-  head=$(gh api "repos/$GITHUB_REPOSITORY/pulls/$PR_NUMBER" --jq .head.sha) || head=''
-  write_status "${head:-$EVENT_SHA}" failure "${1:-Owner gate errored; re-run this job}"
-}
-
 case "${1:-}" in
   self-check) self_check ;;
   prepare) prepare ;;
   record-approval) record_approval ;;
   void-approval) void_approval ;;
   gate-status) gate_status ;;
-  gate-error) gate_error "${2:-}" ;;
   *)
-    echo "usage: pr-gates.sh self-check|prepare|record-approval|void-approval|gate-status|gate-error [msg]" >&2
+    echo "usage: pr-gates.sh self-check|prepare|record-approval|void-approval|gate-status" >&2
     exit 2
     ;;
 esac
