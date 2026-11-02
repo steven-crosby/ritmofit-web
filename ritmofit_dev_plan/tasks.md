@@ -12,7 +12,7 @@ owner's queue: any agent may execute a Ready task. Publishing follows AGENTS.md 
 Evidence marked **recorded** is a carried-forward claim, not fresh verification.
 A checked PR proves its GitHub state, not product acceptance or production behavior.
 
-171 tasks. backlog: 56 · ready: 1 · in_progress: 0 · blocked: 1 · review: 11 · done: 100 · cancelled: 2.
+172 tasks. backlog: 57 · ready: 1 · in_progress: 0 · blocked: 1 · review: 11 · done: 100 · cancelled: 2.
 
 ## In progress
 
@@ -107,6 +107,7 @@ A checked PR proves its GitHub state, not product acceptance or production behav
 | [RF-170](tasks/RF-170.json) Owner decides whether HIIT gets its own Classes library filter chip | P3 / plan | — | From the #678 final review (2026-10-31): HIIT classes can only be found under All. #678 kept the filter type separate (DisciplineFilter in ClassesHome.tsx) so cards cannot add chips silently. Agent-created: Backlog until the owner decides. The #678 cleanups (derive LIBRARY_TEMPLATES from SCAFFOLD_DISCIPLINES; type DisciplineFilter from ClassTemplate) go into the implementation record if the owner wants the chip, or a separate chore record otherwise. | checked 2026-10-31 |
 | [RF-171](tasks/RF-171.json) Plan-gap guidance reads as guidance on Classes and in the builder | P3 / task | needs RF-133 | From the RF-133 final review (#680). Files: apps/web/src/lib/library-shell.ts (readinessLabel), apps/web/src/lib/creation-next-step.ts, apps/web/src/lib/class-ordering.ts, apps/web/src/components/Dashboard.tsx (ClassHeaderCard Run live style), ClassReadinessSummary.tsx, ClassPlanBlocks.tsx. The label wording is a product call for the owner. Agent-created: Backlog until the owner sets Ready. | checked 2026-10-31 |
 | [RF-173](tasks/RF-173.json) Music service chips: accessible name matches the visible text (axe label-content-name-mismatch) | P3 / task | — | Found by #686 (RF-151), whose e2e smoke is the first to visit Music: axe flags the three service chips in apps/web/src/components/Dashboard.tsx (aria-label "&lt;Service&gt;, &lt;state&gt;"), and #686 lists it in KNOWN_AXE for 'Music songs'. Likely fix: drop the aria-label and let the visible service name and state mark form the name. Agent-created: Backlog until the owner sets Ready. | checked 2026-10-31 |
+| [RF-174](tasks/RF-174.json) A stale class or cue edit cannot silently overwrite a newer one | P3 / task | — | Found on 2026-11-01 while setting iOS RF-1011's retry policy: the server applies class and cue PATCHes unconditionally, so an edit queued offline on iOS can silently overwrite a newer web edit when it replays. iOS holds edits older than 7 days for review as a stopgap. Contract change: land here first, then refresh the iOS snapshots and send the precondition from the iOS outbox. Agent-created: Backlog until the owner sets Ready. | checked 2026-11-01 |
 | [RF-74](tasks/RF-74.json) Spotify playlist dialog offers Try again where retry cannot help | untriaged / task | parent RF-92 | Review the error/action mapping. Spotify reopened by the owner on 2026-10-28; Apple work comes first until about 2026-11-27. Resume risk: the Spotify developer app rejects the connected account ("The user is not registered for this application"), so Web API calls return 403. | recorded; checked 2026-10-28; checked 2026-10-29 |
 
 ## Done
