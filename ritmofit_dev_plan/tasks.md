@@ -12,13 +12,13 @@ owner's queue: any agent may execute a Ready task. Publishing follows AGENTS.md 
 Evidence marked **recorded** is a carried-forward claim, not fresh verification.
 A checked PR proves its GitHub state, not product acceptance or production behavior.
 
-181 tasks. backlog: 62 · ready: 0 · in_progress: 0 · blocked: 1 · review: 11 · done: 105 · cancelled: 2.
+182 tasks. backlog: 62 · ready: 0 · in_progress: 1 · blocked: 1 · review: 11 · done: 105 · cancelled: 2.
 
 ## In progress
 
 | Task | Priority / kind | Relationships | Next action / resolution | Evidence |
 | --- | --- | --- | --- | --- |
-| — | — | — | — | — |
+| [RF-184](tasks/RF-184.json) Standing rule: either conductor applies owner-approved once the owner approves that PR's merge in its session | P2 / documentation | needs RF-182 | Owner reviews the PR. | none |
 
 ## Blocked / waiting
 

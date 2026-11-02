@@ -1,0 +1,21 @@
+{
+  "schemaVersion": 1,
+  "id": "RF-184",
+  "title": "Standing rule: either conductor applies owner-approved once the owner approves that PR's merge in its session",
+  "kind": "documentation",
+  "status": "in_progress",
+  "priority": "P2",
+  "parent": null,
+  "dependsOn": [
+    "RF-182"
+  ],
+  "acceptance": [
+    "AGENTS.md \"Delegation And Merge Policy\" says a Solo or Orchestrator session on either conductor applies owner-approved once the owner approves that PR's merge in its session, after recording the owner's words as a PR comment; no separate instruction to apply the label is needed, and agents still never apply it on their own judgment.",
+    "\"Never granted\", the Two-machine conductors bullet, the PR template and agent-prompts/delegate-task.md say the same."
+  ],
+  "nextAction": "Owner reviews the PR.",
+  "blocker": null,
+  "evidence": [],
+  "resolution": null,
+  "followUps": []
+}

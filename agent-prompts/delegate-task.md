@@ -53,7 +53,7 @@ leaves a product decision open; then ask **one** focused question, with your rec
    `owner-approved` label itself, and its `owner-gate` status green on the same head, before the review. With
    permission, run the final review as
    `AGENTS.md` › "Delegation And Merge Policy" defines it (including what counts as significant) and
-   merge with `--match-head-commit` only if it finds nothing significant. Apply `owner-approved` only when the owner explicitly tells you to in a session
-   (record it as a PR comment first); never deploy or delete branches.
+   merge with `--match-head-commit` only if it finds nothing significant. Apply `owner-approved` only once the owner approves this PR's merge in your session
+   (record the owner's words as a PR comment first); never deploy or delete branches.
 7. **Report** in under ten lines: the PR link, merged or awaiting merge permission, the
    verification that ran, and anything the owner must still check by hand.
