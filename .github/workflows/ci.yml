@@ -11,8 +11,9 @@ on:
     # Label changes do not run this workflow: owner-gate.yml re-evaluates only the owner gate (RF-100).
     types: [opened, synchronize, reopened]
 
-# pull-requests: read lists the PR's changed files for the gates. The owner-gate job widens its own
-# permissions to write the `owner-gate` status and drop a stale `owner-approved`.
+# pull-requests: read lists the PR's changed files for RF trace. This workflow writes no commit
+# status: owner-gate.yml alone writes `owner-gate` (RF-176), so no label event can cancel a job
+# here and leave the run "cancelled".
 permissions:
   contents: read
   pull-requests: read
@@ -26,7 +27,7 @@ concurrency:
 
 jobs:
   # The ruleset's required check. It fails only on real checks; the owner gate's result is the
-  # separate `owner-gate` commit status written by the owner-gate job below.
+  # separate `owner-gate` commit status written by owner-gate.yml.
   checks:
     name: format · typecheck · lint · test · build · audit
     runs-on: ubuntu-latest
@@ -51,8 +52,8 @@ jobs:
         run: pnpm install --frozen-lockfile
 
       # Product changes must cite their RF record; owner-gated paths (migrations, auth,
-      # provider/playback, CI/deploy, agent rules) need `owner-approved`, judged by the owner-gate
-      # job below. Both checkers' own tests run first — a checker nobody has watched fail is not
+      # provider/playback, CI/deploy, agent rules) need `owner-approved`, judged by owner-gate.yml.
+      # Both checkers' own tests run first — a checker nobody has watched fail is not
       # a gate. RF trace runs last, so every other check still reports.
       - name: Owner gate self-test
         run: pnpm owner-gate:test
@@ -173,62 +174,3 @@ jobs:
         env:
           PR_NUMBER: ${{ github.event.pull_request.number }}
         run: node "$RUNNER_TEMP/rf-trace.mjs" < "$RUNNER_TEMP/pr-files.txt"
-
-  # Writes the `owner-gate` status (a required status in the ruleset) on the PR's live head; it
-  # does not wait for the checks above. Commit statuses are latest-wins, so the newest evaluation
-  # counts, whichever workflow wrote it. owner-gate.yml re-evaluates on label changes.
-  owner-gate:
-    name: owner gate status
-    if: github.event_name == 'pull_request'
-    runs-on: ubuntu-latest
-    # statuses: write writes `owner-gate`; pull-requests: write drops a stale `owner-approved`.
-    permissions:
-      contents: read
-      pull-requests: write
-      statuses: write
-    # Shared with owner-gate.yml so status writes never interleave; each job reads the live state
-    # when it starts, so the last write is the newest answer. Never cancelled: a pending job is
-    # only replaced by a newer one, which reads later state.
-    concurrency:
-      group: owner-gate-pr-${{ github.event.pull_request.number }}
-      cancel-in-progress: false
-    steps:
-      - uses: actions/checkout@v4
-        with:
-          sparse-checkout: |
-            .github
-            scripts
-
-      # Approval covers only the commit the owner saw. owner-gate.yml records an `owner-approval`
-      # commit status on the exact head the owner labelled; the gate requires both the label and
-      # that status on the current head, so a new commit carries no approval. Agents never create
-      # this status by hand. Hygiene: drop the label when the live head has no approval, so the PR
-      # shows it needs a fresh one. The binding already makes a stale label count for nothing, so
-      # a failure here must not skip the gate. GITHUB_TOKEN edits do not trigger another run.
-      - name: Void owner approval on new commits
-        continue-on-error: true
-        if: github.event.action == 'synchronize' || github.event.action == 'reopened'
-        env:
-          GH_TOKEN: ${{ github.token }}
-          PR_NUMBER: ${{ github.event.pull_request.number }}
-        run: bash .github/scripts/pr-gates.sh void-approval
-
-      - name: Owner gate (owner-gated paths need owner-approved)
-        env:
-          GH_TOKEN: ${{ github.token }}
-          PR_NUMBER: ${{ github.event.pull_request.number }}
-          BASE_REF: ${{ github.event.pull_request.base.ref }}
-        run: bash .github/scripts/pr-gates.sh gate-status
-
-      # Fail closed: an error anywhere above must not leave an older `success` standing.
-      - name: Record owner gate error
-        if: failure()
-        env:
-          GH_TOKEN: ${{ github.token }}
-          PR_NUMBER: ${{ github.event.pull_request.number }}
-          EVENT_SHA: ${{ github.event.pull_request.head.sha }}
-        run: |
-          head=$(gh api "repos/$GITHUB_REPOSITORY/pulls/$PR_NUMBER" --jq .head.sha) || head=$EVENT_SHA
-          gh api "repos/$GITHUB_REPOSITORY/statuses/${head:-$EVENT_SHA}" -f state=failure \
-            -f context=owner-gate -f description="Owner gate errored; re-run this job" \
-            -f target_url="$GITHUB_SERVER_URL/$GITHUB_REPOSITORY/actions/runs/$GITHUB_RUN_ID"

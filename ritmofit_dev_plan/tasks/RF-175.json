@@ -12,7 +12,8 @@
   "acceptance": [
     "pr-gates.sh self-check reads the workflows' job names, concurrency groups and status context structurally (parsed YAML), so a reformat that keeps the meaning (quoting, indentation, a folded line) does not fail CI and a real rename still does.",
     "The owner-gate jobs run the base branch's copy of .github/scripts/pr-gates.sh (as they already do for owner-gate.mjs and rf-trace.mjs), or the PR documents why the PR-controlled copy is acceptable; the trust model is stated in AGENTS.md.",
-    "A label change on a closed or merged PR starts no Owner gate job, or the skipped run is documented as harmless; reopening still re-evaluates the gate through ci.yml."
+    "A label change on a closed or merged PR starts no Owner gate job, or the skipped run is documented as harmless; reopening still re-evaluates the gate through owner-gate.yml (RF-176 moved the gate there).",
+    "Once RF-176 is on main, pr-gates.sh gate-status drops its transitional branch for a pre-RF-176 checker that writes no OWNER_GATE_RESULT verdict, so every missing verdict is an error."
   ],
   "nextAction": "Owner triages: decide whether the gate-script trust change is worth it for a guardrail that AGENTS.md already calls not a security boundary.",
   "blocker": null,

@@ -241,7 +241,7 @@ For each authorized PR, sequentially:
 3. If GitHub reports a conflict or dirty merge, stop; never force or assume disjoint ownership made it
    safe.
 4. Wait for the combined `format · typecheck · lint · test · build · audit` check on the updated tree.
-   An update push voids any earlier permission for that PR (CI also drops `owner-approved`).
+   An update push voids any earlier permission for that PR (the `Owner gate` workflow also drops a stale `owner-approved`).
 5. If the CI check fails, return the PR to its owning lane (a failed `owner-gate` status only
    means it awaits the owner's approval).
 6. When it is ready (see the policy, including owner-gated PRs), ask the owner for this PR at this

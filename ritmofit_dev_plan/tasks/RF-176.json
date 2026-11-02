@@ -1,0 +1,32 @@
+{
+  "schemaVersion": 1,
+  "id": "RF-176",
+  "title": "Owner gate follow-ups from RF-100: push race, cancelled CI runs, honest gate failures",
+  "kind": "task",
+  "status": "in_progress",
+  "priority": "P2",
+  "parent": null,
+  "dependsOn": [],
+  "acceptance": [
+    "Push race: void-approval never removes an owner-approved label added after the current head was pushed (repository activity API push time vs the label's timeline time), and keeps the label whenever either time is unknown; a label added before the push, with no approval on the head, is still dropped.",
+    "A label event can no longer leave a CI run 'cancelled': ci.yml has no gate job and writes no commit status; owner-gate.yml writes `owner-gate` on every PR event (opened, synchronize, reopened, labeled, unlabeled) from one job in the per-PR concurrency group, so writes stay serialized and the last write reads the live state. pr-gates.sh self-check enforces both.",
+    "When record-approval fails, `owner-gate` reads 'Recording owner approval failed; re-run the job or re-add the label' (or the refusal reason), not 'need owner-approved'.",
+    "gate-status classifies the result from scripts/owner-gate.mjs's machine-readable verdict (OWNER_GATE_RESULT JSON: clean, approved, unapproved), never its log text; a missing verdict is an error that fails closed. owner-gate.test.mjs covers the verdict file.",
+    "record-approval refuses to bind an approval to a head that became the branch tip less than 120 s before the label, or whose push time is unknown, and the gate asks the owner to re-add the label; the residual risk (a page left open longer than the window across a push) is documented.",
+    "RF-100 carries a dated correction pointing to the 2026-11-02 waiver and RF-176; its history is not rewritten.",
+    "The interim 'remove ready-to-merge before merging' rule is retired and the 'never edit labels on a merged PR' rule is relaxed with a dated note, since label edits no longer run or cancel CI.",
+    "The duplicated 'Record owner gate error' step is a `pr-gates.sh gate-error` subcommand, and gate-status fetches the PR JSON once."
+  ],
+  "nextAction": "Open the PR, run the live label test, then ask the owner to review and approve.",
+  "blocker": null,
+  "evidence": [
+    {
+      "kind": "pr",
+      "ref": "https://github.com/steven-crosby/ritmofit-web/pull/700",
+      "summary": "RF-100 merged as 8f26519 under a one-time owner waiver; its squash message lists the five known issues (push race, cancelled CI run, recording-failure description, log-text grep, approval binding to a just-pushed head) that this task fixes.",
+      "checkedOn": "2026-11-02"
+    }
+  ],
+  "resolution": null,
+  "followUps": []
+}

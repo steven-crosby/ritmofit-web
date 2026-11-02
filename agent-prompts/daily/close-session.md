@@ -124,12 +124,12 @@ from verified sources and state what orientation evidence is missing.
   the PR, add `ready-to-merge` and stop. Owner-gated PRs also get `needs-owner` and the manual check
   left. Permission is the owner saying so in a session or adding `owner-approved`; an owner-gated PR
   needs the label itself, so a chat "yes" is enough only if the owner also tells you to apply it
-  (record that as a PR comment first). With permission (for an owner-gated PR, after the label's CI rerun is green on the same head), run
+  (record that as a PR comment first). With permission (for an owner-gated PR, once its `owner-gate` status is green on the same head), run
   the final review as `AGENTS.md` ›
   "Delegation And Merge Policy" defines it. No significant findings: log the rest as RF tasks,
   squash-merge with `--match-head-commit <reviewed sha>` and remove `ready-to-merge`. Significant
   findings: do not merge; comment them, remove `ready-to-merge`, stop. Any later push voids the
-  permission (CI removes `owner-approved` automatically); ask again. Delete the branch only if deletion is also authorized; do not append
+  permission (the `Owner gate` workflow removes a stale `owner-approved`); ask again. Delete the branch only if deletion is also authorized; do not append
   `--delete-branch` automatically. Missing merge/deletion permission is an explicit next action.
 - **Lane:** leave its PR open for the orchestrator with RF records/handoff complete; report CI state.
 - **Genuinely unfinished:** leave open/draft with the actual remaining acceptance in its RF record.

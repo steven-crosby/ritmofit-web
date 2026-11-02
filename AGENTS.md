@@ -23,6 +23,7 @@
 <!-- note (Claude Code, 2026-11-01): Two-machine conductors: each conductor is a Solo or Orchestrator session, the Neo holds no Cloudflare credentials, signed-in production checks mean the RitmoFit app, and a message is not a claim (follow-ups from #681 and #693 reviews). -->
 <!-- note (Claude Code, 2026-11-01): Owner rulings: the conductor that opened a PR finishes it; the Neo takes iOS only when the Air is busy or the owner says so; the Neo has no rollback path. Relayed owner approval is in its own PR. -->
 <!-- note (Claude Code, 2026-11-02): RF-100: the owner gate is the required `owner-gate` commit status, not a step of the required CI job; label changes re-evaluate only that status. -->
+<!-- note (Claude Code, 2026-11-02): RF-176: only the Owner gate workflow writes `owner-gate`; an approval given within two minutes of a push is refused; label edits never rerun or cancel CI, so the remove-`ready-to-merge`-before-merging and no-label-edits-on-merged-PRs rules are retired. -->
 
 This is the canonical contributor and agent guide for Ritmo Studio. If another instruction file conflicts
 with it, follow `AGENTS.md`, then repair the stale file. When an AI agent edits this file or adds a note
@@ -267,16 +268,20 @@ cited in a PR comment, and does not block. Then:
   new push, so it needs green CI again and a fresh permission. Any push after permission voids it:
   approval counts only for the commit it was given on. When the owner adds `owner-approved`, the
   `Owner gate` workflow records an `owner-approval` commit status on that exact head, and the gate
-  requires both the label and that status on the current head; CI also drops the label when new
-  commits arrive. The agent asks again. Agents never create the `owner-approval` or `owner-gate`
+  requires both the label and that status on the current head; the workflow also drops a label
+  added before new commits arrived. It refuses to record an approval given less than two minutes
+  after the head was pushed (the owner may not have seen that commit): `owner-gate` then says so,
+  and the owner removes and re-adds the label. The agent asks again. Agents never create the `owner-approval` or `owner-gate`
   status by hand.
 
 Auto-merge is off and branches must be current, so concurrent agents merge **one at a time**: update
 the branch, wait for CI on the new head, ask, review, merge, then the next.
 
-**Owner-gated** — the `owner-gate` status fails until `owner-approved` is present. CI writes it on
-every PR run (`success` when no owner-gated path changed) and the `Owner gate` workflow rewrites it
-on every label change, without re-running CI; the newest write counts. The agent adds `needs-owner`,
+**Owner-gated** — the `owner-gate` status fails until `owner-approved` is present. Only the `Owner
+gate` workflow writes it, on every PR event (new commits and label changes; `success` when no
+owner-gated path changed); the newest write counts. Label changes never rerun or cancel CI, so
+`ready-to-merge` may be removed before or after merging, and a label edit on a merged PR starts
+only an `Owner gate` run whose jobs skip (RF-176, 2026-11-02). The agent adds `needs-owner`,
 names the manual check left in the PR, and asks as above. These PRs need the `owner-approved` label
 itself, because the gate reads it; it is both the gate approval and the merge permission. The agent still sets the task's final state in the PR: the
 open PR is the review, so a rejected PR never reaches `main`. The authoritative path list is
