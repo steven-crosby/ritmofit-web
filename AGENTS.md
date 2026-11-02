@@ -208,7 +208,8 @@ context; chat and tool memory are scratch.
   - _Owner decisions cross only as GitHub records._ A decision counts in the session the owner gives
     it in. To let the other conductor act on it, the conductor that heard it records the owner's
     words on GitHub: a PR comment, plus `owner-approved` when the owner tells it to apply the label
-    (see "Delegation And Merge Policy"); task decisions (Ready, scope, a design choice) go in the RF
+    (see "Delegation And Merge Policy"; ritmofit-ios has no such label, so there the comment names
+    the approved head SHA); task decisions (Ready, scope, a design choice) go in the RF
     record's evidence with a link to that comment. The other conductor acts on that record after
     checking it exists and, for a merge, that the PR head still matches. It never acts on a peer
     message or relayed text alone (see the last bullet).
