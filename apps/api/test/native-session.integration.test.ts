@@ -71,19 +71,6 @@ describe('AUD-007: native session refresh reaches the client', () => {
     expect(newToken).toBe(sentToken);
   });
 
-  it('an authed route that refreshes the session also returns the refreshed cookie', async () => {
-    // Any authed call (requireSession) can be the one that crosses updateAge. If its
-    // refresh were silent, the next /auth/session would see a fresh row and send no
-    // cookie, and the client would keep the old expiry.
-    const user = await signUpUser();
-    const before = await ageSession(user.userId, 2 * DAY_MS);
-
-    const res = await call('/api/v1/auth/me', { headers: { cookie: user.cookie } });
-    expect(res.status).toBe(200);
-    expect(await sessionExpiresAt(user.userId)).toBeGreaterThan(before + DAY_MS);
-    expect(sessionSetCookie(res)).toMatch(/Max-Age=604800/i);
-  });
-
   it('a session younger than updateAge gets no Set-Cookie (no churn on every call)', async () => {
     const user = await signUpUser();
     const before = await sessionExpiresAt(user.userId);
@@ -98,7 +85,28 @@ describe('AUD-007: native session refresh reaches the client', () => {
     expect(await sessionExpiresAt(user.userId)).toBe(before);
   });
 
-  it('a cookie-setting authed route returns both its own cookie and the refreshed session cookie', async () => {
+  // /explore is served by one of the last routers mounted at '/', so every earlier
+  // root router's `use('*', requireSession)` also runs on that request.
+  it.each(['/api/v1/auth/me', '/api/v1/explore'])(
+    'an ordinary authed route (%s) neither refreshes nor sets a cookie; the next /auth/session does',
+    async (path) => {
+      const user = await signUpUser();
+      const before = await ageSession(user.userId, 2 * DAY_MS);
+
+      const res = await call(path, { headers: { cookie: user.cookie } });
+      expect(res.status).toBe(200);
+      expect(res.headers.getSetCookie()).toEqual([]);
+      expect(await sessionExpiresAt(user.userId)).toBe(before);
+
+      // The row is still due, so the native keep-alive call refreshes it.
+      const session = await nativePost('/api/v1/auth/session', user.cookie);
+      expect(session.status).toBe(200);
+      expect(sessionSetCookie(session)).toMatch(/Max-Age=604800/i);
+      expect(await sessionExpiresAt(user.userId)).toBeGreaterThan(before + DAY_MS);
+    },
+  );
+
+  it('a cookie-setting route (provider connect) keeps its own cookie and adds no session cookie', async () => {
     // POST /providers/:provider/connect sets the OAuth state cookie. Turn off the
     // mock seam (which skips the cookie) and give Spotify placeholder credentials.
     const mutableEnv = env as typeof env & {
@@ -112,13 +120,13 @@ describe('AUD-007: native session refresh reaches the client', () => {
     mutableEnv.SPOTIFY_CLIENT_SECRET = 'test-spotify-secret';
     try {
       const user = await signUpUser();
-      await ageSession(user.userId, 2 * DAY_MS);
+      const before = await ageSession(user.userId, 2 * DAY_MS);
       const res = await nativePost('/api/v1/providers/spotify/connect', user.cookie);
       expect(res.status).toBe(200);
       const cookies = res.headers.getSetCookie();
       expect(cookies.filter((c) => c.startsWith('rf_oauth_state='))).toHaveLength(1);
-      expect(cookies.filter((c) => c.startsWith(`${SESSION_COOKIE}=`))).toHaveLength(1);
-      expect(sessionSetCookie(res)).toMatch(/Max-Age=604800/i);
+      expect(sessionSetCookie(res)).toBeUndefined();
+      expect(await sessionExpiresAt(user.userId)).toBe(before);
     } finally {
       mutableEnv.MOCK_PROVIDERS = previous.MOCK_PROVIDERS;
       mutableEnv.SPOTIFY_CLIENT_ID = previous.SPOTIFY_CLIENT_ID;
@@ -126,17 +134,13 @@ describe('AUD-007: native session refresh reaches the client', () => {
     }
   });
 
-  it('a route behind many requireSession routers forwards the refresh exactly once', async () => {
-    // /explore is served by one of the last routers mounted at '/', so every earlier
-    // root router's `use('*', requireSession)` also runs on this request.
+  it("browsers keep refreshing through Better Auth's own get-session (the SPA's useSession)", async () => {
     const user = await signUpUser();
-    await ageSession(user.userId, 2 * DAY_MS);
-    const res = await call('/api/v1/explore', { headers: { cookie: user.cookie } });
+    const before = await ageSession(user.userId, 2 * DAY_MS);
+    const res = await call('/api/auth/get-session', { headers: { cookie: user.cookie } });
     expect(res.status).toBe(200);
-    const sessionCookies = res.headers
-      .getSetCookie()
-      .filter((c) => c.startsWith(`${SESSION_COOKIE}=`));
-    expect(sessionCookies).toHaveLength(1);
+    expect(sessionSetCookie(res)).toMatch(/Max-Age=604800/i);
+    expect(await sessionExpiresAt(user.userId)).toBeGreaterThan(before + DAY_MS);
   });
 
   it('an unauthenticated /auth/session is still a JSON 401', async () => {

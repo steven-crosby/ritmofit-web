@@ -73,9 +73,11 @@
   separately (`http://localhost:8787`), so dev CORS must allow the Vite dev origin with credentials
   enabled for the session cookie.
 - **Native clients are not browsers:** the iOS app sends no `Origin` and is not subject to CORS. It
-  must persist `Set-Cookie` from any authed response (a refresh), treat a 401 as signed out and
-  discard its own cookie (the API sends no clearing cookie), and send `Origin` (the API base URL's
-  origin) on cookie-bearing `/api/auth/*` POSTs other than sign-out. See `authorization.md` › "Sessions and CSRF" (RF-177).
+  keeps its session alive through `POST /api/v1/auth/session`, the only `/api/v1` route that
+  refreshes it, and persists that response's `Set-Cookie` only if the request's cookie is still the
+  current one. It treats a 401 as signed out and discards its own cookie (the API sends no clearing
+  cookie), and sends `Origin` (the API base URL's origin) on cookie-bearing `/api/auth/*` POSTs
+  other than sign-out. See `authorization.md` › "Sessions and CSRF" (RF-177).
 
 ## Logging
 - Never log tokens, refresh tokens, `Authorization` headers, cookies, provider secrets, or Apple

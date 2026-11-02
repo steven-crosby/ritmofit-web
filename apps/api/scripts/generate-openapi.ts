@@ -186,9 +186,18 @@ const doc = {
       post: {
         summary: 'Validate session, return canonical profile',
         description:
-          'Native clients call this at launch to keep a session alive. Like every session-authenticated operation, a successful response may carry the shared SessionSetCookie header: a refreshed session cookie to persist.',
+          'Native clients call this at launch to keep a session alive. It is the only REST operation that refreshes the session: when the session is older than Better Auth updateAge (1 day), the server extends it and the 200 carries the refreshed session cookie. Other operations neither refresh nor set a session cookie, and no 401 sets one.',
         responses: {
-          '200': jsonResp('User', 'Canonical profile'),
+          '200': {
+            ...jsonResp('User', 'Canonical profile'),
+            headers: {
+              'Set-Cookie': {
+                description:
+                  'Present only when this call refreshed the session: the Better Auth session cookie with the same token and a new Max-Age (7 days). Absent otherwise. A native client should persist it only if the request carried the cookie that is still current in its jar when the response arrives (the cookie name is the same for every account).',
+                schema: { type: 'string' },
+              },
+            },
+          },
           '401': { description: 'Not authenticated' },
         },
       },
@@ -1073,36 +1082,9 @@ const doc = {
       sessionCookie: { type: 'apiKey', in: 'cookie', name: 'better-auth.session_token' },
     },
     schemas,
-    headers: {
-      SessionSetCookie: {
-        description:
-          'Better Auth session cookie, set by requireSession on any session-authenticated response (RF-177). Present when this request refreshed a session older than updateAge (1 day): the same token with a new Max-Age (7 days); persist it. Never sent with a 401 (the client discards its own stored cookie). Absent otherwise. Browsers apply it automatically; native clients must save it from any authed response.',
-        schema: { type: 'string' },
-      },
-    },
   },
   security: [{ sessionCookie: [] }],
 };
-
-// Every operation that does not opt out of the session (`security: []`) runs
-// requireSession, so each of its responses may carry the session cookie.
-type OperationLike = { security?: unknown[]; responses?: Record<string, Record<string, unknown>> };
-for (const pathItem of Object.values(doc.paths) as Record<string, OperationLike>[]) {
-  for (const [method, op] of Object.entries(pathItem)) {
-    if (method === 'parameters' || !op.responses) continue;
-    if (Array.isArray(op.security) && op.security.length === 0) continue;
-    for (const [status, response] of Object.entries(op.responses)) {
-      // Copy: response helpers may share objects between operations.
-      op.responses[status] = {
-        ...response,
-        headers: {
-          ...(response.headers as Record<string, unknown> | undefined),
-          'Set-Cookie': { $ref: '#/components/headers/SessionSetCookie' },
-        },
-      };
-    }
-  }
-}
 
 const outDir = join(dirname(fileURLToPath(import.meta.url)), '..', 'openapi');
 mkdirSync(outDir, { recursive: true });
