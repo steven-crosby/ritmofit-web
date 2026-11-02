@@ -83,8 +83,9 @@
       "checkedOn": "2026-11-02"
     }
   ],
-  "resolution": "Both audit findings were real and reproduced in integration tests before the fix. After three review rounds, only POST /api/v1/auth/session refreshes the session and returns the refresh cookie; other routes resolve with refresh disabled, no 401 sets a cookie, and native sign-out revokes the session with browser CSRF behaviour pinned by tests. Deferred review items are in the evidence and the PR. The iOS half (persist /auth/session's Set-Cookie only while the request's cookie is still current, treat 401 as signed out, log failed sign-out, reinstall handling) ships in iOS RF-1012/RF-1032 after its web-contract snapshots are refreshed.",
+  "resolution": "Correction 2026-11-02: RF-178 (option C, #705) superseded the /auth/session Set-Cookie; the endpoint now extends the session server-side and sets no cookie, and iOS keeps its cookie with no client-side expiry, so ignore the 'persist Set-Cookie' iOS half below. Original: Both audit findings were real and reproduced in integration tests before the fix. After three review rounds, only POST /api/v1/auth/session refreshes the session and returns the refresh cookie; other routes resolve with refresh disabled, no 401 sets a cookie, and native sign-out revokes the session with browser CSRF behaviour pinned by tests. Deferred review items are in the evidence and the PR. The iOS half (persist /auth/session's Set-Cookie only while the request's cookie is still current, treat 401 as signed out, log failed sign-out, reinstall handling) ships in iOS RF-1012/RF-1032 after its web-contract snapshots are refreshed.",
   "followUps": [
-    "RF-178"
+    "RF-178",
+    "RF-180"
   ]
 }

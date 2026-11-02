@@ -14,16 +14,19 @@
 
 <!-- Claude Code, 2026-11-01: Close trimmed Now; older Now notes and superseded text are in git history and HISTORY. Production unchanged since 67496ab; RF-157 rescoped (#695). -->
 <!-- Claude Code, 2026-11-02: Production observed from the Air at start-session; #654 closed; records for #697/#698. -->
+<!-- Claude Code, 2026-11-02: Air close: owner gate (RF-100/176) and auth (RF-177/178) merged; Air paused. -->
 
 **Current actionable state:** [RF board](./tasks.md), backed by canonical [task records](./tasks/README.md).
 The order of work is [Phases](#phases) below; each phase lists RF records, not a second backlog.
-**Main vs production (observed from the Air at the 2026-11-01 start-session):** production is
-main `67496ab` (Worker `feac7dde-dc10-4462-bd2d-79075d289bda`; SPA `assets/index-ChxMwIpX.js`;
-rollback `e50f1fd3-bdd1-4541-bc3f-4c2cd483a167`), deployed from the Air on 2026-10-31. At start-session `wrangler deployments
-status` showed that Worker at 100%, three cache-busted fetches served that SPA and health returned
-200. Every later main commit is records and docs only, so no deploy is due. See [HISTORY](./HISTORY.md).
-**In flight:** none on web. iOS: RF-1011 part D (ritmofit-ios) on the Neo. The D25
-provider matrix draft (#654) was closed unmerged on 2026-11-02 (UTC).
+**Main vs production:** production is main `67496ab` (Worker `feac7dde-dc10-4462-bd2d-79075d289bda`;
+SPA `assets/index-ChxMwIpX.js`; rollback `e50f1fd3-bdd1-4541-bc3f-4c2cd483a167`), deployed from the
+Air on 2026-10-31 and observed at the 2026-11-01 start-session. `main` is ahead: the auth changes
+[RF-177](./tasks/RF-177.json) (#703) and [RF-178](./tasks/RF-178.json) (#705) need a standalone
+auth deploy from the Air (the only machine with Cloudflare credentials), with the owner's
+permission. The other merges since are CI, records and docs. See [HISTORY](./HISTORY.md).
+**In flight:** the Air is paused for dev work. iOS: the Neo refreshes `web-contract/` from `14d0b32`
+and builds the AuthStore change for iOS RF-1012 (cookie without client-side expiry, `/auth/session`
+at launch and foreground, 401 means signed out).
 **Next step:** the owner's Mac and iPhone check of [RF-151](./tasks/RF-151.json) (Music › Songs pick
 mode on real likes: a row tap ticks and never plays, the 15 cap, Create a class) and RF-134's live
 labels on Music and Account. Still owed: the iPhone Safari device check (the 7 steps in the #669 PR
@@ -34,8 +37,8 @@ Apple account goes first. Spotify is reopened; liked songs load in production fo
 (playlists and playback not rechecked; [RF-92](./tasks/RF-92.json)).
 **Open owner decisions:** whether Live stops showing "No BPM set" on every cue
 ([RF-168](./tasks/RF-168.json)); the review queue (RF-91, RF-93, RF-94, RF-96, RF-16, RF-23, RF-32);
-whether [RF-80](./tasks/RF-80.json) is cancelled or rescoped after RF-124's root cause; Live finish
-placement (see Backlog).
+whether [RF-80](./tasks/RF-80.json) is cancelled or rescoped after RF-124's root cause; the native
+sign-out Origin design ([RF-180](./tasks/RF-180.json)); Live finish placement (see Backlog).
 
 ## Phases
 

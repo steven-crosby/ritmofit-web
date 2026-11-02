@@ -3,7 +3,7 @@
   "id": "RF-100",
   "title": "Label changes rerun only the PR gates, not the full CI job",
   "kind": "task",
-  "status": "review",
+  "status": "done",
   "priority": "P3",
   "parent": null,
   "dependsOn": [
@@ -15,7 +15,7 @@
     "A label edit on an already-merged PR can no longer cancel the post-merge push run on main (a closed PR's pull_request run shares the ci-refs/heads/main concurrency group today).",
     "The required CI check fails only on real checks, never on the owner gate: the owner gate is the `owner-gate` commit status (latest-wins), written by ci.yml on every PR run and by owner-gate.yml on label changes, success for non-gated PRs and fail-closed on errors; owner-gate.yml creates no run of the required check."
   ],
-  "nextAction": "#700 merged as 8f26519 under a one-time owner waiver (2026-11-02) with the ruleset requiring `owner-gate`; its known issues are fixed in RF-176. Owner decides whether RF-100 closes now or with RF-176. The interim ready-to-merge rule is retired by RF-176.",
+  "nextAction": null,
   "blocker": null,
   "evidence": [
     {
@@ -59,9 +59,15 @@
       "ref": "https://github.com/steven-crosby/ritmofit-web/commit/8f26519",
       "summary": "Correction (2026-11-02): #700's body called the void race 'fixed', and the f21f8fa evidence above reads as if voiding were safe. It was not: void-approval could still remove an owner-approved label applied seconds after a push, before record-approval wrote owner-approval on the new head. #700 merged under a one-time owner waiver with that and four other fail-closed issues listed in the squash message; RF-176 fixes them.",
       "checkedOn": "2026-11-02"
+    },
+    {
+      "kind": "observation",
+      "ref": "https://github.com/steven-crosby/ritmofit-web/pull/705",
+      "summary": "Owner approved closing RF-100 and RF-176 (\"Yes to both\") in the Air session on 2026-11-02; the remaining gate edge cases are in RF-175. With #702 (127d05e) and #704 (cca13af), #705 then merged through the gate: owner-gate stayed failure until owner-approved was recorded on 8a4078a, and the PR was BLOCKED only on owner-gate while the required CI check was green.",
+      "checkedOn": "2026-11-02"
     }
   ],
-  "resolution": null,
+  "resolution": "Label events run only owner-gate.yml, which writes the required `owner-gate` commit status; ci.yml writes no status and keys concurrency per PR, so a label edit no longer reruns or cancels CI and the required CI check fails only on real checks. The fail-closed issues #700 merged with under a one-time waiver were fixed in RF-176; remaining edge cases are in RF-175.",
   "followUps": [
     "RF-175",
     "RF-176"
