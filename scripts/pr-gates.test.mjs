@@ -10,6 +10,7 @@ import {
   mkdirSync,
   mkdtempSync,
   readFileSync,
+  rmSync,
   writeFileSync,
 } from 'node:fs';
 import { tmpdir } from 'node:os';
@@ -65,6 +66,7 @@ function setup({
   files = ['AGENTS.md'],
   checker = readFileSync(CHECKER, 'utf8'),
   extra = {},
+  standIns = true,
 } = {}) {
   const dir = mkdtempSync(join(tmpdir(), 'pr-gates-'));
   const fake = join(dir, 'fake');
@@ -97,25 +99,63 @@ function setup({
   );
   fixture(`actions_runs_${RUN_ID}`, { created_at: iso(runCreated) });
   for (const [name, value] of Object.entries(extra)) fixture(name, value);
-  // Stand-ins for what `prepare` leaves behind.
-  writeFileSync(join(temp, 'pr-files.txt'), files.map((f) => `${f}\n`).join(''));
-  if (checker !== null) writeFileSync(join(temp, 'owner-gate.mjs'), checker);
+  fixture(
+    `pulls_${PR}_files`,
+    files.map((filename) => ({ filename })),
+  );
+  // Stand-ins for what `prepare` leaves behind, when the test stubs it out.
+  if (standIns) {
+    writeFileSync(join(temp, 'pr-files.txt'), files.map((f) => `${f}\n`).join(''));
+    if (checker !== null) writeFileSync(join(temp, 'owner-gate.mjs'), checker);
+  }
   return { dir, fake, bin, temp };
 }
 
-function run(env, command, extraEnv = {}) {
+// A checkout whose `origin` main holds `base` files, with `work` files in the working tree, for
+// the real `prepare` (it fetches main and copies each checker from it, else from the tree).
+function checkout(env, { base = {}, work = {} }) {
+  const git = (cwd, ...args) => {
+    const r = spawnSync('git', ['-c', 'user.name=t', '-c', 'user.email=t@t', ...args], {
+      cwd,
+      encoding: 'utf8',
+    });
+    assert.equal(r.status, 0, r.stderr);
+  };
+  const write = (root, files) => {
+    for (const [path, text] of Object.entries(files)) {
+      mkdirSync(join(root, path, '..'), { recursive: true });
+      writeFileSync(join(root, path), text);
+    }
+  };
+  const src = join(env.dir, 'src');
+  mkdirSync(src);
+  git(src, 'init', '-q', '-b', 'main');
+  write(src, base);
+  git(src, 'add', '-A');
+  git(src, 'commit', '-q', '--allow-empty', '-m', 'base');
+  const workDir = join(env.dir, 'work');
+  mkdirSync(workDir);
+  git(workDir, 'init', '-q');
+  git(workDir, 'remote', 'add', 'origin', `file://${src}`);
+  write(workDir, work);
+  return workDir;
+}
+
+// realPrepare runs the script's own prepare in `cwd`; otherwise prepare is a no-op and the
+// stand-ins from setup() are what it would have left.
+function run(env, command, extraEnv = {}, { realPrepare = false, cwd } = {}) {
   const output = join(env.dir, 'github-output');
   writeFileSync(output, '');
-  // gate-status's prepare is replaced by a no-op: these tests judge what follows it.
   const script = join(env.dir, 'pr-gates.sh');
+  const source = readFileSync(SCRIPT, 'utf8');
   writeFileSync(
     script,
-    readFileSync(SCRIPT, 'utf8').replace(
-      /^prepare\(\) \{$/m,
-      'prepare() {\n  return 0\n}\nreal_prepare() {',
-    ),
+    realPrepare
+      ? source
+      : source.replace(/^prepare\(\) \{$/m, 'prepare() {\n  return 0\n}\nreal_prepare() {'),
   );
   const result = spawnSync('bash', [script, command], {
+    cwd,
     env: {
       ...process.env,
       PATH: `${env.bin}:${process.env.PATH}`,
@@ -294,20 +334,45 @@ test('gate-status writes the verdict, and says how to fix an unrecorded label', 
   );
 
   const refused = run(setup({ labels: ['owner-approved'] }), 'gate-status', {
-    UNAPPROVED_DESCRIPTION: 'refused for a reason',
+    RECORD_FAILED: 'true',
+    RECORD_REFUSAL: 'refused for a reason',
   });
   assert.match(ownerGateWrite(refused.writes), /description=refused for a reason/);
+
+  const failed = run(setup({ labels: ['owner-approved'] }), 'gate-status', {
+    RECORD_FAILED: 'true',
+  });
+  assert.match(ownerGateWrite(failed.writes), /description=Recording owner approval failed/);
+
+  // An ancestor's failure never changes a pass.
+  const stillApproved = run(setup({ labels: ['owner-approved'], approvals: 1 }), 'gate-status', {
+    RECORD_FAILED: 'true',
+  });
+  assert.match(ownerGateWrite(stillApproved.writes), /state=success/);
 });
 
-test('gate-status reads a pre-RF-176 checker as legacy, with the refusal reason when set', () => {
+test('gate-status reads a pre-RF-176 checker as legacy and keeps its ambiguity visible', () => {
   const legacy = 'process.exit(process.env.OWNER_GATE_LABELS.includes("owner-approved") ? 0 : 1);';
   const fail = run(setup({ checker: legacy }), 'gate-status');
   assert.match(ownerGateWrite(fail.writes), /state=failure .*or the gate failed/);
 
-  const reason = run(setup({ checker: legacy }), 'gate-status', {
-    UNAPPROVED_DESCRIPTION: 'Recording owner approval failed; re-run the job or re-add the label',
+  // Its exit 1 may be a crash: a recording failure or an unrecorded label is not shown as the
+  // cause; only an actual refusal is, still with the hint.
+  for (const env of [{ RECORD_FAILED: 'true' }, {}]) {
+    const r = run(setup({ checker: legacy, labels: ['owner-approved'] }), 'gate-status', env);
+    assert.match(
+      ownerGateWrite(r.writes),
+      /description=Owner-gated paths need owner-approved on aaaaaaa, or the gate failed/,
+    );
+  }
+  const refused = run(setup({ checker: legacy }), 'gate-status', {
+    RECORD_FAILED: 'true',
+    RECORD_REFUSAL: 'aaaaaaa was pushed 5s before owner-approved',
   });
-  assert.match(ownerGateWrite(reason.writes), /description=Recording owner approval failed/);
+  assert.match(
+    ownerGateWrite(refused.writes),
+    /description=aaaaaaa was pushed 5s before owner-approved \(or the gate failed; see the run\)/,
+  );
 
   const pass = run(
     setup({ checker: legacy, labels: ['owner-approved'], approvals: 1 }),
@@ -325,6 +390,48 @@ test('gate-status errors, writing nothing, when the checker is missing or gave n
   const crashed = run(setup({ checker: '// OWNER_GATE_RESULT\nprocess.exit(1);' }), 'gate-status');
   assert.equal(crashed.status, 1);
   assert.equal(ownerGateWrite(crashed.writes), undefined);
+});
+
+test('gate-status with the real prepare: a failed prepare or a missing checker is an error', () => {
+  const checkers = {
+    'scripts/owner-gate.mjs': readFileSync(CHECKER, 'utf8'),
+    'scripts/rf-trace.mjs': readFileSync(new URL('./rf-trace.mjs', import.meta.url), 'utf8'),
+  };
+  const gated = () => setup({ standIns: false });
+
+  // Sanity: with main's checkers in place, the real prepare leads to a verdict.
+  const okEnv = gated();
+  const ok = run(
+    okEnv,
+    'gate-status',
+    {},
+    { realPrepare: true, cwd: checkout(okEnv, { base: checkers }) },
+  );
+  assert.equal(ok.status, 0, ok.log);
+  assert.match(ownerGateWrite(ok.writes), /state=failure .*need owner-approved on aaaaaaa/);
+
+  // The files API fails: prepare stops before copying any checker.
+  const noFilesEnv = gated();
+  rmSync(join(noFilesEnv.fake, `pulls_${PR}_files.json`));
+  const noFiles = run(
+    noFilesEnv,
+    'gate-status',
+    {},
+    { realPrepare: true, cwd: checkout(noFilesEnv, { base: checkers }) },
+  );
+  assert.notEqual(noFiles.status, 0);
+  assert.equal(ownerGateWrite(noFiles.writes), undefined, 'no verdict, legacy or otherwise');
+
+  // Neither main nor the PR has the checker: prepare cannot copy it.
+  const noCheckerEnv = gated();
+  const noChecker = run(
+    noCheckerEnv,
+    'gate-status',
+    {},
+    { realPrepare: true, cwd: checkout(noCheckerEnv, {}) },
+  );
+  assert.notEqual(noChecker.status, 0);
+  assert.equal(ownerGateWrite(noChecker.writes), undefined, 'no verdict, legacy or otherwise');
 });
 
 test('gate-error writes failure on the live head', () => {

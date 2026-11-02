@@ -67,8 +67,14 @@ jobs:
     concurrency:
       group: owner-gate-pr-${{ github.event.pull_request.number }}
       cancel-in-progress: false
+    # In a step, failure() and success() also see a failed ancestor job (record-approval), so
+    # the steps that must run anyway say `!cancelled()`, and the error step judges only this
+    # job's own steps: a refused or failed recording must never overwrite the status the gate
+    # step wrote for it, nor flip a correct success on an already-approved head.
     steps:
-      - uses: actions/checkout@v4
+      - id: checkout
+        if: ${{ !cancelled() }}
+        uses: actions/checkout@v4
         with:
           sparse-checkout: |
             .github
@@ -80,6 +86,8 @@ jobs:
       # loses nothing. The binding already makes a stale label count for nothing, so a failure
       # here must not skip the gate. GITHUB_TOKEN edits do not trigger another run.
       - name: Void a stale owner approval
+        id: void
+        if: ${{ !cancelled() }}
         continue-on-error: true
         env:
           GH_TOKEN: ${{ github.token }}
@@ -87,18 +95,23 @@ jobs:
         run: bash .github/scripts/pr-gates.sh void-approval
 
       - name: Owner gate (owner-gated paths need owner-approved)
+        id: gate
+        if: ${{ !cancelled() }}
         env:
           GH_TOKEN: ${{ github.token }}
           PR_NUMBER: ${{ github.event.pull_request.number }}
           BASE_REF: ${{ github.event.pull_request.base.ref }}
           # This run's refused or failed recording says so; otherwise a label without an approval
           # on the head reads "remove and re-add it", so a later event never hides a refusal.
-          UNAPPROVED_DESCRIPTION: ${{ needs.record-approval.result == 'failure' && (needs.record-approval.outputs.refusal || 'Recording owner approval failed; re-run the job or re-add the label') || '' }}
+          RECORD_FAILED: ${{ needs.record-approval.result == 'failure' }}
+          RECORD_REFUSAL: ${{ needs.record-approval.outputs.refusal }}
         run: bash .github/scripts/pr-gates.sh gate-status
 
-      # Fail closed: an error anywhere above must not leave an older `success` standing.
+      # Fail closed: an error in this job (checkout or the gate step; the void step is best-effort)
+      # must not leave an older `success` standing. The gate step fails whenever checkout did,
+      # and writes no status when it fails, so its outcome alone decides.
       - name: Record owner gate error
-        if: failure()
+        if: ${{ !cancelled() && steps.gate.outcome == 'failure' }}
         env:
           GH_TOKEN: ${{ github.token }}
           PR_NUMBER: ${{ github.event.pull_request.number }}

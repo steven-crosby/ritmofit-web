@@ -13,7 +13,8 @@
     "pr-gates.sh self-check reads the workflows' job names, concurrency groups and status context structurally (parsed YAML), so a reformat that keeps the meaning (quoting, indentation, a folded line) does not fail CI and a real rename still does.",
     "The owner-gate jobs run the base branch's copy of .github/scripts/pr-gates.sh (as they already do for owner-gate.mjs and rf-trace.mjs), or the PR documents why the PR-controlled copy is acceptable; the trust model is stated in AGENTS.md.",
     "A label change on a closed or merged PR starts no Owner gate job, or the skipped run is documented as harmless; reopening still re-evaluates the gate through owner-gate.yml (RF-176 moved the gate there).",
-    "Once RF-176 is on main, pr-gates.sh gate-status drops its transitional branch for a pre-RF-176 checker that writes no OWNER_GATE_RESULT verdict, so every missing verdict is an error."
+    "Once RF-176 is on main, pr-gates.sh gate-status drops its transitional branch for a pre-RF-176 checker that writes no OWNER_GATE_RESULT verdict, so every missing verdict is an error.",
+    "RF-176 final-review leftovers (2026-11-02) are fixed or documented as accepted: activity lag can pick an older push of the same SHA after a force-push away and back; the 60 s window matching a run to its label event can miss under Actions delay (fails closed as 'could not read label time'); fork PRs have no listed push, so they can never be approved and each label event waits through the retries; void-approval can spend up to ~35 s in retries per label event; gate_error fetches the PR itself instead of reusing pr_json."
   ],
   "nextAction": "Owner triages: decide whether the gate-script trust change is worth it for a guardrail that AGENTS.md already calls not a security boundary.",
   "blocker": null,

@@ -10,16 +10,17 @@
   "acceptance": [
     "Push race: void-approval never removes an owner-approved label added at or after the current head was pushed (activity API push time vs the label's timeline add). It deletes only when the timeline's newest owner-approved event is that add, before the push, on two reads a retry delay apart; when the push or the add is not listed after retries it keeps the label and logs that cleanup is best-effort (AGENTS.md says so; the gate never counts a stale label). It checks labels before any time lookup.",
     "A label event can no longer leave a CI run 'cancelled': ci.yml has no gate job and writes no commit status; owner-gate.yml writes `owner-gate` on every PR event (opened, synchronize, reopened, labeled, unlabeled) from one job in the per-PR concurrency group, so writes stay serialized and the last write reads the live state. pr-gates.sh self-check enforces both.",
-    "When record-approval fails, `owner-gate` reads 'Recording owner approval failed; re-run the job or re-add the label' or the refusal reason, in both the verdict and the transitional legacy-checker branch, never 'need owner-approved'.",
+    "When record-approval fails, `owner-gate` reads 'Recording owner approval failed; re-run the job or re-add the label' or this run's refusal reason, never 'need owner-approved'. A legacy checker's exit 1 (unapproved or crashed) keeps the ', or the gate failed; see the run' hint and shows refusal text only when record-approval refused in this run.",
+    "The gate job's error step runs only when this job's own gate step failed (checkout failure fails the gate step too): a failed ancestor (record-approval) never overwrites the refusal or recording-failure status the gate step wrote, nor flips a correct success on an already-approved head. Checkout, void and gate steps run with `!cancelled()` so an ancestor failure never skips them.",
     "gate-status classifies the result from scripts/owner-gate.mjs's machine-readable verdict (OWNER_GATE_RESULT JSON: clean, approved, unapproved), never its log text. A failed prepare, a missing checker, or a verdict-capable checker that wrote none is a gate error (failure 'errored'); only a present checker known not to write verdicts (main's, until this merges) reads as legacy.",
     "record-approval takes the label time from this run's own event (the newest owner-approved add at most 60 s before the run's created_at, retried while the timeline lags) and the push time from the latest push of that head at or before the label, so the age is never negative. Only a push less than 120 s before this label refuses; an unknown time after retries refuses with an accurate reason (label time vs push time). The residual risk (a page left open longer than the window across a push) is documented.",
     "A later event never hides a refusal: when owner-approved is on the PR without an approval on the head, `owner-gate` reads 'owner-approved is on the PR but not recorded for <sha>; remove and re-add it'. AGENTS.md tells a refusal (review, remove and re-add) apart from a transient failure (re-run or re-add).",
     "RF-100 carries a dated correction pointing to the 2026-11-02 waiver and RF-176; its history is not rewritten.",
     "The interim 'remove ready-to-merge before merging' rule is retired and the 'never edit labels on a merged PR' rule is relaxed with a dated note, since label edits no longer run or cancel CI.",
     "The duplicated 'Record owner gate error' step is a `pr-gates.sh gate-error` subcommand, and gate-status fetches the PR JSON once.",
-    "scripts/pr-gates.test.mjs (run by `pnpm owner-gate:test`, owner-gated) tests record-approval, void-approval, gate-status and gate-error against a fake gh, including lagging timelines and pushes, negative ages, the legacy checker and the error paths."
+    "scripts/pr-gates.test.mjs (run by `pnpm owner-gate:test`, owner-gated) tests record-approval, void-approval, gate-status and gate-error against a fake gh, including lagging timelines and pushes, negative ages, the legacy checker, and the real prepare failing (files API error, no checker on main or in the PR) as a gate error; mutations that reintroduce each fixed bug fail it."
   ],
-  "nextAction": "Owner reviews #702 at its new head and, if satisfied, adds owner-approved at least 120 s after the last push. Then the final review and squash-merge.",
+  "nextAction": "Owner reviews #702 at its new head and, if satisfied, adds owner-approved at least 120 s after the last push. Then the final review and squash-merge. Remaining review findings are in RF-175.",
   "blocker": null,
   "evidence": [
     {
@@ -38,6 +39,12 @@
       "kind": "observation",
       "ref": "https://github.com/steven-crosby/ritmofit-web/pull/702",
       "summary": "Owner approved #702 at f00f127: record-approval recorded owner-approval, owner-gate read 'Owner gate passed on f00f127' and the PR was CLEAN. The final review then found fail-closed bugs (legacy fallback on a failed prepare, legacy branch ignoring the refusal text, newest-label time from a lagging timeline and possible negative ages, void giving up silently, a later event hiding a refusal, AGENTS.md not telling refusals from transient failures); the owner held #702 for these fixes.",
+      "checkedOn": "2026-11-02"
+    },
+    {
+      "kind": "observation",
+      "ref": "https://github.com/steven-crosby/ritmofit-web/pull/702",
+      "summary": "Owner approved #702 at f660136: the record path worked live again (owner-gate success, CLEAN). The final review blocked it on: the error step's failure() also firing on a failed record-approval (overwriting the refusal status or flipping a success), the legacy branch showing refusal or re-add text when the checker may have crashed, and no test of a real failing prepare. Owner chose a tight-scope fix; the remaining findings went to RF-175.",
       "checkedOn": "2026-11-02"
     }
   ],

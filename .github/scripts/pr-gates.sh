@@ -257,12 +257,15 @@ void_approval() {
 # carries a successful `owner-approval` status. The verdict comes from the checker's
 # OWNER_GATE_RESULT file, never its log text. Any error before or in the checker (prepare, a
 # missing checker, no verdict) exits non-zero, and the workflow's error step writes failure.
-# The description of an unapproved verdict says what to do: UNAPPROVED_DESCRIPTION when this
-# run's approval was refused or failed to record, else "remove and re-add" when the label is on
-# the PR without an approval on this head, else "need owner-approved".
+# The description of an unapproved verdict says what to do: RECORD_REFUSAL when this run's
+# record-approval refused, else "recording failed" when it failed (RECORD_FAILED=true), else
+# "remove and re-add" when the label is on the PR without an approval on this head, else "need
+# owner-approved". A legacy checker's exit 1 may also be a crash, so that description keeps the
+# "or the gate failed" hint and shows only an actual refusal, never a guess.
 gate_status() {
   need GH_TOKEN GITHUB_REPOSITORY PR_NUMBER RUNNER_TEMP
   local pr head checker labels labelled=false bound result rc verdict unapproved state description
+  local refusal=${RECORD_REFUSAL:-}
   pr=$(pr_json)
   head=$(jq -r '.head.sha // ""' <<< "$pr")
   [ -n "$head" ] || { echo "pr-gates: no head SHA for PR #$PR_NUMBER." >&2; exit 1; }
@@ -295,21 +298,30 @@ gate_status() {
     # errored.
     verdict=legacy
   fi
-  unapproved=${UNAPPROVED_DESCRIPTION:-}
-  if [ -z "$unapproved" ] && [ "$labelled" = true ]; then
+  if [ -n "$refusal" ]; then
+    unapproved=$refusal
+  elif [ "${RECORD_FAILED:-}" = true ]; then
+    unapproved='Recording owner approval failed; re-run the job or re-add the label'
+  elif [ "$labelled" = true ]; then
     unapproved="$APPROVAL_LABEL is on the PR but not recorded for ${head:0:7}; remove and re-add it"
+  else
+    unapproved="Owner-gated paths need owner-approved on ${head:0:7}"
   fi
   case "$rc:$verdict" in
     0:clean) state=success description='No owner-gated paths changed' ;;
     0:approved) state=success description="Owner-gated paths; owner-approved on ${head:0:7}" ;;
     1:unapproved)
       state=failure
-      description=${unapproved:-"Owner-gated paths need owner-approved on ${head:0:7}"}
+      description=$unapproved
       ;;
     0:legacy) state=success description="Owner gate passed on ${head:0:7}" ;;
     1:legacy)
       state=failure
-      description=${unapproved:-"Owner-gated paths need owner-approved on ${head:0:7}, or the gate failed; see the run"}
+      if [ -n "$refusal" ]; then
+        description="$refusal (or the gate failed; see the run)"
+      else
+        description="Owner-gated paths need owner-approved on ${head:0:7}, or the gate failed; see the run"
+      fi
       ;;
     *)
       echo "pr-gates: the owner gate could not evaluate $head (exit $rc, verdict '${verdict}')." >&2
