@@ -4,20 +4,26 @@
   "title": "Decide the native sign-out Origin design: server exception vs iOS sending Origin",
   "kind": "investigation",
   "status": "backlog",
-  "priority": "P3",
+  "priority": "P2",
   "parent": null,
   "dependsOn": [],
   "acceptance": [
     "The owner chooses between keeping withNativeSignOutOrigin (the server accepts a cookie-bearing JSON sign-out with no Origin, Referer or fetch metadata) and having iOS send a trusted Origin header, with the CSRF trade-off written down in authorization.md.",
     "If the choice changes behaviour, a follow-up web or iOS task is created and the browser CSRF tests from RF-177 still pass."
   ],
-  "nextAction": "Owner decision; no work until chosen.",
+  "nextAction": "Owner decides before the standalone auth deploy (RF-183): #703's withNativeSignOutOrigin is on main and goes live with that deploy.",
   "blocker": null,
   "evidence": [
     {
       "kind": "observation",
       "ref": "https://github.com/steven-crosby/ritmofit-web/pull/703",
       "summary": "Deferred design item (1) from the RF-177 reviews: the native sign-out origin handling itself is an owner decision.",
+      "checkedOn": "2026-11-02"
+    },
+    {
+      "kind": "observation",
+      "ref": "https://github.com/steven-crosby/ritmofit-web/pull/706",
+      "summary": "Final review of #706: withNativeSignOutOrigin is on main (#703) but not in production, so the decision should precede the auth deploy; raised to P2 and made a prerequisite of RF-183.",
       "checkedOn": "2026-11-02"
     }
   ],
