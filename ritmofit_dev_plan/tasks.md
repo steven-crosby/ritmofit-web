@@ -12,13 +12,13 @@ owner's queue: any agent may execute a Ready task. Publishing follows AGENTS.md 
 Evidence marked **recorded** is a carried-forward claim, not fresh verification.
 A checked PR proves its GitHub state, not product acceptance or production behavior.
 
-172 tasks. backlog: 57 · ready: 1 · in_progress: 0 · blocked: 1 · review: 11 · done: 100 · cancelled: 2.
+172 tasks. backlog: 57 · ready: 0 · in_progress: 1 · blocked: 1 · review: 11 · done: 100 · cancelled: 2.
 
 ## In progress
 
 | Task | Priority / kind | Relationships | Next action / resolution | Evidence |
 | --- | --- | --- | --- | --- |
-| — | — | — | — | — |
+| [RF-100](tasks/RF-100.json) Label changes rerun only the PR gates, not the full CI job | P3 / task | needs RF-98 | In progress on branch ci/rf-100-label-gate-only (Air conductor lane, 2026-11-01). Restart: move the label-triggered path out of ci.yml into a gate-only workflow whose job reuses the required check name, waits for this head's full ci.yml result and re-evaluates the owner gate; key ci.yml concurrency per PR; then set For review once CI is green except the owner gate. Owner-gated: edits .github/workflows. Until merged, agents remove ready-to-merge before merging, never after. | checked 2026-10-27; checked 2026-10-28 |
 
 ## Blocked / waiting
 
@@ -46,7 +46,7 @@ A checked PR proves its GitHub state, not product acceptance or production behav
 
 | Task | Priority / kind | Relationships | Next action / resolution | Evidence |
 | --- | --- | --- | --- | --- |
-| [RF-100](tasks/RF-100.json) Label changes rerun only the PR gates, not the full CI job | P3 / task | needs RF-98 | Owner set Ready on 2026-10-28. Design a gate-only path for labeled/unlabeled events (separate job or workflow) that keeps the required check name meaningful, so a label edit re-evaluates only the owner gate. Also key the concurrency group per PR (for example ci-${{ github.event.pull_request.number &#124;&#124; github.ref }}) so a label edit on a merged PR cannot cancel main's push run (acceptance 3). Until fixed, agents remove ready-to-merge before merging, never after. Owner-gated: the change edits .github/workflows/ci.yml. | checked 2026-10-27; checked 2026-10-28 |
+| — | — | — | — | — |
 
 ## Backlog
 
