@@ -24,6 +24,7 @@
 <!-- note (Claude Code, 2026-11-01): Owner rulings: the conductor that opened a PR finishes it; the Neo takes iOS only when the Air is busy or the owner says so; the Neo has no rollback path. Relayed owner approval is in its own PR. -->
 <!-- note (Claude Code, 2026-11-02): RF-100: the owner gate is the required `owner-gate` commit status, not a step of the required CI job; label changes re-evaluate only that status. -->
 <!-- note (Claude Code, 2026-11-02): RF-176: only the Owner gate workflow writes `owner-gate`; an approval given within two minutes of a push is refused; label edits never rerun or cancel CI, so the remove-`ready-to-merge`-before-merging and no-label-edits-on-merged-PRs rules are retired. Stale-label cleanup is best-effort; refusals vs transient failures. -->
+<!-- note (Claude Code, 2026-11-02): RF-176 follow-up: PR edits (base retargets) also re-evaluate the owner gate. -->
 
 This is the canonical contributor and agent guide for Ritmo Studio. If another instruction file conflicts
 with it, follow `AGENTS.md`, then repair the stale file. When an AI agent edits this file or adds a note
@@ -279,8 +280,8 @@ Auto-merge is off and branches must be current, so concurrent agents merge **one
 the branch, wait for CI on the new head, ask, review, merge, then the next.
 
 **Owner-gated** — the `owner-gate` status fails until `owner-approved` is present. Only the `Owner
-gate` workflow writes it, on every PR event (new commits and label changes; `success` when no
-owner-gated path changed); the newest write counts. Label changes never rerun or cancel CI, so
+gate` workflow writes it, on every PR event (new commits, label changes, and edits such as a base
+retarget; `success` when no owner-gated path changed); the newest write counts. Label changes never rerun or cancel CI, so
 `ready-to-merge` may be removed before or after merging, and a label edit on a merged PR starts
 only an `Owner gate` run whose jobs skip (RF-176, 2026-11-02). The agent adds `needs-owner`,
 names the manual check left in the PR, and asks as above. These PRs need the `owner-approved` label

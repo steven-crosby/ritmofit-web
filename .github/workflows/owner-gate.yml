@@ -1,13 +1,16 @@
 name: Owner gate
 
-# The owner gate (RF-100, RF-176). Every PR event (new commits and label changes alike) runs
+# The owner gate (RF-100, RF-176). Every PR event (new commits, label changes and edits) runs
 # only this workflow's gate job: it installs and builds nothing and creates no run of the required
 # check. It writes the `owner-gate` commit status (required by the ruleset). ci.yml runs the
 # required check and writes no status, so a label event can never replace a job inside a CI run
 # and leave it "cancelled". Policy: AGENTS.md › "Delegation And Merge Policy".
+# `edited` covers a base-branch retarget, which changes the files and the base checker the gate
+# judges. Title and body edits also start a run; it is cheap (~15 s, no install) and rewrites the
+# same status from the live state.
 on:
   pull_request:
-    types: [opened, synchronize, reopened, labeled, unlabeled]
+    types: [opened, edited, synchronize, reopened, labeled, unlabeled]
 
 permissions:
   contents: read
@@ -108,12 +111,17 @@ jobs:
         run: bash .github/scripts/pr-gates.sh gate-status
 
       # Fail closed: an error in this job (checkout or the gate step; the void step is best-effort)
-      # must not leave an older `success` standing. The gate step fails whenever checkout did,
-      # and writes no status when it fails, so its outcome alone decides.
+      # must not leave an older `success` standing. Inline, not pr-gates.sh, so it still writes
+      # when checkout failed and the script is absent: it needs only the token, the PR number and
+      # the event's head, used when the live head cannot be read.
       - name: Record owner gate error
-        if: ${{ !cancelled() && steps.gate.outcome == 'failure' }}
+        if: ${{ !cancelled() && (steps.gate.outcome == 'failure' || steps.checkout.outcome == 'failure') }}
         env:
           GH_TOKEN: ${{ github.token }}
           PR_NUMBER: ${{ github.event.pull_request.number }}
           EVENT_SHA: ${{ github.event.pull_request.head.sha }}
-        run: bash .github/scripts/pr-gates.sh gate-error
+        run: |
+          head=$(gh api "repos/$GITHUB_REPOSITORY/pulls/$PR_NUMBER" --jq .head.sha) || head=''
+          gh api "repos/$GITHUB_REPOSITORY/statuses/${head:-$EVENT_SHA}" -f state=failure \
+            -f context=owner-gate -f description="Owner gate errored; re-run this job" \
+            -f target_url="$GITHUB_SERVER_URL/$GITHUB_REPOSITORY/actions/runs/$GITHUB_RUN_ID"
