@@ -50,5 +50,7 @@
     }
   ],
   "resolution": "POST /api/v1/auth/session extends a due session server-side and sets no cookie; no /api/v1 response carries a session cookie, which removes the cross-account cookie race at its source. Browsers still refresh through Better Auth's get-session. The iOS half (cookie stored without client-side expiry, /auth/session at launch and foreground, 401 means signed out, logged sign-out failure) ships in iOS RF-1012 after its web-contract snapshots are refreshed.",
-  "followUps": []
+  "followUps": [
+    "RF-181"
+  ]
 }

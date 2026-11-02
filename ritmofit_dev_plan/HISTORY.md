@@ -12,6 +12,23 @@ detail). Current focus and `main` vs production live in the "Now" block of
 ---
 
 ## Deploy and session log (newest first)
+> **Session 2026-11-02 — Air close (no deploy).** Merged with owner permission per PR:
+> [#699](https://github.com/steven-crosby/ritmofit-web/pull/699) as `ec0c3cd` (records, owner
+> rollback path), [#701](https://github.com/steven-crosby/ritmofit-web/pull/701) as `ea23c57`
+> (ios-snapshot `AuthStore.swift` from iOS `5ad7149`),
+> [#700](https://github.com/steven-crosby/ritmofit-web/pull/700) as `8f26519` (RF-100, one-time owner
+> waiver "A"), [#702](https://github.com/steven-crosby/ritmofit-web/pull/702) as `127d05e` (RF-176,
+> one-time owner waiver "B"), [#703](https://github.com/steven-crosby/ritmofit-web/pull/703) as
+> `1897a6d` (RF-177), [#704](https://github.com/steven-crosby/ritmofit-web/pull/704) as `cca13af`
+> (RF-176 follow-up) and [#705](https://github.com/steven-crosby/ritmofit-web/pull/705) as `14d0b32`
+> (RF-178, auth option C). With the owner's yes, the main ruleset (17861419) now also requires the
+> `owner-gate` status from GitHub Actions. #702's description had been overwritten by #703's (a
+> shared scratch file) and was restored from its edit history before merge. The owner closed RF-100
+> and RF-176; RF-179 to RF-181 were logged from review findings. From the Neo: ritmofit-ios #66,
+> #67 `57968b1`, #68 `a222ddd`, #69 `bc076d3` and #70 `5ad7149`. Production unchanged at `67496ab`
+> (not rechecked with wrangler today); `main` is ahead with the auth changes #703 and #705, which need
+> a standalone auth deploy from the Air.
+
 > **Session 2026-11-01 (later) — Neo merges and Air start-session (no deploy).** From the Neo, owner
 > permission in the Neo session: web [#697](https://github.com/steven-crosby/ritmofit-web/pull/697)
 > as `5b71000` (RF-174 logged: a server-side version check on class and cue edits) and

@@ -1,0 +1,27 @@
+{
+  "schemaVersion": 1,
+  "id": "RF-179",
+  "title": "Deployment runbook fixes from #699 review: owner rollback path, rollback source, verification claim",
+  "kind": "documentation",
+  "status": "backlog",
+  "priority": "P3",
+  "parent": null,
+  "dependsOn": [],
+  "acceptance": [
+    "deployment-runbook.md's owner rollback path no longer conflicts with 'only the Air holds Cloudflare credentials': it says which machine and credentials the owner uses, or the rule is reworded.",
+    "The rollback Worker version is taken from `wrangler deployments list` (live), not from docs or HISTORY.",
+    "The runbook's 'both paths verified' wording states only what was actually exercised."
+  ],
+  "nextAction": "Owner triages; fold into the next docs PR on the Air.",
+  "blocker": null,
+  "evidence": [
+    {
+      "kind": "pr",
+      "ref": "https://github.com/steven-crosby/ritmofit-web/pull/699",
+      "summary": "Final review of #699 (merged as ec0c3cd) logged three non-blocking runbook findings: the owner-signs-in-on-own-machine path conflicts with the Air-only Cloudflare credentials rule; the rollback version should come from wrangler deployments list; 'both paths verified' is overstated.",
+      "checkedOn": "2026-11-02"
+    }
+  ],
+  "resolution": null,
+  "followUps": []
+}
