@@ -66,13 +66,14 @@ describe('requireSession (RF-177)', () => {
     expect(setCookiesOf(res)).toEqual(['route_cookie=1; Path=/']);
   });
 
-  it('a 401 carries the clearing cookie Better Auth set', async () => {
+  it('a 401 does not forward the clearing cookie Better Auth set', async () => {
     const clear = 'better-auth.session_token=; Max-Age=0; Path=/';
     getSession.mockResolvedValue(sessionResult(null, [clear]));
     const res = await app().request('/thing', {}, {} as AppEnv['Bindings']);
     expect(res.status).toBe(401);
     expect(await res.json()).toMatchObject({ error: { code: 'UNAUTHORIZED' } });
-    expect(setCookiesOf(res)).toEqual([clear]);
+    // Same cookie name for every account: forwarding it could delete a newer sign-in.
+    expect(setCookiesOf(res)).toEqual([]);
     expect(getSession).toHaveBeenCalledTimes(1);
   });
 });

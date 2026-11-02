@@ -8,10 +8,10 @@
   "parent": null,
   "dependsOn": [],
   "acceptance": [
-    "AUD-007: a session older than Better Auth updateAge gets a Set-Cookie with a later expiry from POST /api/v1/auth/session and from any requireSession route, exactly once per response and alongside any cookie the route sets itself (provider connect's OAuth state cookie); a younger session gets no session Set-Cookie; a revoked session's 401 carries Better Auth's clearing cookie (integration and unit tests).",
+    "AUD-007: a session older than Better Auth updateAge gets a Set-Cookie with a later expiry from POST /api/v1/auth/session and from any requireSession route, exactly once per response and alongside any cookie the route sets itself (provider connect's OAuth state cookie); a younger session gets no session Set-Cookie; a 401 carries no Set-Cookie, so a stale request cannot clear a newer sign-in's cookie (integration and unit tests).",
     "AUD-009: a native-shaped POST /api/auth/sign-out (cookie, JSON, no Origin/Referer/Sec-Fetch-*) revokes the session, and re-injecting the old cookie gets 401 from POST /api/v1/auth/session (integration test).",
     "Browser CSRF protection is unchanged: sign-out with an untrusted or null Origin, an untrusted Referer, fetch metadata, or a form-shaped body revokes nothing, and other cookie-bearing auth POSTs without Origin are still refused (integration and unit tests).",
-    "OpenAPI documents the shared SessionSetCookie response header on every session-authenticated operation, and api.md, authorization.md and conventions.md describe the refresh and clearing cookies and the sign-out trust boundary; the iOS web-contract snapshots are refreshed in a separate iOS PR."
+    "OpenAPI documents the shared SessionSetCookie response header on every session-authenticated operation, and api.md, authorization.md and conventions.md describe the refresh cookie, the no-cookie 401 and the sign-out trust boundary; the iOS web-contract snapshots are refreshed in a separate iOS PR."
   ],
   "nextAction": null,
   "blocker": null,
@@ -57,8 +57,20 @@
       "ref": "apps/api/src/middleware/auth.test.ts",
       "summary": "Three stacked requireSession routers resolve the session once (getSession called once), forward the refresh once, keep the route's own cookie, and forward the clearing cookie on 401.",
       "checkedOn": "2026-11-02"
+    },
+    {
+      "kind": "test",
+      "ref": "apps/api/test/native-session.integration.test.ts",
+      "summary": "Second final review of #703 at 31ff13a: forwarding Better Auth's Max-Age=0 clearing cookie on 401 could let a slow request carrying user A's dead cookie delete user B's cookie after a sign-out and new sign-in (same cookie name). 401s now carry no Set-Cookie (integration and unit tests assert it); the unreachable fallback in forwardSetCookies is removed. Residual narrow race: a refresh issued for A just before sign-out that arrives after B's sign-in; Better Auth's own endpoints share it.",
+      "checkedOn": "2026-11-02"
+    },
+    {
+      "kind": "observation",
+      "ref": "https://github.com/steven-crosby/ritmofit-web/pull/703",
+      "summary": "Deferred from the 31ff13a review, not fixed here (owner or conductor to decide, possibly as new Backlog tasks): (1) the native sign-out origin-handling design itself, for the owner; (2) the userId short-circuit in requireSession relies on nothing else setting userId first; (3) c.header copies a finalized Response once per forwarded cookie; (4) the OpenAPI SessionSetCookie opt-out keys on security: [] and so depends on public operations declaring it.",
+      "checkedOn": "2026-11-02"
     }
   ],
-  "resolution": "Both audit findings were real and reproduced in integration tests before the fix. The web side now returns refreshed session cookies (and clearing cookies on 401) from every session-authenticated response, resolves the session once per request, and revokes a native sign-out, with browser CSRF behaviour pinned by tests. A fix round after final review kept route-set cookies intact. The iOS half (persist Set-Cookie from any authed response, log failed sign-out, reinstall handling) ships in iOS RF-1012/RF-1032 after its web-contract snapshots are refreshed.",
+  "resolution": "Both audit findings were real and reproduced in integration tests before the fix. The web side now returns refreshed session cookies from every successful session-authenticated response (never a clearing cookie on 401), resolves the session once per request, and revokes a native sign-out, with browser CSRF behaviour pinned by tests. Two fix rounds after final review kept route-set cookies intact and removed the 401 clearing cookie. Review items deferred from the 31ff13a review are listed in the evidence and the PR. The iOS half (persist Set-Cookie from any authed response, treat 401 as signed out, log failed sign-out, reinstall handling) ships in iOS RF-1012/RF-1032 after its web-contract snapshots are refreshed.",
   "followUps": []
 }

@@ -160,7 +160,7 @@ describe('AUD-009: native sign-out revokes the server session', () => {
   });
 
   it.each(['/api/v1/auth/session', '/api/v1/auth/me'])(
-    'a revoked cookie gets 401 from %s with a clearing Set-Cookie (Max-Age=0)',
+    'a revoked cookie gets 401 from %s with no Set-Cookie (no clearing cookie that could hit a newer sign-in)',
     async (path) => {
       const user = await signUpUser();
       expect((await nativePost('/api/auth/sign-out', user.cookie)).status).toBe(200);
@@ -171,7 +171,7 @@ describe('AUD-009: native sign-out revokes the server session', () => {
           : await nativePost(path, user.cookie);
       expect(res.status).toBe(401);
       expect(await res.json()).toMatchObject({ error: { code: 'UNAUTHORIZED' } });
-      expect(sessionSetCookie(res)).toMatch(/Max-Age=0/i);
+      expect(res.headers.getSetCookie()).toEqual([]);
     },
   );
 

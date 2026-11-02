@@ -42,7 +42,7 @@ schemas in `packages/shared`, surfaced in the generated OpenAPI spec.
 
 | Method | Path | Purpose |
 |---|---|---|
-| POST | `/auth/session` | Validate the Better Auth session and return the canonical profile. Better Auth's adapter **creates** the `users` row; this route **reconciles our extra columns** (`display_name`, `image_url`) on first sight — it does not mint the identity. Called after login and at native app launch; like every authed route, may return a refreshed or clearing session cookie (see below). |
+| POST | `/auth/session` | Validate the Better Auth session and return the canonical profile. Better Auth's adapter **creates** the `users` row; this route **reconciles our extra columns** (`display_name`, `image_url`) on first sight — it does not mint the identity. Called after login and at native app launch; like every authed route, may return a refreshed session cookie (see below). |
 | GET | `/auth/me` | Return the signed-in caller's canonical profile. Used by account/settings surfaces and auth smoke checks. |
 | PATCH | `/auth/me` | Update caller-owned profile fields (`displayName`, `imageUrl`). Email, password, and provider identity remain Better Auth-owned. |
 
@@ -51,13 +51,14 @@ schemas in `packages/shared`, surfaced in the generated OpenAPI spec.
 **Session refresh and native clients (RF-177).** Sessions last 7 days and roll forward once they
 are older than Better Auth's `updateAge` (1 day). The refresh happens on whichever authed call
 crosses that age: `POST /auth/session` or any route behind `requireSession`. That response carries
-`Set-Cookie` with the session cookie's new `Max-Age`. A 401 for a cookie whose session is revoked or
-expired carries a clearing `Set-Cookie` (`Max-Age=0`). Every other response carries no session
-cookie. OpenAPI documents this as the shared `SessionSetCookie` response header on every
-session-authenticated operation. Browsers apply it automatically. A native client that keeps its
-own cookie jar (iOS persists it in the Keychain) must save `Set-Cookie` from **any** authed
-response, or its copy expires on day 7 while the server session is still live, and should drop its
-stored cookie when it receives the clearing one.
+`Set-Cookie` with the session cookie's new `Max-Age`. Every other response carries no session
+cookie. A 401 deliberately carries none either, not even Better Auth's clearing cookie: the cookie
+name is the same for every account, so a slow request carrying a dead cookie could otherwise delete
+the cookie of a newer sign-in. OpenAPI documents this as the shared `SessionSetCookie` response
+header on every session-authenticated operation. Browsers apply it automatically. A native client
+that keeps its own cookie jar (iOS persists it in the Keychain) must save `Set-Cookie` from **any**
+authed response, or its copy expires on day 7 while the server session is still live, and treats a
+401 as signed out, discarding its stored cookie itself.
 
 `POST /api/auth/sign-out` revokes the server session. A native client may send it without an
 `Origin` header if it sends `Content-Type: application/json` and no `Referer` or `Sec-Fetch-*`

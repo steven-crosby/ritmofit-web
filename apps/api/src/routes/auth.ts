@@ -35,8 +35,8 @@ authRoutes.get('/capabilities', (c) =>
  * M1 this is a reconciling read rather than an upsert. 401 when unauthenticated.
  * Native clients call it at launch to keep a session alive: when Better Auth
  * refreshes the session (older than updateAge) the response carries `Set-Cookie`
- * with the extended lifetime; a 401 for a dead session carries the clearing cookie.
- * Both come from `requireSession`, so every authed route behaves the same way.
+ * with the extended lifetime. A 401 carries no cookie; the client drops its own.
+ * This comes from `requireSession`, so every authed route behaves the same way.
  */
 authRoutes.post('/session', requireSession, (c) => c.json(c.get('user')));
 

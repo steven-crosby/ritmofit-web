@@ -186,7 +186,7 @@ const doc = {
       post: {
         summary: 'Validate session, return canonical profile',
         description:
-          'Native clients call this at launch to keep a session alive. Like every session-authenticated operation, the response may carry the shared SessionSetCookie header: a refreshed session cookie to persist, or on 401 a clearing cookie.',
+          'Native clients call this at launch to keep a session alive. Like every session-authenticated operation, a successful response may carry the shared SessionSetCookie header: a refreshed session cookie to persist.',
         responses: {
           '200': jsonResp('User', 'Canonical profile'),
           '401': { description: 'Not authenticated' },
@@ -1076,7 +1076,7 @@ const doc = {
     headers: {
       SessionSetCookie: {
         description:
-          'Better Auth session cookie, set by requireSession on any session-authenticated response (RF-177). Present when this request refreshed a session older than updateAge (1 day): the same token with a new Max-Age (7 days); persist it. On 401 for a revoked or expired session: a clearing cookie (Max-Age=0); discard the stored cookie. Absent otherwise. Browsers apply it automatically; native clients must save it from any authed response.',
+          'Better Auth session cookie, set by requireSession on any session-authenticated response (RF-177). Present when this request refreshed a session older than updateAge (1 day): the same token with a new Max-Age (7 days); persist it. Never sent with a 401 (the client discards its own stored cookie). Absent otherwise. Browsers apply it automatically; native clients must save it from any authed response.',
         schema: { type: 'string' },
       },
     },
