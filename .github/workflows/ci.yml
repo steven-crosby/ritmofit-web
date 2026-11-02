@@ -8,53 +8,35 @@ on:
   push:
     branches: [main]
   pull_request:
-    # labeled/unlabeled re-run the owner gate when `owner-approved` is added or removed.
-    types: [opened, synchronize, reopened, labeled, unlabeled]
+    # Label changes do not run this workflow: owner-gate.yml re-evaluates only the owner gate (RF-100).
+    types: [opened, synchronize, reopened]
 
-# pull-requests: write removes a stale `owner-approved`; statuses: write binds an approval to the
-# exact commit it was given on.
+# pull-requests: read lists the PR's changed files for the gates. The owner-gate job widens its own
+# permissions to write the `owner-gate` status and drop a stale `owner-approved`.
 permissions:
   contents: read
-  pull-requests: write
-  statuses: write
+  pull-requests: read
 
-# A newer push to the same ref cancels the in-flight run.
+# A newer push to the same PR (or to main) cancels the in-flight run. Keyed by PR number, not
+# github.ref: a closed PR's event carries the base branch's ref, so an event on a merged PR could
+# otherwise cancel main's post-merge push run.
 concurrency:
-  group: ci-${{ github.ref }}
+  group: ci-${{ github.event_name == 'pull_request' && format('pr-{0}', github.event.pull_request.number) || github.ref }}
   cancel-in-progress: true
 
 jobs:
+  # The ruleset's required check. It fails only on real checks; the owner gate's result is the
+  # separate `owner-gate` commit status written by the owner-gate job below.
   checks:
     name: format · typecheck · lint · test · build · audit
     runs-on: ubuntu-latest
     steps:
-      # Approval covers only the commit the owner saw. When the owner adds `owner-approved`, this
-      # run records an `owner-approval` commit status on that exact head; the gate later requires
-      # both the label and that status on the current head. Any new commit (a push, a branch
-      # update, commits pushed while the PR was closed) has no status, so a stale label cannot
-      # pass the gate even if removing it below fails. A run cancelled before recording leaves no
-      # status, which fails closed: re-add the label. Agents never create this status by hand.
-      - name: Record owner approval for this head
-        if: github.event_name == 'pull_request' && github.event.action == 'labeled' && github.event.label.name == 'owner-approved'
-        env:
-          GH_TOKEN: ${{ github.token }}
-          HEAD_SHA: ${{ github.event.pull_request.head.sha }}
-        run: |
-          gh api "repos/$GITHUB_REPOSITORY/statuses/$HEAD_SHA" -f state=success \
-            -f context=owner-approval -f description="owner-approved was applied to this commit"
-
-      # Hygiene: drop the label when new commits arrive so the PR shows it needs a fresh approval.
-      # The commit binding above already makes a stale label count for nothing, so a failure here
-      # must not skip the real checks. GITHUB_TOKEN edits do not trigger another run.
-      - name: Void owner approval on new commits
-        continue-on-error: true
-        if: github.event_name == 'pull_request' && (github.event.action == 'synchronize' || github.event.action == 'reopened') && contains(github.event.pull_request.labels.*.name, 'owner-approved')
-        env:
-          GH_TOKEN: ${{ github.token }}
-          PR_NUMBER: ${{ github.event.pull_request.number }}
-        run: gh pr edit "$PR_NUMBER" --repo "$GITHUB_REPOSITORY" --remove-label owner-approved
-
       - uses: actions/checkout@v4
+
+      # The ruleset requires this job's name and the `owner-gate` status; fail fast if a rename
+      # broke either workflow's link to them.
+      - name: PR gate workflows agree
+        run: bash .github/scripts/pr-gates.sh self-check
 
       # pnpm/action-setup reads the version from the root package.json
       # "packageManager" field (pnpm@11.4.0), so there's one source of truth.
@@ -68,48 +50,25 @@ jobs:
       - name: Install
         run: pnpm install --frozen-lockfile
 
-      # Owner-gated paths (migrations, auth, provider/playback, CI/deploy, agent rules) fail the
-      # job until the owner adds `owner-approved`; product changes must cite their RF record.
-      # Both checkers' own tests run first — a checker nobody has watched fail is not a gate.
-      # The gates themselves run last, so every other check still reports for the owner.
+      # Product changes must cite their RF record; owner-gated paths (migrations, auth,
+      # provider/playback, CI/deploy, agent rules) need `owner-approved`, judged by the owner-gate
+      # job below. Both checkers' own tests run first — a checker nobody has watched fail is not
+      # a gate. RF trace runs last, so every other check still reports.
       - name: Owner gate self-test
         run: pnpm owner-gate:test
 
       - name: RF trace self-test
         run: pnpm rf-trace:test
 
-      # Changed files come from the PR files API, which lists a rename's old path too and handles
-      # diffs too large for `gh pr diff`. The gates run main's copy of each checker when main
-      # has one, so a PR cannot loosen the checker that judges it.
+      # Changed files plus the base branch's copy of each checker, so a PR cannot loosen the checker
+      # that judges it. See .github/scripts/pr-gates.sh.
       - name: Prepare PR gates
         if: github.event_name == 'pull_request'
         env:
           GH_TOKEN: ${{ github.token }}
           PR_NUMBER: ${{ github.event.pull_request.number }}
           BASE_REF: ${{ github.event.pull_request.base.ref }}
-        run: |
-          set -euo pipefail
-          gh api "repos/$GITHUB_REPOSITORY/pulls/$PR_NUMBER/files" --paginate \
-            --jq '.[] | [.filename, (.previous_filename // "")] | @tsv' > "$RUNNER_TEMP/pr-files.tsv"
-          # The files API stops at 3,000 files. Fail closed rather than gate a truncated list.
-          expected=$(gh api "repos/$GITHUB_REPOSITORY/pulls/$PR_NUMBER" --jq .changed_files)
-          listed=$(grep -c . "$RUNNER_TEMP/pr-files.tsv" || true)
-          if [ "$listed" -ne "$expected" ]; then
-            echo "PR has $expected changed files but the API listed $listed; refusing to gate a partial list."
-            exit 1
-          fi
-          tr '\t' '\n' < "$RUNNER_TEMP/pr-files.tsv" | grep . | sort -u > "$RUNNER_TEMP/pr-files.txt"
-          echo "$listed changed files, $(wc -l < "$RUNNER_TEMP/pr-files.txt") paths including renames' old paths"
-          git fetch --no-tags --depth=1 origin "$BASE_REF"
-          for checker in owner-gate rf-trace; do
-            if git cat-file -e "FETCH_HEAD:scripts/$checker.mjs" 2>/dev/null; then
-              git show "FETCH_HEAD:scripts/$checker.mjs" > "$RUNNER_TEMP/$checker.mjs"
-              echo "$checker: using $BASE_REF's copy"
-            else
-              cp "scripts/$checker.mjs" "$RUNNER_TEMP/$checker.mjs"
-              echo "$checker: not on $BASE_REF yet, using this PR's copy"
-            fi
-          done
+        run: bash .github/scripts/pr-gates.sh prepare
 
       # Prettier owns code + top-level docs; generated artifacts and long-form
       # reference docs are excluded in .prettierignore.
@@ -215,20 +174,61 @@ jobs:
           PR_NUMBER: ${{ github.event.pull_request.number }}
         run: node "$RUNNER_TEMP/rf-trace.mjs" < "$RUNNER_TEMP/pr-files.txt"
 
-      - name: Owner gate (owner-gated paths need owner-approved)
-        if: ${{ !cancelled() && github.event_name == 'pull_request' }}
+  # Writes the `owner-gate` status (a required status in the ruleset) on the PR's live head; it
+  # does not wait for the checks above. Commit statuses are latest-wins, so the newest evaluation
+  # counts, whichever workflow wrote it. owner-gate.yml re-evaluates on label changes.
+  owner-gate:
+    name: owner gate status
+    if: github.event_name == 'pull_request'
+    runs-on: ubuntu-latest
+    # statuses: write writes `owner-gate`; pull-requests: write drops a stale `owner-approved`.
+    permissions:
+      contents: read
+      pull-requests: write
+      statuses: write
+    # Shared with owner-gate.yml so status writes never interleave; each job reads the live state
+    # when it starts, so the last write is the newest answer. Never cancelled: a pending job is
+    # only replaced by a newer one, which reads later state.
+    concurrency:
+      group: owner-gate-pr-${{ github.event.pull_request.number }}
+      cancel-in-progress: false
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          sparse-checkout: |
+            .github
+            scripts
+
+      # Approval covers only the commit the owner saw. owner-gate.yml records an `owner-approval`
+      # commit status on the exact head the owner labelled; the gate requires both the label and
+      # that status on the current head, so a new commit carries no approval. Agents never create
+      # this status by hand. Hygiene: drop the label when the live head has no approval, so the PR
+      # shows it needs a fresh one. The binding already makes a stale label count for nothing, so
+      # a failure here must not skip the gate. GITHUB_TOKEN edits do not trigger another run.
+      - name: Void owner approval on new commits
+        continue-on-error: true
+        if: github.event.action == 'synchronize' || github.event.action == 'reopened'
         env:
           GH_TOKEN: ${{ github.token }}
-          LABELS: ${{ toJSON(github.event.pull_request.labels.*.name) }}
-          HEAD_SHA: ${{ github.event.pull_request.head.sha }}
+          PR_NUMBER: ${{ github.event.pull_request.number }}
+        run: bash .github/scripts/pr-gates.sh void-approval
+
+      - name: Owner gate (owner-gated paths need owner-approved)
+        env:
+          GH_TOKEN: ${{ github.token }}
+          PR_NUMBER: ${{ github.event.pull_request.number }}
+          BASE_REF: ${{ github.event.pull_request.base.ref }}
+        run: bash .github/scripts/pr-gates.sh gate-status
+
+      # Fail closed: an error anywhere above must not leave an older `success` standing.
+      - name: Record owner gate error
+        if: failure()
+        env:
+          GH_TOKEN: ${{ github.token }}
+          PR_NUMBER: ${{ github.event.pull_request.number }}
+          EVENT_SHA: ${{ github.event.pull_request.head.sha }}
         run: |
-          set -euo pipefail
-          # The label counts only if this exact head carries the recorded approval status.
-          bound=$(gh api "repos/$GITHUB_REPOSITORY/commits/$HEAD_SHA/statuses" --paginate \
-            --jq '[.[] | select(.context == "owner-approval" and .state == "success")] | length' |
-            awk '{ total += $1 } END { print total + 0 }')
-          if [ "$bound" -eq 0 ]; then
-            echo "No owner-approval status on $HEAD_SHA; owner-approved (if present) is not counted."
-            LABELS=$(jq -c 'map(select(. != "owner-approved"))' <<< "$LABELS")
-          fi
-          OWNER_GATE_LABELS="$LABELS" node "$RUNNER_TEMP/owner-gate.mjs" < "$RUNNER_TEMP/pr-files.txt"
+          head=$(gh api "repos/$GITHUB_REPOSITORY/pulls/$PR_NUMBER" --jq .head.sha) || head=$EVENT_SHA
+          gh api "repos/$GITHUB_REPOSITORY/statuses/${head:-$EVENT_SHA}" -f state=failure \
+            -f context=owner-gate -f description="Owner gate errored; re-run this job" \
+            -f target_url="$GITHUB_SERVER_URL/$GITHUB_REPOSITORY/actions/runs/$GITHUB_RUN_ID"

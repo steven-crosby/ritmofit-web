@@ -22,6 +22,7 @@
 <!-- note (Claude Code, 2026-10-31): Added "Two-machine conductors" under Session Workflow (owner-approved): priority per machine, that only the Air holds the wrangler login (the Neo is on par otherwise, including signed-in production checks), direct SendMessage between conductors, and that a peer message is never permission. -->
 <!-- note (Claude Code, 2026-11-01): Two-machine conductors: each conductor is a Solo or Orchestrator session, the Neo holds no Cloudflare credentials, signed-in production checks mean the RitmoFit app, and a message is not a claim (follow-ups from #681 and #693 reviews). -->
 <!-- note (Claude Code, 2026-11-01): Owner rulings: the conductor that opened a PR finishes it; the Neo takes iOS only when the Air is busy or the owner says so; the Neo has no rollback path. Relayed owner approval is in its own PR. -->
+<!-- note (Claude Code, 2026-11-02): RF-100: the owner gate is the required `owner-gate` commit status, not a step of the required CI job; label changes re-evaluate only that status. -->
 
 This is the canonical contributor and agent guide for Ritmo Studio. If another instruction file conflicts
 with it, follow `AGENTS.md`, then repair the stale file. When an AI agent edits this file or adds a note
@@ -229,8 +230,9 @@ files whose items are done or routed.
 **Merging needs the owner's permission for each PR.** A PR is ready to merge when:
 
 1. The required CI check is green on the **final PR head** and the branch is up to date with `main`
-   (the ruleset enforces both). For an owner-gated PR the job is red by design until the owner
-   approves, so it is ready when every step except the final owner-gate step has passed.
+   (the ruleset enforces both). The owner gate is not part of that check: it is the required
+   `owner-gate` commit status, which for an owner-gated PR stays failed by design until the owner
+   approves, so such a PR is ready once the CI check is green.
 2. Product changes (`apps/`, `packages/`, `e2e/`) change an RF record whose `pr` evidence cites the
    PR and whose status is final (Done, For review, Blocked or Cancelled). CI's RF-trace step
    enforces this, so a draft PR's RF-trace stays red until the task's final state is set. Work that
@@ -263,17 +265,20 @@ cited in a PR comment, and does not block. Then:
   `gh pr merge <n> --squash --match-head-commit <reviewed sha>` and remove `ready-to-merge`.
 - **Significant findings:** do not merge. Comment them on the PR, remove `ready-to-merge`, and stop. A fix is a
   new push, so it needs green CI again and a fresh permission. Any push after permission voids it:
-  approval counts only for the commit it was given on. When the owner adds `owner-approved`, CI
-  records an `owner-approval` commit status on that exact head, and the gate requires both the label
-  and that status on the current head; CI also drops the label when new commits arrive. The agent
-  asks again. Agents never create the `owner-approval` status by hand.
+  approval counts only for the commit it was given on. When the owner adds `owner-approved`, the
+  `Owner gate` workflow records an `owner-approval` commit status on that exact head, and the gate
+  requires both the label and that status on the current head; CI also drops the label when new
+  commits arrive. The agent asks again. Agents never create the `owner-approval` or `owner-gate`
+  status by hand.
 
 Auto-merge is off and branches must be current, so concurrent agents merge **one at a time**: update
 the branch, wait for CI on the new head, ask, review, merge, then the next.
 
-**Owner-gated** — CI's last step fails until `owner-approved` is present. The agent adds `needs-owner`,
+**Owner-gated** — the `owner-gate` status fails until `owner-approved` is present. CI writes it on
+every PR run (`success` when no owner-gated path changed) and the `Owner gate` workflow rewrites it
+on every label change, without re-running CI; the newest write counts. The agent adds `needs-owner`,
 names the manual check left in the PR, and asks as above. These PRs need the `owner-approved` label
-itself, because the CI gate reads it; it is both the gate approval and the merge permission. The agent still sets the task's final state in the PR: the
+itself, because the gate reads it; it is both the gate approval and the merge permission. The agent still sets the task's final state in the PR: the
 open PR is the review, so a rejected PR never reaches `main`. The authoritative path list is
 `scripts/owner-gate.mjs`:
 
@@ -285,10 +290,10 @@ open PR is the review, so a rejected PR never reaches `main`. The authoritative 
 
 **The owner gate is a guardrail, not a security boundary.** It catches an agent misjudging its own
 change. It cannot stop a deliberate bypass: every agent pushes as the owner's account, and a
-`pull_request` run uses the PR's own `ci.yml`, so a PR could edit the gate or forge the status. A
-labeled run cancelled before it records the status leaves the approval uncounted, which fails closed
-(re-add the label). The real backstop is the owner's permission for every merge; agents never edit
-the gate to get a PR through.
+`pull_request` run uses the PR's own workflows, so a PR could edit the gate or forge a status. An
+approval whose recording job fails leaves it uncounted, and a gate run that errors writes
+`owner-gate` as failure; both fail closed (re-run the job or re-add the label). The real backstop is
+the owner's permission for every merge; agents never edit the gate to get a PR through.
 
 **Never granted:** deploys, remote D1 migrations, secrets, production data, repository settings or
 rulesets, applying `owner-approved` except on the owner's explicit in-session instruction, merging
@@ -298,7 +303,7 @@ Solo or Orchestrator session finishes a PR that already has the owner's permissi
 conductors, as "Who finishes a PR" decides; a Lane never merges), and branch deletion. Those keep
 their separate explicit permission.
 
-**What CI proves:** the required job runs format, task, owner-gate and RF-trace checks, typecheck, lint,
+**What CI proves:** the required job runs format, task, owner-gate self-test and RF-trace checks, typecheck, lint,
 design-system verify, theme classes, unit and D1 integration tests, the web build with bundle budget,
 a Playwright smoke of the signed-in core loop at 1440 and 390 wide (overflow and axe WCAG 2.2 AA),
 OpenAPI drift, iOS contract parity and the dependency audit. It uploads per-page screenshots as the

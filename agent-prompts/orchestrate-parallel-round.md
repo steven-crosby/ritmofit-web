@@ -242,7 +242,8 @@ For each authorized PR, sequentially:
    safe.
 4. Wait for the combined `format · typecheck · lint · test · build · audit` check on the updated tree.
    An update push voids any earlier permission for that PR (CI also drops `owner-approved`).
-5. On failure of anything other than the final owner-gate step, return the PR to its owning lane.
+5. If the CI check fails, return the PR to its owning lane (a failed `owner-gate` status only
+   means it awaits the owner's approval).
 6. When it is ready (see the policy, including owner-gated PRs), ask the owner for this PR at this
    head: "PR #N is ready on `<sha>` — may I run the final review and squash-merge?" One approval covers
    one PR at one head; never carry a batch approval across an update.

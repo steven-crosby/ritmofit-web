@@ -3,18 +3,19 @@
   "id": "RF-100",
   "title": "Label changes rerun only the PR gates, not the full CI job",
   "kind": "task",
-  "status": "ready",
+  "status": "review",
   "priority": "P3",
   "parent": null,
   "dependsOn": [
     "RF-98"
   ],
   "acceptance": [
-    "Adding or removing a label (ready-to-merge, needs-owner, owner-approved) re-evaluates the owner gate without re-running install, tests, build and the e2e smoke, while the required check still reflects the gate result for the current head.",
+    "Adding or removing a label (ready-to-merge, needs-owner, owner-approved) re-evaluates the owner gate without re-running install, tests, build and the e2e smoke, and the required `owner-gate` commit status reflects the gate result for the current head.",
     "A label-only rerun can no longer turn a green PR red through a flaky e2e or cancel an in-flight run.",
-    "A label edit on an already-merged PR can no longer cancel the post-merge push run on main (a closed PR's pull_request run shares the ci-refs/heads/main concurrency group today)."
+    "A label edit on an already-merged PR can no longer cancel the post-merge push run on main (a closed PR's pull_request run shares the ci-refs/heads/main concurrency group today).",
+    "The required CI check fails only on real checks, never on the owner gate: the owner gate is the `owner-gate` commit status (latest-wins), written by ci.yml on every PR run and by owner-gate.yml on label changes, success for non-gated PRs and fail-closed on errors; owner-gate.yml creates no run of the required check."
   ],
-  "nextAction": "Owner set Ready on 2026-10-28. Design a gate-only path for labeled/unlabeled events (separate job or workflow) that keeps the required check name meaningful, so a label edit re-evaluates only the owner gate. Also key the concurrency group per PR (for example ci-${{ github.event.pull_request.number || github.ref }}) so a label edit on a merged PR cannot cancel main's push run (acceptance 3). Until fixed, agents remove ready-to-merge before merging, never after. Owner-gated: the change edits .github/workflows/ci.yml.",
+  "nextAction": "Owner adds `owner-gate` as a required status check in the main ruleset (Settings → Rules → Rulesets → main ruleset → Require status checks → add `owner-gate`) BEFORE merging #700; until then owner-gated PRs are unprotected after merge. Then the owner reviews and approves #700 at its new head; the label run records the approval and rewrites `owner-gate` to success. The interim rule (remove ready-to-merge before merging, never after) applies until merged.",
   "blocker": null,
   "evidence": [
     {
@@ -34,8 +35,28 @@
       "ref": "https://github.com/steven-crosby/ritmofit-web/actions/runs/40768428224",
       "summary": "Post-merge push runs on main for 9166826 (#649) and 492e181 (#650) were cancelled ('a higher priority waiting request for ci-refs/heads/main exists') by pull_request unlabeled runs started 4 s later when ready-to-merge was removed from the merged PR. Until fixed, remove ready-to-merge before merging, not after.",
       "checkedOn": "2026-10-28"
+    },
+    {
+      "kind": "pr",
+      "ref": "https://github.com/steven-crosby/ritmofit-web/pull/700",
+      "summary": "PR #700: label events run only owner-gate.yml (same required check name; waits for this head's full ci.yml marker step, then re-runs the owner gate with live labels); ci.yml drops labeled/unlabeled and keys concurrency per PR. ci.yml run 41389896266 on 2655052 passed every step except the owner gate; removing and re-adding needs-owner started two Owner gate runs (41390366895, 41390368848, ~12 s each, no install/test/build/e2e, no new CI run) that judged the full run and failed only on the owner gate, as designed.",
+      "checkedOn": "2026-11-01"
+    },
+    {
+      "kind": "observation",
+      "ref": "https://github.com/steven-crosby/ritmofit-web/pull/700",
+      "summary": "Live approval test on 22421a7 failed: owner-gate.yml run 41434803378 passed in 15 s and recorded owner-approval, but the PR stayed BLOCKED. The ruleset and statusCheckRollup read the required check across every check suite, and ci.yml run 41402534763 still held a failed run under the required name (its owner gate step), so a newer success in another suite cannot replace it. Owner chose option 1: the owner gate becomes the latest-wins `owner-gate` commit status and the required CI job never fails on it.",
+      "checkedOn": "2026-11-02"
+    },
+    {
+      "kind": "observation",
+      "ref": "https://github.com/steven-crosby/ritmofit-web/actions/runs/41440901095",
+      "summary": "Status design on f21f8fa: CI run 41440215069 passed the required check and its owner gate status job (it voided the stale owner-approved label, since f21f8fa has no approval) and wrote owner-gate = failure ('Owner-gated paths need owner-approved on f21f8fa'). Adding then removing ready-to-merge started Owner gate runs 41440901095 and 41441024681 (~18 s, record job skipped, no CI run) that each rewrote owner-gate = failure. Rollup: required check SUCCESS, owner-gate FAILURE, mergeStateStatus UNSTABLE (BLOCKED once the ruleset requires owner-gate).",
+      "checkedOn": "2026-11-02"
     }
   ],
   "resolution": null,
-  "followUps": []
+  "followUps": [
+    "RF-175"
+  ]
 }
