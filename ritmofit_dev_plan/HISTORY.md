@@ -20,11 +20,12 @@ detail). Current focus and `main` vs production live in the "Now" block of
 > [#695](https://github.com/steven-crosby/ritmofit-web/pull/695) as `ebd7aa0` (RF-157 rescoped to
 > three checks, no longer waiting on RF-92). Earlier since the last entry: #690 `d06d6ec`, #691
 > `dbd72e2` and #692 `48b774b` (RF-151 records). ritmofit-ios: #55 `100094f`, #56 `e8f8bba` and
-> #57 `2c56fba` (RF-1021 to RF-1023 records); RF-1021's #58 was still in review at this close.
+> #57 `2c56fba` (RF-1021 to RF-1023 records) and #58 `ce01f8d` (RF-1021: roll back a rejected
+> class edit); from the Neo, #59 `3e05b25` (RF-1002) and #60 `abe6829` (RF-1011 part A, RF-1026).
 > This close also writes the owner's 2026-11-01 conductor rulings into AGENTS.md (who finishes a PR,
 > iOS on the Neo, no rollback on the Neo); relayed owner approval went to its own PR. With the
-> owner's yes, the Air removed its empty `lanes/web-a` and `lanes/web-b` folders and other stale local worktrees. Production unchanged at
-> `67496ab`: every merge since is records and docs only (checked from git, not wrangler).
+> owner's yes, the Air removed its empty `lanes/web-a` and `lanes/web-b` folders and other stale
+> local worktrees. Production unchanged at `67496ab`: every merge since is records and docs only (checked from git, not wrangler).
 > Correction to the 2026-10-31 addendum below: it postdates the deploy entry under it, the Air
 > merges entry it points at is two entries down, and #689 also rewrote the Now block and carried the
 > RF-172, RF-138 and RF-169 follow-ups.
