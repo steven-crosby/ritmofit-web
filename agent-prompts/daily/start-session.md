@@ -97,7 +97,7 @@ Pick one before deep reads; every mode still ends with **one** recommended next 
    step 5 found undeployed merges, or the objective is reorient/status:
    - live Worker version via `pnpm --filter @ritmofit/api exec wrangler deployments status`; run it only
      on a machine that holds Cloudflare credentials (the Air; see AGENTS.md "Two-machine conductors").
-     Elsewhere skip it and report this item as needing the Air
+     Elsewhere skip it and report this item as needing the Air.
    - served SPA entry hash from **three consecutive** cache-busted fetches of `/` (see
      `ritmofit_dev_plan/deployment-runbook.md`); one agreeing fetch is not enough
    - state plainly: production matches `main`, `main` is ahead (name the tip and undeployed PRs),

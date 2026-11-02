@@ -13,14 +13,17 @@
 ## Now
 
 <!-- Claude Code, 2026-11-01: Close trimmed Now; older Now notes and superseded text are in git history and HISTORY. Production unchanged since 67496ab; RF-157 rescoped (#695). -->
+<!-- Claude Code, 2026-11-02: Production observed from the Air at start-session; #654 closed; records for #697/#698. -->
 
 **Current actionable state:** [RF board](./tasks.md), backed by canonical [task records](./tasks/README.md).
 The order of work is [Phases](#phases) below; each phase lists RF records, not a second backlog.
-**Main vs production (production last observed 2026-10-31; git checked 2026-11-01):** production
-is main `67496ab` (Worker `feac7dde-dc10-4462-bd2d-79075d289bda`; SPA `assets/index-ChxMwIpX.js`;
-rollback `e50f1fd3-bdd1-4541-bc3f-4c2cd483a167`), deployed from the Air on 2026-10-31. Every later
-main commit is records and docs only, so no deploy is due. See [HISTORY](./HISTORY.md).
-**In flight:** the D25 provider matrix (#654), unchanged since 2026-10-29.
+**Main vs production (observed from the Air at the 2026-11-01 start-session):** production is
+main `67496ab` (Worker `feac7dde-dc10-4462-bd2d-79075d289bda`; SPA `assets/index-ChxMwIpX.js`;
+rollback `e50f1fd3-bdd1-4541-bc3f-4c2cd483a167`), deployed from the Air on 2026-10-31. At start-session `wrangler deployments
+status` showed that Worker at 100%, three cache-busted fetches served that SPA and health returned
+200. Every later main commit is records and docs only, so no deploy is due. See [HISTORY](./HISTORY.md).
+**In flight:** none on web. iOS: RF-1011 part D (ritmofit-ios) on the Neo. The D25
+provider matrix draft (#654) was closed unmerged on 2026-11-02 (UTC).
 **Next step:** the owner's Mac and iPhone check of [RF-151](./tasks/RF-151.json) (Music › Songs pick
 mode on real likes: a row tap ticks and never plays, the 15 cap, Create a class) and RF-134's live
 labels on Music and Account. Still owed: the iPhone Safari device check (the 7 steps in the #669 PR
@@ -32,7 +35,7 @@ Apple account goes first. Spotify is reopened; liked songs load in production fo
 **Open owner decisions:** whether Live stops showing "No BPM set" on every cue
 ([RF-168](./tasks/RF-168.json)); the review queue (RF-91, RF-93, RF-94, RF-96, RF-16, RF-23, RF-32);
 whether [RF-80](./tasks/RF-80.json) is cancelled or rescoped after RF-124's root cause; Live finish
-placement (see Backlog); keep or close #654.
+placement (see Backlog).
 
 ## Phases
 
