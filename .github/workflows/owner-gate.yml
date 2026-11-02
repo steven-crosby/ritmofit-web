@@ -1,0 +1,79 @@
+name: Owner gate
+
+# Label changes re-evaluate only the PR gates (RF-100). Adding or removing a label (owner-approved,
+# needs-owner, ready-to-merge, ...) used to rerun all of ci.yml: ~5 minutes, a flaky e2e could turn a
+# green PR red, and a label edit on a merged PR could cancel main's push run. This workflow installs
+# and builds nothing. It reports under the same check name as ci.yml's job, which the ruleset
+# requires, and passes only when (a) this head's newest full ci.yml run passed every check before
+# the owner gate and (b) the owner gate passes now. Policy: AGENTS.md › "Delegation And Merge Policy".
+on:
+  pull_request:
+    types: [labeled, unlabeled]
+
+# statuses: write binds an approval to the exact commit it was given on; actions: read finds this
+# head's ci.yml run; pull-requests: read reads the live labels and changed files.
+permissions:
+  contents: read
+  pull-requests: read
+  statuses: write
+  actions: read
+
+# No concurrency group on purpose. Cancelling a run could drop an approval before it is recorded,
+# and it is never needed: every run reads the live labels after ci.yml finishes, so concurrent
+# label runs reach the same answer. Nothing here can cancel a ci.yml run (acceptance 2 and 3).
+
+jobs:
+  gate:
+    # Must match ci.yml's job name exactly: the newest check run with this name on the head is the
+    # one the ruleset reads. .github/scripts/pr-gates.sh self-check enforces the match.
+    name: format · typecheck · lint · test · build · audit
+    # A closed PR cannot merge, and reopening it runs ci.yml again.
+    if: github.event.pull_request.state == 'open'
+    runs-on: ubuntu-latest
+    # Covers waiting for an in-flight ci.yml run on this head.
+    timeout-minutes: 50
+    steps:
+      # Approval covers only the commit the owner saw. When the owner adds `owner-approved`, this
+      # run records an `owner-approval` commit status on that exact head; the gate requires both
+      # the label and that status on the current head, and ci.yml drops the label on new commits.
+      # It runs first so nothing can fail or be skipped before it. Agents never create this status
+      # by hand.
+      - name: Record owner approval for this head
+        if: github.event.action == 'labeled' && github.event.label.name == 'owner-approved'
+        env:
+          GH_TOKEN: ${{ github.token }}
+          HEAD_SHA: ${{ github.event.pull_request.head.sha }}
+        run: |
+          gh api "repos/$GITHUB_REPOSITORY/statuses/$HEAD_SHA" -f state=success \
+            -f context=owner-approval -f description="owner-approved was applied to this commit"
+
+      - uses: actions/checkout@v4
+        with:
+          sparse-checkout: |
+            .github
+            scripts
+
+      - name: PR gate workflows agree
+        run: bash .github/scripts/pr-gates.sh self-check
+
+      # Fails unless this head's newest finished ci.yml run passed everything before its owner
+      # gate; waits while one is still running.
+      - name: Full CI passed on this head
+        env:
+          GH_TOKEN: ${{ github.token }}
+          HEAD_SHA: ${{ github.event.pull_request.head.sha }}
+        run: bash .github/scripts/pr-gates.sh wait-for-ci
+
+      - name: Prepare PR gates
+        env:
+          GH_TOKEN: ${{ github.token }}
+          PR_NUMBER: ${{ github.event.pull_request.number }}
+          BASE_REF: ${{ github.event.pull_request.base.ref }}
+        run: bash .github/scripts/pr-gates.sh prepare
+
+      - name: Owner gate (owner-gated paths need owner-approved)
+        env:
+          GH_TOKEN: ${{ github.token }}
+          PR_NUMBER: ${{ github.event.pull_request.number }}
+          HEAD_SHA: ${{ github.event.pull_request.head.sha }}
+        run: bash .github/scripts/pr-gates.sh owner-gate
