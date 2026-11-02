@@ -185,8 +185,19 @@ const doc = {
     '/auth/session': {
       post: {
         summary: 'Validate session, return canonical profile',
+        description:
+          'Native clients call this at launch to keep a session alive. When the session is older than Better Auth updateAge (1 day), the server extends it and the response carries the refreshed session cookie; persist it. Any other authed response may carry the same refresh.',
         responses: {
-          '200': jsonResp('User', 'Canonical profile'),
+          '200': {
+            ...jsonResp('User', 'Canonical profile'),
+            headers: {
+              'Set-Cookie': {
+                description:
+                  'Present only when this call refreshed the session: the Better Auth session cookie with a new Max-Age (7 days). Absent otherwise.',
+                schema: { type: 'string' },
+              },
+            },
+          },
           '401': { description: 'Not authenticated' },
         },
       },

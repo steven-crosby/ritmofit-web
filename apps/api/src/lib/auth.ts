@@ -83,6 +83,62 @@ async function appleClientSecret(env: Env): Promise<string> {
   });
 }
 
+/** Better Auth's sign-out route as mounted in `index.ts`. */
+export const SIGN_OUT_PATH = '/api/auth/sign-out';
+
+/**
+ * Let a native client's sign-out pass Better Auth's origin check (audit AUD-009,
+ * RF-177).
+ *
+ * Better Auth refuses any cookie-bearing POST whose `Origin` (or `Referer`) is
+ * missing or untrusted (`MISSING_OR_NULL_ORIGIN`, 403). That check is CSRF defence:
+ * it stops a page on another site from making the user's *browser* send its ambient
+ * cookie. The iOS app's URLSession sends no `Origin`, so its sign-out was refused,
+ * the error was swallowed, and the server session stayed valid until expiry.
+ *
+ * Trust boundary. The origin check only means something for browsers, which attach
+ * cookies the page author never sees. A non-browser client holds its cookie itself
+ * and can put any `Origin` it likes on a request, so the check neither protects nor
+ * restricts it. This helper therefore stamps the server's own origin onto a request
+ * only when it cannot be a browser-made cross-site request, and only for sign-out:
+ *
+ * - `POST` to exactly `/api/auth/sign-out`: no other auth route changes, so sign-in,
+ *   password, account-linking and every other cookie-bearing POST keep the check;
+ * - no `Origin` and no `Referer`: every current browser sends `Origin` on a
+ *   cross-origin POST (as `null` when privacy settings hide it, which is refused);
+ * - no `Sec-Fetch-Site`, `Sec-Fetch-Mode` or `Sec-Fetch-Dest`: browsers send fetch
+ *   metadata on every request, native URLSession does not;
+ * - `Content-Type: application/json`: a cross-site page can only send that through
+ *   `fetch`, which forces a CORS preflight that carries `Origin` (and this Worker's
+ *   CORS allows only our own web origins). HTML forms cannot send it.
+ *
+ * Even if all four were somehow forged by a browser, the worst outcome is logging a
+ * user out (sign-out has no other effect). Requests that already carry an `Origin`
+ * are passed through untouched and validated by Better Auth as before.
+ */
+export function withNativeSignOutOrigin(
+  request: Request,
+  env: Pick<Env, 'BETTER_AUTH_URL'>,
+): Request {
+  if (request.method !== 'POST') return request;
+  if (new URL(request.url).pathname !== SIGN_OUT_PATH) return request;
+  const headers = request.headers;
+  const browserMarkers = [
+    'origin',
+    'referer',
+    'sec-fetch-site',
+    'sec-fetch-mode',
+    'sec-fetch-dest',
+  ];
+  if (browserMarkers.some((name) => headers.has(name))) return request;
+  const contentType = headers.get('content-type') ?? '';
+  if (!/^application\/json\s*(;|$)/i.test(contentType)) return request;
+
+  const stamped = new Headers(headers);
+  stamped.set('origin', new URL(env.BETTER_AUTH_URL).origin);
+  return new Request(request, { headers: stamped });
+}
+
 export function createAuth(env: Env) {
   const db = createDb(env);
 

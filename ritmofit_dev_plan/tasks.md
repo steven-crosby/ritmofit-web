@@ -12,13 +12,13 @@ owner's queue: any agent may execute a Ready task. Publishing follows AGENTS.md 
 Evidence marked **recorded** is a carried-forward claim, not fresh verification.
 A checked PR proves its GitHub state, not product acceptance or production behavior.
 
-174 tasks. backlog: 58 · ready: 0 · in_progress: 0 · blocked: 1 · review: 13 · done: 100 · cancelled: 2.
+175 tasks. backlog: 58 · ready: 0 · in_progress: 1 · blocked: 1 · review: 13 · done: 100 · cancelled: 2.
 
 ## In progress
 
 | Task | Priority / kind | Relationships | Next action / resolution | Evidence |
 | --- | --- | --- | --- | --- |
-| — | — | — | — | — |
+| [RF-177](tasks/RF-177.json) Native clients keep a refreshed session and can revoke it on sign-out (web half of iOS RF-1012) | P2 / task | — | Session on branch fix/rf-177-native-auth-session (worktree lanes/web-rf-1012): open the owner-gated PR, set the final state, and hand the iOS half (RF-1012 + RF-1032) to the Neo. | recorded; checked 2026-11-02 |
 
 ## Blocked / waiting
 

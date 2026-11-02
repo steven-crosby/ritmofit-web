@@ -7,6 +7,22 @@ access bugs creep in.
 > **D1 has no row-level security.** Unlike Postgres, the database cannot back-stop access at the DB
 > layer. The application-level helper is therefore the **only** gate. This file is load-bearing.
 
+## Sessions and CSRF
+
+Identity comes from the Better Auth session cookie (`requireSession`); this file's access model
+runs after it. Better Auth refuses any cookie-bearing `POST` to `/api/auth/*` whose `Origin` (or
+`Referer`) is missing or not in `trustedOrigins`. That is CSRF defence for browsers, which attach
+cookies a cross-site page never sees. A native client holds its own cookie and can set any
+`Origin`, so the check neither protects nor restricts it.
+
+One narrow exception keeps native sign-out working (RF-177, `withNativeSignOutOrigin` in
+`lib/auth.ts`): a `POST /api/auth/sign-out` with no `Origin`, no `Referer`, no `Sec-Fetch-*` headers
+and `Content-Type: application/json` gets the Worker's own origin before Better Auth sees it.
+Browsers always send `Origin` or fetch metadata on such a request, and a cross-site page can only
+send JSON through a CORS-preflighted `fetch`, so a browser request never qualifies. Sign-out is the
+only route covered; the worst case of a forged one is signing the user out. Every other auth route
+keeps the check unchanged.
+
 ## The model in one sentence
 
 A class has exactly one **owner**; everyone else gets access only through a **share**, which may be

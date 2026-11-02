@@ -72,6 +72,10 @@
 - **Local dev is cross-origin:** Vite serves the web app (`http://localhost:5173`) while the Worker runs
   separately (`http://localhost:8787`), so dev CORS must allow the Vite dev origin with credentials
   enabled for the session cookie.
+- **Native clients are not browsers:** the iOS app sends no `Origin` and is not subject to CORS. It
+  must persist refreshed session cookies from authed responses and send `Origin` (the API base URL's
+  origin) on cookie-bearing `/api/auth/*` POSTs other than sign-out. See `authorization.md` ›
+  "Sessions and CSRF" (RF-177).
 
 ## Logging
 - Never log tokens, refresh tokens, `Authorization` headers, cookies, provider secrets, or Apple

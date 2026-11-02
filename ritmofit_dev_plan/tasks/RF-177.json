@@ -1,0 +1,40 @@
+{
+  "schemaVersion": 1,
+  "id": "RF-177",
+  "title": "Native clients keep a refreshed session and can revoke it on sign-out (web half of iOS RF-1012)",
+  "kind": "task",
+  "status": "in_progress",
+  "priority": "P2",
+  "parent": null,
+  "dependsOn": [],
+  "acceptance": [
+    "AUD-007: a session older than Better Auth updateAge gets a Set-Cookie with a later expiry from POST /api/v1/auth/session, and from any requireSession route that performs the refresh; a younger session gets no session Set-Cookie (integration test).",
+    "AUD-009: a native-shaped POST /api/auth/sign-out (cookie, JSON, no Origin/Referer/Sec-Fetch-*) revokes the session, and re-injecting the old cookie gets 401 from POST /api/v1/auth/session (integration test).",
+    "Browser CSRF protection is unchanged: sign-out with an untrusted or null Origin, an untrusted Referer, fetch metadata, or a form-shaped body revokes nothing, and other cookie-bearing auth POSTs without Origin are still refused (integration and unit tests).",
+    "OpenAPI, api.md, authorization.md and conventions.md describe the refresh cookie and the sign-out trust boundary; the iOS web-contract snapshots are refreshed in a separate iOS PR."
+  ],
+  "nextAction": "Session on branch fix/rf-177-native-auth-session (worktree lanes/web-rf-1012): open the owner-gated PR, set the final state, and hand the iOS half (RF-1012 + RF-1032) to the Neo.",
+  "blocker": null,
+  "evidence": [
+    {
+      "kind": "document",
+      "ref": "https://github.com/steven-crosby/ritmofit-ios/blob/main/agent-reports/audits/code-audit-2026-10-27-ee874fc/findings.md",
+      "summary": "iOS code audit AUD-007 (probable 7-day hard expiry) and AUD-009 (probable unrevoked sign-out); both carried by iOS RF-1012.",
+      "checkedOn": null
+    },
+    {
+      "kind": "observation",
+      "ref": "https://github.com/steven-crosby/ritmofit-ios/pull/71#issuecomment-6580904411",
+      "summary": "Owner approved this web change for RF-1012 in the Air session on 2026-11-02.",
+      "checkedOn": "2026-11-02"
+    },
+    {
+      "kind": "test",
+      "ref": "apps/api/test/native-session.integration.test.ts",
+      "summary": "Before the fix on 8f26519 both findings reproduced: the aged session row was extended but no Set-Cookie reached the client (AUD-007), and native sign-out got 403 MISSING_OR_NULL_ORIGIN with the session still valid (AUD-009). All 13 cases pass after the fix.",
+      "checkedOn": "2026-11-02"
+    }
+  ],
+  "resolution": null,
+  "followUps": []
+}
