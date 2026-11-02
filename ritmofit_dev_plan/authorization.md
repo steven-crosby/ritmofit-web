@@ -10,7 +10,10 @@ access bugs creep in.
 ## Sessions and CSRF
 
 Identity comes from the Better Auth session cookie (`requireSession`); this file's access model
-runs after it. Better Auth refuses any cookie-bearing `POST` to `/api/auth/*` whose `Origin` (or
+runs after it. The REST surface never sets that cookie: `POST /api/v1/auth/session` extends a due
+session server-side, other routes resolve it with refresh disabled, and a 401 means signed out.
+Native clients keep their cookie unchanged with no client-side expiry; browsers refresh it through
+Better Auth's own `get-session` (RF-178). Better Auth refuses any cookie-bearing `POST` to `/api/auth/*` whose `Origin` (or
 `Referer`) is missing or not in `trustedOrigins`. That is CSRF defence for browsers, which attach
 cookies a cross-site page never sees. A native client holds its own cookie and can set any
 `Origin`, so the check neither protects nor restricts it.

@@ -1,0 +1,46 @@
+{
+  "schemaVersion": 1,
+  "id": "RF-178",
+  "title": "POST /auth/session extends the session server-side and never sets a session cookie (option C, follow-up to RF-177)",
+  "kind": "task",
+  "status": "in_progress",
+  "priority": "P2",
+  "parent": null,
+  "dependsOn": ["RF-177"],
+  "acceptance": [
+    "POST /api/v1/auth/session with a session older than Better Auth updateAge returns 200 with no Set-Cookie and moves the session row's expires_at later; the same unchanged cookie then authenticates an ordinary route (integration test).",
+    "A session younger than updateAge is left unchanged; ordinary requireSession routes resolve with refresh disabled and leave an aged row unchanged; no /api/v1 response, 200 or 401, carries a session Set-Cookie (integration and unit tests).",
+    "Better Auth's own GET /api/auth/get-session still refreshes and sets the cookie for browsers (integration test).",
+    "OpenAPI has no Set-Cookie header on /auth/session, and api.md, authorization.md and conventions.md say native clients keep the cookie with no client-side expiry, /auth/session extends the server session and a 401 means signed out; the iOS web-contract snapshots are refreshed in a separate iOS PR."
+  ],
+  "nextAction": "Session on branch fix/rf-178-session-refresh-no-cookie (worktree lanes/web-rf-177b): open the owner-gated PR and set the final state.",
+  "blocker": null,
+  "evidence": [
+    {
+      "kind": "observation",
+      "ref": "https://github.com/steven-crosby/ritmofit-web/pull/703#issuecomment-6585011177",
+      "summary": "Owner decision after the RF-177 post-merge design review: the owner said \"Go with C\" in the Air session on 2026-11-02 (recorded on #703). C: /auth/session keeps refreshing the row server-side but forwards no Set-Cookie; iOS stores the cookie without client-side expiry and relies on the server's 401.",
+      "checkedOn": "2026-11-02"
+    },
+    {
+      "kind": "pr",
+      "ref": "https://github.com/steven-crosby/ritmofit-web/pull/703",
+      "summary": "RF-177 (merged as 1897a6d): POST /auth/session forwarded the refresh Set-Cookie, which URLSession applies on its own, so a stale response for account A could overwrite account B's cookie.",
+      "checkedOn": "2026-11-02"
+    },
+    {
+      "kind": "document",
+      "ref": "https://github.com/steven-crosby/ritmofit-ios/blob/main/ritmofit_dev_plan/tasks/RF-1012.json",
+      "summary": "iOS RF-1012 carries the iOS half: store the cookie without expiry, call /auth/session at launch and foreground, treat 401 as signed out, log failed sign-out.",
+      "checkedOn": null
+    },
+    {
+      "kind": "test",
+      "ref": "apps/api/test/native-session.integration.test.ts",
+      "summary": "On main's middleware (1897a6d) the three /auth/session cases fail (it set a Set-Cookie); with this change all 18 integration cases pass, and apps/api/src/middleware/auth.test.ts (4 cases) pins disableRefresh on ordinary routes and that refreshSession never requests or forwards Better Auth's headers.",
+      "checkedOn": "2026-11-02"
+    }
+  ],
+  "resolution": null,
+  "followUps": []
+}

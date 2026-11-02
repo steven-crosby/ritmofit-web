@@ -7,8 +7,6 @@ vi.mock('../lib/auth.js', () => ({ createAuth: () => ({ api: { getSession } }) }
 
 const { refreshSession, requireSession } = await import('./auth.js');
 
-const REFRESH = 'better-auth.session_token=tok.sig; Max-Age=604800; Path=/; HttpOnly';
-const CLEAR = 'better-auth.session_token=; Max-Age=0; Path=/';
 const ROUTE_COOKIE = 'route_cookie=1; Path=/';
 const user = {
   id: 'u1',
@@ -40,10 +38,7 @@ function stackedApp() {
 
 function refreshApp() {
   const app = new Hono<AppEnv>();
-  app.post('/session', refreshSession, (c) => {
-    c.header('Set-Cookie', ROUTE_COOKIE, { append: true });
-    return c.json(c.get('user'));
-  });
+  app.post('/session', refreshSession, (c) => c.json(c.get('user')));
   return app;
 }
 
@@ -52,18 +47,11 @@ function setCookiesOf(res: Response): string[] {
   return (res.headers as Headers & { getSetCookie(): string[] }).getSetCookie();
 }
 
-function sessionResult(response: unknown, cookies: string[]) {
-  const headers = new Headers();
-  for (const c of cookies) headers.append('set-cookie', c);
-  return { headers, response };
-}
-
-describe('requireSession (RF-177)', () => {
+describe('requireSession (RF-177, RF-178)', () => {
   beforeEach(() => getSession.mockReset());
 
-  it('resolves once with refresh disabled, across stacked routers, and sets no session cookie', async () => {
-    // Even if Better Auth emitted a cookie, an ordinary route must not forward it.
-    getSession.mockResolvedValue(sessionResult({ user, session: {} }, [REFRESH]));
+  it('resolves once with refresh disabled across stacked routers and keeps the route cookie', async () => {
+    getSession.mockResolvedValue({ user, session: {} });
     const res = await stackedApp().request('/thing', {}, bindings);
     expect(res.status).toBe(200);
     expect(await res.json()).toEqual({ userId: 'u1' });
@@ -73,7 +61,7 @@ describe('requireSession (RF-177)', () => {
   });
 
   it('a 401 carries no Set-Cookie', async () => {
-    getSession.mockResolvedValue(sessionResult(null, [CLEAR]));
+    getSession.mockResolvedValue(null);
     const res = await stackedApp().request('/thing', {}, bindings);
     expect(res.status).toBe(401);
     expect(await res.json()).toMatchObject({ error: { code: 'UNAUTHORIZED' } });
@@ -81,19 +69,21 @@ describe('requireSession (RF-177)', () => {
   });
 });
 
-describe('refreshSession (RF-177)', () => {
+describe('refreshSession (RF-178, option C)', () => {
   beforeEach(() => getSession.mockReset());
 
-  it('lets Better Auth refresh and forwards its cookie next to the route cookie', async () => {
-    getSession.mockResolvedValue(sessionResult({ user, session: {} }, [REFRESH]));
+  it("lets Better Auth refresh and never asks for (or forwards) Better Auth's cookies", async () => {
+    getSession.mockResolvedValue({ user, session: {} });
     const res = await refreshApp().request('/session', { method: 'POST' }, bindings);
     expect(res.status).toBe(200);
-    expect(getSession.mock.calls[0]![0]).not.toHaveProperty('query');
-    expect(setCookiesOf(res)).toEqual([ROUTE_COOKIE, REFRESH]);
+    const args = getSession.mock.calls[0]![0] as Record<string, unknown>;
+    expect(args).not.toHaveProperty('query');
+    expect(args).not.toHaveProperty('returnHeaders');
+    expect(setCookiesOf(res)).toEqual([]);
   });
 
-  it('a 401 drops the clearing cookie (same name for every account)', async () => {
-    getSession.mockResolvedValue(sessionResult(null, [CLEAR]));
+  it('a 401 carries no Set-Cookie', async () => {
+    getSession.mockResolvedValue(null);
     const res = await refreshApp().request('/session', { method: 'POST' }, bindings);
     expect(res.status).toBe(401);
     expect(setCookiesOf(res)).toEqual([]);

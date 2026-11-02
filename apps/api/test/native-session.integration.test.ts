@@ -50,34 +50,30 @@ async function sessionStatus(cookie: string): Promise<number> {
   return (await nativePost('/api/v1/auth/session', cookie)).status;
 }
 
-describe('AUD-007: native session refresh reaches the client', () => {
-  it('POST /auth/session returns a refreshed cookie with a later expiry for a session older than updateAge', async () => {
+describe('AUD-007: native sessions stay alive through POST /auth/session', () => {
+  it('POST /auth/session extends an aged session server-side and sets no cookie; the same cookie keeps working', async () => {
     const user = await signUpUser();
     const before = await ageSession(user.userId, 2 * DAY_MS);
 
     const res = await nativePost('/api/v1/auth/session', user.cookie);
     expect(res.status).toBe(200);
-
-    // The server extended the session row...
-    const after = await sessionExpiresAt(user.userId);
-    expect(after).toBeGreaterThan(before + DAY_MS);
-    // ...and the client receives that extension as a cookie it can persist.
-    const setCookie = sessionSetCookie(res);
-    expect(setCookie).toBeDefined();
-    expect(setCookie).toMatch(/Max-Age=604800/i);
-    // Same session token (the value before the signature), new lifetime.
-    const sentToken = decodeURIComponent(user.cookie.split(`${SESSION_COOKIE}=`)[1]!).split('.')[0];
-    const newToken = decodeURIComponent(setCookie!.split(';')[0]!.split('=')[1]!).split('.')[0];
-    expect(newToken).toBe(sentToken);
+    // Option C (RF-178): no Set-Cookie at all, so a slow response can never land on
+    // another account's cookie (URLSession applies Set-Cookie by itself).
+    expect(res.headers.getSetCookie()).toEqual([]);
+    // The server still rolled the session forward...
+    expect(await sessionExpiresAt(user.userId)).toBeGreaterThan(before + DAY_MS);
+    // ...so the unchanged client cookie keeps authenticating.
+    const me = await call('/api/v1/auth/me', { headers: { cookie: user.cookie } });
+    expect(me.status).toBe(200);
   });
 
-  it('a session younger than updateAge gets no Set-Cookie (no churn on every call)', async () => {
+  it('a session younger than updateAge is left unchanged and gets no Set-Cookie', async () => {
     const user = await signUpUser();
     const before = await sessionExpiresAt(user.userId);
 
     const session = await nativePost('/api/v1/auth/session', user.cookie);
     expect(session.status).toBe(200);
-    expect(sessionSetCookie(session)).toBeUndefined();
+    expect(session.headers.getSetCookie()).toEqual([]);
 
     const me = await call('/api/v1/auth/me', { headers: { cookie: user.cookie } });
     expect(me.status).toBe(200);
@@ -88,7 +84,7 @@ describe('AUD-007: native session refresh reaches the client', () => {
   // /explore is served by one of the last routers mounted at '/', so every earlier
   // root router's `use('*', requireSession)` also runs on that request.
   it.each(['/api/v1/auth/me', '/api/v1/explore'])(
-    'an ordinary authed route (%s) neither refreshes nor sets a cookie; the next /auth/session does',
+    'an ordinary authed route (%s) neither refreshes nor sets a cookie; the next /auth/session extends the row',
     async (path) => {
       const user = await signUpUser();
       const before = await ageSession(user.userId, 2 * DAY_MS);
@@ -98,10 +94,10 @@ describe('AUD-007: native session refresh reaches the client', () => {
       expect(res.headers.getSetCookie()).toEqual([]);
       expect(await sessionExpiresAt(user.userId)).toBe(before);
 
-      // The row is still due, so the native keep-alive call refreshes it.
+      // The row is still due, so the native keep-alive call extends it (no cookie).
       const session = await nativePost('/api/v1/auth/session', user.cookie);
       expect(session.status).toBe(200);
-      expect(sessionSetCookie(session)).toMatch(/Max-Age=604800/i);
+      expect(session.headers.getSetCookie()).toEqual([]);
       expect(await sessionExpiresAt(user.userId)).toBeGreaterThan(before + DAY_MS);
     },
   );

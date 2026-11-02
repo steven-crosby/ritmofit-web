@@ -42,25 +42,27 @@ schemas in `packages/shared`, surfaced in the generated OpenAPI spec.
 
 | Method | Path | Purpose |
 |---|---|---|
-| POST | `/auth/session` | Validate the Better Auth session and return the canonical profile. Better Auth's adapter **creates** the `users` row; this route **reconciles our extra columns** (`display_name`, `image_url`) on first sight — it does not mint the identity. Called after login and at native app launch; the only `/api/v1` route that refreshes the session and returns a refreshed session cookie (see below). |
+| POST | `/auth/session` | Validate the Better Auth session and return the canonical profile. Better Auth's adapter **creates** the `users` row; this route **reconciles our extra columns** (`display_name`, `image_url`) on first sight — it does not mint the identity. Called after login and at native app launch and foreground; the only `/api/v1` route that extends the session server-side. Sets no cookie (see below). |
 | GET | `/auth/me` | Return the signed-in caller's canonical profile. Used by account/settings surfaces and auth smoke checks. |
 | PATCH | `/auth/me` | Update caller-owned profile fields (`displayName`, `imageUrl`). Email, password, and provider identity remain Better Auth-owned. |
 
 (Better Auth's own sign-in/callback routes are mounted under `/api/auth/*` by the library.)
 
-**Session refresh and native clients (RF-177).** Sessions last 7 days and roll forward once they
-are older than Better Auth's `updateAge` (1 day). In the REST surface only `POST /auth/session`
-refreshes: when the session is due, the server extends it and that 200 carries `Set-Cookie` with
-the session cookie's new `Max-Age`. Every other `/api/v1` route resolves the session with refresh
-disabled, so it neither extends the row nor sets a session cookie, and the next `/auth/session`
-still finds the row due. No 401 carries a cookie, not even Better Auth's clearing cookie. The
-session cookie has the same name for every account, so a cookie on a slow response for one account
-could otherwise overwrite a newer sign-in's cookie; confining it to one endpoint lets the client
-guard that one response. Browsers refresh through Better Auth's own `GET /api/auth/get-session`
-(the SPA's `useSession()`). A native client that keeps its own cookie jar (iOS persists it in the
-Keychain) should call `/auth/session` at launch and on return to the foreground. It persists that
-response's `Set-Cookie` only if the request carried the cookie that is still current in its jar
-when the response arrives. It treats any 401 as signed out and discards its stored cookie itself.
+**Session refresh and native clients (RF-177, RF-178).** Sessions last 7 days and roll forward
+once they are older than Better Auth's `updateAge` (1 day). In the REST surface only
+`POST /auth/session` refreshes: when the session is due, the server extends it in D1. Every other
+`/api/v1` route resolves the session with refresh disabled, so the next `/auth/session` still finds
+the row due. **No `/api/v1` response sets a session cookie**: not the refresh, and not Better
+Auth's clearing cookie on 401. The session cookie has the same name for every account and URLSession
+applies `Set-Cookie` on its own, so any session cookie on a slow response for one account could
+overwrite a newer sign-in's cookie. Instead the client's cookie never changes: its value names the
+session, and the server decides whether that session is still alive. Browsers refresh through
+Better Auth's own `GET /api/auth/get-session` (the SPA's `useSession()`), which does set the
+refreshed cookie. A native client (iOS keeps the cookie in the Keychain) stores the cookie with no
+client-side expiry, calls `/auth/session` at launch and on return to the foreground (confirmed
+sessions included), and treats any 401 as signed out, discarding its stored cookie itself. If no
+`/auth/session` call extends it for 7 days, the session expires on the server and the next call
+gets 401.
 
 `POST /api/auth/sign-out` revokes the server session. A native client may send it without an
 `Origin` header if it sends `Content-Type: application/json` and no `Referer` or `Sec-Fetch-*`

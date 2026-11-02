@@ -33,10 +33,10 @@ authRoutes.get('/capabilities', (c) =>
  * session and returns the canonical profile. Better Auth's adapter already created
  * the `users` row and, via field mapping, populated display_name / image_url, so in
  * M1 this is a reconciling read rather than an upsert. 401 when unauthenticated.
- * Native clients call it at launch to keep a session alive. It is the only REST
- * route that refreshes the session: when the session is older than updateAge the
- * 200 carries `Set-Cookie` with the extended lifetime (`refreshSession`). A 401
- * carries no cookie; the client drops its own.
+ * Native clients call it at launch and on foreground to keep a session alive. It
+ * is the only REST route that refreshes the session: when the session is older
+ * than updateAge it extends the row server-side (`refreshSession`). No response
+ * carries a session cookie (RF-178); a 401 means signed out.
  */
 authRoutes.post('/session', refreshSession, (c) => c.json(c.get('user')));
 
