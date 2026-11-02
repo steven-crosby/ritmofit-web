@@ -40,7 +40,7 @@
     {
       "kind": "observation",
       "ref": "AGENTS.md",
-      "summary": "Owner rulings, Air conductor session 2026-11-01, the finish rule, iOS on the Neo and no Neo rollback are written into \"Two-machine conductors\" by the 2026-11-01 close PR; relayed approval is split into its own PR: \"Yes, the conductor that opened it finishes it\"; relayed approval (\"if I approve the Conductor on Air, and they need to communicate a decision to the Neo Conductor, that's the approved\"; scope: \"Yes, that scope is approved\"); no rollback path on the Neo (\"Go with recommendation\"); the Neo takes iOS only when the Air is busy or the owner asks (\"Yes\").",
+      "summary": "Owner rulings in the Air conductor session on 2026-11-01, one quote each. Who finishes a PR: \"Yes, the conductor that opened it finishes it\". The Neo has no rollback path: \"Go with recommendation\". The Neo takes iOS only when the Air is busy or the owner asks: \"Yes, Neo take iOS lanes only when the Air is busy or you ask\". All three were written into \"Two-machine conductors\" by #696. Relayed approval (\"if I approve the Conductor on Air, and they need to communicate a decision to the Neo Conductor, that's the approved\"; scope: \"Yes, that scope is approved\") was split out of #696 into its own PR, not yet written.",
       "checkedOn": "2026-11-01"
     }
   ],

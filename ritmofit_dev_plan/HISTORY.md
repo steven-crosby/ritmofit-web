@@ -12,6 +12,16 @@ detail). Current focus and `main` vs production live in the "Now" block of
 ---
 
 ## Deploy and session log (newest first)
+> **Session 2026-11-01 (later) — Neo merges and Air start-session (no deploy).** From the Neo, owner
+> permission in the Neo session: web [#697](https://github.com/steven-crosby/ritmofit-web/pull/697)
+> as `5b71000` (RF-174 logged: a server-side version check on class and cue edits) and
+> [#698](https://github.com/steven-crosby/ritmofit-web/pull/698) as `9576391` (ios-snapshot
+> `PendingMutation.swift` from iOS `9924c42`); ritmofit-ios #63 `3614464` (RF-1011 owner decisions),
+> #64 `9924c42` (RF-1028, part B) and #65 `8854392` (RF-1029, part C). Draft #654 (D25 provider
+> matrix) was closed unmerged on 2026-11-02 01:06 UTC. The Air's web start-session observed
+> production: Worker `feac7dde-dc10-4462-bd2d-79075d289bda` at 100%, SPA `assets/index-ChxMwIpX.js` on
+> three cache-busted fetches, health 200, so production is `67496ab` and no deploy is due.
+
 > **Session 2026-11-01 — Air close (no deploy).** Merged with owner permission per PR:
 > [#693](https://github.com/steven-crosby/ritmofit-web/pull/693) as `9d50cfb` and
 > [#694](https://github.com/steven-crosby/ritmofit-web/pull/694) as `d4ef72f` (RF-169: the Neo holds

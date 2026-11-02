@@ -256,6 +256,12 @@ pnpm --filter @ritmofit/api exec wrangler rollback <version-id> -m "reason"
 
 This re-publishes that version's code **and bindings**; it does **not** touch D1 data.
 
+**If the Air is offline.** The Neo holds no Cloudflare credentials, so it cannot roll back. The
+owner does it: either from the Cloudflare dashboard's deployments view for the `ritmofit-api` Worker
+(roll back to the version named as rollback in `DEVELOPMENT_PLAN.md`'s Now block), or by running the
+commands above on a machine where the owner is signed in to Cloudflare. A conductor never signs in
+to Cloudflare to do it.
+
 ### D1 point-in-time restore (data recovery)
 
 D1 Time Travel keeps ~30 days of history. To inspect or restore:
