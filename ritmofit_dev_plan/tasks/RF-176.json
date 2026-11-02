@@ -3,24 +3,24 @@
   "id": "RF-176",
   "title": "Owner gate follow-ups from RF-100: push race, cancelled CI runs, honest gate failures",
   "kind": "task",
-  "status": "review",
+  "status": "done",
   "priority": "P2",
   "parent": null,
   "dependsOn": [],
   "acceptance": [
     "Push race: void-approval never removes an owner-approved label added at or after the current head was pushed (activity API push time vs the label's timeline add). It deletes only when the timeline's newest owner-approved event is that add, before the push, on two reads a retry delay apart; when the push or the add is not listed after retries it keeps the label and logs that cleanup is best-effort (AGENTS.md says so; the gate never counts a stale label). It checks labels before any time lookup.",
-    "A label event can no longer leave a CI run 'cancelled': ci.yml has no gate job and writes no commit status; owner-gate.yml writes `owner-gate` on every PR event (opened, synchronize, reopened, labeled, unlabeled) from one job in the per-PR concurrency group, so writes stay serialized and the last write reads the live state. pr-gates.sh self-check enforces both.",
+    "A label event can no longer leave a CI run 'cancelled': ci.yml has no gate job and writes no commit status; owner-gate.yml writes `owner-gate` on every PR event (opened, edited, synchronize, reopened, labeled, unlabeled; `edited` since #704, for base retargets) from one job in the per-PR concurrency group, so writes stay serialized and the last write reads the live state. pr-gates.sh self-check enforces both.",
     "When record-approval fails, `owner-gate` reads 'Recording owner approval failed; re-run the job or re-add the label' or this run's refusal reason, never 'need owner-approved'. A legacy checker's exit 1 (unapproved or crashed) keeps the ', or the gate failed; see the run' hint and shows refusal text only when record-approval refused in this run.",
-    "The gate job's error step runs only when this job's own gate step failed (checkout failure fails the gate step too): a failed ancestor (record-approval) never overwrites the refusal or recording-failure status the gate step wrote, nor flips a correct success on an already-approved head. Checkout, void and gate steps run with `!cancelled()` so an ancestor failure never skips them.",
+    "The gate job's error step runs only when this job's own gate step failed (checkout failure fails the gate step too) and writes the status without the checkout (inline, since #704): a failed ancestor (record-approval) never overwrites the refusal or recording-failure status the gate step wrote, nor flips a correct success on an already-approved head. Checkout, void and gate steps run with `!cancelled()` so an ancestor failure never skips them.",
     "gate-status classifies the result from scripts/owner-gate.mjs's machine-readable verdict (OWNER_GATE_RESULT JSON: clean, approved, unapproved), never its log text. A failed prepare, a missing checker, or a verdict-capable checker that wrote none is a gate error (failure 'errored'); only a present checker known not to write verdicts (main's, until this merges) reads as legacy.",
     "record-approval takes the label time from this run's own event (the newest owner-approved add at most 60 s before the run's created_at, retried while the timeline lags) and the push time from the latest push of that head at or before the label, so the age is never negative. Only a push less than 120 s before this label refuses; an unknown time after retries refuses with an accurate reason (label time vs push time). The residual risk (a page left open longer than the window across a push) is documented.",
     "A later event never hides a refusal: when owner-approved is on the PR without an approval on the head, `owner-gate` reads 'owner-approved is on the PR but not recorded for <sha>; remove and re-add it'. AGENTS.md tells a refusal (review, remove and re-add) apart from a transient failure (re-run or re-add).",
     "RF-100 carries a dated correction pointing to the 2026-11-02 waiver and RF-176; its history is not rewritten.",
     "The interim 'remove ready-to-merge before merging' rule is retired and the 'never edit labels on a merged PR' rule is relaxed with a dated note, since label edits no longer run or cancel CI.",
-    "The duplicated 'Record owner gate error' step is a `pr-gates.sh gate-error` subcommand, and gate-status fetches the PR JSON once.",
-    "scripts/pr-gates.test.mjs (run by `pnpm owner-gate:test`, owner-gated) tests record-approval, void-approval, gate-status and gate-error against a fake gh, including lagging timelines and pushes, negative ages, the legacy checker, and the real prepare failing (files API error, no checker on main or in the PR) as a gate error; mutations that reintroduce each fixed bug fail it."
+    "The 'Record owner gate error' step needs no checkout (inline in owner-gate.yml since #704, which replaced the interim `pr-gates.sh gate-error` subcommand), and gate-status fetches the PR JSON once.",
+    "scripts/pr-gates.test.mjs (run by `pnpm owner-gate:test`, owner-gated) tests record-approval, void-approval and gate-status against a fake gh, including lagging timelines and pushes, negative ages, the legacy checker, and the real prepare failing (files API error, no checker on main or in the PR) as a gate error; mutations that reintroduce each fixed bug fail it."
   ],
-  "nextAction": "#702 merged (127d05e) under a one-time waiver; follow-up #704 fixes the error step and the `edited` trigger. Owner decides whether RF-176 closes with #704. Remaining review findings are in RF-175.",
+  "nextAction": null,
   "blocker": null,
   "evidence": [
     {
@@ -52,8 +52,16 @@
       "ref": "https://github.com/steven-crosby/ritmofit-web/commit/127d05e",
       "summary": "#702 merged as 127d05e under a one-time owner waiver (2026-11-02) for two final-review findings, both fail-closed: the gate job's error step ran pr-gates.sh, so it could not write when checkout failed; and owner-gate.yml did not run on `edited`, so a base retarget left the status unrevised. Follow-up PR #704 (https://github.com/steven-crosby/ritmofit-web/pull/704) fixes both.",
       "checkedOn": "2026-11-02"
+    },
+    {
+      "kind": "pr",
+      "ref": "https://github.com/steven-crosby/ritmofit-web/pull/704",
+      "summary": "#704 merged as cca13af: the error step writes the status inline without the checkout, and owner-gate.yml also runs on `edited`. Acceptance edited 2026-11-02 to match (it had named the removed gate-error subcommand). Owner approved closing RF-100 and RF-176 (\"Yes to both\") in the Air session on 2026-11-02; the remaining gate edge cases are in RF-175.",
+      "checkedOn": "2026-11-02"
     }
   ],
-  "resolution": null,
-  "followUps": []
+  "resolution": "owner-gate.yml alone writes the `owner-gate` status on every PR event, including `edited`; approval recording, stale-label voiding and gate failures are fail-closed and say what to do, and scripts/pr-gates.test.mjs pins each fixed bug. #702 and #704 merged; the leftover edge cases from both final reviews are in RF-175.",
+  "followUps": [
+    "RF-175"
+  ]
 }

@@ -1,0 +1,35 @@
+{
+  "schemaVersion": 1,
+  "id": "RF-181",
+  "title": "Session middleware cleanups after RF-177/RF-178: refresh short-circuit, explicit cookie strip, per-cookie copies, gate mounts",
+  "kind": "task",
+  "status": "backlog",
+  "priority": "P3",
+  "parent": null,
+  "dependsOn": [],
+  "acceptance": [
+    "refreshSession on POST /auth/session always resolves with refresh, even if an earlier requireSession in the same request set sessionResolved; a unit test runs refreshSession after requireSession and asserts the row is extended.",
+    "An /api/v1 after-middleware (or equivalent) removes any session-token Set-Cookie, so the no-session-cookie guarantee does not rest only on omitting returnHeaders; a test pins it.",
+    "The session gate is mounted once per request path instead of about 14 times, or the repetition is documented as intended.",
+    "The per-cookie Response copy via c.header is removed or justified (moot if no session cookie is forwarded).",
+    "conventions.md and authorization.md lines touched by #705 are re-wrapped to the file width."
+  ],
+  "nextAction": "Owner triages; pairs with the standalone auth deploy (#703, #705).",
+  "blocker": null,
+  "evidence": [
+    {
+      "kind": "pr",
+      "ref": "https://github.com/steven-crosby/ritmofit-web/pull/705",
+      "summary": "Final review of #705 (merged as 14d0b32) at 8a4078a: refreshSession now inherits the sessionResolved short-circuit, so a requireSession mounted before /auth would silently stop extension (safe today because index.ts mounts /auth first; no test pins it); no explicit Set-Cookie strip; docs not re-wrapped. Not blocking.",
+      "checkedOn": "2026-11-02"
+    },
+    {
+      "kind": "observation",
+      "ref": "https://github.com/steven-crosby/ritmofit-web/pull/703",
+      "summary": "Deferred RF-177 review items: per-cookie Response copies via c.header and the session gate mounted on about 14 routers.",
+      "checkedOn": "2026-11-02"
+    }
+  ],
+  "resolution": null,
+  "followUps": []
+}
