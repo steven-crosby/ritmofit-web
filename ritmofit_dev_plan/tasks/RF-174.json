@@ -1,0 +1,33 @@
+{
+  "schemaVersion": 1,
+  "id": "RF-174",
+  "title": "A stale class or cue edit cannot silently overwrite a newer one",
+  "kind": "task",
+  "status": "backlog",
+  "priority": "P3",
+  "parent": null,
+  "dependsOn": [],
+  "acceptance": [
+    "PATCH /api/v1/classes/:id and PATCH /api/v1/cues/:id accept an optional precondition (for example the updatedAtMs the client last saw); when it no longer matches, the write is refused with a documented status and error code instead of applied.",
+    "Requests without the precondition behave exactly as today, so the web app and current iOS builds keep working.",
+    "The precondition and its error are in packages/shared, the OpenAPI document and api.md, with integration tests for match, mismatch and absent."
+  ],
+  "nextAction": "Found on 2026-11-01 while setting iOS RF-1011's retry policy: the server applies class and cue PATCHes unconditionally, so an edit queued offline on iOS can silently overwrite a newer web edit when it replays. iOS holds edits older than 7 days for review as a stopgap. Contract change: land here first, then refresh the iOS snapshots and send the precondition from the iOS outbox. Agent-created: Backlog until the owner sets Ready.",
+  "blocker": null,
+  "evidence": [
+    {
+      "kind": "source",
+      "ref": "apps/api/src/routes/cues.ts",
+      "summary": "PATCH /cues/:id updates by id with no version or timestamp check (classes.ts PATCH /:id is the same).",
+      "checkedOn": "2026-11-01"
+    },
+    {
+      "kind": "pr",
+      "ref": "https://github.com/steven-crosby/ritmofit-ios/pull/63",
+      "summary": "iOS RF-1011 owner decisions, including the 7-day hold that this task would make unnecessary.",
+      "checkedOn": "2026-11-01"
+    }
+  ],
+  "resolution": null,
+  "followUps": []
+}
