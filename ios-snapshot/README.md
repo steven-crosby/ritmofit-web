@@ -28,7 +28,7 @@ the contract surface above.
 
 ## Provenance
 
-- Synced from `ritmofit-ios` `main` at commit `5ad7149` on 2026-11-02 (refreshed `Core/Networking/AuthStore.swift` for RF-1010 option A, iOS #70; the other files already matched).
+- Synced from `ritmofit-ios` `main` at commit `37c6c8d` on 2026-11-02 (refreshed `Core/Networking/AuthStore.swift` and `SessionCookieStore.swift` and added `InstallMarker.swift` for RF-1012 design C and RF-1032, iOS #78; the other files already matched).
 
 ## Refreshing
 
