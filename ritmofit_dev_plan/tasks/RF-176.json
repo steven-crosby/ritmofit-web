@@ -3,7 +3,7 @@
   "id": "RF-176",
   "title": "Owner gate follow-ups from RF-100: push race, cancelled CI runs, honest gate failures",
   "kind": "task",
-  "status": "in_progress",
+  "status": "review",
   "priority": "P2",
   "parent": null,
   "dependsOn": [],
@@ -17,13 +17,19 @@
     "The interim 'remove ready-to-merge before merging' rule is retired and the 'never edit labels on a merged PR' rule is relaxed with a dated note, since label edits no longer run or cancel CI.",
     "The duplicated 'Record owner gate error' step is a `pr-gates.sh gate-error` subcommand, and gate-status fetches the PR JSON once."
   ],
-  "nextAction": "Open the PR, run the live label test, then ask the owner to review and approve.",
+  "nextAction": "Owner reviews PR #702 and, if satisfied, adds owner-approved (at least 120 s after its last push); the first approval exercises record-approval live. Then the final review and squash-merge.",
   "blocker": null,
   "evidence": [
     {
       "kind": "pr",
       "ref": "https://github.com/steven-crosby/ritmofit-web/pull/700",
       "summary": "RF-100 merged as 8f26519 under a one-time owner waiver; its squash message lists the five known issues (push race, cancelled CI run, recording-failure description, log-text grep, approval binding to a just-pushed head) that this task fixes.",
+      "checkedOn": "2026-11-02"
+    },
+    {
+      "kind": "pr",
+      "ref": "https://github.com/steven-crosby/ritmofit-web/pull/702",
+      "summary": "PR #702 implements all eight items; local gates and a read-only exercise of record-approval, void-approval, gate-status and gate-error against #700's data (writes stubbed) passed. Live label test results are in the PR body.",
       "checkedOn": "2026-11-02"
     }
   ],
