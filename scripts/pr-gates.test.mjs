@@ -503,7 +503,7 @@ test('self-check enforces the inline error step, its checkout condition and the 
       s.replace(" || steps.checkout.outcome == 'failure'", ''),
     'error step needs the script': (s) =>
       s.replace(
-        /run: \|\n          head=\$\(gh api[\s\S]*?GITHUB_RUN_ID"/,
+        /run: \|\n {10}head=\$\(gh api[\s\S]*?GITHUB_RUN_ID"/,
         'run: bash .github/scripts/pr-gates.sh gate-error',
       ),
   };
