@@ -56,7 +56,13 @@
     {
       "kind": "pr",
       "ref": "https://github.com/steven-crosby/ritmofit-web/pull/704",
-      "summary": "#704 merged as cca13af: the error step writes the status inline without the checkout, and owner-gate.yml also runs on `edited`. Acceptance edited 2026-11-02 to match (it had named the removed gate-error subcommand). Owner approved closing RF-100 and RF-176 (\"Yes to both\") in the Air session on 2026-11-02; the remaining gate edge cases are in RF-175.",
+      "summary": "#704 merged as cca13af: the error step writes the status inline without the checkout, and owner-gate.yml also runs on `edited`. Acceptance edited 2026-11-02 to match (it had named the removed gate-error subcommand).",
+      "checkedOn": "2026-11-02"
+    },
+    {
+      "kind": "observation",
+      "ref": "https://github.com/steven-crosby/ritmofit-web/pull/706#issuecomment-6588571439",
+      "summary": "Owner approved closing RF-100 and RF-176 (\"Yes to both\") in the Air session on 2026-11-02; the remaining gate edge cases are in RF-175.",
       "checkedOn": "2026-11-02"
     }
   ],

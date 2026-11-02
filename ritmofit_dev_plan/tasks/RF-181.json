@@ -14,7 +14,7 @@
     "The per-cookie Response copy via c.header is removed or justified (moot if no session cookie is forwarded).",
     "conventions.md and authorization.md lines touched by #705 are re-wrapped to the file width."
   ],
-  "nextAction": "Owner triages; pairs with the standalone auth deploy (#703, #705).",
+  "nextAction": "Owner triages; can ride with the standalone auth deploy (RF-183).",
   "blocker": null,
   "evidence": [
     {
