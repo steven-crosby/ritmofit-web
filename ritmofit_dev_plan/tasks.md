@@ -12,13 +12,13 @@ owner's queue: any agent may execute a Ready task. Publishing follows AGENTS.md 
 Evidence marked **recorded** is a carried-forward claim, not fresh verification.
 A checked PR proves its GitHub state, not product acceptance or production behavior.
 
-176 tasks. backlog: 58 · ready: 0 · in_progress: 0 · blocked: 1 · review: 13 · done: 102 · cancelled: 2.
+177 tasks. backlog: 58 · ready: 0 · in_progress: 1 · blocked: 1 · review: 13 · done: 102 · cancelled: 2.
 
 ## In progress
 
 | Task | Priority / kind | Relationships | Next action / resolution | Evidence |
 | --- | --- | --- | --- | --- |
-| — | — | — | — | — |
+| [RF-182](tasks/RF-182.json) Two-machine conductors: the lead follows the owner, and owner decisions cross only as GitHub records | P2 / documentation | needs RF-169 | Owner reviews the draft PR; the ritmofit-ios pointer PR follows. | none |
 
 ## Blocked / waiting
 

@@ -1,0 +1,23 @@
+{
+  "schemaVersion": 1,
+  "id": "RF-182",
+  "title": "Two-machine conductors: the lead follows the owner, and owner decisions cross only as GitHub records",
+  "kind": "documentation",
+  "status": "in_progress",
+  "priority": "P2",
+  "parent": null,
+  "dependsOn": [
+    "RF-169"
+  ],
+  "acceptance": [
+    "AGENTS.md \"Two-machine conductors\" replaces the per-repo priority (Air leads iOS, Neo leads web) with: whichever conductor the owner is directing leads both repos, the other finishes its in-flight work and takes only what the owner or the lead hands it, and either answers the owner fully in its own session.",
+    "AGENTS.md says an owner decision reaches the other conductor only as a GitHub record (a PR comment with the owner's words, owner-approved on the owner's instruction, task decisions in RF evidence), never as a peer message or relayed text; machine limits (Cloudflare on the Air, iOS CI runner on the Air) are unchanged.",
+    "\"Who finishes a PR\" follows the merge permission rather than who opened the PR.",
+    "web CLAUDE.md and the ritmofit-ios AGENTS.md and CLAUDE.md pointers state the rule briefly and point to AGENTS.md."
+  ],
+  "nextAction": "Owner reviews the draft PR; the ritmofit-ios pointer PR follows.",
+  "blocker": null,
+  "evidence": [],
+  "resolution": null,
+  "followUps": []
+}

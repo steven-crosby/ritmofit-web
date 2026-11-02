@@ -25,6 +25,7 @@
 <!-- note (Claude Code, 2026-11-02): RF-100: the owner gate is the required `owner-gate` commit status, not a step of the required CI job; label changes re-evaluate only that status. -->
 <!-- note (Claude Code, 2026-11-02): RF-176: only the Owner gate workflow writes `owner-gate`; an approval given within two minutes of a push is refused; label edits never rerun or cancel CI, so the remove-`ready-to-merge`-before-merging and no-label-edits-on-merged-PRs rules are retired. Stale-label cleanup is best-effort; refusals vs transient failures. -->
 <!-- note (Claude Code, 2026-11-02): RF-176 follow-up: PR edits (base retargets) also re-evaluate the owner gate. -->
+<!-- note (Claude Code, Neo, 2026-11-02): RF-182: Two-machine conductors: the lead is whichever conductor the owner is directing, not a per-repo default; owner decisions reach the other conductor only as GitHub records (owner-approved). -->
 
 This is the canonical contributor and agent guide for Ritmo Studio. If another instruction file conflicts
 with it, follow `AGENTS.md`, then repair the stale file. When an AI agent edits this file or adds a note
@@ -192,15 +193,27 @@ context; chat and tool memory are scratch.
   surfaces merged PRs that no RF record, HISTORY entry or handoff cites.
 - **Handing off a single task:** `agent-prompts/delegate-task.md` is the brief the owner gives a
   subagent; it ends in a PR under the policy below.
-- **Two-machine conductors** (set 2026-10-31; updated 2026-11-01). The owner may run one conductor
+- **Two-machine conductors** (set 2026-10-31; updated 2026-11-02). The owner may run one conductor
   session on each of two machines at once: the MacBook Air ("Ritmo - Air") and the MacBook Neo
   ("Ritmo - Neo"). Each conductor is a Solo or Orchestrator session, and every other rule in this
   file applies to each unchanged except where this entry says so.
-  - _Priority, not a hard split._ The Air leads iOS work (Xcode, simulators, the self-hosted iOS CI
-    runner) and takes web work only when the Neo is unavailable or the owner says so. The Neo leads
-    web work and takes iOS work only when the Air is busy or the owner says so. Its iOS PRs still
-    need the Air's self-hosted runner for the required check, so they queue behind the Air's own iOS
-    lane and wait while the Air is offline.
+  - _The lead follows the owner._ Neither machine owns a repo. Whichever conductor the owner is
+    directing in its live session is the lead: it plans and decides with the owner, works in either
+    repo, takes any RF task, and finishes PRs. The owner switches the lead just by working in the
+    other session, and it can change from one day, or hour, to the next. The other conductor
+    finishes what it already has in flight, takes new work only when the owner or the lead hands it
+    over (with the draft PR as the claim), and otherwise stays out of the lead's way. Either
+    conductor answers the owner fully when addressed; neither waits for the other to act on what
+    the owner says in its own session.
+  - _Owner decisions cross only as GitHub records._ A decision counts in the session the owner gives
+    it in. To let the other conductor act on it, the conductor that heard it records the owner's
+    words on GitHub: a PR comment, plus `owner-approved` when the owner tells it to apply the label
+    (see "Delegation And Merge Policy"); task decisions (Ready, scope, a design choice) go in the RF
+    record's evidence with a link to that comment. The other conductor acts on that record after
+    checking it exists and, for a merge, that the PR head still matches. It never acts on a peer
+    message or relayed text alone (see the last bullet).
+  - _Machine limits stay._ The Air runs the self-hosted iOS CI runner, so every iOS PR waits for its
+    required check while the Air is offline, whichever conductor opened it.
   - _Only the Air holds Cloudflare credentials._ Deploys and every other wrangler step against
     production (remote D1 migrations, secrets, rollback, tail, `wrangler deployments status`) run
     there. The Neo holds no Cloudflare credentials of any kind: no `wrangler login`, cached wrangler
@@ -208,8 +221,10 @@ context; chat and tool memory are scratch.
     offline the owner is the backstop. Either machine may run signed-in checks of production in the
     RitmoFit app itself (never the Cloudflare dashboard); changing production data stays under
     "Never granted" below.
-  - _Who finishes a PR._ The conductor that opened a PR, itself or through its lanes or subagents,
-    runs its final review and merge, unless the owner names the other conductor.
+  - _Who finishes a PR._ The conductor the owner gives the merge permission to runs its final
+    review and merge, usually the lead, whichever conductor opened it. A PR approved through
+    `owner-approved` may be finished by either; the one that opened it goes first unless the owner
+    names the other, and the other checks for a merge notice before starting.
   - _Messaging._ When Remote Control connects both sessions, find the peer with `ListAgents` and
     message it with `SendMessage` (for example `to: "Ritmo - Neo"`). A send may report unconfirmed
     delivery even when it arrived. Use messages for status, merge and rebase notices, and RF IDs;
