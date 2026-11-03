@@ -2669,7 +2669,7 @@ describe('LiveMode timeline scrubber', () => {
       fireEvent.pointerUp(slider);
       // The tap's start is still in flight, so the button reads "Pause start".
       fireEvent.click(screen.getByRole('button', { name: /^Pause/ }));
-      const lines = info.mock.calls.map((call: unknown[]) => String(call[0]));
+      const lines: string[] = info.mock.calls.map((call: unknown[]) => String(call[0]));
       const live = lines.filter((line) => line.startsWith('[ritmo live] timing '));
       expect(live.some((line) => / status @\d+ms idle$/.test(line))).toBe(true);
       expect(
