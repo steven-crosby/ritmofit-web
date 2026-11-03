@@ -19,6 +19,13 @@ export interface TrailingThrottle<T> {
   flush: (value: T) => void;
   /** Drop a pending call and forget the last fired value. */
   cancel: () => void;
+  /**
+   * Forget the last fired value but keep any pending call. The host calls it
+   * whenever what `fn` sent may no longer hold: a new gesture, a new
+   * coordinator (Retry, Reset), Pause/Play, or a stop or error. A stale value
+   * must never let a release skip a seek the provider did not get.
+   */
+  forget: () => void;
   firedLast: (value: T) => boolean;
 }
 
@@ -69,6 +76,9 @@ export function createTrailingThrottle<T>(
     cancel: () => {
       lastFired = null;
       clearPending();
+    },
+    forget: () => {
+      lastFired = null;
     },
     firedLast: (value) => lastFired !== null && Object.is(lastFired.value, value),
   };

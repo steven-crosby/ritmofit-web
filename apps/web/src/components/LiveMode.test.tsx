@@ -2457,7 +2457,7 @@ describe('LiveMode timeline scrubber', () => {
     await act(async () => {
       await new Promise((resolve) => setTimeout(resolve, 60));
     });
-    fireEvent.pointerUp(slider);
+    fireEvent.pointerUp(slider, { clientX: 90_000, pointerId: 1 });
     await waitFor(() => expect(soundcloudAdapterFactory).toHaveBeenCalledTimes(2));
     await act(async () => {
       await new Promise((resolve) => setTimeout(resolve, 300));
@@ -2549,7 +2549,7 @@ describe('LiveMode timeline scrubber', () => {
     const { adapters, slider } = await startWithRealtimeProvider();
     fireEvent.pointerDown(slider, { clientX: 90_000, pointerId: 1 });
     await wait(2_000); // the finger rests; the provider plays from 1:30
-    fireEvent.pointerUp(slider);
+    fireEvent.pointerUp(slider, { clientX: 90_000, pointerId: 1 });
     await expectClockMatchesProvider(slider, adapters.at(-1)!, 91_500);
     expect(adapters).toHaveLength(2); // Start + the one tap
   }, 10_000);
@@ -2557,9 +2557,9 @@ describe('LiveMode timeline scrubber', () => {
   it('a drag that pauses then releases leaves the clock and the provider agreeing (RF-108)', async () => {
     const { adapters, slider } = await startWithRealtimeProvider();
     fireEvent.pointerDown(slider, { clientX: 30_000, pointerId: 1 });
-    fireEvent.pointerMove(slider, { clientX: 90_000, buttons: 1 });
+    fireEvent.pointerMove(slider, { clientX: 90_000, buttons: 1, pointerId: 1 });
     await wait(2_000); // the throttle sends 1:30, then the finger rests
-    fireEvent.pointerUp(slider);
+    fireEvent.pointerUp(slider, { clientX: 90_000, pointerId: 1 });
     await expectClockMatchesProvider(slider, adapters.at(-1)!, 91_000);
     // Start, the drag's leading 0:30 and trailing 1:30; release adds nothing.
     expect(adapters).toHaveLength(3);
@@ -2568,8 +2568,8 @@ describe('LiveMode timeline scrubber', () => {
   it('a release before the throttle sends the drag position still commits it once', async () => {
     const { adapters, slider } = await startWithRealtimeProvider();
     fireEvent.pointerDown(slider, { clientX: 30_000, pointerId: 1 });
-    fireEvent.pointerMove(slider, { clientX: 120_000, buttons: 1 });
-    fireEvent.pointerUp(slider); // within the 200 ms window
+    fireEvent.pointerMove(slider, { clientX: 120_000, buttons: 1, pointerId: 1 });
+    fireEvent.pointerUp(slider, { clientX: 120_000, pointerId: 1 }); // within the 200 ms window
     await wait(400);
     expect(Number(slider.getAttribute('aria-valuenow'))).toBeGreaterThanOrEqual(120_000);
     // The leading 0:30 seek is superseded before it builds an adapter; the
@@ -2582,9 +2582,9 @@ describe('LiveMode timeline scrubber', () => {
     const { adapters, slider } = await startWithRealtimeProvider();
     fireEvent.pointerDown(slider, { clientX: 90_000, pointerId: 1 });
     await wait(16);
-    fireEvent.pointerMove(slider, { clientX: 90_000, buttons: 1 }); // same ms
+    fireEvent.pointerMove(slider, { clientX: 90_000, buttons: 1, pointerId: 1 }); // same ms
     await wait(60);
-    fireEvent.pointerUp(slider);
+    fireEvent.pointerUp(slider, { clientX: 90_000, pointerId: 1 });
     await wait(400);
     expect(adapters).toHaveLength(2); // Start + the one tap
     await expectClockMatchesProvider(slider, adapters.at(-1)!, 90_000);
@@ -2593,20 +2593,62 @@ describe('LiveMode timeline scrubber', () => {
   it('a tap with sub-pixel or small jitter inside the window sends one provider seek (RF-185)', async () => {
     const { adapters, slider } = await startWithRealtimeProvider();
     fireEvent.pointerDown(slider, { clientX: 90_000, pointerId: 1 });
-    fireEvent.pointerMove(slider, { clientX: 90_000.4, buttons: 1 });
-    fireEvent.pointerMove(slider, { clientX: 90_003, buttons: 1 }); // another ms, inside the slop
+    fireEvent.pointerMove(slider, { clientX: 90_000.4, buttons: 1, pointerId: 1 });
+    fireEvent.pointerMove(slider, { clientX: 90_003, buttons: 1, pointerId: 1 }); // another ms, inside the slop
     await wait(60);
-    fireEvent.pointerUp(slider);
+    fireEvent.pointerUp(slider, { clientX: 90_003, pointerId: 1 });
     await wait(400);
     expect(adapters).toHaveLength(2);
+  }, 10_000);
+
+  it('after Retry, a tap at the same pixel within 200 ms still reaches the new coordinator (RF-185)', async () => {
+    let built = 0;
+    vi.mocked(listConnections).mockResolvedValue([soundcloudConnection]);
+    vi.mocked(soundcloudAdapterFactory).mockImplementation(() => {
+      built++;
+      const adapter = workingAdapter();
+      // The keyboard seek's start fails; Start, Retry and later starts work.
+      if (built === 2) adapter.prepare = () => Promise.reject(new Error('widget failed'));
+      return adapter;
+    });
+    render(<LiveMode payload={payload} onExit={() => {}} />);
+    await screen.findByRole('list', { name: 'Track playback check' });
+    fireEvent.click(screen.getByRole('button', { name: 'Start class' }));
+    await screen.findByRole('button', { name: 'Pause' });
+    const slider = screen.getByRole('slider', { name: 'Seek class timeline' });
+    vi.spyOn(slider, 'getBoundingClientRect').mockReturnValue({
+      width: 180_000,
+      left: 0,
+      right: 180_000,
+      top: 0,
+      bottom: 40,
+      height: 40,
+      x: 0,
+      y: 0,
+      toJSON: () => ({}),
+    } as DOMRect);
+    // A discrete seek (keyboard Home) fires 0:00 to the first coordinator and
+    // its start fails at once: Live offers Retry, which builds a new one.
+    fireEvent.keyDown(slider, { key: 'Home' });
+    // Only microtasks pass, so the tap below stays inside the 200 ms window.
+    const tappedAt = performance.now();
+    for (let i = 0; i < 20 && !screen.queryByRole('button', { name: 'Retry music' }); i++)
+      await act(async () => {});
+    fireEvent.click(screen.getByRole('button', { name: 'Retry music' }));
+    expect(built).toBe(3);
+    expect(performance.now() - tappedAt).toBeLessThan(200);
+    // A tap at the pixel the old coordinator was sent: the new one must get it.
+    fireEvent.pointerDown(slider, { clientX: 0, pointerId: 1 });
+    fireEvent.pointerUp(slider, { clientX: 0, pointerId: 1 });
+    await waitFor(() => expect(built).toBe(4));
   }, 10_000);
 
   it('a pointercancel after the release starts nothing more (RF-185)', async () => {
     const { adapters, slider } = await startWithRealtimeProvider();
     fireEvent.pointerDown(slider, { clientX: 90_000, pointerId: 1 });
     await wait(60);
-    fireEvent.pointerUp(slider);
-    fireEvent.pointerCancel(slider);
+    fireEvent.pointerUp(slider, { clientX: 90_000, pointerId: 1 });
+    fireEvent.pointerCancel(slider, { pointerId: 1 });
     await wait(400);
     expect(adapters).toHaveLength(2);
   }, 10_000);
@@ -2646,7 +2688,7 @@ describe('LiveMode timeline scrubber', () => {
     for (const x of [30_000, 70_000, 120_000, 150_000]) {
       fireEvent.pointerDown(slider, { clientX: x, pointerId: 1 });
       await wait(40);
-      fireEvent.pointerUp(slider);
+      fireEvent.pointerUp(slider, { clientX: x, pointerId: 1 });
       expectNotPaused();
       await wait(80);
       expectNotPaused();
@@ -2666,7 +2708,7 @@ describe('LiveMode timeline scrubber', () => {
     try {
       const { slider } = await startWithRealtimeProvider();
       fireEvent.pointerDown(slider, { clientX: 90_000, pointerId: 1 });
-      fireEvent.pointerUp(slider);
+      fireEvent.pointerUp(slider, { clientX: 90_000, pointerId: 1 });
       // The tap's start is still in flight, so the button reads "Pause start".
       fireEvent.click(screen.getByRole('button', { name: /^Pause/ }));
       const lines: string[] = info.mock.calls.map((call: unknown[]) => String(call[0]));
@@ -2723,12 +2765,12 @@ describe('LiveMode timeline scrubber', () => {
 
     fireEvent.pointerDown(slider, { clientX: 30000, pointerId: 1 });
     expect(slider.getAttribute('aria-valuenow')).toBe('30000');
-    fireEvent.pointerMove(slider, { clientX: 60000, buttons: 1 });
+    fireEvent.pointerMove(slider, { clientX: 60000, buttons: 1, pointerId: 1 });
     expect(slider.getAttribute('aria-valuenow')).toBe('60000');
-    fireEvent.pointerMove(slider, { clientX: 90000, buttons: 1 });
+    fireEvent.pointerMove(slider, { clientX: 90000, buttons: 1, pointerId: 1 });
     expect(slider.getAttribute('aria-valuenow')).toBe('90000');
     // The header readout mirrors the same position once released.
-    fireEvent.pointerUp(slider);
+    fireEvent.pointerUp(slider, { clientX: 90000, pointerId: 1 });
     expect(screen.getByText('1:30 / 3:00')).toBeTruthy();
   });
 
@@ -3083,7 +3125,7 @@ function seekTo(ms: number, totalMs: number) {
     toJSON: () => ({}),
   } as DOMRect);
   fireEvent.pointerDown(slider, { clientX: ms, pointerId: 1 });
-  fireEvent.pointerUp(slider);
+  fireEvent.pointerUp(slider, { clientX: ms, pointerId: 1 });
 }
 
 /** Used font size from the inline clamp or rem the element actually ships. */

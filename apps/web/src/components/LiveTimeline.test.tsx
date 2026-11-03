@@ -218,8 +218,8 @@ describe('LiveTimeline', () => {
     const slider = screen.getByRole('slider');
     fireEvent.pointerDown(slider, { clientX: 60, pointerId: 1 });
     expect(onSeekPreview).toHaveBeenCalledWith(60000); // 25% of 240000
-    fireEvent.pointerMove(slider, { clientX: 120, buttons: 1 });
-    fireEvent.pointerMove(slider, { clientX: 180, buttons: 1 });
+    fireEvent.pointerMove(slider, { clientX: 120, buttons: 1, pointerId: 1 });
+    fireEvent.pointerMove(slider, { clientX: 180, buttons: 1, pointerId: 1 });
     expect(onSeekPreview).toHaveBeenCalledTimes(3);
     expect(onSeekPreview).toHaveBeenLastCalledWith(180000); // 75%
     // The provider seek path is never called by the timeline itself during a
@@ -240,9 +240,9 @@ describe('LiveTimeline', () => {
       />,
     );
     const slider = screen.getByRole('slider');
-    fireEvent.pointerMove(slider, { clientX: 60, buttons: 0 });
+    fireEvent.pointerMove(slider, { clientX: 60, buttons: 0, pointerId: 1 });
     expect(onSeekPreview).not.toHaveBeenCalled();
-    fireEvent.pointerMove(slider, { clientX: 60, buttons: 1 });
+    fireEvent.pointerMove(slider, { clientX: 60, buttons: 1, pointerId: 1 });
     expect(onSeekPreview).toHaveBeenCalledWith(60000); // 25% of 240000
   });
 
@@ -261,9 +261,9 @@ describe('LiveTimeline', () => {
     );
     const slider = screen.getByRole('slider');
     fireEvent.pointerDown(slider, { clientX: 60, pointerId: 1 });
-    fireEvent.pointerMove(slider, { clientX: 180, buttons: 1 });
+    fireEvent.pointerMove(slider, { clientX: 180, buttons: 1, pointerId: 1 });
     expect(onSeekCommit).not.toHaveBeenCalled();
-    fireEvent.pointerUp(slider);
+    fireEvent.pointerUp(slider, { clientX: 180, pointerId: 1 });
     expect(onSeekCommit).toHaveBeenCalledTimes(1);
     expect(onSeekCommit).toHaveBeenCalledWith(180000); // 75% of 240000, the released position
   });
@@ -283,8 +283,8 @@ describe('LiveTimeline', () => {
     );
     const slider = screen.getByRole('slider');
     fireEvent.pointerDown(slider, { clientX: 60, pointerId: 1 });
-    fireEvent.pointerMove(slider, { clientX: 96, buttons: 1 }); // 40% -> 96000
-    fireEvent.pointerCancel(slider);
+    fireEvent.pointerMove(slider, { clientX: 96, buttons: 1, pointerId: 1 }); // 40% -> 96000
+    fireEvent.pointerCancel(slider, { pointerId: 1 });
     expect(onSeekCommit).toHaveBeenCalledWith(96000);
   });
 
@@ -328,8 +328,8 @@ describe('LiveTimeline taps (RF-185)', () => {
   it('a still-finger move at the same position is part of the tap: one preview, release at the down position', () => {
     const { slider, onSeekPreview, onSeekRelease } = renderTimeline();
     fireEvent.pointerDown(slider, { clientX: 60, pointerId: 1 });
-    fireEvent.pointerMove(slider, { clientX: 60, buttons: 1 });
-    fireEvent.pointerUp(slider);
+    fireEvent.pointerMove(slider, { clientX: 60, buttons: 1, pointerId: 1 });
+    fireEvent.pointerUp(slider, { clientX: 60, pointerId: 1 });
     expect(onSeekPreview).toHaveBeenCalledTimes(1);
     expect(onSeekRelease.mock.calls).toEqual([[60000]]);
   });
@@ -337,9 +337,9 @@ describe('LiveTimeline taps (RF-185)', () => {
   it('sub-pixel and small jitter inside the tap slop does not move the tap', () => {
     const { slider, onSeekPreview, onSeekRelease } = renderTimeline();
     fireEvent.pointerDown(slider, { clientX: 60, pointerId: 1 });
-    fireEvent.pointerMove(slider, { clientX: 60.4, buttons: 1 }); // a different ms
-    fireEvent.pointerMove(slider, { clientX: 60 + TAP_SLOP_PX - 1, buttons: 1 });
-    fireEvent.pointerUp(slider);
+    fireEvent.pointerMove(slider, { clientX: 60.4, buttons: 1, pointerId: 1 }); // a different ms
+    fireEvent.pointerMove(slider, { clientX: 60 + TAP_SLOP_PX - 1, buttons: 1, pointerId: 1 });
+    fireEvent.pointerUp(slider, { clientX: 60 + TAP_SLOP_PX - 1, pointerId: 1 });
     expect(onSeekPreview.mock.calls).toEqual([[60000]]);
     expect(onSeekRelease.mock.calls).toEqual([[60000]]);
   });
@@ -347,9 +347,9 @@ describe('LiveTimeline taps (RF-185)', () => {
   it('a move past the slop is a drag from then on, even back inside it', () => {
     const { slider, onSeekPreview, onSeekRelease } = renderTimeline();
     fireEvent.pointerDown(slider, { clientX: 60, pointerId: 1 });
-    fireEvent.pointerMove(slider, { clientX: 60 + TAP_SLOP_PX, buttons: 1 }); // 68 px
-    fireEvent.pointerMove(slider, { clientX: 61, buttons: 1 });
-    fireEvent.pointerUp(slider);
+    fireEvent.pointerMove(slider, { clientX: 60 + TAP_SLOP_PX, buttons: 1, pointerId: 1 }); // 68 px
+    fireEvent.pointerMove(slider, { clientX: 61, buttons: 1, pointerId: 1 });
+    fireEvent.pointerUp(slider, { clientX: 61, pointerId: 1 });
     expect(onSeekPreview.mock.calls).toEqual([[60000], [68000], [61000]]);
     expect(onSeekRelease.mock.calls).toEqual([[61000]]);
   });
@@ -357,10 +357,43 @@ describe('LiveTimeline taps (RF-185)', () => {
   it('a pointercancel or second pointerup after the release sends nothing', () => {
     const { slider, onSeekRelease } = renderTimeline();
     fireEvent.pointerDown(slider, { clientX: 60, pointerId: 1 });
-    fireEvent.pointerUp(slider);
-    fireEvent.pointerCancel(slider);
-    fireEvent.pointerUp(slider);
+    fireEvent.pointerUp(slider, { clientX: 60, pointerId: 1 });
+    fireEvent.pointerCancel(slider, { pointerId: 1 });
+    fireEvent.pointerUp(slider, { clientX: 60, pointerId: 1 });
     expect(onSeekRelease).toHaveBeenCalledTimes(1);
+  });
+
+  it('a nudge released outside the slop commits the release position, even with no move event', () => {
+    const { slider, onSeekRelease } = renderTimeline();
+    fireEvent.pointerDown(slider, { clientX: 60, pointerId: 1 });
+    fireEvent.pointerUp(slider, { clientX: 75, pointerId: 1 }); // iOS coalesced the move
+    fireEvent.pointerDown(slider, { clientX: 60, pointerId: 1 });
+    fireEvent.pointerMove(slider, { clientX: 64, buttons: 1, pointerId: 1 }); // inside the slop
+    fireEvent.pointerUp(slider, { clientX: 70, pointerId: 1 });
+    expect(onSeekRelease.mock.calls).toEqual([[75000], [70000]]);
+  });
+
+  it('follows one pointer: a second finger cannot move or end the gesture', () => {
+    const { slider, onSeekPreview, onSeekRelease } = renderTimeline();
+    fireEvent.pointerDown(slider, { clientX: 60, pointerId: 1 });
+    fireEvent.pointerDown(slider, { clientX: 200, pointerId: 2 });
+    fireEvent.pointerMove(slider, { clientX: 210, buttons: 1, pointerId: 2 });
+    fireEvent.pointerUp(slider, { clientX: 210, pointerId: 2 });
+    fireEvent.pointerCancel(slider, { pointerId: 2 });
+    expect(onSeekPreview.mock.calls).toEqual([[60000]]);
+    expect(onSeekRelease).not.toHaveBeenCalled();
+    fireEvent.pointerUp(slider, { clientX: 60, pointerId: 1 });
+    expect(onSeekRelease.mock.calls).toEqual([[60000]]);
+  });
+
+  it('a lost pointer capture ends the gesture, so the next pointer is not ignored', () => {
+    const { slider, onSeekRelease } = renderTimeline();
+    fireEvent.pointerDown(slider, { clientX: 60, pointerId: 1 });
+    fireEvent.lostPointerCapture(slider, { pointerId: 1 });
+    fireEvent.lostPointerCapture(slider, { pointerId: 1 }); // the tail of that end: nothing
+    fireEvent.pointerDown(slider, { clientX: 120, pointerId: 2 });
+    fireEvent.pointerUp(slider, { clientX: 120, pointerId: 2 });
+    expect(onSeekRelease.mock.calls).toEqual([[60000], [120000]]);
   });
 
   describe('debug timing', () => {
@@ -378,16 +411,23 @@ describe('LiveTimeline taps (RF-185)', () => {
     it('logs down, move, up and a stray cancel with clientX and the mapped ms', () => {
       const { slider } = renderTimeline();
       fireEvent.pointerDown(slider, { clientX: 60, pointerId: 1, pointerType: 'touch' });
-      fireEvent.pointerMove(slider, { clientX: 60.4, buttons: 1, pointerType: 'touch' });
-      fireEvent.pointerUp(slider, { clientX: 60.4, pointerType: 'touch' });
-      fireEvent.pointerCancel(slider, { clientX: 60.4, pointerType: 'touch' });
+      fireEvent.pointerMove(slider, {
+        clientX: 60.4,
+        buttons: 1,
+        pointerType: 'touch',
+        pointerId: 1,
+      });
+      fireEvent.pointerUp(slider, { clientX: 60.4, pointerType: 'touch', pointerId: 1 });
+      fireEvent.pointerCancel(slider, { clientX: 60.4, pointerType: 'touch', pointerId: 1 });
       const lines = info.mock.calls.map((call: unknown[]) => String(call[0]));
       expect(lines).toHaveLength(4);
       expect(lines[0]).toMatch(
-        /^\[ritmo live-timeline\] timing pointer-down @\d+ms x=60\.0 ms=60000 type=/,
+        /^\[ritmo live-timeline\] timing pointer-down @\d+ms x=60\.0 ms=60000 id=1 type=touch$/,
       );
-      expect(lines[1]).toMatch(/pointer-move @\d+ms x=60\.4 ms=60400 type=.* \(tap slop\)$/);
-      expect(lines[2]).toMatch(/pointer-up @\d+ms x=60\.4 ms=60000 type=.* tap$/);
+      expect(lines[1]).toMatch(
+        /pointer-move @\d+ms x=60\.4 ms=60400 id=1 type=touch \(tap slop\)$/,
+      );
+      expect(lines[2]).toMatch(/pointer-up @\d+ms x=60\.4 ms=60000 id=1 type=touch tap$/);
       expect(lines[3]).toMatch(/pointer-cancel @\d+ms x=60\.4 ms=n\/a .*\(no gesture, ignored\)$/);
     });
   });

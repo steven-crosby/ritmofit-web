@@ -124,6 +124,21 @@ describe('createTrailingThrottle', () => {
     expect(fn).toHaveBeenCalledTimes(1);
   });
 
+  it('forget drops the last fired value but keeps a pending call (RF-185)', () => {
+    const clock = fakeNow();
+    const fn = vi.fn();
+    const throttle = createTrailingThrottle(fn, 200, clock.now);
+    throttle.call(60_000);
+    clock.advance(10);
+    throttle.call(90_000); // pending
+    throttle.forget();
+    expect(throttle.firedLast(60_000)).toBe(false);
+    clock.advance(190);
+    vi.advanceTimersByTime(190);
+    expect(fn.mock.calls).toEqual([[60_000], [90_000]]);
+    expect(throttle.firedLast(90_000)).toBe(true);
+  });
+
   it('never treats a pending, unfired value as sent: down A, pending B, release B sends B (RF-185)', () => {
     const clock = fakeNow();
     const fn = vi.fn();

@@ -25,6 +25,7 @@ import type { TransportReading, TransportState } from './types.js';
  */
 import type { AppleMusicClientConfig, RunPayloadTrackEntry } from '@ritmofit/shared';
 import { getAppleMusicConfig } from '../api.js';
+import { errMessage } from '../errors.js';
 import {
   configureMusicKit,
   loadMusicKit,
@@ -93,14 +94,9 @@ const MUSICKIT_ALREADY_PLAYING =
  * right after a mid-track re-cue (set-queue-start (again)).
  */
 export function isMusicKitAlreadyPlayingRejection(reason: unknown): boolean {
-  const message =
-    reason instanceof Error
-      ? reason.message
-      : typeof reason === 'string'
-        ? reason
-        : typeof (reason as { message?: unknown } | null)?.message === 'string'
-          ? (reason as { message: string }).message
-          : '';
+  // MusicKit can reject with an MKError-like object rather than an Error.
+  const objectMessage = (reason as { message?: unknown } | null)?.message;
+  const message = errMessage(typeof objectMessage === 'string' ? objectMessage : reason, '');
   return message.includes(MUSICKIT_ALREADY_PLAYING);
 }
 
@@ -111,6 +107,16 @@ export function isMusicKitAlreadyPlayingRejection(reason: unknown): boolean {
  * listener handles only that exact MusicKit message: it marks the rejection
  * handled (no "Unhandled Promise Rejection" in the console) and records it in
  * the opt-in timing log. Every other rejection is left untouched.
+ *
+ * Why it is page-wide and permanent once installed, not scoped to one start:
+ * MusicKit is a page singleton, and its dropped promise can reject after the
+ * start that caused it has ended (the rejections came at both ends of one
+ * drag), so a listener removed with the adapter would miss it. Matching by
+ * text is the only handle there is: the promise is not ours. The text is
+ * MusicKit's own and names its play()/stop()/pause(), so no other code on
+ * this page produces it. Changing nothing but the console report, it cannot
+ * hide a failure the adapter would act on: the adapter's own play() result
+ * is handled in play(), never here.
  */
 export function handleMusicKitUnhandledRejection(event: PromiseRejectionEvent): void {
   if (!isMusicKitAlreadyPlayingRejection(event.reason)) return;
@@ -259,6 +265,8 @@ export class AppleMusicAdapter implements PlaybackAdapter {
   private attempt = 0;
   /** Resolves the current play()'s start wait when MusicKit first reports playing. */
   private onFirstPlaying: (() => void) | null = null;
+  /** Ends the current play()'s start wait as cancelled; destroy() calls it. */
+  private onStartCancelled: (() => void) | null = null;
   /**
    * Debug-only timing (RF-128), numbered per adapter. A no-op unless timing is
    * on (`?playback-timing=1` for the tab, or the `ritmo-playback-timing`
@@ -456,8 +464,9 @@ export class AppleMusicAdapter implements PlaybackAdapter {
     this.intent = 'play';
     const capMs = this.host.playStartCapMs ?? DEFAULT_PLAY_START_CAP_MS;
     let capTimer: ReturnType<typeof setTimeout> | undefined;
+    let endCap: (() => void) | undefined;
     try {
-      let outcome: 'resolved' | 'playing' | 'cap';
+      let outcome: 'resolved' | 'playing' | 'cap' | 'cancelled';
       try {
         // MusicKit's play() first, with no yield before it: a caller that
         // destroys during play() has to find MusicKit's play still pending,
@@ -466,6 +475,10 @@ export class AppleMusicAdapter implements PlaybackAdapter {
         this.awaitingFirstPlaying = true;
         const firstPlaying = new Promise<'playing'>((resolve) => {
           this.onFirstPlaying = () => resolve('playing');
+        });
+        // destroy() ends the wait at once as cancelled rather than at the cap.
+        const cancelled = new Promise<'cancelled'>((resolve) => {
+          this.onStartCancelled = () => resolve('cancelled');
         });
         const playEnd = this.timedCall('play-end');
         const played = instance.play();
@@ -487,25 +500,26 @@ export class AppleMusicAdapter implements PlaybackAdapter {
         // resolving. Neither within the cap is a Retry error (RF-108).
         const cap = new Promise<'cap'>((resolve) => {
           capTimer = setTimeout(() => resolve('cap'), capMs);
+          endCap = () => resolve('cap');
         });
         // After a mid-track re-cue (set-queue-start (again)) MusicKit can reject
         // play() with "called without a previous stop() or pause() call" when
-        // it is already starting the new queue itself (RF-187). That is not a
-        // refusal: count it as started if MusicKit already reports playing,
-        // otherwise keep waiting for the first playing state or the cap.
+        // it is already starting the new queue itself (RF-187). The rejection is
+        // no proof either way, and the shared instance's current state could
+        // still describe the previous queue. So it counts as started only on
+        // this start's own evidence: the first playing state MusicKit reports
+        // after this play() (issued once this adapter's queue request settled
+        // and it owns the transport). Without it the start ends at the cap with
+        // the Retry error, or at once as cancelled on destroy().
         const playedOutcome = played.then(
           () => 'resolved' as const,
           (cause: unknown) => {
             if (!isMusicKitAlreadyPlayingRejection(cause)) throw cause;
-            const playingNow = this.transportState() === 'playing';
-            this.timer.mark(
-              'play-rejected-already-playing',
-              playingNow ? 'handled, playing' : 'handled, waiting for playing',
-            );
-            return playingNow ? ('playing' as const) : new Promise<never>(() => {});
+            this.timer.mark('play-rejected-already-playing', 'handled, waiting for playing');
+            return firstPlaying;
           },
         );
-        outcome = await Promise.race([playedOutcome, firstPlaying, cap]);
+        outcome = await Promise.race([playedOutcome, firstPlaying, cap, cancelled]);
       } catch (cause) {
         if (this.destroyed) throw cause;
         // MusicKit rejects with codes such as UNAUTHORIZED or CONTENT_RESTRICTED;
@@ -517,7 +531,8 @@ export class AppleMusicAdapter implements PlaybackAdapter {
           { cause },
         );
       }
-      if (this.destroyed) throw new Error('Apple Music play was cancelled.');
+      if (this.destroyed || outcome === 'cancelled')
+        throw new Error('Apple Music play was cancelled.');
       if (outcome === 'cap') {
         this.timer.mark('error', `play-not-started-within ${capMs}ms`);
         throw new Error(appleMusicPlayNotStartedMessage(this.trackTitle, capMs));
@@ -526,8 +541,13 @@ export class AppleMusicAdapter implements PlaybackAdapter {
       this.started = true;
     } finally {
       clearTimeout(capTimer);
+      // Settle every wait this start created, so none is left pending.
+      endCap?.();
+      this.onFirstPlaying?.();
+      this.onStartCancelled?.();
       this.awaitingFirstPlaying = false;
       this.onFirstPlaying = null;
+      this.onStartCancelled = null;
       this.starting = false;
     }
   }
@@ -790,6 +810,8 @@ export class AppleMusicAdapter implements PlaybackAdapter {
     // Debug timing only: a cancel interrupts a MusicKit call; a normal teardown
     // (after a track finished, or between tracks) does not.
     this.timer.mark(this.timingInFlight > 0 ? 'cancelled' : 'destroyed');
+    // A start still waiting on MusicKit ends now as cancelled (RF-187).
+    this.onStartCancelled?.();
     this.timingAttempt++;
     this.attempt++;
     this.awaitingFirstPlaying = false;

@@ -14,7 +14,7 @@ import { type RunPayload } from '@ritmofit/shared';
 import { computeTimeline } from './TimelineStrip.js';
 import { formatDuration } from '../lib/class-summary.js';
 import type { ClockStore } from '../lib/use-virtual-clock.js';
-import { timingLine } from '../lib/playback/start-timing.js';
+import { playbackTimingEnabled, timingLine } from '../lib/playback/start-timing.js';
 
 /** Keyboard seek increments (ms): arrows nudge, PageUp/Down jump. */
 const STEP_MS = 5000;
@@ -33,7 +33,12 @@ const LOGGED_MOVES = 5;
 const TIMING_PREFIX = '[ritmo live-timeline]';
 
 interface Gesture {
+  pointerId: number;
   downX: number;
+  /** The class time under pointerdown; a tap commits it. */
+  downMs: number | null;
+  /** The position this gesture last previewed. */
+  lastMs: number | null;
   /** Moved past the tap slop at least once; previews follow the pointer from then on. */
   dragging: boolean;
   moves: number;
@@ -80,6 +85,7 @@ export function LiveTimeline({
   onSeekPreview,
   onSeekCommit,
   onSeekRelease = onSeekCommit,
+  onGestureStart,
 }: {
   payload: RunPayload;
   /** The raw, frame-rate clock (SPC-18): subscribing directly to it here —
@@ -96,11 +102,12 @@ export function LiveTimeline({
    * a tap or a resting drag does not start a second adapter (RF-108).
    */
   onSeekRelease?: (ms: number) => void;
+  /** A new pointer gesture began. The host forgets what it last sent, so this
+   * gesture's release is judged only against what this gesture sent (RF-185). */
+  onGestureStart?: () => void;
 }) {
   const totalMs = payload.class.totalDurationMs;
   const trackRef = useRef<HTMLDivElement>(null);
-  /** The position this pointer gesture last previewed; release commits it. */
-  const gestureMs = useRef<number | null>(null);
   /** The pointer gesture in progress, from pointerdown until release or cancel. */
   const gesture = useRef<Gesture | null>(null);
   const elapsedMs = useSyncExternalStore(clock.subscribe, clock.getSnapshot);
@@ -119,83 +126,126 @@ export function LiveTimeline({
     return fractionToMs((clientX - rect.left) / rect.width, totalMs);
   };
 
-  const preview = (ms: number) => {
-    gestureMs.current = ms;
+  const preview = (g: Gesture, ms: number) => {
+    g.lastMs = ms;
     onSeekPreview(ms);
   };
 
-  /** Debug timing only (`?playback-timing=1`, RF-185): one line per pointer event. */
+  /** Debug timing only (`?playback-timing=1`, RF-185): one line per pointer event.
+   * The line is built only when timing is on. */
   const logPointer = (
     step: string,
     e: PointerEvent<HTMLDivElement>,
     ms: number | null,
     note = '',
   ) => {
+    if (!playbackTimingEnabled()) return;
     const x = Number.isFinite(e.clientX) ? e.clientX.toFixed(1) : 'n/a';
     const type = e.pointerType || 'unknown';
+    const id = Number.isFinite(e.pointerId) ? e.pointerId : 'n/a';
     timingLine(
       TIMING_PREFIX,
       step,
-      `x=${x} ms=${ms ?? 'n/a'} type=${type}${note ? ` ${note}` : ''}`,
+      `x=${x} ms=${ms ?? 'n/a'} id=${id} type=${type}${note ? ` ${note}` : ''}`,
     );
   };
 
+  /** An event from a pointer other than the one this gesture follows (a second
+   * finger, a palm) is ignored, so it cannot move or end the gesture (RF-185). */
+  const otherPointer = (e: PointerEvent<HTMLDivElement>) =>
+    gesture.current !== null && e.pointerId !== gesture.current.pointerId;
+
   const onPointerDown = (e: PointerEvent<HTMLDivElement>) => {
+    if (otherPointer(e)) {
+      logPointer('pointer-down', e, null, '(other pointer, ignored)');
+      return;
+    }
     e.currentTarget.setPointerCapture?.(e.pointerId);
     const ms = msAtClientX(e.clientX);
-    gesture.current = {
+    const g: Gesture = {
+      pointerId: e.pointerId,
       downX: e.clientX,
+      downMs: ms,
+      lastMs: null,
       dragging: false,
       moves: 0,
     };
+    gesture.current = g;
+    onGestureStart?.();
     logPointer('pointer-down', e, ms);
-    if (ms !== null) preview(ms);
+    if (ms !== null) preview(g, ms);
   };
   const onPointerMove = (e: PointerEvent<HTMLDivElement>) => {
     // Drag-seek only while a button is held (the captured pointer reports buttons).
-    if (e.buttons === 0) return;
+    if (e.buttons === 0 || otherPointer(e)) return;
     const ms = msAtClientX(e.clientX);
-    // A held pointer that entered without a pointerdown here is a drag already.
-    const g = (gesture.current ??= {
-      downX: e.clientX,
-      dragging: true,
-      moves: 0,
-    });
+    let g = gesture.current;
+    if (!g) {
+      // A held pointer that entered without a pointerdown here is a drag already.
+      g = {
+        pointerId: e.pointerId,
+        downX: e.clientX,
+        downMs: null,
+        lastMs: null,
+        dragging: true,
+        moves: 0,
+      };
+      gesture.current = g;
+      onGestureStart?.();
+    }
     g.moves++;
     // A still finger can report a move, with sub-pixel jitter, right after
-    // pointerdown. Inside the tap slop it is still the tap: no preview, so the
-    // release reports the pointerdown position the provider already has and
-    // one tap sends one seek (RF-185). Past the slop it is a drag from then on.
+    // pointerdown. Inside the tap slop it is still the tap: no preview, so a
+    // tap release reports the pointerdown position the provider already has
+    // and one tap sends one seek (RF-185). Past the slop it is a drag from then on.
     const withinSlop = !g.dragging && Math.abs(e.clientX - g.downX) < TAP_SLOP_PX;
     if (g.moves <= LOGGED_MOVES) logPointer('pointer-move', e, ms, withinSlop ? '(tap slop)' : '');
     if (withinSlop) return;
     g.dragging = true;
-    if (ms !== null) preview(ms);
+    if (ms !== null) preview(g, ms);
   };
-  // Release and cancel both commit the current preview position — a cancelled
-  // drag still ends coherent (the playhead and provider audio agree) rather
-  // than silently diverging from what's on screen. It is the position this
-  // gesture previewed, so the host can tell whether the provider already has
-  // it (RF-108). A release or cancel with no gesture in progress (a second
-  // event after pointerup, or a pointer that never went down here) sends
-  // nothing: it would re-send the current position as a new start (RF-185).
-  const commitGesture = (step: string, e: PointerEvent<HTMLDivElement>) => {
+  // A release is a tap only when no move left the slop and the release itself
+  // is inside it: then it commits the pointerdown position. Otherwise it is a
+  // drag or a deliberate nudge and commits where the pointer was released,
+  // even when no move event reached us (iOS can coalesce a quick nudge into
+  // down + up). The host skips the provider call when that position is the
+  // one it sent last (RF-108, RF-185).
+  const onPointerUp = (e: PointerEvent<HTMLDivElement>) => {
+    if (otherPointer(e)) return;
     const g = gesture.current;
-    const ms = gestureMs.current;
-    if (!g || ms === null) {
-      logPointer(step, e, null, '(no gesture, ignored)');
-      gesture.current = null;
-      gestureMs.current = null;
+    gesture.current = null;
+    if (!g) {
+      logPointer('pointer-up', e, null, '(no gesture, ignored)');
       return;
     }
+    const tap = !g.dragging && Math.abs(e.clientX - g.downX) < TAP_SLOP_PX;
+    const ms = tap ? g.downMs : (msAtClientX(e.clientX) ?? g.lastMs);
     const extra = g.moves > LOGGED_MOVES ? ` moves=${g.moves}` : '';
-    logPointer(step, e, ms, `${g.dragging ? 'drag' : 'tap'}${extra}`);
-    gesture.current = null;
-    gestureMs.current = null;
+    logPointer('pointer-up', e, ms, `${tap ? 'tap' : 'drag'}${extra}`);
+    if (ms === null) return;
+    if (ms !== g.lastMs) onSeekPreview(ms);
     onSeekRelease(ms);
   };
-  const onPointerUp = (e: PointerEvent<HTMLDivElement>) => commitGesture('pointer-up', e);
-  const onPointerCancel = (e: PointerEvent<HTMLDivElement>) => commitGesture('pointer-cancel', e);
+  // A cancel carries no reliable position, so it commits what this gesture
+  // last previewed: a cancelled drag still ends coherent (the playhead and
+  // provider audio agree) rather than silently diverging from what's on
+  // screen. A release or cancel with no gesture in progress (a second event
+  // after pointerup, or a pointer that never went down here) sends nothing:
+  // it would re-send the current position as a new start (RF-185).
+  // Lost capture without a pointerup (the element hid, the browser took the
+  // touch) ends the gesture the same way, so a lost release cannot leave a
+  // stale gesture that ignores every later pointer.
+  const endWithoutPosition = (step: string) => (e: PointerEvent<HTMLDivElement>) => {
+    if (otherPointer(e)) return;
+    const g = gesture.current;
+    if (!g && step === 'lost-capture') return; // the normal tail of every release
+    gesture.current = null;
+    const ms = g?.lastMs ?? null;
+    logPointer(step, e, ms, g ? '' : '(no gesture, ignored)');
+    if (ms !== null) onSeekRelease(ms);
+  };
+  const onPointerCancel = endWithoutPosition('pointer-cancel');
+  const onLostPointerCapture = endWithoutPosition('lost-capture');
   const onKeyDown = (e: KeyboardEvent<HTMLDivElement>) => {
     const next = keyboardSeekMs(e.key, elapsedMs, totalMs);
     if (next === null) return;
@@ -217,6 +267,7 @@ export function LiveTimeline({
       onPointerMove={onPointerMove}
       onPointerUp={onPointerUp}
       onPointerCancel={onPointerCancel}
+      onLostPointerCapture={onLostPointerCapture}
       onKeyDown={onKeyDown}
       className="relative h-11 w-full min-w-0 cursor-pointer touch-none rounded-card bg-bg-base rf-focus-ring"
     >
