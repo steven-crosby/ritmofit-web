@@ -17,6 +17,7 @@
 <!-- Claude Code, 2026-11-02: Air close: owner gate (RF-100/176) and auth (RF-177/178) merged; Air paused. -->
 <!-- Claude Code, 2026-11-02: RF-183 auth deploy af800c8 (Worker d05bb48f); RF-183 Blocked on owner checks (#713 review). -->
 <!-- Claude Code, 2026-11-03: Air close-light: RF-183 #714 review folded in. -->
+<!-- Claude Code, 2026-11-03: Device runs recorded (#717): RF-151, RF-147 Done; RF-185..RF-189 filed. -->
 
 **Current actionable state:** [RF board](./tasks.md), backed by canonical [task records](./tasks/README.md).
 The order of work is [Phases](#phases) below; each phase lists RF records, not a second backlog.
@@ -27,11 +28,12 @@ deploy [RF-183](./tasks/RF-183.json) from the Air on 2026-11-02. See [HISTORY](.
 sign-out (the rest of the native check passed on the simulator, #715), and on web two `expiresAt`
 readings from the app's own get-session at least 24 hours apart (first not yet taken). The signed-in
 `/auth/session` checks wait on a renewed QA token ([RF-155](./tasks/RF-155.json)).
-**Next step:** the owner's Mac and iPhone check of [RF-151](./tasks/RF-151.json) (Music › Songs pick
-mode on real likes: a row tap ticks and never plays, the 15 cap, Create a class) and RF-134's live
-labels on Music and Account. Still owed: the iPhone Safari device check (the 7 steps in the #669 PR
-body, with `?playback-timing=1`) for [RF-108](./tasks/RF-108.json), [RF-128](./tasks/RF-128.json)
-and [RF-147](./tasks/RF-147.json).
+**Next step:** pick from the 2026-11-03 device run's Backlog: the Live timeline defects
+[RF-185](./tasks/RF-185.json) (double start per tap), [RF-186](./tasks/RF-186.json) (quick taps
+show Paused), [RF-187](./tasks/RF-187.json) (unhandled `play()` rejection) and the timeline UX
+[RF-188](./tasks/RF-188.json); iOS focus zoom [RF-189](./tasks/RF-189.json). RF-151 and RF-147 are
+Done; [RF-108](./tasks/RF-108.json) waits on criterion 4 (Retry after a hang) and
+[RF-128](./tasks/RF-128.json) on a 5G Start. RF-134's live labels are still unchecked.
 **Window:** the Apple Music subscription ends around 2026-11-27, so Phase 1 work that needs a live
 Apple account goes first. Spotify is reopened; liked songs load in production for the owner account
 (playlists and playback not rechecked; [RF-92](./tasks/RF-92.json)).
