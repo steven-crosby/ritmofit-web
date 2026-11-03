@@ -62,6 +62,18 @@
       "ref": "apps/web/src/lib/trailing-throttle.test.ts",
       "summary": "firedLast rule tests: a same-value call inside the window stays fired (fails before the fix); down A, pending B, release B sends B. LiveTimeline.test.tsx adds tap-slop, drag-past-slop, stray pointercancel and timing-line tests.",
       "checkedOn": "2026-11-03"
+    },
+    {
+      "kind": "pr",
+      "ref": "https://github.com/steven-crosby/ritmofit-web/pull/720",
+      "summary": "Fixes for the #720 final review of 0e89399 (items 3-5): the throttle gains forget(), and Live calls it on every new timeline gesture, Pause/Play and an error/paused/ended status; a new coordinator (Start, Retry, Reset) cancels the throttle. So a last fired value never outlives the coordinator, the provider epoch or the gesture it was sent in. A release is a tap only if no move left the 8 px slop and the release is inside it; a nudge or drag commits the release position even with no move event. The timeline keeps one gesture ref and follows one pointerId; other pointers are ignored, and a lost pointer capture ends the gesture. This supersedes the earlier #720 entry where they differ.",
+      "checkedOn": "2026-11-03"
+    },
+    {
+      "kind": "test",
+      "ref": "apps/web/src/components/LiveMode.test.tsx",
+      "summary": "Added \"after Retry, a tap at the same pixel within 200 ms still reaches the new coordinator\" (keyboard Home fires 0:00, that start fails, Retry, then a tap at 0 inside the window). LiveTimeline.test.tsx adds a nudge released outside the slop, a second finger, and a lost pointer capture. Run against the 0e89399 sources, all four fail. Recorded test result, not device evidence.",
+      "checkedOn": "2026-11-03"
     }
   ],
   "resolution": null,

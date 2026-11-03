@@ -38,6 +38,12 @@
       "ref": "https://github.com/steven-crosby/ritmofit-web/pull/720",
       "summary": "#720 adds the diagnostic lines above to ?playback-timing=1 (no behaviour change) and the regression test \"quick timeline taps over slow starts never show Paused or the Play button\" (cancelled in-flight starts) plus a timing-line test. The regression test also passes before #720: it pins the ruled-out paths, it does not reproduce the defect.",
       "checkedOn": "2026-11-03"
+    },
+    {
+      "kind": "pr",
+      "ref": "https://github.com/steven-crosby/ritmofit-web/pull/720",
+      "summary": "Diagnostics from the #720 review pass: toggle lines log a missing pointerType as unknown, not mouse, and Live builds its timing strings only when ?playback-timing=1 is on. The blocker and the device lines needed are unchanged.",
+      "checkedOn": "2026-11-03"
     }
   ],
   "resolution": null,

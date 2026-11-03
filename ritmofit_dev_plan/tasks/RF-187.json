@@ -50,6 +50,18 @@
       "ref": "apps/web/src/lib/playback/apple-music-adapter.test.ts",
       "summary": "Added \"MusicKit play() rejection after a mid-track re-cue (RF-187)\": the re-cue path (setQueue:15, setQueue:40, play) with play() rejecting while MusicKit plays counts as started and logs set-queue-start (again) and play-rejected-already-playing; not yet playing waits for the first playing state; never playing ends at the cap; another rejection still fails with the sentence; the page guard prevents only that message and logs it. Four of the five fail against the pre-fix adapter. Recorded test result, not device evidence.",
       "checkedOn": "2026-11-03"
+    },
+    {
+      "kind": "pr",
+      "ref": "https://github.com/steven-crosby/ritmofit-web/pull/720",
+      "summary": "Fixes for the #720 final review of 0e89399 (items 1, 2, 7, 9). An \"already playing\" play() rejection now counts as started only on this start's own evidence: the first playing state MusicKit reports after this play(). The shared instance's current state, which can describe the previous queue, no longer counts. Without that evidence, the 5 s cap ends the start with the Retry error. destroy() during the wait ends play() at once as cancelled, and every wait the start creates settles. The page-level unhandledrejection listener stays page-wide and is documented in source: MusicKit is a page singleton, and its dropped promise can reject after the start ends. The message match reuses errMessage. This supersedes the earlier #720 entry where they differ.",
+      "checkedOn": "2026-11-03"
+    },
+    {
+      "kind": "test",
+      "ref": "apps/web/src/lib/playback/apple-music-adapter.test.ts",
+      "summary": "Added \"a rejection while the shared instance still reads playing (the old queue) is no proof: the cap fails it\" and \"destroy() during the wait after a matched rejection ends play() at once as cancelled\". Both fail against the 0e89399 adapter. The success case now needs a playing state after play(). Recorded test result, not device evidence.",
+      "checkedOn": "2026-11-03"
     }
   ],
   "resolution": null,
