@@ -38,5 +38,7 @@
     }
   ],
   "resolution": "AGENTS.md \"Two-machine conductors\" now makes whichever conductor the owner is directing the lead for both repos and lets owner decisions reach the other conductor only through GitHub records; CLAUDE.md points to it. The ritmofit-ios pointers are ritmofit-ios #79, where the record is a PR comment naming the approved head SHA.",
-  "followUps": []
+  "followUps": [
+    "RF-190"
+  ]
 }

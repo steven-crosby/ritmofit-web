@@ -30,5 +30,7 @@
     }
   ],
   "resolution": "Either conductor now applies owner-approved once the owner approves that PR's merge in its session, after recording the owner's words as a PR comment; agents still never apply it on their own judgment, and the owner still approves every PR.",
-  "followUps": []
+  "followUps": [
+    "RF-190"
+  ]
 }
