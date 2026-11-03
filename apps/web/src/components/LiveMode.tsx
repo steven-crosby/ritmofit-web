@@ -25,6 +25,7 @@ import {
   useState,
   type CSSProperties,
   type KeyboardEvent,
+  type MouseEvent as ReactMouseEvent,
   type RefObject,
 } from 'react';
 import type {
@@ -51,6 +52,7 @@ import { useWakeLock, type WakeLockStatus } from '../lib/use-wake-lock.js';
 import { useOnline } from '../lib/use-online.js';
 import { useVirtualClock, type ClockStore } from '../lib/use-virtual-clock.js';
 import { createTrailingThrottle } from '../lib/trailing-throttle.js';
+import { timingLine } from '../lib/playback/start-timing.js';
 import { ConnectionsDialog } from './ConnectionsDialog.js';
 import { ClassPulse } from './ClassPulse.js';
 import { IntensityReadout } from './IntensityReadout.js';
@@ -440,6 +442,25 @@ function LiveSectionBar({ section }: { section: LiveSection }) {
 /** Presentation delay before a post-playback handover gap mounts recovery. */
 const WAITING_PANEL_GRACE_MS = 2_000;
 
+/**
+ * Debug timing only (`?playback-timing=1`): one Live line, a no-op when timing
+ * is off. Lines carry state names and positions only, never titles or ids.
+ * RF-185 logs the timeline release decision; RF-186 logs the coordinator
+ * status sequence and each Pause/Play activation, so a device run shows
+ * which path put Live in Paused.
+ */
+function liveTimingLog(step: string, detail: string): void {
+  timingLine('[ritmo live]', step, detail);
+}
+
+/** How the primary transport button was activated, for the timing log (RF-186). */
+function describeActivation(e: ReactMouseEvent<HTMLButtonElement>): string {
+  const native = e.nativeEvent as MouseEvent & { pointerType?: string };
+  const pointer = native.pointerType || (e.detail === 0 ? 'keyboard-or-programmatic' : 'mouse');
+  const trusted = native.isTrusted ? 'trusted' : 'untrusted';
+  return `click pointer=${pointer} ${trusted} x=${Math.round(e.clientX)} y=${Math.round(e.clientY)}`;
+}
+
 export function LiveMode({
   payload,
   onExit,
@@ -681,20 +702,24 @@ export function LiveMode({
   );
 
   /** Timeline pointer release/cancel at the gesture's last previewed position.
-   * When the throttle already sent exactly that position to the provider (a
-   * tap, or a drag that rested past the window), send nothing and settle the
-   * clock where it already is (it has followed the provider since, so the two
-   * keep agreeing; this only refreshes the display tier). One tap starts one
-   * adapter, not two (RF-108). Otherwise it is a normal discrete seek. */
+   * When the value the throttle actually fired last is exactly that position
+   * (a tap, or a drag that rested past the window), drop anything still
+   * pending, send nothing, and settle the clock where it already is (it has
+   * followed the provider since, so the two keep agreeing; this only refreshes
+   * the display tier). A pending, unfired value never counts as sent. One tap
+   * starts one adapter, not two (RF-108, RF-185). Otherwise it is a normal
+   * discrete seek. */
   const seekRelease = useCallback(
     (ms: number) => {
       const target = Math.max(0, Math.min(ms, payload.class.totalDurationMs));
       const throttle = commitThrottleRef.current!;
       if (throttle.firedLast(target)) {
         throttle.cancel();
+        liveTimingLog('release-skipped', `ms=${target} (already sent)`);
         clockSeek(clockStore.getSnapshot());
         return;
       }
+      liveTimingLog('release-sent', `ms=${target}`);
       seek(target);
     },
     [seek, clockSeek, clockStore, payload.class.totalDurationMs],
@@ -715,6 +740,8 @@ export function LiveMode({
       liveness,
       onPosition: clockSyncPosition,
       onStatus: (next) => {
+        // Debug timing only (RF-186): the status sequence Live reacts to.
+        liveTimingLog('status', next.kind);
         setPlayback(next);
         if (next.kind === 'error') {
           setPlaybackFailure(errMessage(next.error.message));
@@ -746,9 +773,14 @@ export function LiveMode({
     void coordinator.start(0);
   };
 
-  const togglePlay = () => {
+  const togglePlay = (source = 'button') => {
     const next = !playing;
     const coordinator = coordinatorRef.current;
+    // Debug timing only (RF-186): which activation paused or resumed, and how.
+    liveTimingLog(
+      next ? 'toggle-play' : 'toggle-pause',
+      `${source} status=${coordinator?.getStatus().kind ?? 'none'}`,
+    );
     if (coordinator?.getStatus().kind === 'error') {
       retryPlayback();
       return;
@@ -2250,7 +2282,8 @@ function Transport({
   playing: boolean;
   musicBlocked: boolean;
   hasPlaybackFailure: boolean;
-  onToggle: () => void;
+  /** `source` describes the activation for the opt-in timing log (RF-186). */
+  onToggle: (source: string) => void;
   onReset: () => void;
   liveIndex: number;
   onPreviousTrack: () => void;
@@ -2299,7 +2332,7 @@ function Transport({
         <button
           ref={primaryButtonRef}
           className="min-h-11 rounded-control rf-btn-primary px-3 py-2 font-ui font-semibold text-text-on-accent sm:rounded-pill sm:px-6 [@media(max-height:480px)]:px-2 [@media(max-height:800px)_and_(max-width:639px)]:px-2"
-          onClick={onToggle}
+          onClick={(e) => onToggle(describeActivation(e))}
           aria-label={playing && musicBlocked ? 'Pause preparation' : undefined}
         >
           {playing

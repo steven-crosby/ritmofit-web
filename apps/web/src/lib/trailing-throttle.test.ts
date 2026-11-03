@@ -88,7 +88,7 @@ describe('createTrailingThrottle', () => {
     expect(fn).toHaveBeenCalledWith(5);
   });
 
-  it('firedLast is true only for the value call itself fired, with nothing pending (RF-108)', () => {
+  it('firedLast is true only for the value fn actually ran with last (RF-108, RF-185)', () => {
     const clock = fakeNow();
     const fn = vi.fn();
     const throttle = createTrailingThrottle(fn, 200, clock.now);
@@ -98,13 +98,42 @@ describe('createTrailingThrottle', () => {
     clock.advance(10);
     throttle.call(90_000); // drag: queued, not yet fired
     expect(throttle.firedLast(90_000)).toBe(false);
+    expect(throttle.firedLast(60_000)).toBe(true);
+    clock.advance(190);
     vi.advanceTimersByTime(190); // trailing fires 90_000
     expect(throttle.firedLast(90_000)).toBe(true);
-    throttle.flush(90_000); // flush always runs fn
+    throttle.flush(30_000); // flush runs fn, so it is what fired last
     expect(fn).toHaveBeenCalledTimes(3);
+    expect(throttle.firedLast(30_000)).toBe(true);
     expect(throttle.firedLast(90_000)).toBe(false);
-    throttle.call(1);
     throttle.cancel();
-    expect(throttle.firedLast(1)).toBe(false);
+    expect(throttle.firedLast(30_000)).toBe(false);
+  });
+
+  it('a same-value call inside the window stays fired: the release can skip and drop it (RF-185)', () => {
+    const clock = fakeNow();
+    const fn = vi.fn();
+    const throttle = createTrailingThrottle(fn, 200, clock.now);
+    throttle.call(60_000); // pointerdown fires A
+    clock.advance(16);
+    throttle.call(60_000); // a still-finger pointermove maps to the same ms: pending A
+    // Release at A: A is what fired last, so the host skips it and drops the pending call.
+    expect(throttle.firedLast(60_000)).toBe(true);
+    throttle.cancel();
+    vi.advanceTimersByTime(1000);
+    expect(fn).toHaveBeenCalledTimes(1);
+  });
+
+  it('never treats a pending, unfired value as sent: down A, pending B, release B sends B (RF-185)', () => {
+    const clock = fakeNow();
+    const fn = vi.fn();
+    const throttle = createTrailingThrottle(fn, 200, clock.now);
+    throttle.call(60_000); // down fires A
+    clock.advance(16);
+    throttle.call(120_000); // fast move: pending B
+    expect(throttle.firedLast(120_000)).toBe(false);
+    throttle.flush(120_000); // the release sends B
+    vi.advanceTimersByTime(1000);
+    expect(fn.mock.calls).toEqual([[60_000], [120_000]]);
   });
 });

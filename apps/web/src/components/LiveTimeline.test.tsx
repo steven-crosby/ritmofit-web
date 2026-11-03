@@ -1,9 +1,10 @@
 // @vitest-environment jsdom
-import { afterEach, describe, expect, it, vi } from 'vitest';
+import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import { cleanup, fireEvent, render, screen } from '@testing-library/react';
 import type { RunPayload, RunPayloadTrackEntry } from '@ritmofit/shared';
 import type { ClockStore } from '../lib/use-virtual-clock.js';
-import { LiveTimeline, fractionToMs, keyboardSeekMs } from './LiveTimeline.js';
+import { LiveTimeline, TAP_SLOP_PX, fractionToMs, keyboardSeekMs } from './LiveTimeline.js';
+import { PLAYBACK_TIMING_KEY, resetPlaybackTimingForTests } from '../lib/playback/start-timing.js';
 
 afterEach(() => {
   cleanup();
@@ -303,5 +304,91 @@ describe('LiveTimeline', () => {
     expect(onSeekCommit).toHaveBeenCalledWith(15000);
     fireEvent.keyDown(slider, { key: 'End' });
     expect(onSeekCommit).toHaveBeenCalledWith(240000);
+  });
+});
+
+describe('LiveTimeline taps (RF-185)', () => {
+  function renderTimeline() {
+    const clock = makeTestClock(0);
+    const onSeekPreview = vi.fn((ms: number) => clock.setValue(ms));
+    const onSeekRelease = vi.fn();
+    stubRect(240);
+    render(
+      <LiveTimeline
+        payload={makePayload()}
+        clock={clock.store}
+        onSeekPreview={onSeekPreview}
+        onSeekCommit={() => {}}
+        onSeekRelease={onSeekRelease}
+      />,
+    );
+    return { slider: screen.getByRole('slider'), onSeekPreview, onSeekRelease };
+  }
+
+  it('a still-finger move at the same position is part of the tap: one preview, release at the down position', () => {
+    const { slider, onSeekPreview, onSeekRelease } = renderTimeline();
+    fireEvent.pointerDown(slider, { clientX: 60, pointerId: 1 });
+    fireEvent.pointerMove(slider, { clientX: 60, buttons: 1 });
+    fireEvent.pointerUp(slider);
+    expect(onSeekPreview).toHaveBeenCalledTimes(1);
+    expect(onSeekRelease.mock.calls).toEqual([[60000]]);
+  });
+
+  it('sub-pixel and small jitter inside the tap slop does not move the tap', () => {
+    const { slider, onSeekPreview, onSeekRelease } = renderTimeline();
+    fireEvent.pointerDown(slider, { clientX: 60, pointerId: 1 });
+    fireEvent.pointerMove(slider, { clientX: 60.4, buttons: 1 }); // a different ms
+    fireEvent.pointerMove(slider, { clientX: 60 + TAP_SLOP_PX - 1, buttons: 1 });
+    fireEvent.pointerUp(slider);
+    expect(onSeekPreview.mock.calls).toEqual([[60000]]);
+    expect(onSeekRelease.mock.calls).toEqual([[60000]]);
+  });
+
+  it('a move past the slop is a drag from then on, even back inside it', () => {
+    const { slider, onSeekPreview, onSeekRelease } = renderTimeline();
+    fireEvent.pointerDown(slider, { clientX: 60, pointerId: 1 });
+    fireEvent.pointerMove(slider, { clientX: 60 + TAP_SLOP_PX, buttons: 1 }); // 68 px
+    fireEvent.pointerMove(slider, { clientX: 61, buttons: 1 });
+    fireEvent.pointerUp(slider);
+    expect(onSeekPreview.mock.calls).toEqual([[60000], [68000], [61000]]);
+    expect(onSeekRelease.mock.calls).toEqual([[61000]]);
+  });
+
+  it('a pointercancel or second pointerup after the release sends nothing', () => {
+    const { slider, onSeekRelease } = renderTimeline();
+    fireEvent.pointerDown(slider, { clientX: 60, pointerId: 1 });
+    fireEvent.pointerUp(slider);
+    fireEvent.pointerCancel(slider);
+    fireEvent.pointerUp(slider);
+    expect(onSeekRelease).toHaveBeenCalledTimes(1);
+  });
+
+  describe('debug timing', () => {
+    let info: ReturnType<typeof vi.spyOn>;
+    beforeEach(() => {
+      sessionStorage.setItem(PLAYBACK_TIMING_KEY, '1');
+      resetPlaybackTimingForTests();
+      info = vi.spyOn(console, 'info').mockImplementation(() => {});
+    });
+    afterEach(() => {
+      sessionStorage.removeItem(PLAYBACK_TIMING_KEY);
+      resetPlaybackTimingForTests();
+    });
+
+    it('logs down, move, up and a stray cancel with clientX and the mapped ms', () => {
+      const { slider } = renderTimeline();
+      fireEvent.pointerDown(slider, { clientX: 60, pointerId: 1, pointerType: 'touch' });
+      fireEvent.pointerMove(slider, { clientX: 60.4, buttons: 1, pointerType: 'touch' });
+      fireEvent.pointerUp(slider, { clientX: 60.4, pointerType: 'touch' });
+      fireEvent.pointerCancel(slider, { clientX: 60.4, pointerType: 'touch' });
+      const lines = info.mock.calls.map((call: unknown[]) => String(call[0]));
+      expect(lines).toHaveLength(4);
+      expect(lines[0]).toMatch(
+        /^\[ritmo live-timeline\] timing pointer-down @\d+ms x=60\.0 ms=60000 type=/,
+      );
+      expect(lines[1]).toMatch(/pointer-move @\d+ms x=60\.4 ms=60400 type=.* \(tap slop\)$/);
+      expect(lines[2]).toMatch(/pointer-up @\d+ms x=60\.4 ms=60000 type=.* tap$/);
+      expect(lines[3]).toMatch(/pointer-cancel @\d+ms x=60\.4 ms=n\/a .*\(no gesture, ignored\)$/);
+    });
   });
 });

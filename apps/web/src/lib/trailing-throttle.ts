@@ -5,15 +5,19 @@
  * window entirely — used for a caller-guaranteed immediate call (e.g. commit
  * on pointer release) that also cancels anything still pending.
  *
- * `firedLast(value)` says whether `call` already ran `fn` with exactly this
- * value and nothing is pending or called since. A Live timeline release uses
- * it: when the gesture's position was already sent to the provider (a tap,
- * or a drag that rested), the release sends nothing and leaves the clock to
- * follow the provider. Re-sending it started a second provider adapter about
- * 60 ms later (RF-108). */
+ * `firedLast(value)` says whether the value `fn` actually ran with last (by
+ * `call`, its trailing timer, or `flush`) is exactly this value. A pending,
+ * unfired value never counts: it has not reached `fn`. A Live timeline release
+ * uses it: when the gesture's position is the one already sent to the provider
+ * (a tap, or a drag that rested), the release cancels whatever is still
+ * pending, sends nothing, and leaves the clock to follow the provider.
+ * Re-sending it started a second provider adapter about 60 ms later (RF-108,
+ * RF-185). The rule must keep this case: down fires A, a fast move leaves B
+ * pending, release at B. A was fired last, so B is still sent. */
 export interface TrailingThrottle<T> {
   call: (value: T) => void;
   flush: (value: T) => void;
+  /** Drop a pending call and forget the last fired value. */
   cancel: () => void;
   firedLast: (value: T) => boolean;
 }
@@ -25,8 +29,8 @@ export function createTrailingThrottle<T>(
 ): TrailingThrottle<T> {
   let lastFireAt = -Infinity;
   let pending: ReturnType<typeof setTimeout> | null = null;
-  /** The value `call` last fired, until the next `call`, `flush` or `cancel`. */
-  let calledFire: { value: T } | null = null;
+  /** The value `fn` last ran with, until `cancel`. */
+  let lastFired: { value: T } | null = null;
 
   const clearPending = () => {
     if (pending !== null) {
@@ -37,27 +41,24 @@ export function createTrailingThrottle<T>(
 
   const fire = (value: T) => {
     lastFireAt = now();
+    lastFired = { value };
     fn(value);
   };
 
   const flush = (value: T) => {
-    calledFire = null;
     clearPending();
     fire(value);
   };
 
   const call = (value: T) => {
-    calledFire = null;
     const elapsed = now() - lastFireAt;
     clearPending();
     if (elapsed >= waitMs) {
-      calledFire = { value };
       fire(value);
       return;
     }
     pending = setTimeout(() => {
       pending = null;
-      calledFire = { value };
       fire(value);
     }, waitMs - elapsed);
   };
@@ -66,10 +67,9 @@ export function createTrailingThrottle<T>(
     call,
     flush,
     cancel: () => {
-      calledFire = null;
+      lastFired = null;
       clearPending();
     },
-    firedLast: (value) =>
-      pending === null && calledFire !== null && Object.is(calledFire.value, value),
+    firedLast: (value) => lastFired !== null && Object.is(lastFired.value, value),
   };
 }
