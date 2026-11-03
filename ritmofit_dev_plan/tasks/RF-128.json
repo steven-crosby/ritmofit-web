@@ -13,7 +13,7 @@
     "On iPhone Safari Live, the first Apple Music song is audible within 1 s of tapping Start class on 5G.",
     "Work that needs no gesture (load MusicKit, configure, check authorization) happens before Start; only setQueue/play run in the tap."
   ],
-  "nextAction": "Wi-Fi timing on 2026-11-03 (evidence below): first playing state 647-819 ms after prepare, set-queue about 200 ms. Criterion 0 still asks for 5G: the owner runs one Start class on cellular with ?playback-timing=1, or accepts the Wi-Fi run. #668 review items 3-8 stay noted in this record's evidence.",
+  "nextAction": "Wi-Fi timing on 2026-11-03 (evidence below): the two Start class taps reached first playing state 647 and 819 ms after prepare, and later starts ranged 479-1052 ms (one over 1 s). The log measures from prepare, not from the tap, so the tap-to-audio time is not yet measured. Criterion 0 still needs the owner's timed Start on 5G (audible within 1 s of the tap); the owner may instead decide how to treat this Wi-Fi run. #668 review items 3-8 stay noted in this record's evidence.",
   "blocker": null,
   "evidence": [
     {
@@ -62,6 +62,12 @@
       "kind": "observation",
       "ref": "https://ritmofit.studio/",
       "summary": "Owner's iPhone Safari run on production af800c8 (SPA assets/index-ChxMwIpX.js), 2026-11-03, on Wi-Fi, ?playback-timing=1, console read through Safari Web Inspector: Start class logged prepare +0 ms, musickit-ready and authorized +35 to +43 ms, set-queue 201-212 ms, started first-playing-state +647 ms (QA class) and +819 ms (Limp Bizkit Essentials); later starts 479-1052 ms. Measured from prepare, not from the tap, and on Wi-Fi, not 5G.",
+      "checkedOn": "2026-11-03"
+    },
+    {
+      "kind": "pr",
+      "ref": "https://github.com/steven-crosby/ritmofit-web/pull/717",
+      "summary": "#717 final review finding 4: nextAction omitted the 1052 ms start and the prepare-vs-tap basis; corrected here.",
       "checkedOn": "2026-11-03"
     }
   ],

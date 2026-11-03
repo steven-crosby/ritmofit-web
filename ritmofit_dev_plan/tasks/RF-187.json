@@ -12,19 +12,25 @@
     "Any play() rejection on a superseded or re-cued start is caught and recorded in the timing log, not surfaced as unhandled.",
     "An adapter test covers the re-cue path (set-queue-start (again)) rejecting."
   ],
-  "nextAction": "Trace the mid-track re-cue in apps/web/src/lib/playback/apple-music-adapter.ts (prepare cues the window start, the pre-play seek dirties the cue, play() re-queues at the tapped position) and find the play() call whose promise is not handled. Agent-created: Backlog until the owner sets Ready.",
+  "nextAction": "Reproduce first with a timeline drag (the two rejections came at the start and end of one drag, #15 and #32), then with discrete mid-track taps. Trace the mid-track re-cue in apps/web/src/lib/playback/apple-music-adapter.ts (prepare cues the window start, the pre-play seek dirties the cue, play() re-queues at the entered position) and find the play() call whose promise is not handled. Agent-created: Backlog until the owner sets Ready.",
   "blocker": null,
   "evidence": [
     {
       "kind": "observation",
       "ref": "https://ritmofit.studio/",
-      "summary": "Owner's iPhone Safari run on production af800c8 (Worker d05bb48f, SPA assets/index-ChxMwIpX.js), 2026-11-03 about 13:28-13:58 MST, ?playback-timing=1, class [QA] Audit Experienced Cycle (24 Apple Music tracks); console read by the Air conductor through Safari Web Inspector, plus the owner's screen recordings. Three unhandled rejections in the run. Two came right after starts that logged set-queue-start (again) (#15 and #32, both from timeline jumps into the middle of a track); the third followed #67, whose lines were not visible. None followed a Next start. No user-visible effect seen.",
+      "summary": "Owner's iPhone Safari run on production af800c8 (Worker d05bb48f, SPA assets/index-ChxMwIpX.js), 2026-11-03 about 13:28-13:58 MST, ?playback-timing=1, class [QA] Audit Experienced Cycle (24 Apple Music tracks); console read by the Air conductor through Safari Web Inspector, plus the owner's screen recordings. Three unhandled rejections in the run. Two came right after starts that logged set-queue-start (again) (#15, the first start of one continuous timeline drag, and #32, its last; the drag ran #15-#32, 18 starts); the third followed #67, whose lines were not visible. None followed a Next start. No user-visible effect seen.",
       "checkedOn": "2026-11-03"
     },
     {
       "kind": "source",
       "ref": "apps/web/src/lib/playback/apple-music-adapter.ts",
       "summary": "Mid-track entry re-cues with a second setQueue before play (see #669 note 8).",
+      "checkedOn": "2026-11-03"
+    },
+    {
+      "kind": "pr",
+      "ref": "https://github.com/steven-crosby/ritmofit-web/pull/717",
+      "summary": "#717 final review finding 5: trigger was a drag, not discrete jumps; corrected here.",
       "checkedOn": "2026-11-03"
     }
   ],
