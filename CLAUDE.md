@@ -102,7 +102,5 @@ in Claude Code.
 - **Relaying merge asks:** a subagent cannot ask the owner, so it stops at the policy's PR comment
   and `ready-to-merge` label. Bring each ask to the owner yourself.
 - **Final review:** `/code-review medium <PR number>`.
-- **Two conductors:** the rules are `AGENTS.md` › "Two-machine conductors": the two conductors
-  have equal authority, and owner decisions travel between them only as the GitHub records that
-  section defines, never as a `SendMessage` or pasted text. Find the peer with `ListAgents`; your
-  session name ("Ritmo - Air" or "Ritmo - Neo") is at the top of that listing.
+- **Two conductors:** follow `AGENTS.md` › "Two-machine conductors". Find the peer with
+  `ListAgents`; your session name ("Ritmo - Air" or "Ritmo - Neo") is at the top of that listing.

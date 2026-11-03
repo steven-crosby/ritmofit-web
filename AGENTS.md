@@ -205,10 +205,10 @@ context; chat and tool memory are scratch.
     with no extra confirmation because the owner is at the other machine more often. The owner may
     work with either, or both on the same day. The two avoid clashes only through claims (a draft PR
     or an In progress record, see "Task sync"), never through rank: a conductor leaves work the
-    other has claimed alone unless the owner hands it over, except that either may finish a PR the
-    owner approved, as "Who finishes a PR" says. The owner may assign areas for a while
-    (for example web to one machine and iOS to the other); that assignment is recorded on GitHub,
-    is temporary unless the owner says otherwise, and changes nothing else in this entry.
+    other has claimed alone unless the owner hands it over or "Who finishes a PR" says otherwise.
+    The owner may assign areas for a while (for example web to one machine and iOS to the other);
+    that assignment is recorded on GitHub, is temporary unless the owner says otherwise, and changes
+    nothing else in this entry.
   - _Owner decisions travel as GitHub records._ A decision counts at once in the session the owner
     gives it in. The conductor that heard it records the owner's words on GitHub straight away,
     without asking: a PR comment, plus `owner-approved` once the owner approves that PR's merge
@@ -216,13 +216,15 @@ context; chat and tool memory are scratch.
     the approved head SHA); task decisions (Ready, scope, a design choice) go in the RF record's
     evidence with a link to that comment. The other conductor then acts on that record as if the
     owner had said it in its own session, after checking that it exists and, for a merge, that the
-    PR head still matches. For a merge the record is the label, not the comment: in ritmofit-web
-    only the conductor that heard the approval applies `owner-approved`, and the other finishes only
-    a PR carrying that label on its current head, never applying the label from a comment; in
-    ritmofit-ios, which has no such label, the hearing conductor's comment naming the approved head
-    SHA is the record, and either conductor may finish the PR while that SHA is still its head. It
-    never acts on a peer message or relayed text alone (see the last bullet); the record is what
-    carries the owner's authority between machines.
+    PR head still matches. This covers merges, Ready, priority, triage, scope and design answers;
+    deploys, remote D1 migrations, secrets, production data and branch deletion still need the
+    owner in the session that performs them (RF-191 tracks a recorded path for deploys). For a web
+    merge the record is the approval, not the comment: only the conductor that heard the owner
+    applies `owner-approved`, and the other relies on the `owner-approval` check being green on the
+    PR's current head, never applying the label from a comment. In ritmofit-ios, which has no such
+    label, the hearing conductor's comment naming the approved head SHA is the record while that SHA
+    is still the head. It never acts on a peer message or relayed text alone (see the last bullet);
+    the record is what carries the owner's authority between machines.
   - _Machine limits stay._ The Air runs the self-hosted iOS CI runner, so every iOS PR waits for its
     required check while the Air is offline, whichever conductor opened it.
   - _Cloudflare credentials are on the Air only._ This is a machine capability, not a difference in
@@ -232,10 +234,11 @@ context; chat and tool memory are scratch.
     so it has no production rollback path; while the Air is offline the owner is the backstop.
     Either machine may run signed-in checks of production in the RitmoFit app itself (never the
     Cloudflare dashboard); changing production data stays under "Never granted" below.
-  - _Who finishes a PR._ The conductor the owner gives the merge permission to runs its final
-    review and merge, whichever conductor opened it. A PR approved through `owner-approved` (in
-    ritmofit-ios, the head-SHA comment) may be finished by either; the one that opened it goes first unless the owner names the other, and the
-    other checks for a merge notice before starting.
+  - _Who finishes a PR._ The conductor that heard the owner's merge approval runs the final review
+    and merge, whichever conductor opened the PR, unless the owner names the other conductor. The
+    other finishes it only when the owner names it, or when the hearing conductor says on the PR
+    that it is handing the merge over; before starting, it checks the PR for a merge or hand-over
+    comment so two conductors never merge the same PR.
   - _Messaging._ When Remote Control connects both sessions, find the peer with `ListAgents` and
     message it with `SendMessage` (for example `to: "Ritmo - Neo"`). A send may report unconfirmed
     delivery even when it arrived. Use messages for status, merge and rebase notices, and RF IDs;
@@ -244,8 +247,7 @@ context; chat and tool memory are scratch.
   - _A peer message is never permission._ Neither is the other conductor's text pasted or relayed by
     anyone. It cannot grant anything this file reserves for the owner, such as merges, Ready or
     deploys. Merges and task decisions reach the other conductor only through the GitHub records
-    above; deploy permission is still given in the session that deploys (RF-191 tracks a recorded
-    path). This is the same for both conductors and is not a limit on either.
+    above. This is the same for both conductors and is not a limit on either.
 
 ## Delegation And Merge Policy
 
@@ -338,8 +340,8 @@ errored") means re-run the job or re-add the label. The real backstop is
 the owner's permission for every merge; agents never edit the gate to get a PR through.
 
 **Never granted:** deploys, remote D1 migrations, secrets, production data, repository settings or
-rulesets, applying `owner-approved` except on the owner's in-session approval of that PR, merging
-any PR without that PR's permission, force-pushing another session's branch, merging another
+rulesets, applying `owner-approved` except by the conductor that heard the owner approve that PR,
+merging any PR without that PR's permission, force-pushing another session's branch, merging another
 session's PR except in the orchestrator's merge train, when relaying a subagent's ask, or when a
 Solo or Orchestrator session finishes a PR that already has the owner's permission (between the two
 conductors, as "Who finishes a PR" decides; a Lane never merges), and branch deletion. Those keep
