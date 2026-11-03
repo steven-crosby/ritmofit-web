@@ -27,7 +27,7 @@
 <!-- note (Claude Code, 2026-11-02): RF-176 follow-up: PR edits (base retargets) also re-evaluate the owner gate. -->
 <!-- note (Claude Code, Neo, 2026-11-02): RF-182: Two-machine conductors: the lead is whichever conductor the owner is directing, not a per-repo default; owner decisions reach the other conductor only as GitHub records (owner-approved). -->
 <!-- note (Claude Code, Neo, 2026-11-02): RF-184: standing owner rule: either conductor (any Solo or Orchestrator session) applies `owner-approved` once the owner approves that PR's merge in its session; no separate label instruction. The owner still approves every PR. -->
-<!-- note (Claude Code, Air, 2026-11-03): RF-190: Two-machine conductors: "The lead follows the owner" becomes "Equal authority": the conductors are peers, whichever one the owner works with acts fully, clashes are avoided by claims; Cloudflare credentials are a machine capability, not authority. -->
+<!-- note (Claude Code, Air, 2026-11-03): RF-190: Two-machine conductors: "The lead follows the owner" becomes "Equal authority": peers; whichever one the owner works with acts fully on unclaimed work, the second draft PR on the same task stops; Cloudflare credentials are a machine capability; deploys unchanged (RF-191). -->
 
 This is the canonical contributor and agent guide for Ritmo Studio. If another instruction file conflicts
 with it, follow `AGENTS.md`, then repair the stale file. When an AI agent edits this file or adds a note
@@ -201,12 +201,14 @@ context; chat and tool memory are scratch.
   file applies to each unchanged except where this entry says so.
   - _Equal authority._ The two conductors are peers; neither outranks the other, and neither
     machine owns a repo. Whichever conductor the owner is working with in its live session plans
-    and decides with the owner, works in either repo, takes any RF task and finishes PRs, with no
-    extra confirmation because the owner usually works with the other machine. The owner may work
-    with either, or both on the same day. Each conductor finishes what it already has in flight and
-    leaves work the other has claimed (a draft PR or In progress record, see "Task sync") alone
-    unless the owner hands it over. Either conductor answers the owner fully when addressed;
-    neither waits for the other to act on what the owner says in its own session.
+    and decides with the owner, works in either repo, takes any unclaimed RF task and finishes PRs,
+    with no extra confirmation, even if the owner usually works with the other machine. The owner
+    may work with either, or both on the same day. Each conductor finishes what it already has in
+    flight and leaves work the other has claimed (see "Task sync": the draft PR or open PR is the
+    claim) alone unless the owner hands it over; if both start the same task, the one whose draft
+    PR opened second stops and tells the other. Either conductor answers the owner fully when
+    addressed; neither waits for the other to act on what the owner says in its own session. Deploy
+    approval still follows "Never granted" in the session that deploys (RF-191).
   - _Owner decisions cross only as GitHub records._ A decision counts in the session the owner gives
     it in. To let the other conductor act on it, the conductor that heard it records the owner's
     words on GitHub: a PR comment, plus `owner-approved` once the owner approves that PR's merge
