@@ -1,0 +1,21 @@
+{
+  "schemaVersion": 1,
+  "id": "RF-190",
+  "title": "Two-machine conductors: equal authority, and deploy approval from either conductor",
+  "kind": "documentation",
+  "status": "in_progress",
+  "priority": "P2",
+  "parent": null,
+  "dependsOn": [],
+  "acceptance": [
+    "AGENTS.md \"Two-machine conductors\" says the two conductors have equal authority: no lead; whichever conductor the owner is working with acts fully on what the owner says, with no extra confirmation; clashes are avoided only by claims (draft PR or In progress record); a temporary area assignment by the owner is recorded on GitHub and changes nothing else.",
+    "The hearing conductor records each owner decision on GitHub at once without asking, and the other conductor acts on that record as if the owner had said it in its own session, after the existing checks (record exists; for a merge, the head still matches).",
+    "A production deploy the owner approves in either session runs on the Air without asking again once the owner's exact words and the full main SHA are recorded on the deploy's prep PR (or the newest merged PR it ships), after the Air checks the record, that origin/main is still that SHA, and that the scope matches; otherwise it asks. Remote D1 migrations, secrets and production data keep their own explicit permission, recorded the same way. \"Never granted\" points to this.",
+    "CLAUDE.md's Two conductors bullet matches; the ritmofit-iOS AGENTS.md pointer and CLAUDE.md bullet are updated to match in an iOS PR (Neo, under the temporary silo)."
+  ],
+  "nextAction": "Owner-gated (AGENTS.md): the owner reviews this PR, approves the merge and owner-approved. After merge, the Neo updates the ritmofit-ios AGENTS.md pointer and CLAUDE.md \"leads both repos\" wording to match (acceptance 4).",
+  "blocker": null,
+  "evidence": [],
+  "resolution": null,
+  "followUps": []
+}

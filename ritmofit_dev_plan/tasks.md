@@ -12,13 +12,13 @@ owner's queue: any agent may execute a Ready task. Publishing follows AGENTS.md 
 Evidence marked **recorded** is a carried-forward claim, not fresh verification.
 A checked PR proves its GitHub state, not product acceptance or production behavior.
 
-187 tasks. backlog: 66 · ready: 0 · in_progress: 0 · blocked: 2 · review: 9 · done: 108 · cancelled: 2.
+188 tasks. backlog: 66 · ready: 0 · in_progress: 1 · blocked: 2 · review: 9 · done: 108 · cancelled: 2.
 
 ## In progress
 
 | Task | Priority / kind | Relationships | Next action / resolution | Evidence |
 | --- | --- | --- | --- | --- |
-| — | — | — | — | — |
+| [RF-190](tasks/RF-190.json) Two-machine conductors: equal authority, and deploy approval from either conductor | P2 / documentation | — | Owner-gated (AGENTS.md): the owner reviews this PR, approves the merge and owner-approved. After merge, the Neo updates the ritmofit-ios AGENTS.md pointer and CLAUDE.md "leads both repos" wording to match (acceptance 4). | none |
 
 ## Blocked / waiting
 
