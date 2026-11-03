@@ -18,7 +18,7 @@
     "Owner device check on iPhone Safari: tapping three timeline tracks within about 4 s ends playing the last tapped track, with neither \"still finishing a cancelled play request\" nor \"still finishing a previous queue request\".",
     "The held Apple Music playback error (apple-music-adapter.ts onPlaybackError) carries an attempt token captured when the error fires and is delivered only if prepare, stop or destroy have not started a new attempt, with a test that a held error is dropped after destroy then prepare (RF-121 criterion 0)."
   ],
-  "nextAction": "#669 merged as 0a77110 and is live on production (Worker 61cdeb33, SPA index-DTaSHnmL.js, HISTORY 2026-10-31). Stays For review until the owner's iPhone Safari device check: the 7 steps in the #669 PR body with ?playback-timing=1 (one Start, three timeline taps within about 4 s, quick taps, Next right after a start, one auto-advance), including whether WebKit keeps the gesture across the up-to-2 s wait. Criteria 0-2 and 6 are covered in code and mock tests; criteria 3-5 are the owed device checks. Spotify half: RF-158. Late-settle detection and clear-once: RF-159. Review follow-ups: RF-161.",
+  "nextAction": "Device check run 2026-11-03 (evidence below): criteria 3 and 5 pass on iPhone Safari; criterion 4 (Retry after a hung setQueue) was not exercised because no hang occurred. Stays For review until the owner either accepts criterion 4 on the mock tests plus this run, or sees a hang and a Retry on device. Defects found in the run are separate: RF-185 (double start per tap), RF-186 (quick taps show Paused), RF-187 (unhandled play() rejection), RF-188 (timeline UX). Spotify half: RF-158. Late-settle detection and clear-once: RF-159. Review follow-ups: RF-161.",
   "blocker": null,
   "evidence": [
     {
@@ -164,12 +164,22 @@
       "ref": "https://github.com/steven-crosby/ritmofit-web/pull/669#issuecomment-6546640152",
       "summary": "Final review of #669 on d0e2b52: nothing blocking; merged as 0a77110 and deployed 2026-10-31 (HISTORY). Items 2-8 are logged in RF-161; item 1 (up to about 2 s wait between a tap and play()) is part of the owner's device check; item 9 was this record's stale summary, corrected in #671.",
       "checkedOn": "2026-10-31"
+    },
+    {
+      "kind": "observation",
+      "ref": "https://ritmofit.studio/",
+      "summary": "Owner's iPhone Safari run on production af800c8 (Worker d05bb48f, SPA assets/index-ChxMwIpX.js), 2026-11-03 about 13:28-13:58 MST, ?playback-timing=1, class [QA] Audit Experienced Cycle (24 Apple Music tracks); console read by the Air conductor through Safari Web Inspector, plus the owner's screen recordings. Step 1 Start: started first-playing-state at +647 and +819 ms. Steps 2 and 5 (criterion 5): three quick timeline taps ended playing the last tapped track with neither still-finishing message, but every still-finger tap fired two starts (RF-185) and quick taps showed Paused (RF-186). Hold: no jump back on release. Step 4 Next: one start per tap, the old song did not resume. Auto-advance: #70 started +758 ms with no tap. Step 6 Pause during a start (criterion 3): re-pause-after-play-settled +1134 ms, stayed paused, Play resumed; a drag scrub recovered on release. Step 7 Retry (criterion 4): not exercised, no hung setQueue or blocking banner occurred. Three unhandled MusicKit play() rejections (RF-187). Owner timeline UX feedback: RF-188.",
+      "checkedOn": "2026-11-03"
     }
   ],
   "resolution": null,
   "followUps": [
     "RF-158",
     "RF-159",
-    "RF-161"
+    "RF-161",
+    "RF-185",
+    "RF-186",
+    "RF-187",
+    "RF-188"
   ]
 }

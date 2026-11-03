@@ -3,7 +3,7 @@
   "id": "RF-151",
   "title": "Music Songs: tick up to 15 songs in the list, then create a class from them",
   "kind": "task",
-  "status": "review",
+  "status": "done",
   "priority": "P2",
   "parent": null,
   "dependsOn": [],
@@ -18,7 +18,7 @@
     "Component tests cover: one tap or click on a row toggles exactly once; a row tap never starts playback; selection; the 15 cap on both checkbox and row tap, with selected rows still untickable; persistence across Load more and search; clearing on provider switch; and the create sheet. The e2e smoke covers creating a class from selected songs.",
     "After deploy, the owner smoke tests pick mode on Mac and iPhone and confirms the feel, or asks for the Spotify-style Select button instead."
   ],
-  "nextAction": "For review: the owner smoke tests pick mode on Mac and iPhone after the deploy that ships #686 (acceptance item 9), then either confirms the feel (set Done; RF-172 can start) or asks for the Spotify-style Select button instead. Built in #686: one <label> per row (checkbox, artwork, song text) in apps/web/src/components/SongPicks.tsx, selection scoped to the provider account in apps/web/src/lib/song-picks.ts, class songs in the list order the instructor sees. #686 is deployed (67496ab, 2026-10-31). Still owed: the owner's Mac and iPhone feel check (agent checks do not satisfy item 9) and the create step against real likes. Axe on production could not run (the site's CSP blocks injecting axe-core, correctly); axe coverage is the e2e smoke at 1440 and 390 with mock providers. The 2026-10-31 agent checks covered Spotify likes on Mac Chrome, Apple Music likes at an emulated 375 wide, and SoundCloud likes at 760 and an emulated 375 wide. Spotify likes load in production (RF-92 observation, 2026-10-31); a full Spotify pass is RF-157.",
+  "nextAction": null,
   "blocker": null,
   "evidence": [
     {
@@ -68,9 +68,33 @@
       "ref": "https://github.com/steven-crosby/ritmofit-web/pull/686",
       "summary": "Agent check (Neo) of #686 on production 67496ab (SPA assets/index-ChxMwIpX.js) in the built-in browser signed in as the owner, after the owner reconnected SoundCloud; saving nothing. SoundCloud likes (2 songs) at the pane's 760 wide and an emulated 375x812 (mobile user agent, not a real iPhone): each row one <label> with one checkbox and no other control, inside data-build-class-slot=\"song\"; no horizontal overflow. A click dispatched on one row's title and on the other row's artwork (IMG) each ticked once (\"2 of 15 selected\"); unticking one gave \"1 of 15 selected\"; no audio, video or iframe appeared. The Create a class sheet prefilled \"SoundCloud likes\", took focus, fit 375 wide (16 px margins), and Cancel closed it; Clear selection emptied the selection. The 15 cap was not reachable with 2 likes. Axe could not be injected: the production CSP blocked loading axe-core. Not checked: creating a class, a real iPhone. Does not satisfy acceptance item 9.",
       "checkedOn": "2026-10-31"
+    },
+    {
+      "kind": "observation",
+      "ref": "https://ritmofit.studio/",
+      "summary": "Owner's iPhone Safari run on production af800c8 (SPA assets/index-ChxMwIpX.js), 2026-11-03 about 14:34-14:45 MST, Apple Music likes: a row-title tap ticked once and nothing played; at 15 the bar said \"15 of 15 selected. That's the most a class takes. Untick a song to choose another.\" and unticked rows were dimmed; unticking at the cap then ticking a dimmed row worked; 3 of 15 survived an \"acid\" search and its clearing; Create a class (\"RF-151 test\", Cycle) imported all 7 picked songs as blocks in list order (Warm-up first, Cooldown last). Seen: iOS focus zoom on the 14px inputs (RF-189); A'oga O Samoana artwork is a placeholder in Playback order.",
+      "checkedOn": "2026-11-03"
+    },
+    {
+      "kind": "observation",
+      "ref": "https://ritmofit.studio/",
+      "summary": "Agent check (Air, Claude in Chrome) in the owner's signed-in Mac Chrome at 1440 wide on production af800c8, 2026-11-03, saving nothing: a real click on a song title ticked it with no media playing; filled to 15, the cap note showed and the 185 unticked checkboxes were disabled; a real click on a 16th row stayed at 15; an \"acid\" search kept 15 of 15 and clearing it kept the same 15; document scrollWidth 1425 at 1440 (no horizontal overflow). Selection cleared afterwards; no class created.",
+      "checkedOn": "2026-11-03"
+    },
+    {
+      "kind": "observation",
+      "ref": "https://github.com/steven-crosby/ritmofit-web/pull/717#issuecomment-6616300402",
+      "summary": "Owner decision (Air session, 2026-11-03) after the iPhone run: \"Keep the checkboxes, the feel is right.\" Settles acceptance item 9; the Spotify-style Select button is not wanted.",
+      "checkedOn": "2026-11-03"
+    },
+    {
+      "kind": "pr",
+      "ref": "https://github.com/steven-crosby/ritmofit-web/pull/717",
+      "summary": "Records PR for the 2026-11-03 iPhone and Mac runs and the owner's verdict; sets RF-151 Done.",
+      "checkedOn": "2026-11-03"
     }
   ],
-  "resolution": null,
+  "resolution": "Pick mode shipped in #686 (deployed 67496ab, still live in af800c8). The owner's iPhone run and the Air's Mac Chrome check on 2026-11-03 passed every pick-mode check, and the owner kept the checkbox design. RF-172 (row preview) can start; RF-157 (full Spotify pass) and RF-173 stay open. The iOS focus zoom seen on the 14px inputs is RF-189.",
   "followUps": [
     "RF-157",
     "RF-172",

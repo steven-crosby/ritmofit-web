@@ -3,7 +3,7 @@
   "id": "RF-147",
   "title": "Apple Music adapter diagnostics and FairPlay flag handling match the legacy path RF-124 restored",
   "kind": "task",
-  "status": "review",
+  "status": "done",
   "priority": "P3",
   "parent": null,
   "dependsOn": [],
@@ -13,7 +13,7 @@
     "The desktop test asserts only that the FairPlay key is not removed, not that no removeItem call happens.",
     "Owner hears Start, Next and auto-advance in iPhone Safari Live after the change (provider code, CI cannot prove it)."
   ],
-  "nextAction": "Criteria 0, 1 and 2 are met in PR #668 (banner without the probe word; no com.apple.fps probe on iOS Safari; strict desktop Chrome test, accepted by the owner). Pending criterion 3: after #668 merges and deploys, the owner hears Start, Next and auto-advance in iPhone Safari Live (the same timing run as RF-128). FairPlay flag clearing is unchanged from main. The once-per-load clear, flag-log timing and late-settle checks are RF-159.",
+  "nextAction": null,
   "blocker": null,
   "evidence": [
     {
@@ -75,8 +75,20 @@
       "ref": "https://github.com/steven-crosby/ritmofit-web/pull/668#issuecomment-6538168766",
       "summary": "Owner decision in session 2026-10-30, relayed by the coordinator after the fourth final review of #668 on 85442ac: option 1, measure first. #668 shrinks to the RF-128 timing instrumentation and the RF-147 cleanups that need no locks; everything else in apps/ reverts to main. The lock work (leases, settle wait, hard caps, attempt token) is preserved on wip/rf-108-apple-locks at 85442ac. After deploy the owner times Start and quick taps on the iPhone, and RF-108's locks are redesigned in a new PR around those numbers. RF-108 was removed from dependsOn because the criterion that needed its lock design moved to RF-159.",
       "checkedOn": "2026-10-30"
+    },
+    {
+      "kind": "observation",
+      "ref": "https://ritmofit.studio/",
+      "summary": "Owner's iPhone Safari run on production af800c8 (SPA assets/index-ChxMwIpX.js), 2026-11-03, on Wi-Fi, ?playback-timing=1, console read through Safari Web Inspector: the owner heard Start (\"Music is playing\"), Next (four Nexts from track 17 to 21, Control Center showing Diet Pepsi playing) and an auto-advance (\"it ended and auto-advanced\"; #70 started +758 ms with no tap). Criterion 3 met.",
+      "checkedOn": "2026-11-03"
+    },
+    {
+      "kind": "pr",
+      "ref": "https://github.com/steven-crosby/ritmofit-web/pull/717",
+      "summary": "Records the 2026-11-03 device run and sets RF-147 Done.",
+      "checkedOn": "2026-11-03"
     }
   ],
-  "resolution": null,
+  "resolution": "Criteria 0-2 shipped in #668; criterion 3 met by the owner's 2026-11-03 iPhone Safari run on af800c8 (Start, Next and auto-advance audible). FairPlay flag clearing is unchanged; once-per-load clear and late-settle checks remain RF-159.",
   "followUps": []
 }

@@ -1,0 +1,34 @@
+{
+  "schemaVersion": 1,
+  "id": "RF-188",
+  "title": "Live timeline: make tapping a track obvious, easy to hit, and quiet while dragging",
+  "kind": "task",
+  "status": "backlog",
+  "priority": "P2",
+  "parent": null,
+  "dependsOn": [],
+  "acceptance": [
+    "The Live timeline reads as tappable and says what a tap does (jumps playback to that track) without instructions elsewhere.",
+    "Each track target is at least 44x44 pt on a 390-wide iPhone, or the strip offers another reliable way to pick a track, so a tap lands on the intended track first time.",
+    "While a finger is dragging the timeline, Live does not show the \"Waiting for music\" banner and its actions; it shows at most a quiet seeking state, and the banner appears only if playback still has not progressed after release.",
+    "The design follows ritmofit_design_system; the owner reviews the design before build."
+  ],
+  "nextAction": "Propose two or three design options for the timeline strip (affordance, target size, tap feedback, drag state) for the owner to choose; then build the chosen one. Agent-created: Backlog until the owner sets Ready.",
+  "blocker": null,
+  "evidence": [
+    {
+      "kind": "observation",
+      "ref": "https://ritmofit.studio/",
+      "summary": "Owner's iPhone Safari run on production af800c8 (Worker d05bb48f, SPA assets/index-ChxMwIpX.js), 2026-11-03 about 13:28-13:58 MST, ?playback-timing=1, class [QA] Audit Experienced Cycle (24 Apple Music tracks); console read by the Air conductor through Safari Web Inspector, plus the owner's screen recordings. Owner, in the Air session: \"We need to improve that ui/ux. It's not obvious that I can tap those numbers, or even if I tap them what exactly tapping them does. It needs to be more obvious in design.\" and \"It took a couple of tries of the failure of the ui/ux design. Not easy at all.\" One attempt at track 5 landed on track 4 (#5, trackIndex 3). A drag fired about 17 starts (#15-#32) and showed \"Waiting for music\" with Continue without music, Manage music connection and Skip track while the finger was still moving; it recovered on release.",
+      "checkedOn": "2026-11-03"
+    },
+    {
+      "kind": "source",
+      "ref": "apps/web/src/components/TimelineStrip.tsx",
+      "summary": "Current strip: tightly packed track numbers along the bottom of Live.",
+      "checkedOn": "2026-11-03"
+    }
+  ],
+  "resolution": null,
+  "followUps": []
+}

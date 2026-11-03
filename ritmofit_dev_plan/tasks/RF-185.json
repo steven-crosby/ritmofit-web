@@ -1,0 +1,33 @@
+{
+  "schemaVersion": 1,
+  "id": "RF-185",
+  "title": "Live timeline tap starts Apple Music twice on iPhone Safari",
+  "kind": "task",
+  "status": "backlog",
+  "priority": "P2",
+  "parent": null,
+  "dependsOn": [],
+  "acceptance": [
+    "One still-finger tap on a Live timeline track produces exactly one Apple Music prepare on iPhone Safari (?playback-timing=1 shows one #N prepare and no #N cancelled about 60-115 ms later).",
+    "A runtime or LiveTimeline test reproduces a pointer down then up with a small movement and fails before the fix.",
+    "Next, Previous, auto-advance and a drag that rests past the throttle window keep their current behaviour."
+  ],
+  "nextAction": "Find why the release commits a second seek after the pointer-down preview on iPhone: likely a few pixels of finger movement makes seekRelease's firedLast check miss, so the release is a new discrete seek (apps/web/src/components/LiveTimeline.tsx, LiveMode.tsx seekRelease). Fix, then re-run the tap step on iPhone. Agent-created: Backlog until the owner sets Ready.",
+  "blocker": null,
+  "evidence": [
+    {
+      "kind": "observation",
+      "ref": "https://ritmofit.studio/",
+      "summary": "Owner's iPhone Safari run on production af800c8 (Worker d05bb48f, SPA assets/index-ChxMwIpX.js), 2026-11-03 about 13:28-13:58 MST, ?playback-timing=1, class [QA] Audit Experienced Cycle (24 Apple Music tracks); console read by the Air conductor through Safari Web Inspector, plus the owner's screen recordings. Three of three still-finger timeline taps fired two starts: #3 cancelled +115 ms then #4; #6 cancelled +61 ms then #7; #41 cancelled +62 ms then #42. The bounded wait settled each (next-start-released ... settled), so no banner showed, but each tap paid an extra setQueue. Next (#46-#48) fired one start each.",
+      "checkedOn": "2026-11-03"
+    },
+    {
+      "kind": "source",
+      "ref": "apps/web/src/components/LiveTimeline.tsx",
+      "summary": "Timeline previews on pointer down and commits on release; #669 made release skip the provider call only when the throttle already sent exactly this gesture's position.",
+      "checkedOn": "2026-11-03"
+    }
+  ],
+  "resolution": null,
+  "followUps": []
+}
