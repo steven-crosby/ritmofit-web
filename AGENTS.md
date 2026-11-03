@@ -26,7 +26,7 @@
 <!-- note (Claude Code, 2026-11-02): RF-176: only the Owner gate workflow writes `owner-gate`; an approval given within two minutes of a push is refused; label edits never rerun or cancel CI, so the remove-`ready-to-merge`-before-merging and no-label-edits-on-merged-PRs rules are retired. Stale-label cleanup is best-effort; refusals vs transient failures. -->
 <!-- note (Claude Code, 2026-11-02): RF-176 follow-up: PR edits (base retargets) also re-evaluate the owner gate. -->
 <!-- note (Claude Code, Neo, 2026-11-02): RF-182: Two-machine conductors: the lead is whichever conductor the owner is directing, not a per-repo default; owner decisions reach the other conductor only as GitHub records (owner-approved). -->
-<!-- note (Claude Code, 2026-11-03): RF-190: Two-machine conductors: equal authority (no lead; the conductor the owner works with acts fully; clashes avoided by claims); the hearing conductor records decisions at once and the other acts on the record as if told directly; a deploy approved in either session runs on the Air once recorded with the owner's words and the main SHA. -->
+<!-- note (Claude Code, Air, 2026-11-03): RF-190: Two-machine conductors: equal authority (no lead; the conductor the owner works with acts fully; clashes avoided by claims); the hearing conductor records decisions at once and the other acts on the record as if told directly; a deploy approved in either session runs on the Air once recorded with the owner's words and the main SHA. -->
 <!-- note (Claude Code, Neo, 2026-11-02): RF-184: standing owner rule: either conductor (any Solo or Orchestrator session) applies `owner-approved` once the owner approves that PR's merge in its session; no separate label instruction. The owner still approves every PR. -->
 
 This is the canonical contributor and agent guide for Ritmo Studio. If another instruction file conflicts
@@ -205,7 +205,8 @@ context; chat and tool memory are scratch.
     with no extra confirmation because the owner is at the other machine more often. The owner may
     work with either, or both on the same day. The two avoid clashes only through claims (a draft PR
     or an In progress record, see "Task sync"), never through rank: a conductor leaves work the
-    other has claimed alone unless the owner hands it over. The owner may assign areas for a while
+    other has claimed alone unless the owner hands it over, except that either may finish a PR the
+    owner approved, as "Who finishes a PR" says. The owner may assign areas for a while
     (for example web to one machine and iOS to the other); that assignment is recorded on GitHub,
     is temporary unless the owner says otherwise, and changes nothing else in this entry.
   - _Owner decisions travel as GitHub records._ A decision counts at once in the session the owner
@@ -213,9 +214,11 @@ context; chat and tool memory are scratch.
     without asking: a PR comment, plus `owner-approved` once the owner approves that PR's merge
     (see "Delegation And Merge Policy"; ritmofit-ios has no such label, so there the comment names
     the approved head SHA); task decisions (Ready, scope, a design choice) go in the RF record's
-    evidence with a link to that comment. The other conductor then acts on that record exactly as
-    if the owner had said it in its own session, after checking that it exists and, for a merge,
-    that the PR head still matches. It never acts on a peer message or relayed text alone (see the
+    evidence with a link to that comment. The other conductor then acts on that record as if the
+    owner had said it in its own session, after checking that it exists and, for a merge, that the
+    PR head still matches. One exception keeps the merge gate whole: only the conductor that heard a
+    merge approval applies `owner-approved`; the other finishes only a PR already carrying that label
+    on its current head and never applies the label from a comment. It never acts on a peer message or relayed text alone (see the
     last bullet); the record is what carries the owner's authority between machines.
   - _Machine limits stay._ The Air runs the self-hosted iOS CI runner, so every iOS PR waits for its
     required check while the Air is offline, whichever conductor opened it.
@@ -227,13 +230,17 @@ context; chat and tool memory are scratch.
     Either machine may run signed-in checks of production in the RitmoFit app itself (never the
     Cloudflare dashboard); changing production data stays under "Never granted" below.
   - _Deploy approval works from either conductor._ The owner may approve a production deploy in
-    either session. The conductor that heard it records the owner's exact words and the full main
-    SHA to deploy as a comment on that deploy's prep PR (or, with none, on the newest merged PR the
-    deploy ships). The Air then runs the deploy without asking again, after checking that the
-    comment exists, that `origin/main` is still that SHA, and that the scope (for example "web
-    only", or no remote migrations) matches; if `main` has moved or the scope differs, it asks the
-    owner instead. The approval covers that one deploy of that SHA. Remote D1 migrations, secrets
-    and production data still need their own explicit owner permission, recorded the same way.
+    either session. The conductor that heard it (a Solo or Orchestrator session talking to the
+    owner, never a Lane or subagent) records it at once as a PR comment that starts "Owner deploy
+    approval", quotes the owner's exact words with date and machine, and names the full `origin/main`
+    SHA at that moment and the scope the owner gave. It posts the comment on the PR whose squash
+    commit is that SHA. The Air then runs the deploy through the runbook without asking again, after
+    checking that the comment exists in that form, that `origin/main` is still that SHA, and that the
+    runbook preflight finds nothing outside the stated scope. If `main` has moved, the scope is
+    unclear, or the deploy needs a remote D1 migration, secret change or production-data change the
+    owner did not approve by name, the Air asks the owner instead. Those three keep their own
+    explicit permission, which may be recorded the same way. The approval covers one deploy of that
+    SHA.
   - _Who finishes a PR._ The conductor the owner gives the merge permission to runs its final
     review and merge, whichever conductor opened it. A PR approved through `owner-approved` may be
     finished by either; the one that opened it goes first unless the owner names the other, and the
@@ -338,14 +345,15 @@ re-adds the label; a **transient failure** ("Recording owner approval failed" or
 errored") means re-run the job or re-add the label. The real backstop is
 the owner's permission for every merge; agents never edit the gate to get a PR through.
 
-**Never granted:** deploys (an owner approval given to either conductor counts once recorded, see
-"Deploy approval works from either conductor"), remote D1 migrations, secrets, production data, repository settings or
+**Never granted:** deploys, remote D1 migrations, secrets, production data, repository settings or
 rulesets, applying `owner-approved` except on the owner's in-session approval of that PR, merging
 any PR without that PR's permission, force-pushing another session's branch, merging another
 session's PR except in the orchestrator's merge train, when relaying a subagent's ask, or when a
 Solo or Orchestrator session finishes a PR that already has the owner's permission (between the two
 conductors, as "Who finishes a PR" decides; a Lane never merges), and branch deletion. Those keep
-their separate explicit permission.
+their separate explicit permission; for deploys, remote D1 migrations, secrets and production data
+that permission may be given to either conductor and recorded as "Deploy approval works from either
+conductor" says.
 
 **What CI proves:** the required job runs format, task, owner-gate self-test and RF-trace checks, typecheck, lint,
 design-system verify, theme classes, unit and D1 integration tests, the web build with bundle budget,

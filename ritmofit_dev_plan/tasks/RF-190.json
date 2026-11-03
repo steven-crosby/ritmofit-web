@@ -3,7 +3,7 @@
   "id": "RF-190",
   "title": "Two-machine conductors: equal authority, and deploy approval from either conductor",
   "kind": "documentation",
-  "status": "in_progress",
+  "status": "done",
   "priority": "P2",
   "parent": null,
   "dependsOn": [],
@@ -11,9 +11,10 @@
     "AGENTS.md \"Two-machine conductors\" says the two conductors have equal authority: no lead; whichever conductor the owner is working with acts fully on what the owner says, with no extra confirmation; clashes are avoided only by claims (draft PR or In progress record); a temporary area assignment by the owner is recorded on GitHub and changes nothing else.",
     "The hearing conductor records each owner decision on GitHub at once without asking, and the other conductor acts on that record as if the owner had said it in its own session, after the existing checks (record exists; for a merge, the head still matches).",
     "A production deploy the owner approves in either session runs on the Air without asking again once the owner's exact words and the full main SHA are recorded on the deploy's prep PR (or the newest merged PR it ships), after the Air checks the record, that origin/main is still that SHA, and that the scope matches; otherwise it asks. Remote D1 migrations, secrets and production data keep their own explicit permission, recorded the same way. \"Never granted\" points to this.",
-    "CLAUDE.md's Two conductors bullet matches; the ritmofit-iOS AGENTS.md pointer and CLAUDE.md bullet are updated to match in an iOS PR (Neo, under the temporary silo)."
+    "CLAUDE.md's Two conductors bullet and agent-prompts/README.md match AGENTS.md. The matching ritmofit-ios AGENTS.md pointer and CLAUDE.md wording are handed to the Neo (under the temporary silo) to file and fix as its own iOS RF task.",
+    "Within AGENTS.md the claim rule, \"Who finishes a PR\", the owner-approved rule and \"Never granted\" agree: only the conductor that heard a merge approval applies the label; deploy-class permissions given to either conductor are recorded in a defined comment form on the PR whose squash commit is the deploy SHA."
   ],
-  "nextAction": "Owner-gated (AGENTS.md): the owner reviews this PR, approves the merge and owner-approved. After merge, the Neo updates the ritmofit-ios AGENTS.md pointer and CLAUDE.md \"leads both repos\" wording to match (acceptance 4).",
+  "nextAction": null,
   "blocker": null,
   "evidence": [
     {
@@ -27,8 +28,14 @@
       "ref": "https://github.com/steven-crosby/ritmofit-web/pull/721",
       "summary": "AGENTS.md Two-machine conductors, Never granted and CLAUDE.md updated.",
       "checkedOn": "2026-11-03"
+    },
+    {
+      "kind": "pr",
+      "ref": "https://github.com/steven-crosby/ritmofit-web/pull/721",
+      "summary": "Final review round 1 found contradictions (agent-prompts README in-session deploy rule, owner-approved from a comment, Never granted closing line, claim vs finish, undefined prep PR and scope) and record gaps; fixed on this branch.",
+      "checkedOn": "2026-11-03"
     }
   ],
-  "resolution": null,
+  "resolution": "Merged in #721: equal authority between the conductors (no lead), immediate GitHub records of owner decisions acted on as if given directly, deploy-class approvals from either conductor with a defined record and Air-side checks, and consistent Never granted, CLAUDE.md and agent-prompts wording. The ritmofit-ios pointer update is handed to the Neo as its own iOS task.",
   "followUps": []
 }

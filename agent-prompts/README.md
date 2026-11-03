@@ -33,7 +33,8 @@ Where state lives (so the next session — any tool — can answer "what's next"
 | Unshaped ideas | `INBOX.md` (drained at every close) |
 
 Nothing in this folder deploys, applies remote migrations, or changes secrets; those stay explicit
-owner decisions in the session that performs them (`ritmofit_dev_plan/deployment-runbook.md`).
+owner decisions, given to either conductor and recorded as `AGENTS.md` › "Two-machine conductors"
+› "Deploy approval works from either conductor" says (`ritmofit_dev_plan/deployment-runbook.md`).
 
 ## Contents
 

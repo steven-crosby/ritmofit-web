@@ -12,13 +12,13 @@ owner's queue: any agent may execute a Ready task. Publishing follows AGENTS.md 
 Evidence marked **recorded** is a carried-forward claim, not fresh verification.
 A checked PR proves its GitHub state, not product acceptance or production behavior.
 
-188 tasks. backlog: 66 · ready: 0 · in_progress: 1 · blocked: 2 · review: 9 · done: 108 · cancelled: 2.
+188 tasks. backlog: 66 · ready: 0 · in_progress: 0 · blocked: 2 · review: 9 · done: 109 · cancelled: 2.
 
 ## In progress
 
 | Task | Priority / kind | Relationships | Next action / resolution | Evidence |
 | --- | --- | --- | --- | --- |
-| [RF-190](tasks/RF-190.json) Two-machine conductors: equal authority, and deploy approval from either conductor | P2 / documentation | — | Owner-gated (AGENTS.md): the owner reviews this PR, approves the merge and owner-approved. After merge, the Neo updates the ritmofit-ios AGENTS.md pointer and CLAUDE.md "leads both repos" wording to match (acceptance 4). | checked 2026-11-03 |
+| — | — | — | — | — |
 
 ## Blocked / waiting
 
@@ -148,6 +148,7 @@ A checked PR proves its GitHub state, not product acceptance or production behav
 | [RF-178](tasks/RF-178.json) POST /auth/session extends the session server-side and never sets a session cookie (option C, follow-up to RF-177) | P2 / task | needs RF-177; follow-ups RF-181 | POST /api/v1/auth/session extends a due session server-side and sets no cookie; no /api/v1 response carries a session cookie, which removes the cross-account cookie race at its source. Browsers still refresh through Better Auth's get-session. The iOS half (cookie stored without client-side expiry, /auth/session at launch and foreground, 401 means signed out, logged sign-out failure) ships in iOS RF-1012 after its web-contract snapshots are refreshed. | checked 2026-11-02; recorded |
 | [RF-182](tasks/RF-182.json) Two-machine conductors: the lead follows the owner, and owner decisions cross only as GitHub records | P2 / documentation | needs RF-169 | AGENTS.md "Two-machine conductors" now makes whichever conductor the owner is directing the lead for both repos and lets owner decisions reach the other conductor only through GitHub records; CLAUDE.md points to it. The ritmofit-ios pointers are ritmofit-ios #79, where the record is a PR comment naming the approved head SHA. | checked 2026-11-02 |
 | [RF-184](tasks/RF-184.json) Standing rule: either conductor applies owner-approved once the owner approves that PR's merge in its session | P2 / documentation | needs RF-182 | Either conductor now applies owner-approved once the owner approves that PR's merge in its session, after recording the owner's words as a PR comment; agents still never apply it on their own judgment, and the owner still approves every PR. | checked 2026-11-02 |
+| [RF-190](tasks/RF-190.json) Two-machine conductors: equal authority, and deploy approval from either conductor | P2 / documentation | — | Merged in #721: equal authority between the conductors (no lead), immediate GitHub records of owner decisions acted on as if given directly, deploy-class approvals from either conductor with a defined record and Air-side checks, and consistent Never granted, CLAUDE.md and agent-prompts wording. The ritmofit-ios pointer update is handed to the Neo as its own iOS task. | checked 2026-11-03 |
 | [RF-100](tasks/RF-100.json) Label changes rerun only the PR gates, not the full CI job | P3 / task | needs RF-98; follow-ups RF-175, RF-176 | Label events run only owner-gate.yml, which writes the required `owner-gate` commit status; ci.yml writes no status and keys concurrency per PR, so a label edit no longer reruns or cancels CI and the required CI check fails only on real checks. The fail-closed issues #700 merged with under a one-time waiver were fixed in RF-176; remaining edge cases are in RF-175. | checked 2026-10-27; checked 2026-10-28; checked 2026-11-01; checked 2026-11-02 |
 | [RF-144](tasks/RF-144.json) The design brief and D21 describe the provider capabilities and Account sections the product has | P3 / documentation | needs RF-131 | Design brief 9.8 and D21 match the product (#679): provider capabilities per providerCapabilities, and the three Account sections with Preferences cut per RF-131 decision 5. | checked 2026-10-29; checked 2026-10-31 |
 | [RF-147](tasks/RF-147.json) Apple Music adapter diagnostics and FairPlay flag handling match the legacy path RF-124 restored | P3 / task | — | Criteria 0-2 shipped in #668; criterion 3 met by the owner's 2026-11-03 iPhone Safari run on af800c8 (Start, Next and auto-advance audible). FairPlay flag clearing is unchanged; once-per-load clear and late-settle checks remain RF-159. | checked 2026-10-29; checked 2026-10-30; checked 2026-11-03 |
