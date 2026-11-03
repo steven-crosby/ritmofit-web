@@ -8,10 +8,10 @@
   "parent": null,
   "dependsOn": [],
   "acceptance": [
-    "AGENTS.md \"Two-machine conductors\" says the two conductors have equal authority: no lead; whichever conductor the owner is working with acts fully on what the owner says, with no extra confirmation; clashes are avoided only by claims (draft PR or In progress record), except that either may finish an owner-approved PR; a temporary area assignment by the owner is recorded on GitHub and changes nothing else.",
-    "The hearing conductor records each owner decision on GitHub at once without asking, and the other acts on that record as if the owner had said it in its own session, for merges, Ready, priority, triage, scope and design answers only; deploys, remote D1 migrations, secrets, production data and branch deletion still need the owner in the performing session. A web merge record is owner-approved applied by the hearing conductor, relied on through the owner-approval check on the current head; an iOS merge record is the hearing conductor's head-SHA comment. The hearing conductor finishes the merge unless the owner names the other or it hands over on the PR. Never granted agrees.",
-    "Cloudflare credentials are described as a machine capability, not a difference in authority; deploy permission is unchanged here (deploy approval from either conductor is RF-191).",
-    "CLAUDE.md points to the AGENTS.md section without restating its rules. The matching ritmofit-ios AGENTS.md pointer and CLAUDE.md wording are updated by the Neo in an iOS PR the owner approves together with this one."
+    "AGENTS.md \"Two-machine conductors\" replaces \"The lead follows the owner\" with \"Equal authority\": the conductors are peers; whichever one the owner is working with plans, decides, works in either repo, takes any RF task and finishes PRs with no extra confirmation; each finishes its in-flight work and leaves work the other has claimed alone unless the owner hands it over. \"Who finishes a PR\" no longer mentions a lead.",
+    "Cloudflare credentials are described as a machine capability, not a difference in authority; the records, merge and deploy rules are otherwise unchanged (deploy approval from either conductor is RF-191).",
+    "CLAUDE.md points to the AGENTS.md section without restating it.",
+    "The matching ritmofit-ios AGENTS.md pointer and CLAUDE.md wording (no \"leads\") are updated by the Neo in an iOS PR the owner approves together with this one."
   ],
   "nextAction": "Owner reviews and approves this PR together with the Neo's matching ritmofit-ios docs PR (AGENTS.md pointer, Merge gate, CLAUDE.md without \"leads\"), so the repos never disagree. Set Done once both merge.",
   "blocker": null,
@@ -31,7 +31,7 @@
     {
       "kind": "pr",
       "ref": "https://github.com/steven-crosby/ritmofit-web/pull/721",
-      "summary": "After the split (owner: \"Yes, split #721\"): AGENTS.md Two-machine conductors (equal authority, decision records limited to merges/Ready/priority/triage/scope/design, web and iOS merge records, hearing conductor finishes), Never granted's owner-approved line and a pointer-only CLAUDE.md. The earlier deploy-rule, runbook and agent-prompts edits are not in this PR; they belong to RF-191.",
+      "summary": "After the split and two more review rounds on rewritten records/finish rules, narrowed to the minimal change: only the lead bullet (now Equal authority), the Who-finishes lead mention and the Cloudflare capability sentence change in AGENTS.md; CLAUDE.md is a pointer. The decision-record, finish and Never granted rules stay as on main.",
       "checkedOn": "2026-11-03"
     }
   ],
