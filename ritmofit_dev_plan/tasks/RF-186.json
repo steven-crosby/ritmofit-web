@@ -3,7 +3,7 @@
   "id": "RF-186",
   "title": "A quick Live timeline tap can leave the class paused, then it resumes by itself",
   "kind": "task",
-  "status": "in_progress",
+  "status": "blocked",
   "priority": "P2",
   "parent": null,
   "dependsOn": [],
@@ -12,8 +12,8 @@
     "The clock keeps running (or holds only while a start is pending, labelled as such) and audio returns without a tap.",
     "A test covers the state sequence that produced Paused."
   ],
-  "nextAction": "In progress on fix/rf-185-live-timeline-seek: trace which state path shows Paused with the Play button after quick timeline taps; fix it with a test only if source and tests show a credible cause, otherwise record what was ruled out and the device log lines needed.",
-  "blocker": null,
+  "nextAction": "After a deploy of #720, the owner re-runs Live on iPhone Safari with ?playback-timing=1 on an Apple Music class: tap timeline tracks in quick succession until Live shows Paused (or 10 rounds without it), and save the console from the first tap to the resume. The lines needed: [ritmo live] status <kind> (every coordinator status Live receives), [ritmo live] toggle-pause / toggle-play <how> (any activation of the Pause/Play button, with pointer type, trusted flag and x/y), [ritmo live-timeline] pointer-* lines and the Apple #N lines. A toggle-pause line during the taps means the primary button received an activation the owner did not intend (then the fix is layout/hit-target work, likely with RF-188); no toggle line but a status paused means a runtime path this analysis missed.",
+  "blocker": "Device evidence: the owner's next iPhone Safari run with ?playback-timing=1 (after a deploy of #720) must capture the [ritmo live] lines around a Paused. Source and tests give no credible cause, so no fix was guessed.",
   "evidence": [
     {
       "kind": "observation",
@@ -25,6 +25,18 @@
       "kind": "observation",
       "ref": "https://github.com/steven-crosby/ritmofit-web/pull/718#issuecomment-6616802366",
       "summary": "Owner decision (2026-11-03, Air session), verbatim: \"Yes, move RF-185–187 to Ready and start the lane.\" Moved Ready → In progress by the RF-185 lane (branch fix/rf-185-live-timeline-seek).",
+      "checkedOn": "2026-11-03"
+    },
+    {
+      "kind": "source",
+      "ref": "apps/web/src/components/LiveMode.tsx",
+      "summary": "Ruled out from source (not device-verified): Paused with the Play button and a held clock needs playing=false with a status outside idle/preparing/awaiting_authorization/buffering/error. setPlaying(false) runs only from togglePlay, an error status (that shows \"Teaching paused · waiting for music\" and \"Retry music\", not Paused/Play), an ended status (\"Last song done\"), the rAF class end, and Reset (shows Ready at 0:00). The runtime (runtime.ts) sets paused only in pause(), which only togglePlay calls; superseded starts are epoch-guarded and never report paused or ended, and after pause() nothing restarts without resume(), so the self-start after about 5 s also needs a Play activation or a path not found here. Unproven hypothesis for the device run: a timeline tap delivered as a click to the primary button. The Live transport stays pinned to the viewport bottom in the default layout, so no layout shift explains it from code.",
+      "checkedOn": "2026-11-03"
+    },
+    {
+      "kind": "pr",
+      "ref": "https://github.com/steven-crosby/ritmofit-web/pull/720",
+      "summary": "#720 adds the diagnostic lines above to ?playback-timing=1 (no behaviour change) and the regression test \"quick timeline taps over slow starts never show Paused or the Play button\" (cancelled in-flight starts) plus a timing-line test. The regression test also passes before #720: it pins the ruled-out paths, it does not reproduce the defect.",
       "checkedOn": "2026-11-03"
     }
   ],

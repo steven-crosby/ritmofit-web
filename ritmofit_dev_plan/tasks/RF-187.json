@@ -3,7 +3,7 @@
   "id": "RF-187",
   "title": "Unhandled MusicKit play() rejection after a mid-track Apple start",
   "kind": "task",
-  "status": "in_progress",
+  "status": "review",
   "priority": "P2",
   "parent": null,
   "dependsOn": [],
@@ -12,7 +12,7 @@
     "Any play() rejection on a superseded or re-cued start is caught and recorded in the timing log, not surfaced as unhandled.",
     "An adapter test covers the re-cue path (set-queue-start (again)) rejecting."
   ],
-  "nextAction": "In progress on fix/rf-185-live-timeline-seek: handle the play() rejection after a mid-track re-cue (set-queue-start (again)) in apple-music-adapter.ts, record it in the timing log, and add an adapter test for the re-cue path rejecting.",
+  "nextAction": "After a deploy of #720, the owner re-runs Live on iPhone Safari with ?playback-timing=1 on an Apple Music class: do one timeline drag across several tracks and a few mid-track taps: the console shows no \"Unhandled Promise Rejection: The play() method was called without a previous stop() or pause() call.\"; any such rejection appears instead as [ritmo apple-music] timing musickit-play-rejection (MusicKit's own dropped promise) or [ritmo apple-music #N] timing play-rejected-already-playing (the adapter's play()), and the track still plays. If acceptance holds, set Done with that observation.",
   "blocker": null,
   "evidence": [
     {
@@ -37,6 +37,18 @@
       "kind": "observation",
       "ref": "https://github.com/steven-crosby/ritmofit-web/pull/718#issuecomment-6616802366",
       "summary": "Owner decision (2026-11-03, Air session), verbatim: \"Yes, move RF-185–187 to Ready and start the lane.\" Moved Ready → In progress by the RF-185 lane (branch fix/rf-185-live-timeline-seek).",
+      "checkedOn": "2026-11-03"
+    },
+    {
+      "kind": "pr",
+      "ref": "https://github.com/steven-crosby/ritmofit-web/pull/720",
+      "summary": "Fix in apple-music-adapter.ts: every play() promise the adapter receives already had a handler, so the unhandled rejection is one MusicKit creates and drops (likely while it starts the re-cued queue itself). A page-level unhandledrejection listener, installed on the first Apple play(), handles only that exact MusicKit message and logs musickit-play-rejection; other rejections are untouched. If the adapter's own play() rejects with that message it counts as started when MusicKit already reports playing, otherwise it waits for the first playing state or the 5 s cap (before, it became \"Apple Music would not play\" and a Retry banner). Judgment call flagged in the PR: the source of the dropped promise is inferred, not read from MusicKit.",
+      "checkedOn": "2026-11-03"
+    },
+    {
+      "kind": "test",
+      "ref": "apps/web/src/lib/playback/apple-music-adapter.test.ts",
+      "summary": "Added \"MusicKit play() rejection after a mid-track re-cue (RF-187)\": the re-cue path (setQueue:15, setQueue:40, play) with play() rejecting while MusicKit plays counts as started and logs set-queue-start (again) and play-rejected-already-playing; not yet playing waits for the first playing state; never playing ends at the cap; another rejection still fails with the sentence; the page guard prevents only that message and logs it. Four of the five fail against the pre-fix adapter. Recorded test result, not device evidence.",
       "checkedOn": "2026-11-03"
     }
   ],

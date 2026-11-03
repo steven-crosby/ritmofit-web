@@ -3,7 +3,7 @@
   "id": "RF-185",
   "title": "Live timeline tap starts Apple Music twice on iPhone Safari",
   "kind": "task",
-  "status": "in_progress",
+  "status": "review",
   "priority": "P2",
   "parent": null,
   "dependsOn": [],
@@ -12,7 +12,7 @@
     "A LiveTimeline or trailing-throttle test reproduces pointerdown, then a pointermove at the same clientX inside the 200 ms window, then pointerup, and fails before the fix (one tap must send the provider exactly one seek).",
     "Next, Previous, auto-advance and a drag that rests past the throttle window keep their current behaviour."
   ],
-  "nextAction": "In progress on fix/rf-185-live-timeline-seek. Corrected rule (#718 review items 1-3): a timeline release skips its provider seek only when the value the throttle actually fired last equals the release target (after fractionToMs; sub-pixel jitter on a still finger is treated as the same tap), and then drops any matching pending call. A pending, unfired value never counts as sent (down fires A, a fast move leaves pending B, release at B still sends B). The premise that iOS Safari sends a pointermove right after pointerdown with a still finger is unverified on device: add pointer down/move/up/cancel lines (clientX, mapped ms) to ?playback-timing=1 so the next iPhone run confirms it; also check pointercancel as a second path.",
+  "nextAction": "After a deploy of #720, the owner re-runs Live on iPhone Safari with ?playback-timing=1 on an Apple Music class: (1) tap one timeline track with a still finger three times, each a few seconds apart: each tap shows one [ritmo live-timeline] pointer-down and pointer-up ... tap, one [ritmo live] release-skipped, and one Apple #N prepare with no #N cancelled about 60-115 ms later; any [ritmo live-timeline] pointer-move lines between them confirm (or refute) the still-finger move premise. (2) quick taps on 2-3 tracks; (3) one drag across several tracks, then rest and release. Next, Previous and auto-advance should behave as before. If acceptance holds, set Done with that observation; otherwise attach the console lines.",
   "blocker": null,
   "evidence": [
     {
@@ -43,6 +43,24 @@
       "kind": "observation",
       "ref": "https://github.com/steven-crosby/ritmofit-web/pull/718#issuecomment-6616802366",
       "summary": "Owner decision (2026-11-03, Air session), verbatim: \"Yes, move RF-185–187 to Ready and start the lane.\" Moved Ready → In progress by the RF-185 lane (branch fix/rf-185-live-timeline-seek).",
+      "checkedOn": "2026-11-03"
+    },
+    {
+      "kind": "pr",
+      "ref": "https://github.com/steven-crosby/ritmofit-web/pull/720",
+      "summary": "Fix: trailing-throttle firedLast now means \"the value fn actually ran with last\" (call, its trailing timer, or flush); a pending, unfired value never counts. LiveMode seekRelease skips the provider seek only when that fired value equals the release target, then cancels the pending call. LiveTimeline keeps moves within an 8 px tap slop (TAP_SLOP_PX) part of the tap, because one CSS px is several seconds of class time on a phone strip, so a ms tolerance cannot express sub-pixel jitter; a release or cancel with no gesture in progress now sends nothing (it used to re-send the current clock as a second start, a possible second path via pointercancel). ?playback-timing=1 logs pointer down/move/up/cancel with clientX and the mapped ms, and the release decision.",
+      "checkedOn": "2026-11-03"
+    },
+    {
+      "kind": "test",
+      "ref": "apps/web/src/components/LiveMode.test.tsx",
+      "summary": "Added \"a tap with a still-finger move at the same ms inside the window sends one provider seek\", \"... sub-pixel or small jitter ...\", and \"a pointercancel after the release starts nothing more\" (one adapter per tap). Run against the pre-fix throttle and timeline, all three fail (two adapters for one tap); with only the throttle fix the same-ms test passes and the jitter and cancel tests still fail, so each layer is needed. The existing \"a release before the throttle sends the drag position still commits it once\" covers down A, pending B, release B sends B. Recorded test result, not device evidence.",
+      "checkedOn": "2026-11-03"
+    },
+    {
+      "kind": "test",
+      "ref": "apps/web/src/lib/trailing-throttle.test.ts",
+      "summary": "firedLast rule tests: a same-value call inside the window stays fired (fails before the fix); down A, pending B, release B sends B. LiveTimeline.test.tsx adds tap-slop, drag-past-slop, stray pointercancel and timing-line tests.",
       "checkedOn": "2026-11-03"
     }
   ],
