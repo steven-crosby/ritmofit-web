@@ -15,15 +15,17 @@
 <!-- Claude Code, 2026-11-01: Close trimmed Now; older Now notes and superseded text are in git history and HISTORY. Production unchanged since 67496ab; RF-157 rescoped (#695). -->
 <!-- Claude Code, 2026-11-02: Production observed from the Air at start-session; #654 closed; records for #697/#698. -->
 <!-- Claude Code, 2026-11-02: Air close: owner gate (RF-100/176) and auth (RF-177/178) merged; Air paused. -->
-<!-- Claude Code, 2026-11-02: RF-183 auth deploy af800c8 (Worker d05bb48f). -->
+<!-- Claude Code, 2026-11-02: RF-183 auth deploy af800c8 (Worker d05bb48f); RF-183 Blocked on owner checks (#713 review). -->
 
 **Current actionable state:** [RF board](./tasks.md), backed by canonical [task records](./tasks/README.md).
 The order of work is [Phases](#phases) below; each phase lists RF records, not a second backlog.
 **Main vs production:** production is main `af800c8` (Worker `d05bb48f-5f85-49c9-b08e-f0f4448d29d6`;
 SPA `assets/index-ChxMwIpX.js`; rollback `feac7dde-dc10-4462-bd2d-79075d289bda`), the standalone auth
 deploy [RF-183](./tasks/RF-183.json) from the Air on 2026-11-02. See [HISTORY](./HISTORY.md).
-**In flight:** RF-183's owner checks: on iPhone, the app stays signed in and sign-out revokes the
-session; on web, a signed-in tab still works the next day.
+**In flight:** [RF-183](./tasks/RF-183.json) is Blocked on the owner's checks: on iPhone with the
+RF-1012 build (iOS #78 or later), the app stays signed in and sign-out revokes the session; on web,
+get-session's `expiresAt` moves later on or after 2026-11-03. The signed-in `/auth/session` check
+waits on the QA token ([RF-155](./tasks/RF-155.json)).
 **Next step:** the owner's Mac and iPhone check of [RF-151](./tasks/RF-151.json) (Music › Songs pick
 mode on real likes: a row tap ticks and never plays, the 15 cap, Create a class) and RF-134's live
 labels on Music and Account. Still owed: the iPhone Safari device check (the 7 steps in the #669 PR

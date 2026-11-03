@@ -3,18 +3,20 @@
   "id": "RF-183",
   "title": "Standalone auth deploy of RF-177/RF-178 (#703, #705)",
   "kind": "release",
-  "status": "review",
+  "status": "blocked",
   "priority": "P2",
   "parent": null,
-  "dependsOn": [],
+  "dependsOn": [
+    "RF-155"
+  ],
   "acceptance": [
     "Before deploying, `git diff --name-only 67496ab <deploy SHA> -- apps packages` lists only auth files (on 67fa6ca: auth lib, auth middleware, auth routes, index.ts's sign-out wiring, types, OpenAPI and their tests); anything else is moved to a later deploy or the owner agrees to include it.",
     "Deployed from the Air via deployment-runbook.md with the owner's explicit deploy permission; HISTORY records the deployed SHA, Worker version, rollback version and smoke results, and the Now block's main vs production line is refreshed.",
     "Post-deploy native checks: POST /api/v1/auth/session with a valid cookie returns 200 with no Set-Cookie; a sign-out from the iOS app revokes the session (the old cookie then gets 401 from /api/v1/auth/session).",
     "Post-deploy web checks: browser sign-in works; GET /api/auth/get-session still returns a session and refreshes the cookie when due; a signed-in web tab reopened or refocused after at least a day stays signed in, since ordinary /api/v1 routes no longer extend the session row after #705."
   ],
-  "nextAction": "Owner checks: (1) on iPhone with the RF-1012 build, the app stays signed in across launches and signing out then makes the old session fail (sign in again works); (2) on web, a signed-in tab reopened or refocused on or after 2026-11-03 is still signed in. Then the owner closes RF-183 or files a bug.",
-  "blocker": null,
+  "nextAction": "Owner checks: (1) on iPhone with the RF-1012 build (iOS #78, 37c6c8d, or later), the app stays signed in across launches, and signing out then makes the old session fail (sign in again works). (2) On web: sign in (or confirm a signed-in tab), open https://ritmofit.studio/api/auth/get-session in that browser and note session.expiresAt; on or after 2026-11-03 (at least a day later), refocus the app tab, open the same URL again and confirm it still returns a session whose expiresAt has moved later. A tab merely still being signed in the next day proves nothing, because the default 7-day expiry covers it even if extension is broken. (3) Once RF-155 renews the QA token, an agent runs the signed-in POST /api/v1/auth/session check (200, no Set-Cookie). Then the owner closes RF-183 or files a bug.",
+  "blocker": "Waiting on the owner's device checks (iPhone with the RF-1012 build, iOS #78 37c6c8d or later; web session expiry on or after 2026-11-03) and on RF-155 (renewed QA token) for the signed-in POST /api/v1/auth/session check, which no agent can run without it.",
   "evidence": [
     {
       "kind": "pr",
@@ -31,7 +33,7 @@
     {
       "kind": "observation",
       "ref": "ritmofit_dev_plan/HISTORY.md",
-      "summary": "Production last observed at the 2026-11-01 start-session: main 67496ab, Worker feac7dde-dc10-4462-bd2d-79075d289bda, SPA assets/index-ChxMwIpX.js. Not rechecked since.",
+      "summary": "Production last observed at the 2026-11-01 start-session: main 67496ab, Worker feac7dde-dc10-4462-bd2d-79075d289bda, SPA assets/index-ChxMwIpX.js. Not rechecked since. Superseded: production is af800c8 / Worker d05bb48f since the 2026-11-02 deploy (entry below).",
       "checkedOn": "2026-11-01"
     },
     {
@@ -48,8 +50,14 @@
     },
     {
       "kind": "observation",
-      "ref": "https://github.com/steven-crosby/ritmofit-web/pull/712#issuecomment-6594161676",
-      "summary": "Deployed af800c8 from the Air with the owner's permission: Worker d05bb48f-5f85-49c9-b08e-f0f4448d29d6 at 100% (rollback feac7dde, 67496ab), no remote migrations, git diff 67496ab..af800c8 -- apps packages auth-only. Gates, propagation 3/3, status smoke and security headers passed. Unauthenticated: /auth/session 401 with no Set-Cookie; native-shaped sign-out 200 (was refused before); form-shaped sign-out 415. 5-minute tail: 3 events, 0 exceptions, 0 5xx. Not run: signed-in /auth/session and iOS sign-out revoke (no QA token on the Air), next-day web check.",
+      "ref": "ritmofit_dev_plan/HISTORY.md",
+      "summary": "HISTORY's 2026-11-02 deploy entry: deployed af800c8 from the Air with the owner's permission (#712 issuecomment-6594161676): Worker d05bb48f-5f85-49c9-b08e-f0f4448d29d6 at 100% (rollback feac7dde, 67496ab), no remote migrations, git diff 67496ab..af800c8 -- apps packages auth-only. Gates, propagation 3/3, status smoke and security headers passed. Unauthenticated: /auth/session 401 with no Set-Cookie; native-shaped sign-out 200 (was refused before); form-shaped sign-out 415. 5-minute tail: 3 events, 0 exceptions, 0 5xx. Not run: signed-in /auth/session and iOS sign-out revoke (no QA token on the Air), next-day web check.",
+      "checkedOn": "2026-11-02"
+    },
+    {
+      "kind": "pr",
+      "ref": "https://github.com/steven-crosby/ritmofit-web/pull/713#issuecomment-6596281029",
+      "summary": "#713 (deploy record, merged 0092bf1) final review: next-day web check too weak against the 7-day default expiry, signed-in acceptance items unassigned without the QA token, status should be Blocked, stale production entry, deploy evidence ref held no output, Now block lost the RF-1012 pointer. Addressed in this record; the SPA hash was confirmed from the deploy log (assets/index-ChxMwIpX.js served after the deploy).",
       "checkedOn": "2026-11-02"
     }
   ],
