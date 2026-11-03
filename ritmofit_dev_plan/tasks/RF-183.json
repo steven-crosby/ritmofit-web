@@ -3,7 +3,7 @@
   "id": "RF-183",
   "title": "Standalone auth deploy of RF-177/RF-178 (#703, #705)",
   "kind": "release",
-  "status": "backlog",
+  "status": "review",
   "priority": "P2",
   "parent": null,
   "dependsOn": [],
@@ -13,7 +13,7 @@
     "Post-deploy native checks: POST /api/v1/auth/session with a valid cookie returns 200 with no Set-Cookie; a sign-out from the iOS app revokes the session (the old cookie then gets 401 from /api/v1/auth/session).",
     "Post-deploy web checks: browser sign-in works; GET /api/auth/get-session still returns a session and refreshes the cookie when due; a signed-in web tab reopened or refocused after at least a day stays signed in, since ordinary /api/v1 routes no longer extend the session row after #705."
   ],
-  "nextAction": "Owner gives deploy permission on the Air; then run deployment-runbook.md as a standalone auth deploy.",
+  "nextAction": "Owner checks: (1) on iPhone with the RF-1012 build, the app stays signed in across launches and signing out then makes the old session fail (sign in again works); (2) on web, a signed-in tab reopened or refocused on or after 2026-11-03 is still signed in. Then the owner closes RF-183 or files a bug.",
   "blocker": null,
   "evidence": [
     {
@@ -44,6 +44,12 @@
       "kind": "source",
       "ref": "apps/api/src/index.ts",
       "summary": "On main 67fa6ca, the runtime files changed since 67496ab are all auth: lib/auth.ts, middleware/auth.ts, routes/auth.ts, index.ts (withNativeSignOutOrigin wiring), lib/types.ts (sessionResolved), OpenAPI and their tests.",
+      "checkedOn": "2026-11-02"
+    },
+    {
+      "kind": "observation",
+      "ref": "https://github.com/steven-crosby/ritmofit-web/pull/712#issuecomment-6594161676",
+      "summary": "Deployed af800c8 from the Air with the owner's permission: Worker d05bb48f-5f85-49c9-b08e-f0f4448d29d6 at 100% (rollback feac7dde, 67496ab), no remote migrations, git diff 67496ab..af800c8 -- apps packages auth-only. Gates, propagation 3/3, status smoke and security headers passed. Unauthenticated: /auth/session 401 with no Set-Cookie; native-shaped sign-out 200 (was refused before); form-shaped sign-out 415. 5-minute tail: 3 events, 0 exceptions, 0 5xx. Not run: signed-in /auth/session and iOS sign-out revoke (no QA token on the Air), next-day web check.",
       "checkedOn": "2026-11-02"
     }
   ],

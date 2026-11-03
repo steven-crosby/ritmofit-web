@@ -15,17 +15,15 @@
 <!-- Claude Code, 2026-11-01: Close trimmed Now; older Now notes and superseded text are in git history and HISTORY. Production unchanged since 67496ab; RF-157 rescoped (#695). -->
 <!-- Claude Code, 2026-11-02: Production observed from the Air at start-session; #654 closed; records for #697/#698. -->
 <!-- Claude Code, 2026-11-02: Air close: owner gate (RF-100/176) and auth (RF-177/178) merged; Air paused. -->
+<!-- Claude Code, 2026-11-02: RF-183 auth deploy af800c8 (Worker d05bb48f). -->
 
 **Current actionable state:** [RF board](./tasks.md), backed by canonical [task records](./tasks/README.md).
 The order of work is [Phases](#phases) below; each phase lists RF records, not a second backlog.
-**Main vs production:** production is main `67496ab` (Worker `feac7dde-dc10-4462-bd2d-79075d289bda`;
-SPA `assets/index-ChxMwIpX.js`; rollback `e50f1fd3-bdd1-4541-bc3f-4c2cd483a167`), deployed from the
-Air on 2026-10-31 and observed at the 2026-11-01 start-session. `main` is ahead: the auth changes
-[RF-177](./tasks/RF-177.json) (#703) and [RF-178](./tasks/RF-178.json) (#705) await the standalone
-auth deploy [RF-183](./tasks/RF-183.json) from the Air, which needs only the owner's deploy
-permission. The other merges since are CI, records and docs. See [HISTORY](./HISTORY.md).
-**In flight:** RF-183 deploy prep on the Air. iOS RF-1012 (cookie without client-side expiry,
-`/auth/session` at launch and foreground, 401 means signed out) merged as iOS #78.
+**Main vs production:** production is main `af800c8` (Worker `d05bb48f-5f85-49c9-b08e-f0f4448d29d6`;
+SPA `assets/index-ChxMwIpX.js`; rollback `feac7dde-dc10-4462-bd2d-79075d289bda`), the standalone auth
+deploy [RF-183](./tasks/RF-183.json) from the Air on 2026-11-02. See [HISTORY](./HISTORY.md).
+**In flight:** RF-183's owner checks: on iPhone, the app stays signed in and sign-out revokes the
+session; on web, a signed-in tab still works the next day.
 **Next step:** the owner's Mac and iPhone check of [RF-151](./tasks/RF-151.json) (Music › Songs pick
 mode on real likes: a row tap ticks and never plays, the 15 cap, Create a class) and RF-134's live
 labels on Music and Account. Still owed: the iPhone Safari device check (the 7 steps in the #669 PR
