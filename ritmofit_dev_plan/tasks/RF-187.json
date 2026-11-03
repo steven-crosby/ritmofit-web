@@ -1,0 +1,33 @@
+{
+  "schemaVersion": 1,
+  "id": "RF-187",
+  "title": "Unhandled MusicKit play() rejection after a mid-track Apple start",
+  "kind": "task",
+  "status": "backlog",
+  "priority": "P2",
+  "parent": null,
+  "dependsOn": [],
+  "acceptance": [
+    "No Unhandled Promise Rejection \"The play() method was called without a previous stop() or pause() call.\" appears during timeline taps, drags or Next on iPhone Safari.",
+    "Any play() rejection on a superseded or re-cued start is caught and recorded in the timing log, not surfaced as unhandled.",
+    "An adapter test covers the re-cue path (set-queue-start (again)) rejecting."
+  ],
+  "nextAction": "Trace the mid-track re-cue in apps/web/src/lib/playback/apple-music-adapter.ts (prepare cues the window start, the pre-play seek dirties the cue, play() re-queues at the tapped position) and find the play() call whose promise is not handled. Agent-created: Backlog until the owner sets Ready.",
+  "blocker": null,
+  "evidence": [
+    {
+      "kind": "observation",
+      "ref": "https://ritmofit.studio/",
+      "summary": "Owner's iPhone Safari run on production af800c8 (Worker d05bb48f, SPA assets/index-ChxMwIpX.js), 2026-11-03 about 13:28-13:58 MST, ?playback-timing=1, class [QA] Audit Experienced Cycle (24 Apple Music tracks); console read by the Air conductor through Safari Web Inspector, plus the owner's screen recordings. Three unhandled rejections in the run. Two came right after starts that logged set-queue-start (again) (#15 and #32, both from timeline jumps into the middle of a track); the third followed #67, whose lines were not visible. None followed a Next start. No user-visible effect seen.",
+      "checkedOn": "2026-11-03"
+    },
+    {
+      "kind": "source",
+      "ref": "apps/web/src/lib/playback/apple-music-adapter.ts",
+      "summary": "Mid-track entry re-cues with a second setQueue before play (see #669 note 8).",
+      "checkedOn": "2026-11-03"
+    }
+  ],
+  "resolution": null,
+  "followUps": []
+}

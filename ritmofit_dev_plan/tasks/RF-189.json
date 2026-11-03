@@ -1,0 +1,33 @@
+{
+  "schemaVersion": 1,
+  "id": "RF-189",
+  "title": "iOS Safari zooms the page when a 14px text box is focused",
+  "kind": "task",
+  "status": "backlog",
+  "priority": "P3",
+  "parent": null,
+  "dependsOn": [],
+  "acceptance": [
+    "Text inputs, search boxes, selects and textareas render at 16px or larger below the sm breakpoint, so iOS Safari does not zoom on focus; desktop sizes are unchanged.",
+    "The viewport meta keeps user zoom enabled (no maximum-scale or user-scalable=no).",
+    "A check (lint rule, test or grep in CI) flags a new form field below 16px on mobile."
+  ],
+  "nextAction": "Change the shared input classes from text-sm to text-base sm:text-sm (Dashboard.tsx Search songs and the provider catalog search first, then every form field), and add the check. Agent-created: Backlog until the owner sets Ready.",
+  "blocker": null,
+  "evidence": [
+    {
+      "kind": "observation",
+      "ref": "https://ritmofit.studio/",
+      "summary": "Owner's iPhone Safari run of RF-151 on production af800c8, 2026-11-03: tapping Search songs, then the Create a class name field, zoomed the page about 1.15x and it stayed zoomed (right and left edges cut off), which looked like horizontal overflow. The Mac run at 1440 wide had no overflow (scrollWidth 1425).",
+      "checkedOn": "2026-11-03"
+    },
+    {
+      "kind": "source",
+      "ref": "apps/web/src/components/Dashboard.tsx",
+      "summary": "Search songs and the catalog search inputs use text-sm (14px); iOS Safari zooms on focus below 16px.",
+      "checkedOn": "2026-11-03"
+    }
+  ],
+  "resolution": null,
+  "followUps": []
+}
