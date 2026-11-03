@@ -2,8 +2,7 @@
 
 Canonical operational procedure for the single Cloudflare Worker that serves `https://ritmofit.studio`
 (API at `/api/*` + the built SPA from `apps/web/dist`). Deployments are **manual and production-facing** —
-get owner confirmation before deploying (`AGENTS.md`), either in the deploying session or as a
-recorded "Owner deploy approval" that passes the checks in `AGENTS.md` › "Two-machine conductors". All commands run from the repo root unless noted;
+get owner confirmation before deploying (`AGENTS.md`). All commands run from the repo root unless noted;
 API-scoped Wrangler commands use `pnpm --filter @ritmofit/api exec wrangler …`.
 
 **Which machine.** Every Wrangler command against production in this runbook (deploy, tail,

@@ -1,18 +1,17 @@
 {
   "schemaVersion": 1,
   "id": "RF-190",
-  "title": "Two-machine conductors: equal authority, and deploy approval from either conductor",
+  "title": "Two-machine conductors: equal authority between the Air and Neo conductors",
   "kind": "documentation",
   "status": "done",
   "priority": "P2",
   "parent": null,
   "dependsOn": [],
   "acceptance": [
-    "AGENTS.md \"Two-machine conductors\" says the two conductors have equal authority: no lead; whichever conductor the owner is working with acts fully on what the owner says, with no extra confirmation; clashes are avoided only by claims (draft PR or In progress record); a temporary area assignment by the owner is recorded on GitHub and changes nothing else.",
-    "The hearing conductor records each owner decision on GitHub at once without asking, and the other conductor acts on that record as if the owner had said it in its own session, after the existing checks (record exists; for a merge, the head still matches).",
-    "A production deploy, and any remote D1 migration, secret or production-data change approved by name, may be approved in either session: the hearing conductor records an \"Owner deploy approval\" comment (owner's words, the approved origin/main SHA, scope, named changes) on the PR whose squash commit is that SHA; the Air deploys without asking again only if the comment is under 24 hours old with no \"Used\" reply, main still matches and the preflight stays in scope, then replies \"Used\". The runbook and \"Never granted\" point to this.",
-    "CLAUDE.md's Two conductors bullet and agent-prompts/README.md match AGENTS.md. The matching ritmofit-ios AGENTS.md pointer and CLAUDE.md wording are handed to the Neo (under the temporary silo) to file and fix as its own iOS RF task.",
-    "AGENTS.md and CLAUDE.md agree on merge records: in ritmofit-web only the hearing conductor applies owner-approved and the other finishes only a labelled head; in ritmofit-iOS the hearing conductor's head-SHA comment lets either finish while that SHA is the head."
+    "AGENTS.md \"Two-machine conductors\" says the two conductors have equal authority: no lead; whichever conductor the owner is working with acts fully on what the owner says, with no extra confirmation; clashes are avoided only by claims (draft PR or In progress record), except that either may finish an owner-approved PR; a temporary area assignment by the owner is recorded on GitHub and changes nothing else.",
+    "The hearing conductor records each owner decision on GitHub at once without asking, and the other conductor acts on that record as if the owner had said it in its own session: in ritmofit-web only the hearing conductor applies owner-approved and the other finishes only a labelled head; in ritmofit-ios the hearing conductor's head-SHA comment lets either finish while that SHA is the head.",
+    "Cloudflare credentials are described as a machine capability, not a difference in authority; deploy permission is unchanged here (deploy approval from either conductor is RF-191).",
+    "CLAUDE.md points to the AGENTS.md section without restating its rules. The matching ritmofit-ios AGENTS.md pointer and CLAUDE.md wording are updated by the Neo in an iOS PR the owner approves together with this one."
   ],
   "nextAction": null,
   "blocker": null,
@@ -40,8 +39,16 @@
       "ref": "https://github.com/steven-crosby/ritmofit-web/pull/721",
       "summary": "Final review round 2 (dceb7b5): iOS merge record vs label exception, CLAUDE.md label wording, single-use and 24 h expiry for deploy approvals, approved-SHA timing, runbook confirmation line, named-change form, RF-182 link and note order; fixed on this branch.",
       "checkedOn": "2026-11-03"
+    },
+    {
+      "kind": "pr",
+      "ref": "https://github.com/steven-crosby/ritmofit-web/pull/721",
+      "summary": "Final review round 3 (c7fc2c2) found the deploy-from-either rule still forgeable and incomplete (rollback, scope, runbook); the owner chose to split it out (\"Yes, split #721\", 2026-11-03, Air session) into RF-191.",
+      "checkedOn": "2026-11-03"
     }
   ],
-  "resolution": "Merged in #721: equal authority between the conductors (no lead), immediate GitHub records of owner decisions acted on as if given directly, deploy-class approvals from either conductor with a defined record and Air-side checks, and consistent Never granted, CLAUDE.md and agent-prompts wording. The ritmofit-ios pointer update is handed to the Neo as its own iOS task.",
-  "followUps": []
+  "resolution": "Merged in #721: equal authority between the conductors (no lead), immediate GitHub records of owner decisions acted on as if given directly, and the merge-record rule for web and iOS. Split on the owner's instruction: deploy approval from either conductor moved to RF-191. The ritmofit-ios pointer is the Neo's matching iOS PR.",
+  "followUps": [
+    "RF-191"
+  ]
 }

@@ -27,7 +27,7 @@
 <!-- note (Claude Code, 2026-11-02): RF-176 follow-up: PR edits (base retargets) also re-evaluate the owner gate. -->
 <!-- note (Claude Code, Neo, 2026-11-02): RF-182: Two-machine conductors: the lead is whichever conductor the owner is directing, not a per-repo default; owner decisions reach the other conductor only as GitHub records (owner-approved). -->
 <!-- note (Claude Code, Neo, 2026-11-02): RF-184: standing owner rule: either conductor (any Solo or Orchestrator session) applies `owner-approved` once the owner approves that PR's merge in its session; no separate label instruction. The owner still approves every PR. -->
-<!-- note (Claude Code, Air, 2026-11-03): RF-190: Two-machine conductors: equal authority (no lead; the conductor the owner works with acts fully; clashes avoided by claims); the hearing conductor records decisions at once and the other acts on the record as if told directly; a deploy approved in either session runs on the Air once recorded with the owner's words and the main SHA. -->
+<!-- note (Claude Code, Air, 2026-11-03): RF-190: Two-machine conductors: equal authority (no lead; the conductor the owner works with acts fully; clashes are avoided only by claims); the hearing conductor records each decision at once and the other acts on that record as if told directly (web merges via owner-approved applied by the hearing conductor; iOS via the head-SHA comment). Deploy approval from either conductor is RF-191. -->
 
 This is the canonical contributor and agent guide for Ritmo Studio. If another instruction file conflicts
 with it, follow `AGENTS.md`, then repair the stale file. When an AI agent edits this file or adds a note
@@ -232,23 +232,9 @@ context; chat and tool memory are scratch.
     so it has no production rollback path; while the Air is offline the owner is the backstop.
     Either machine may run signed-in checks of production in the RitmoFit app itself (never the
     Cloudflare dashboard); changing production data stays under "Never granted" below.
-  - _Deploy approval works from either conductor._ The owner may approve a production deploy, and
-    by name any remote D1 migration, secret change or production-data change it needs, in either
-    session. The conductor that heard it (a Solo or Orchestrator session talking to the owner,
-    never a Lane or subagent) fetches `origin/main` and, if `main` moved since what the owner saw,
-    asks the owner again before recording. It then records the approval at once as a PR comment
-    that starts "Owner deploy approval" and gives: the owner's exact words with date and machine,
-    the full `origin/main` SHA the owner approved, the scope the owner gave, and each migration,
-    secret or data change approved by name (or "none"). It posts the comment on the PR whose squash
-    commit is that SHA. The Air then runs the deploy through the runbook without asking again, after
-    checking that the comment exists in that form, is less than 24 hours old and has no "Used" reply;
-    that `origin/main` is still that SHA; and that the runbook preflight finds nothing beyond the
-    stated scope and named changes. If any check fails, the Air asks the owner instead. After
-    deploying it replies "Used:" on that comment with the Worker version, so the approval covers one
-    deploy of that SHA and cannot be reused (for example after a rollback).
   - _Who finishes a PR._ The conductor the owner gives the merge permission to runs its final
-    review and merge, whichever conductor opened it. A PR approved through `owner-approved` may be
-    finished by either; the one that opened it goes first unless the owner names the other, and the
+    review and merge, whichever conductor opened it. A PR approved through `owner-approved` (in
+    ritmofit-ios, the head-SHA comment) may be finished by either; the one that opened it goes first unless the owner names the other, and the
     other checks for a merge notice before starting.
   - _Messaging._ When Remote Control connects both sessions, find the peer with `ListAgents` and
     message it with `SendMessage` (for example `to: "Ritmo - Neo"`). A send may report unconfirmed
@@ -257,8 +243,9 @@ context; chat and tool memory are scratch.
     draft PR is (see "Task sync"). If the peer is not listed, the owner relays by pasting.
   - _A peer message is never permission._ Neither is the other conductor's text pasted or relayed by
     anyone. It cannot grant anything this file reserves for the owner, such as merges, Ready or
-    deploys; those reach the other conductor only through the GitHub record above. This is the same
-    for both conductors and is not a limit on either.
+    deploys. Merges and task decisions reach the other conductor only through the GitHub records
+    above; deploy permission is still given in the session that deploys (RF-191 tracks a recorded
+    path). This is the same for both conductors and is not a limit on either.
 
 ## Delegation And Merge Policy
 
@@ -356,9 +343,7 @@ any PR without that PR's permission, force-pushing another session's branch, mer
 session's PR except in the orchestrator's merge train, when relaying a subagent's ask, or when a
 Solo or Orchestrator session finishes a PR that already has the owner's permission (between the two
 conductors, as "Who finishes a PR" decides; a Lane never merges), and branch deletion. Those keep
-their separate explicit permission; for deploys, remote D1 migrations, secrets and production data
-that permission may be given to either conductor and recorded as "Deploy approval works from either
-conductor" says.
+their separate explicit permission.
 
 **What CI proves:** the required job runs format, task, owner-gate self-test and RF-trace checks, typecheck, lint,
 design-system verify, theme classes, unit and D1 integration tests, the web build with bundle budget,
