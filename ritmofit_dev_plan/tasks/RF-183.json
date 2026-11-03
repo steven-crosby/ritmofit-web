@@ -15,8 +15,8 @@
     "Post-deploy native checks: POST /api/v1/auth/session with a valid cookie returns 200 with no Set-Cookie; a sign-out from the iOS app revokes the session (the old cookie then gets 401 from /api/v1/auth/session).",
     "Post-deploy web checks: browser sign-in works; GET /api/auth/get-session still returns a session and refreshes the cookie when due; a signed-in web tab reopened or refocused after at least a day stays signed in, since ordinary /api/v1 routes no longer extend the session row after #705."
   ],
-  "nextAction": "Owner checks: (1) on iPhone with the RF-1012 build (iOS #78, 37c6c8d, or later), the app stays signed in across launches, and signing out then makes the old session fail (sign in again works). (2) On web: sign in (or confirm a signed-in tab), open https://ritmofit.studio/api/auth/get-session in that browser and note session.expiresAt; on or after 2026-11-03 (at least a day later), refocus the app tab, open the same URL again and confirm it still returns a session whose expiresAt has moved later. A tab merely still being signed in the next day proves nothing, because the default 7-day expiry covers it even if extension is broken. (3) Once RF-155 renews the QA token, an agent runs the signed-in POST /api/v1/auth/session check (200, no Set-Cookie). Then the owner closes RF-183 or files a bug.",
-  "blocker": "Waiting on the owner's device checks (iPhone with the RF-1012 build, iOS #78 37c6c8d or later; web session expiry on or after 2026-11-03) and on RF-155 (renewed QA token) for the signed-in POST /api/v1/auth/session check, which no agent can run without it.",
+  "nextAction": "Owner checks: (1) iPhone, partly done on the simulator 2026-11-03 (evidence below): stays signed in across launches and sign-out succeeds; still open: signing in again after sign-out, on a device or simulator. (2) On web: sign in (or confirm a signed-in tab), open https://ritmofit.studio/api/auth/get-session in that browser and note session.expiresAt; on or after 2026-11-03 (at least a day later), refocus the app tab, open the same URL again and confirm it still returns a session whose expiresAt has moved later. A tab merely still being signed in the next day proves nothing, because the default 7-day expiry covers it even if extension is broken. (3) Once RF-155 renews the QA token, an agent runs the signed-in checks: POST /api/v1/auth/session returns 200 with no Set-Cookie, and after a native sign-out the old cookie gets 401. Then the owner closes RF-183 or files a bug.",
+  "blocker": "Waiting on the owner's web session-expiry check (on or after 2026-11-03) and sign-in-again check, and on RF-155 (renewed QA token) for the signed-in /auth/session and old-cookie-after-sign-out checks, which no agent can run without it.",
   "evidence": [
     {
       "kind": "pr",
@@ -59,6 +59,12 @@
       "ref": "https://github.com/steven-crosby/ritmofit-web/pull/713#issuecomment-6596281029",
       "summary": "#713 (deploy record, merged 0092bf1) final review: next-day web check too weak against the 7-day default expiry, signed-in acceptance items unassigned without the QA token, status should be Blocked, stale production entry, deploy evidence ref held no output, Now block lost the RF-1012 pointer. Addressed in this record; the SPA hash was confirmed from the deploy log (assets/index-ChxMwIpX.js served after the deploy).",
       "checkedOn": "2026-11-02"
+    },
+    {
+      "kind": "observation",
+      "ref": "https://github.com/steven-crosby/ritmofit-ios/commit/b328722",
+      "summary": "Owner simulator check against production (Neo, 2026-11-03): iOS main b328722 (includes RF-1012, iOS #78) built with API_BASE_URL=https://ritmofit.studio, installed fresh on the iPhone 17 simulator. Fresh install opened on sign-in; the owner signed in; quit and relaunch restored the session (class list, no prompt) after one /api/v1/auth/session request; background then foreground opened a new connection whose first request was /api/v1/auth/session (the network log shows connections, not a request count); Sign out returned to sign-in and AuthStore logged no sign-out failure, so production accepted the native sign-out. Not checked: response headers (so no Set-Cookie claim), the old cookie getting 401 (would mean handling the owner's production token), signing in again.",
+      "checkedOn": "2026-11-03"
     }
   ],
   "resolution": null,
