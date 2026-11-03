@@ -12,6 +12,19 @@ detail). Current focus and `main` vs production live in the "Now" block of
 ---
 
 ## Deploy and session log (newest first)
+> **Deploy 2026-11-02 — RF-183: standalone auth deploy of RF-177 and RF-178 on main `af800c8`**
+> (from the Air, owner "Yes", recorded on
+> [#712](https://github.com/steven-crosby/ritmofit-web/pull/712#issuecomment-6594161676)). Runtime
+> changes since `67496ab` were auth only. Remote D1: none to apply. New Worker
+> `d05bb48f-5f85-49c9-b08e-f0f4448d29d6`; rollback `feac7dde-dc10-4462-bd2d-79075d289bda`
+> (`67496ab`). SPA unchanged at `assets/index-ChxMwIpX.js`. Gates passed; propagation 3/3; status
+> smoke and all six security headers passed; `wrangler deployments status` showed `d05bb48f` at 100%.
+> Unauthenticated auth checks: POST `/api/v1/auth/session` with no cookie gave 401 with no Set-Cookie;
+> a native-shaped sign-out (JSON, no Origin) gave 200 (the old Worker refused it, AUD-009); a
+> form-shaped sign-out gave 415. A 5-minute tail saw 3 events (those checks), 0 exceptions, 0 5xx.
+> Not done: the signed-in checks (no QA token on the Air; RF-155) and the owner's iPhone and next-day
+> web checks, tracked in RF-183.
+
 > **Session 2026-11-02 — Air close (no deploy).** Merged with owner permission per PR:
 > [#699](https://github.com/steven-crosby/ritmofit-web/pull/699) as `ec0c3cd` (records, owner
 > rollback path), [#701](https://github.com/steven-crosby/ritmofit-web/pull/701) as `ea23c57`
