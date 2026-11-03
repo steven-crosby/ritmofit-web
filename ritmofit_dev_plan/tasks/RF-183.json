@@ -6,28 +6,26 @@
   "status": "blocked",
   "priority": "P2",
   "parent": null,
-  "dependsOn": [
-    "RF-155"
-  ],
+  "dependsOn": [],
   "acceptance": [
     "Before deploying, `git diff --name-only 67496ab <deploy SHA> -- apps packages` lists only auth files (on 67fa6ca: auth lib, auth middleware, auth routes, index.ts's sign-out wiring, types, OpenAPI and their tests); anything else is moved to a later deploy or the owner agrees to include it.",
     "Deployed from the Air via deployment-runbook.md with the owner's explicit deploy permission; HISTORY records the deployed SHA, Worker version, rollback version and smoke results, and the Now block's main vs production line is refreshed.",
     "Post-deploy native checks: POST /api/v1/auth/session with a valid cookie returns 200 with no Set-Cookie; a sign-out from the iOS app revokes the session (the old cookie then gets 401 from /api/v1/auth/session).",
-    "Post-deploy web checks: browser sign-in works; GET /api/auth/get-session still returns a session and refreshes the cookie when due; a signed-in web tab reopened or refocused after at least a day stays signed in, since ordinary /api/v1 routes no longer extend the session row after #705."
+    "Post-deploy web checks: browser sign-in works; GET /api/auth/get-session still returns a session and refreshes the cookie when due; a signed-in web tab keeps its session extended: read session.expiresAt from the app's own GET /api/auth/get-session response (DevTools › Network, after refocusing the tab), then again at least 24 hours later after refocusing the same tab, and the second expiresAt is later than the first. \"Still signed in the next day\" alone does not count, because the 7-day default expiry covers it even when extension is broken, and opening get-session by hand extends the session itself."
   ],
-  "nextAction": "Owner checks: (1) iPhone, partly done on the simulator 2026-11-03 (evidence below): stays signed in across launches and sign-out succeeds; still open: signing in again after sign-out, on a device or simulator. (2) On web: sign in (or confirm a signed-in tab), open https://ritmofit.studio/api/auth/get-session in that browser and note session.expiresAt; on or after 2026-11-03 (at least a day later), refocus the app tab, open the same URL again and confirm it still returns a session whose expiresAt has moved later. A tab merely still being signed in the next day proves nothing, because the default 7-day expiry covers it even if extension is broken. (3) Once RF-155 renews the QA token, an agent runs the signed-in checks: POST /api/v1/auth/session returns 200 with no Set-Cookie, and after a native sign-out the old cookie gets 401. Then the owner closes RF-183 or files a bug.",
-  "blocker": "Waiting on the owner's web session-expiry check (on or after 2026-11-03) and sign-in-again check, and on RF-155 (renewed QA token) for the signed-in /auth/session and old-cookie-after-sign-out checks, which no agent can run without it.",
+  "nextAction": "Owner checks: (1) sign in again after sign-out, on the simulator (the Neo left the production build installed and signed out) or a device; the rest of the native check passed on the simulator 2026-11-03 (evidence below). (2) On web, in a signed-in tab: open DevTools › Network, refocus the tab, and note session.expiresAt and the time from the app's own get-session response; at least 24 hours later, refocus the same tab and read it again. The second expiresAt must be later. Do not open the get-session URL by hand: that request extends the session itself. The first reading had not been taken as of 2026-11-03. (3) Once the owner renews the QA token (RF-155), the Air conductor runs the signed-in checks with it (POST /api/v1/auth/session returns 200 with no Set-Cookie; after a native sign-out the old cookie gets 401) and records them here as evidence. RF-155's own acceptance does not cover these. Then the owner closes RF-183 or files a bug.",
+  "blocker": "Waiting on the owner's web session-extension check (two expiresAt readings at least 24 hours apart; the first is not yet taken as of 2026-11-03) and sign-in-again check, and on a renewed QA token (RF-155) for the signed-in /auth/session and old-cookie-after-sign-out checks, which no agent can run without it.",
   "evidence": [
     {
       "kind": "pr",
       "ref": "https://github.com/steven-crosby/ritmofit-web/pull/703",
-      "summary": "#703 merged as 1897a6d (RF-177: native sign-out exception, refresh only on /auth/session); not deployed.",
+      "summary": "#703 merged as 1897a6d (RF-177: native sign-out exception, refresh only on /auth/session); deployed in af800c8 on 2026-11-02 (entry below).",
       "checkedOn": "2026-11-02"
     },
     {
       "kind": "pr",
       "ref": "https://github.com/steven-crosby/ritmofit-web/pull/705",
-      "summary": "#705 merged as 14d0b32 (RF-178: /auth/session sets no cookie); not deployed.",
+      "summary": "#705 merged as 14d0b32 (RF-178: /auth/session sets no cookie); deployed in af800c8 on 2026-11-02 (entry below).",
       "checkedOn": "2026-11-02"
     },
     {
@@ -57,13 +55,19 @@
     {
       "kind": "pr",
       "ref": "https://github.com/steven-crosby/ritmofit-web/pull/713#issuecomment-6596281029",
-      "summary": "#713 (deploy record, merged 0092bf1) final review: next-day web check too weak against the 7-day default expiry, signed-in acceptance items unassigned without the QA token, status should be Blocked, stale production entry, deploy evidence ref held no output, Now block lost the RF-1012 pointer. Addressed in this record; the SPA hash was confirmed from the deploy log (assets/index-ChxMwIpX.js served after the deploy).",
+      "summary": "#713 (deploy record, merged 0092bf1) final review: next-day web check too weak against the 7-day default expiry, signed-in acceptance items unassigned without the QA token, status should be Blocked, stale production entry, deploy evidence ref held no output, Now block lost the RF-1012 pointer. Addressed in this record; the SPA hash assets/index-ChxMwIpX.js comes from deploy.sh's served-asset output in the Air's local, uncommitted deploy log.",
       "checkedOn": "2026-11-02"
     },
     {
       "kind": "observation",
       "ref": "https://github.com/steven-crosby/ritmofit-ios/commit/b328722",
       "summary": "Owner simulator check against production (Neo, 2026-11-03): iOS main b328722 (includes RF-1012, iOS #78) built with API_BASE_URL=https://ritmofit.studio, installed fresh on the iPhone 17 simulator. Fresh install opened on sign-in; the owner signed in; quit and relaunch restored the session (class list, no prompt) after one /api/v1/auth/session request; background then foreground opened a new connection whose first request was /api/v1/auth/session (the network log shows connections, not a request count); Sign out returned to sign-in and AuthStore logged no sign-out failure, so production accepted the native sign-out. Not checked: response headers (so no Set-Cookie claim), the old cookie getting 401 (would mean handling the owner's production token), signing in again.",
+      "checkedOn": "2026-11-03"
+    },
+    {
+      "kind": "pr",
+      "ref": "https://github.com/steven-crosby/ritmofit-web/pull/714#issuecomment-6596794778",
+      "summary": "#714 (merged 4b4345a) final review, folded in by the 2026-11-03 close: dependsOn RF-155 removed (RF-155's acceptance does not cover these checks; it stays in the blocker), acceptance item 4 restated as the expiresAt comparison, readings at least 24 hours apart and read from the app's own get-session, the signed-in checks assigned to the Air conductor, #703/#705 marked deployed, SPA-hash source stated.",
       "checkedOn": "2026-11-03"
     }
   ],
