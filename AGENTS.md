@@ -26,6 +26,7 @@
 <!-- note (Claude Code, 2026-11-02): RF-176: only the Owner gate workflow writes `owner-gate`; an approval given within two minutes of a push is refused; label edits never rerun or cancel CI, so the remove-`ready-to-merge`-before-merging and no-label-edits-on-merged-PRs rules are retired. Stale-label cleanup is best-effort; refusals vs transient failures. -->
 <!-- note (Claude Code, 2026-11-02): RF-176 follow-up: PR edits (base retargets) also re-evaluate the owner gate. -->
 <!-- note (Claude Code, Neo, 2026-11-02): RF-182: Two-machine conductors: the lead is whichever conductor the owner is directing, not a per-repo default; owner decisions reach the other conductor only as GitHub records (owner-approved). -->
+<!-- note (Claude Code, Neo, 2026-11-02): RF-184: standing owner rule: either conductor (any Solo or Orchestrator session) applies `owner-approved` once the owner approves that PR's merge in its session; no separate label instruction. The owner still approves every PR. -->
 
 This is the canonical contributor and agent guide for Ritmo Studio. If another instruction file conflicts
 with it, follow `AGENTS.md`, then repair the stale file. When an AI agent edits this file or adds a note
@@ -207,7 +208,7 @@ context; chat and tool memory are scratch.
     the owner says in its own session.
   - _Owner decisions cross only as GitHub records._ A decision counts in the session the owner gives
     it in. To let the other conductor act on it, the conductor that heard it records the owner's
-    words on GitHub: a PR comment, plus `owner-approved` when the owner tells it to apply the label
+    words on GitHub: a PR comment, plus `owner-approved` once the owner approves that PR's merge
     (see "Delegation And Merge Policy"; ritmofit-ios has no such label, so there the comment names
     the approved head SHA); task decisions (Ready, scope, a design choice) go in the RF
     record's evidence with a link to that comment. The other conductor acts on that record after
@@ -264,9 +265,12 @@ In a live session it asks in chat. A background agent comments that question on 
 adding `owner-approved` to the PR. Once a PR has that permission, any Solo or Orchestrator session
 may finish it: run the final review below and merge, even though another session opened it. Between
 the two conductors, "Who finishes a PR" under "Two-machine conductors" decides which one does. A
-Lane session never merges, even an approved PR. Agents never apply `owner-approved` on their own judgment; the one
-exception is the owner explicitly telling the agent in a session to apply it, which the agent records
-as a PR comment before applying it.
+Lane session never merges, even an approved PR. Agents never apply `owner-approved` on their own
+judgment. Standing owner rule (2026-11-02): once the owner approves a PR's merge in a live session
+(for example "yes, merge #N", or telling it to apply the label), that Solo or Orchestrator session,
+on either conductor, records the owner's words as a PR comment and then applies `owner-approved` to
+the PR's current head; no separate instruction to apply the label is needed. The approval covers
+only that PR and that head.
 
 With permission, the agent runs its tool's code-review pass on the final PR diff at a
 confidence-over-recall setting (for example `/code-review medium` in Claude Code, `/review` in
@@ -323,7 +327,7 @@ errored") means re-run the job or re-add the label. The real backstop is
 the owner's permission for every merge; agents never edit the gate to get a PR through.
 
 **Never granted:** deploys, remote D1 migrations, secrets, production data, repository settings or
-rulesets, applying `owner-approved` except on the owner's explicit in-session instruction, merging
+rulesets, applying `owner-approved` except on the owner's in-session approval of that PR, merging
 any PR without that PR's permission, force-pushing another session's branch, merging another
 session's PR except in the orchestrator's merge train, when relaying a subagent's ask, or when a
 Solo or Orchestrator session finishes a PR that already has the owner's permission (between the two
