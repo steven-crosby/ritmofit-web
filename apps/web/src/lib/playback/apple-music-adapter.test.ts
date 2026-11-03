@@ -17,6 +17,7 @@ import {
   appleMusicPlayNotStartedMessage,
   appleMusicPlayRejectedMessage,
   appleMusicQueueStillFinishingMessage,
+  isMusicKitAlreadyPlayingRejection,
 } from './apple-music-adapter.js';
 import type { AdapterEvents } from './types.js';
 import { PLAYBACK_TIMING_KEY, resetPlaybackTimingForTests } from './start-timing.js';
@@ -1771,4 +1772,102 @@ describe('Apple Music natural-boundary runtime regression', () => {
       }
     },
   );
+});
+
+describe('MusicKit play() rejection after a mid-track re-cue (RF-187)', () => {
+  const ALREADY_PLAYING = 'The play() method was called without a previous stop() or pause() call.';
+  let info: ReturnType<typeof vi.spyOn>;
+
+  beforeEach(() => {
+    sessionStorage.setItem(PLAYBACK_TIMING_KEY, '1');
+    resetPlaybackTimingForTests();
+    info = vi.spyOn(console, 'info').mockImplementation(() => {});
+  });
+
+  afterEach(() => {
+    sessionStorage.removeItem(PLAYBACK_TIMING_KEY);
+    resetPlaybackTimingForTests();
+    info.mockRestore();
+  });
+
+  const timingLines = (): string[] =>
+    info.mock.calls
+      .map((call: unknown[]) => String(call[0]))
+      .filter((line: string) => line.includes(' timing '));
+
+  it('a re-cued play() that MusicKit rejects while already playing counts as started and is logged', async () => {
+    const instance = new FakeInstance(true);
+    const { adapter } = makeAdapter(instance, { preconfigured: true });
+    await adapter.prepare(makeEntry(), WINDOW_CLIPPED);
+    await adapter.seek(40_000); // mid-track entry: the pre-play seek dirties the cue
+    instance.playBehavior = () => {
+      // MusicKit starts the re-cued queue itself, then refuses the extra play().
+      instance.playbackState = STATES.playing;
+      instance.currentPlaybackTime = 40;
+      return Promise.reject(new Error(ALREADY_PLAYING));
+    };
+    await expect(adapter.play()).resolves.toBeUndefined();
+    expect(instance.calls).toEqual(['setQueue:15', 'setQueue:40', 'play']);
+    await expect(adapter.getTransport()).resolves.toEqual({ state: 'playing', positionMs: 40_000 });
+    const lines = timingLines();
+    expect(lines.some((line) => line.includes('set-queue-start (again)'))).toBe(true);
+    expect(
+      lines.some((line) => /play-rejected-already-playing \+\d+ms handled, playing$/.test(line)),
+    ).toBe(true);
+    expect(lines.find((line) => line.includes(' started '))).toMatch(/ first-playing-state$/);
+  });
+
+  it('when MusicKit is not playing yet, the rejection waits for the first playing state', async () => {
+    const instance = new FakeInstance(true);
+    const { adapter } = makeAdapter(instance, { preconfigured: true });
+    await adapter.prepare(makeEntry(), WINDOW_CLIPPED);
+    await adapter.seek(40_000);
+    instance.playBehavior = () => Promise.reject(new Error(ALREADY_PLAYING));
+    const play = adapter.play();
+    for (let i = 0; i < 10; i++) await Promise.resolve();
+    expect(timingLines().some((line) => line.includes('handled, waiting for playing'))).toBe(true);
+    instance.playbackState = STATES.playing;
+    instance.emit(EVENTS.playbackStateDidChange, { state: STATES.playing });
+    await expect(play).resolves.toBeUndefined();
+  });
+
+  it('when MusicKit never plays after the rejection, the cap still ends the start with Retry', async () => {
+    const instance = new FakeInstance(true);
+    const { adapter } = makeAdapter(instance, { preconfigured: true, playStartCapMs: 30 });
+    await adapter.prepare(makeEntry(), WINDOW_CLIPPED);
+    await adapter.seek(40_000);
+    instance.playBehavior = () => Promise.reject(new Error(ALREADY_PLAYING));
+    await expect(adapter.play()).rejects.toThrow(appleMusicPlayNotStartedMessage('Baiana', 30));
+  });
+
+  it('any other play() rejection still fails with the sentence and action', async () => {
+    const instance = new FakeInstance(true);
+    const { adapter } = makeAdapter(instance, { preconfigured: true });
+    await adapter.prepare(makeEntry(), WINDOW_CLIPPED);
+    await adapter.seek(40_000);
+    instance.playBehavior = () => Promise.reject(new Error('CONTENT_RESTRICTED'));
+    await expect(adapter.play()).rejects.toThrow(appleMusicPlayRejectedMessage('Baiana'));
+  });
+
+  it('the page guard handles only MusicKit’s own dropped rejection, and logs it', async () => {
+    const instance = new FakeInstance(true);
+    const { adapter } = makeAdapter(instance, { preconfigured: true });
+    await adapter.prepare(makeEntry(), WINDOW_ZERO);
+    await adapter.play(); // installs the guard
+    const dispatch = (reason: unknown) => {
+      const event = new Event('unhandledrejection', { cancelable: true });
+      Object.defineProperty(event, 'reason', { value: reason });
+      window.dispatchEvent(event);
+      return event.defaultPrevented;
+    };
+    expect(dispatch(new Error(ALREADY_PLAYING))).toBe(true);
+    expect(dispatch(new Error('Something else'))).toBe(false);
+    expect(dispatch(undefined)).toBe(false);
+    expect(isMusicKitAlreadyPlayingRejection({ message: ALREADY_PLAYING })).toBe(true);
+    expect(
+      timingLines().filter((line) =>
+        /^\[ritmo apple-music\] timing musickit-play-rejection @\d+ms/.test(line),
+      ),
+    ).toHaveLength(1);
+  });
 });

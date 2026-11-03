@@ -37,7 +37,13 @@ import {
   type MusicKitPlaybackEvent,
   type MusicKitSetQueueOptions,
 } from '../musickit.js';
-import { NO_START_TIMER, startTimer, timingNow, type StartTimer } from './start-timing.js';
+import {
+  NO_START_TIMER,
+  startTimer,
+  timingLine,
+  timingNow,
+  type StartTimer,
+} from './start-timing.js';
 import type {
   AdapterEvents,
   AdapterFactory,
@@ -76,6 +82,50 @@ const DEFAULT_PLAY_START_CAP_MS = 5_000;
 const CONSOLE_PREFIX = '[ritmo apple-music]';
 /** Numbers each adapter in the debug timing lines (RF-128); no behaviour depends on it. */
 let adapterSequence = 0;
+
+/** MusicKit's wording when play() is asked to start a queue it is already starting. */
+const MUSICKIT_ALREADY_PLAYING =
+  'The play() method was called without a previous stop() or pause() call';
+
+/**
+ * Whether a rejection is MusicKit's "play() without a previous stop() or
+ * pause()" (RF-187). iPhone Safari raised it twice in one timeline drag, each
+ * right after a mid-track re-cue (set-queue-start (again)).
+ */
+export function isMusicKitAlreadyPlayingRejection(reason: unknown): boolean {
+  const message =
+    reason instanceof Error
+      ? reason.message
+      : typeof reason === 'string'
+        ? reason
+        : typeof (reason as { message?: unknown } | null)?.message === 'string'
+          ? (reason as { message: string }).message
+          : '';
+  return message.includes(MUSICKIT_ALREADY_PLAYING);
+}
+
+/**
+ * The owner's 2026-11-03 iPhone run logged this rejection as unhandled, yet
+ * every play() promise this adapter receives has a handler, so the rejecting
+ * promise is one MusicKit creates and drops itself (RF-187). This page-level
+ * listener handles only that exact MusicKit message: it marks the rejection
+ * handled (no "Unhandled Promise Rejection" in the console) and records it in
+ * the opt-in timing log. Every other rejection is left untouched.
+ */
+export function handleMusicKitUnhandledRejection(event: PromiseRejectionEvent): void {
+  if (!isMusicKitAlreadyPlayingRejection(event.reason)) return;
+  event.preventDefault();
+  timingLine(CONSOLE_PREFIX, 'musickit-play-rejection', 'unhandled by MusicKit, handled here');
+}
+
+let unhandledRejectionGuardInstalled = false;
+
+/** Install the RF-187 listener once per page; Apple playback calls it before its first play(). */
+export function installMusicKitRejectionGuard(): void {
+  if (unhandledRejectionGuardInstalled || typeof window === 'undefined') return;
+  unhandledRejectionGuardInstalled = true;
+  window.addEventListener('unhandledrejection', handleMusicKitUnhandledRejection);
+}
 
 /** This browser lost its Apple Music authorization (signed out, revoked, or expired). */
 export const appleMusicAuthorizationLostMessage = (): string =>
@@ -379,6 +429,7 @@ export class AppleMusicAdapter implements PlaybackAdapter {
 
   async play(): Promise<void> {
     clearSafariModernFairPlay();
+    installMusicKitRejectionGuard();
     const instance = this.requireInstance();
     // A pre-play seek (mid-track entry) re-cues here, since seekToTime has no
     // now-playing item to seek until playback has started. Bounded like the
@@ -437,7 +488,24 @@ export class AppleMusicAdapter implements PlaybackAdapter {
         const cap = new Promise<'cap'>((resolve) => {
           capTimer = setTimeout(() => resolve('cap'), capMs);
         });
-        outcome = await Promise.race([played.then(() => 'resolved' as const), firstPlaying, cap]);
+        // After a mid-track re-cue (set-queue-start (again)) MusicKit can reject
+        // play() with "called without a previous stop() or pause() call" when
+        // it is already starting the new queue itself (RF-187). That is not a
+        // refusal: count it as started if MusicKit already reports playing,
+        // otherwise keep waiting for the first playing state or the cap.
+        const playedOutcome = played.then(
+          () => 'resolved' as const,
+          (cause: unknown) => {
+            if (!isMusicKitAlreadyPlayingRejection(cause)) throw cause;
+            const playingNow = this.transportState() === 'playing';
+            this.timer.mark(
+              'play-rejected-already-playing',
+              playingNow ? 'handled, playing' : 'handled, waiting for playing',
+            );
+            return playingNow ? ('playing' as const) : new Promise<never>(() => {});
+          },
+        );
+        outcome = await Promise.race([playedOutcome, firstPlaying, cap]);
       } catch (cause) {
         if (this.destroyed) throw cause;
         // MusicKit rejects with codes such as UNAUTHORIZED or CONTENT_RESTRICTED;
