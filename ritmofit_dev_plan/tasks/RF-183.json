@@ -1,21 +1,19 @@
 {
   "schemaVersion": 1,
   "id": "RF-183",
-  "title": "Standalone auth deploy of RF-177/RF-178 (#703, #705), after RF-180 and with iOS RF-1012",
+  "title": "Standalone auth deploy of RF-177/RF-178 (#703, #705)",
   "kind": "release",
   "status": "backlog",
   "priority": "P2",
   "parent": null,
-  "dependsOn": [
-    "RF-180"
-  ],
+  "dependsOn": [],
   "acceptance": [
-    "The owner has decided RF-180 (native sign-out Origin), and main carries that decision.",
-    "Deployed from the Air via deployment-runbook.md with the owner's explicit deploy permission, shipping main's auth changes (#703, #705, plus any RF-180 change) and nothing outside auth; HISTORY records the Worker version, rollback version and smoke results.",
-    "Post-deploy: POST /api/v1/auth/session on an aged session returns 200 with no Set-Cookie and extends the row; a sign-out from the shipped iOS client revokes the session, and sign-outs the RF-180 decision rejects are refused; browser sign-in and get-session refresh still work.",
-    "iOS RF-1012 (cookie with no client-side expiry, /auth/session at launch and foreground) ships to the owner's devices close to this deploy, since a pre-RF-1012 build keeps its 7-day client expiry and gets no refreshed cookie after option C."
+    "Before deploying, `git diff --name-only 67496ab <deploy SHA> -- apps packages` lists only auth files (on 67fa6ca: auth lib, auth middleware, auth routes, index.ts's sign-out wiring, types, OpenAPI and their tests); anything else is moved to a later deploy or the owner agrees to include it.",
+    "Deployed from the Air via deployment-runbook.md with the owner's explicit deploy permission; HISTORY records the deployed SHA, Worker version, rollback version and smoke results, and the Now block's main vs production line is refreshed.",
+    "Post-deploy native checks: POST /api/v1/auth/session with a valid cookie returns 200 with no Set-Cookie; a sign-out from the iOS app revokes the session (the old cookie then gets 401 from /api/v1/auth/session).",
+    "Post-deploy web checks: browser sign-in works; GET /api/auth/get-session still returns a session and refreshes the cookie when due; a signed-in web tab reopened or refocused after at least a day stays signed in, since ordinary /api/v1 routes no longer extend the session row after #705."
   ],
-  "nextAction": "1) Owner decides RF-180. 2) An iOS RF-1012 build is on the owner's devices (or ready to install). 3) Owner gives deploy permission on the Air.",
+  "nextAction": "Owner gives deploy permission on the Air; then run deployment-runbook.md as a standalone auth deploy.",
   "blocker": null,
   "evidence": [
     {
@@ -35,6 +33,18 @@
       "ref": "ritmofit_dev_plan/HISTORY.md",
       "summary": "Production last observed at the 2026-11-01 start-session: main 67496ab, Worker feac7dde-dc10-4462-bd2d-79075d289bda, SPA assets/index-ChxMwIpX.js. Not rechecked since.",
       "checkedOn": "2026-11-01"
+    },
+    {
+      "kind": "observation",
+      "ref": "https://github.com/steven-crosby/ritmofit-web/pull/709#issuecomment-6591329208",
+      "summary": "Owner decision (Air session, 2026-11-02): \"Yes, drop both gates from RF-183\" after an adversarial check. Production 67496ab's auth middleware is identical to pre-RF-177 8f26519, which already extends the row server-side and sends native clients no cookie, so the deploy does not regress pre-RF-1012 iOS builds; holding it keeps AUD-009 (native sign-out does not revoke) live. RF-180 and the iOS build no longer gate it; iOS RF-1012 merged anyway (iOS #78, 37c6c8d).",
+      "checkedOn": "2026-11-02"
+    },
+    {
+      "kind": "source",
+      "ref": "apps/api/src/index.ts",
+      "summary": "On main 67fa6ca, the runtime files changed since 67496ab are all auth: lib/auth.ts, middleware/auth.ts, routes/auth.ts, index.ts (withNativeSignOutOrigin wiring), lib/types.ts (sessionResolved), OpenAPI and their tests.",
+      "checkedOn": "2026-11-02"
     }
   ],
   "resolution": null,

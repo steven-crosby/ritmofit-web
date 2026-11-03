@@ -22,12 +22,10 @@ The order of work is [Phases](#phases) below; each phase lists RF records, not a
 SPA `assets/index-ChxMwIpX.js`; rollback `e50f1fd3-bdd1-4541-bc3f-4c2cd483a167`), deployed from the
 Air on 2026-10-31 and observed at the 2026-11-01 start-session. `main` is ahead: the auth changes
 [RF-177](./tasks/RF-177.json) (#703) and [RF-178](./tasks/RF-178.json) (#705) await the standalone
-auth deploy [RF-183](./tasks/RF-183.json) from the Air, which waits on the owner's
-[RF-180](./tasks/RF-180.json) decision and an iOS RF-1012 build. The other merges since are CI,
-records and docs. See [HISTORY](./HISTORY.md).
-**In flight:** the Air is paused for dev work. iOS: the Neo refreshes `web-contract/` from `14d0b32`
-and builds the AuthStore change for iOS RF-1012 (cookie without client-side expiry, `/auth/session`
-at launch and foreground, 401 means signed out).
+auth deploy [RF-183](./tasks/RF-183.json) from the Air, which needs only the owner's deploy
+permission. The other merges since are CI, records and docs. See [HISTORY](./HISTORY.md).
+**In flight:** RF-183 deploy prep on the Air. iOS RF-1012 (cookie without client-side expiry,
+`/auth/session` at launch and foreground, 401 means signed out) merged as iOS #78.
 **Next step:** the owner's Mac and iPhone check of [RF-151](./tasks/RF-151.json) (Music › Songs pick
 mode on real likes: a row tap ticks and never plays, the 15 cap, Create a class) and RF-134's live
 labels on Music and Account. Still owed: the iPhone Safari device check (the 7 steps in the #669 PR

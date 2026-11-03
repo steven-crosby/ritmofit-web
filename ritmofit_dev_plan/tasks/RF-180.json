@@ -11,7 +11,7 @@
     "The owner chooses between keeping withNativeSignOutOrigin (the server accepts a cookie-bearing JSON sign-out with no Origin, Referer or fetch metadata) and having iOS send a trusted Origin header, with the CSRF trade-off written down in authorization.md.",
     "If the choice changes behaviour, a follow-up web or iOS task is created and the browser CSRF tests from RF-177 still pass."
   ],
-  "nextAction": "Owner decides before the standalone auth deploy (RF-183): #703's withNativeSignOutOrigin is on main and goes live with that deploy.",
+  "nextAction": "Owner decides whenever convenient; it no longer gates RF-183. The server already accepts a native sign-out that sends its own base-URL Origin (integration test), so 'iOS sends Origin' needs only an iOS change plus removing withNativeSignOutOrigin in a later deploy.",
   "blocker": null,
   "evidence": [
     {
@@ -24,6 +24,12 @@
       "kind": "observation",
       "ref": "https://github.com/steven-crosby/ritmofit-web/pull/706#issuecomment-6588563673",
       "summary": "Final review of #706: withNativeSignOutOrigin is on main (#703) but not in production, so the decision should precede the auth deploy; raised to P2 and made a prerequisite of RF-183.",
+      "checkedOn": "2026-11-02"
+    },
+    {
+      "kind": "observation",
+      "ref": "https://github.com/steven-crosby/ritmofit-web/pull/709#issuecomment-6591329208",
+      "summary": "Owner dropped this task as a prerequisite of RF-183 (2026-11-02); priority stays P2.",
       "checkedOn": "2026-11-02"
     }
   ],
