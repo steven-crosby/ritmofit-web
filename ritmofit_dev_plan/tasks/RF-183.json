@@ -13,8 +13,8 @@
     "Post-deploy native checks: POST /api/v1/auth/session with a valid cookie returns 200 with no Set-Cookie; a sign-out from the iOS app revokes the session (the old cookie then gets 401 from /api/v1/auth/session).",
     "Post-deploy web checks: browser sign-in works; GET /api/auth/get-session still returns a session and refreshes the cookie when due; a signed-in web tab keeps its session extended: read session.expiresAt from the app's own GET /api/auth/get-session response (DevTools › Network, after refocusing the tab), then again at least 24 hours later after refocusing the same tab, and the second expiresAt is later than the first. \"Still signed in the next day\" alone does not count, because the 7-day default expiry covers it even when extension is broken, and opening get-session by hand extends the session itself."
   ],
-  "nextAction": "Owner checks: (1) sign in again after sign-out, on the simulator (the Neo left the production build installed and signed out) or a device; the rest of the native check passed on the simulator 2026-11-03 (evidence below). (2) On web, in a signed-in tab: open DevTools › Network, refocus the tab, and note session.expiresAt and the time from the app's own get-session response; at least 24 hours later, refocus the same tab and read it again. The second expiresAt must be later. Do not open the get-session URL by hand: that request extends the session itself. The first reading had not been taken as of 2026-11-03. (3) Once the owner renews the QA token (RF-155), the Air conductor runs the signed-in checks with it (POST /api/v1/auth/session returns 200 with no Set-Cookie; after a native sign-out the old cookie gets 401) and records them here as evidence. RF-155's own acceptance does not cover these. Then the owner closes RF-183 or files a bug.",
-  "blocker": "Waiting on the owner's web session-extension check (two expiresAt readings at least 24 hours apart; the first is not yet taken as of 2026-11-03) and sign-in-again check, and on a renewed QA token (RF-155) for the signed-in /auth/session and old-cookie-after-sign-out checks, which no agent can run without it.",
+  "nextAction": "Owner checks: the native check passed on the simulator 2026-11-03, sign-in again included (evidence below). (1) On web, in a signed-in tab: open DevTools › Network, refocus the tab, and note session.expiresAt and the time from the app's own get-session response; at least 24 hours later, refocus the same tab and read it again. The second expiresAt must be later. Do not open the get-session URL by hand: that request extends the session itself. The first reading had not been taken as of 2026-11-03. (2) Once the owner renews the QA token (RF-155), the Air conductor runs the signed-in checks with it (POST /api/v1/auth/session returns 200 with no Set-Cookie; after a native sign-out the old cookie gets 401) and records them here as evidence. RF-155's own acceptance does not cover these. Then the owner closes RF-183 or files a bug.",
+  "blocker": "Waiting on the owner's web session-extension check (two expiresAt readings at least 24 hours apart; the first is not yet taken as of 2026-11-03), and on a renewed QA token (RF-155) for the signed-in /auth/session and old-cookie-after-sign-out checks, which no agent can run without it.",
   "evidence": [
     {
       "kind": "pr",
@@ -68,6 +68,12 @@
       "kind": "pr",
       "ref": "https://github.com/steven-crosby/ritmofit-web/pull/714#issuecomment-6596794778",
       "summary": "#714 (merged 4b4345a) final review, folded in by the 2026-11-03 close: dependsOn RF-155 removed (RF-155's acceptance does not cover these checks; it stays in the blocker), acceptance item 4 restated as the expiresAt comparison, readings at least 24 hours apart and read from the app's own get-session, the signed-in checks assigned to the Air conductor, #703/#705 marked deployed, SPA-hash source stated.",
+      "checkedOn": "2026-11-03"
+    },
+    {
+      "kind": "observation",
+      "ref": "https://github.com/steven-crosby/ritmofit-ios/commit/b328722",
+      "summary": "Owner sign-in-again check (Neo, 2026-11-03): in the native app on the iPhone 17 simulator (same build: iOS main b328722, API_BASE_URL=https://ritmofit.studio), left signed out by the earlier sign-out, the app opened on sign-in, the owner signed in on the app's own screen and the class list loaded as Steven with current production data (a class created that day). Native check complete; the signed-in header and old-cookie checks stay with (2).",
       "checkedOn": "2026-11-03"
     }
   ],
