@@ -3,7 +3,7 @@
   "id": "RF-186",
   "title": "A quick Live timeline tap can leave the class paused, then it resumes by itself",
   "kind": "task",
-  "status": "backlog",
+  "status": "in_progress",
   "priority": "P2",
   "parent": null,
   "dependsOn": [],
@@ -12,13 +12,19 @@
     "The clock keeps running (or holds only while a start is pending, labelled as such) and audio returns without a tap.",
     "A test covers the state sequence that produced Paused."
   ],
-  "nextAction": "Reproduce with three quick timeline taps on iPhone Safari and read the state transitions; check whether a cancelled start reports stopped/paused to Live. Likely related to RF-185. Agent-created: Backlog until the owner sets Ready.",
+  "nextAction": "In progress on fix/rf-185-live-timeline-seek: trace which state path shows Paused with the Play button after quick timeline taps; fix it with a test only if source and tests show a credible cause, otherwise record what was ruled out and the device log lines needed.",
   "blocker": null,
   "evidence": [
     {
       "kind": "observation",
       "ref": "https://ritmofit.studio/",
       "summary": "Owner's iPhone Safari run on production af800c8 (Worker d05bb48f, SPA assets/index-ChxMwIpX.js), 2026-11-03 about 13:28-13:58 MST, ?playback-timing=1, class [QA] Audit Experienced Cycle (24 Apple Music tracks); console read by the Air conductor through Safari Web Inspector, plus the owner's screen recordings. Owner tapped only timeline numbers (confirmed in chat, never Pause or Play). After the taps on 14 and 15 the UI showed Paused with the Play button and the clock frozen at 52:54 for about 5 s, then Preparing Apple Music, then Waiting for Apple Music playback, and track 15 played at about 16 s. The console had scrolled past those lines, so the adapter sequence is not captured.",
+      "checkedOn": "2026-11-03"
+    },
+    {
+      "kind": "observation",
+      "ref": "https://github.com/steven-crosby/ritmofit-web/pull/718#issuecomment-6616802366",
+      "summary": "Owner decision (2026-11-03, Air session), verbatim: \"Yes, move RF-185–187 to Ready and start the lane.\" Moved Ready → In progress by the RF-185 lane (branch fix/rf-185-live-timeline-seek).",
       "checkedOn": "2026-11-03"
     }
   ],

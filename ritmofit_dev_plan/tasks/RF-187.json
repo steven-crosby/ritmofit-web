@@ -3,7 +3,7 @@
   "id": "RF-187",
   "title": "Unhandled MusicKit play() rejection after a mid-track Apple start",
   "kind": "task",
-  "status": "backlog",
+  "status": "in_progress",
   "priority": "P2",
   "parent": null,
   "dependsOn": [],
@@ -12,7 +12,7 @@
     "Any play() rejection on a superseded or re-cued start is caught and recorded in the timing log, not surfaced as unhandled.",
     "An adapter test covers the re-cue path (set-queue-start (again)) rejecting."
   ],
-  "nextAction": "Reproduce first with a timeline drag (the two rejections came at the start and end of one drag, #15 and #32), then with discrete mid-track taps. Trace the mid-track re-cue in apps/web/src/lib/playback/apple-music-adapter.ts (prepare cues the window start, the pre-play seek dirties the cue, play() re-queues at the entered position) and find the play() call whose promise is not handled. Agent-created: Backlog until the owner sets Ready.",
+  "nextAction": "In progress on fix/rf-185-live-timeline-seek: handle the play() rejection after a mid-track re-cue (set-queue-start (again)) in apple-music-adapter.ts, record it in the timing log, and add an adapter test for the re-cue path rejecting.",
   "blocker": null,
   "evidence": [
     {
@@ -31,6 +31,12 @@
       "kind": "pr",
       "ref": "https://github.com/steven-crosby/ritmofit-web/pull/717",
       "summary": "#717 final review finding 5: trigger was a drag, not discrete jumps; corrected here.",
+      "checkedOn": "2026-11-03"
+    },
+    {
+      "kind": "observation",
+      "ref": "https://github.com/steven-crosby/ritmofit-web/pull/718#issuecomment-6616802366",
+      "summary": "Owner decision (2026-11-03, Air session), verbatim: \"Yes, move RF-185–187 to Ready and start the lane.\" Moved Ready → In progress by the RF-185 lane (branch fix/rf-185-live-timeline-seek).",
       "checkedOn": "2026-11-03"
     }
   ],

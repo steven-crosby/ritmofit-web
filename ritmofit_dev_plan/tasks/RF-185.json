@@ -3,7 +3,7 @@
   "id": "RF-185",
   "title": "Live timeline tap starts Apple Music twice on iPhone Safari",
   "kind": "task",
-  "status": "backlog",
+  "status": "in_progress",
   "priority": "P2",
   "parent": null,
   "dependsOn": [],
@@ -12,7 +12,7 @@
     "A LiveTimeline or trailing-throttle test reproduces pointerdown, then a pointermove at the same clientX inside the 200 ms window, then pointerup, and fails before the fix (one tap must send the provider exactly one seek).",
     "Next, Previous, auto-advance and a drag that rests past the throttle window keep their current behaviour."
   ],
-  "nextAction": "Cause (from the #717 review, checked in source): createTrailingThrottle.call clears calledFire and, inside the 200 ms window, sets pending even for the same value; LiveTimeline.onPointerMove calls previewToClientX on every pointermove while pressed, and iOS Safari sends one right after pointerdown even with a still finger. So firedLast(target) is false at release, seekRelease flushes, and a second adapter starts about 60-115 ms later. A pixel tolerance alone will not fix it; firedLast (or the release path) must treat a pending call with the same value as already sent. Files: apps/web/src/lib/trailing-throttle.ts, apps/web/src/components/LiveTimeline.tsx, LiveMode.tsx seekRelease. Then re-run the tap step on iPhone. Agent-created: Backlog until the owner sets Ready.",
+  "nextAction": "In progress on fix/rf-185-live-timeline-seek. Corrected rule (#718 review items 1-3): a timeline release skips its provider seek only when the value the throttle actually fired last equals the release target (after fractionToMs; sub-pixel jitter on a still finger is treated as the same tap), and then drops any matching pending call. A pending, unfired value never counts as sent (down fires A, a fast move leaves pending B, release at B still sends B). The premise that iOS Safari sends a pointermove right after pointerdown with a still finger is unverified on device: add pointer down/move/up/cancel lines (clientX, mapped ms) to ?playback-timing=1 so the next iPhone run confirms it; also check pointercancel as a second path.",
   "blocker": null,
   "evidence": [
     {
@@ -37,6 +37,12 @@
       "kind": "pr",
       "ref": "https://github.com/steven-crosby/ritmofit-web/pull/717",
       "summary": "#717 final review finding 1: the diagnosis was too narrow (finger movement); corrected here.",
+      "checkedOn": "2026-11-03"
+    },
+    {
+      "kind": "observation",
+      "ref": "https://github.com/steven-crosby/ritmofit-web/pull/718#issuecomment-6616802366",
+      "summary": "Owner decision (2026-11-03, Air session), verbatim: \"Yes, move RF-185–187 to Ready and start the lane.\" Moved Ready → In progress by the RF-185 lane (branch fix/rf-185-live-timeline-seek).",
       "checkedOn": "2026-11-03"
     }
   ],
