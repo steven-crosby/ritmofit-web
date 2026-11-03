@@ -15,7 +15,20 @@
   ],
   "nextAction": "Owner-gated (AGENTS.md): the owner reviews this PR, approves the merge and owner-approved. After merge, the Neo updates the ritmofit-ios AGENTS.md pointer and CLAUDE.md \"leads both repos\" wording to match (acceptance 4).",
   "blocker": null,
-  "evidence": [],
+  "evidence": [
+    {
+      "kind": "observation",
+      "ref": "https://github.com/steven-crosby/ritmofit-web/pull/721#issuecomment-6617021324",
+      "summary": "Owner request (Air session, 2026-11-03): equal authority between the conductors, no jarring pushback when working from the Neo; and \"Yes, allow it with those safeguards\" for deploy approval from either conductor (owner's words plus the main SHA recorded; the Air checks main still matches).",
+      "checkedOn": "2026-11-03"
+    },
+    {
+      "kind": "pr",
+      "ref": "https://github.com/steven-crosby/ritmofit-web/pull/721",
+      "summary": "AGENTS.md Two-machine conductors, Never granted and CLAUDE.md updated.",
+      "checkedOn": "2026-11-03"
+    }
+  ],
   "resolution": null,
   "followUps": []
 }

@@ -18,7 +18,7 @@ A checked PR proves its GitHub state, not product acceptance or production behav
 
 | Task | Priority / kind | Relationships | Next action / resolution | Evidence |
 | --- | --- | --- | --- | --- |
-| [RF-190](tasks/RF-190.json) Two-machine conductors: equal authority, and deploy approval from either conductor | P2 / documentation | — | Owner-gated (AGENTS.md): the owner reviews this PR, approves the merge and owner-approved. After merge, the Neo updates the ritmofit-ios AGENTS.md pointer and CLAUDE.md "leads both repos" wording to match (acceptance 4). | none |
+| [RF-190](tasks/RF-190.json) Two-machine conductors: equal authority, and deploy approval from either conductor | P2 / documentation | — | Owner-gated (AGENTS.md): the owner reviews this PR, approves the merge and owner-approved. After merge, the Neo updates the ritmofit-ios AGENTS.md pointer and CLAUDE.md "leads both repos" wording to match (acceptance 4). | checked 2026-11-03 |
 
 ## Blocked / waiting
 
