@@ -19,13 +19,19 @@
     {
       "kind": "observation",
       "ref": "https://ritmofit.studio/",
-      "summary": "Owner's iPhone Safari run on production af800c8 (Worker d05bb48f, SPA assets/index-ChxMwIpX.js), 2026-11-03 about 13:28-13:58 MST, ?playback-timing=1, class [QA] Audit Experienced Cycle (24 Apple Music tracks); console read by the Air conductor through Safari Web Inspector, plus the owner's screen recordings. Owner, in the Air session: \"We need to improve that ui/ux. It's not obvious that I can tap those numbers, or even if I tap them what exactly tapping them does. It needs to be more obvious in design.\" and \"It took a couple of tries of the failure of the ui/ux design. Not easy at all.\" One attempt at track 5 landed on track 4 (#5, trackIndex 3). A drag fired about 17 starts (#15-#32) and showed \"Waiting for music\" with Continue without music, Manage music connection and Skip track while the finger was still moving; it recovered on release.",
+      "summary": "Owner's iPhone Safari run on production af800c8 (Worker d05bb48f, SPA assets/index-ChxMwIpX.js), 2026-11-03 about 13:28-13:58 MST, ?playback-timing=1, class [QA] Audit Experienced Cycle (24 Apple Music tracks); console read by the Air conductor through Safari Web Inspector, plus the owner's screen recordings. Owner, in the Air session: \"We need to improve that ui/ux. It's not obvious that I can tap those numbers, or even if I tap them what exactly tapping them does. It needs to be more obvious in design.\" and \"It took a couple of tries of the failure of the ui/ux design. Not easy at all.\" One attempt at track 5 landed on track 4 (#5, trackIndex 3). A drag fired 18 starts (#15-#32) and showed \"Waiting for music\" with Continue without music, Manage music connection and Skip track while the finger was still moving; it recovered on release.",
       "checkedOn": "2026-11-03"
     },
     {
       "kind": "source",
-      "ref": "apps/web/src/components/TimelineStrip.tsx",
-      "summary": "Current strip: tightly packed track numbers along the bottom of Live.",
+      "ref": "apps/web/src/components/LiveTimeline.tsx",
+      "summary": "Live renders LiveTimeline (LiveMode.tsx): a 44px slider with small track numbers along the bottom. TimelineStrip.tsx is the class builder's strip; Live only reuses its computeTimeline().",
+      "checkedOn": "2026-11-03"
+    },
+    {
+      "kind": "pr",
+      "ref": "https://github.com/steven-crosby/ritmofit-web/pull/717",
+      "summary": "#717 final review finding 2: wrong component named; corrected here.",
       "checkedOn": "2026-11-03"
     }
   ],

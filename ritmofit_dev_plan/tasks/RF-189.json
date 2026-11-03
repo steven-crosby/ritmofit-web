@@ -12,7 +12,7 @@
     "The viewport meta keeps user zoom enabled (no maximum-scale or user-scalable=no).",
     "A check (lint rule, test or grep in CI) flags a new form field below 16px on mobile."
   ],
-  "nextAction": "Change the shared input classes from text-sm to text-base sm:text-sm (Dashboard.tsx Search songs and the provider catalog search first, then every form field), and add the check. Agent-created: Backlog until the owner sets Ready.",
+  "nextAction": "There is no shared input class: each field sets text-sm inline (about 20 components; ChoreographyEditor has its own fieldClass). Fix every text input, search, select and textarea, starting with the two the owner hit: the Create a class name field (apps/web/src/components/SongPicks.tsx, id song-pick-class-title) and Search songs (Dashboard.tsx), using text-base sm:text-sm; consider one shared field class while doing it; then add the check. Agent-created: Backlog until the owner sets Ready.",
   "blocker": null,
   "evidence": [
     {
@@ -25,6 +25,18 @@
       "kind": "source",
       "ref": "apps/web/src/components/Dashboard.tsx",
       "summary": "Search songs and the catalog search inputs use text-sm (14px); iOS Safari zooms on focus below 16px.",
+      "checkedOn": "2026-11-03"
+    },
+    {
+      "kind": "source",
+      "ref": "apps/web/src/components/SongPicks.tsx",
+      "summary": "The Create a class name input (song-pick-class-title) uses text-sm (14px).",
+      "checkedOn": "2026-11-03"
+    },
+    {
+      "kind": "pr",
+      "ref": "https://github.com/steven-crosby/ritmofit-web/pull/717",
+      "summary": "#717 final review finding 6: no shared input class; the zoomed field is in SongPicks.tsx; corrected here.",
       "checkedOn": "2026-11-03"
     }
   ],

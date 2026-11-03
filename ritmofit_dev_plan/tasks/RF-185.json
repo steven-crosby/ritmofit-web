@@ -9,22 +9,34 @@
   "dependsOn": [],
   "acceptance": [
     "One still-finger tap on a Live timeline track produces exactly one Apple Music prepare on iPhone Safari (?playback-timing=1 shows one #N prepare and no #N cancelled about 60-115 ms later).",
-    "A runtime or LiveTimeline test reproduces a pointer down then up with a small movement and fails before the fix.",
+    "A LiveTimeline or trailing-throttle test reproduces pointerdown, then a pointermove at the same clientX inside the 200 ms window, then pointerup, and fails before the fix (one tap must send the provider exactly one seek).",
     "Next, Previous, auto-advance and a drag that rests past the throttle window keep their current behaviour."
   ],
-  "nextAction": "Find why the release commits a second seek after the pointer-down preview on iPhone: likely a few pixels of finger movement makes seekRelease's firedLast check miss, so the release is a new discrete seek (apps/web/src/components/LiveTimeline.tsx, LiveMode.tsx seekRelease). Fix, then re-run the tap step on iPhone. Agent-created: Backlog until the owner sets Ready.",
+  "nextAction": "Cause (from the #717 review, checked in source): createTrailingThrottle.call clears calledFire and, inside the 200 ms window, sets pending even for the same value; LiveTimeline.onPointerMove calls previewToClientX on every pointermove while pressed, and iOS Safari sends one right after pointerdown even with a still finger. So firedLast(target) is false at release, seekRelease flushes, and a second adapter starts about 60-115 ms later. A pixel tolerance alone will not fix it; firedLast (or the release path) must treat a pending call with the same value as already sent. Files: apps/web/src/lib/trailing-throttle.ts, apps/web/src/components/LiveTimeline.tsx, LiveMode.tsx seekRelease. Then re-run the tap step on iPhone. Agent-created: Backlog until the owner sets Ready.",
   "blocker": null,
   "evidence": [
     {
       "kind": "observation",
       "ref": "https://ritmofit.studio/",
-      "summary": "Owner's iPhone Safari run on production af800c8 (Worker d05bb48f, SPA assets/index-ChxMwIpX.js), 2026-11-03 about 13:28-13:58 MST, ?playback-timing=1, class [QA] Audit Experienced Cycle (24 Apple Music tracks); console read by the Air conductor through Safari Web Inspector, plus the owner's screen recordings. Three of three still-finger timeline taps fired two starts: #3 cancelled +115 ms then #4; #6 cancelled +61 ms then #7; #41 cancelled +62 ms then #42. The bounded wait settled each (next-start-released ... settled), so no banner showed, but each tap paid an extra setQueue. Next (#46-#48) fired one start each.",
+      "summary": "Owner's iPhone Safari run on production af800c8 (Worker d05bb48f, SPA assets/index-ChxMwIpX.js), 2026-11-03 about 13:28-13:58 MST, ?playback-timing=1, class [QA] Audit Experienced Cycle (24 Apple Music tracks); console read by the Air conductor through Safari Web Inspector, plus the owner's screen recordings. Three of three still-finger timeline taps fired two starts: #3 cancelled +115 ms then #4; #6 cancelled +61 ms then #7; #41 cancelled +62 ms then #42. The bounded wait settled each (next-start-released ... settled), so no banner showed, but each tap paid an extra setQueue. Next fired one start per tap (the visible console lines #46-#48; the owner's recording shows four Nexts from track 17 to 21).",
       "checkedOn": "2026-11-03"
     },
     {
       "kind": "source",
       "ref": "apps/web/src/components/LiveTimeline.tsx",
       "summary": "Timeline previews on pointer down and commits on release; #669 made release skip the provider call only when the throttle already sent exactly this gesture's position.",
+      "checkedOn": "2026-11-03"
+    },
+    {
+      "kind": "source",
+      "ref": "apps/web/src/lib/trailing-throttle.ts",
+      "summary": "call() resets calledFire and schedules pending inside waitMs even for an unchanged value; firedLast requires pending === null.",
+      "checkedOn": "2026-11-03"
+    },
+    {
+      "kind": "pr",
+      "ref": "https://github.com/steven-crosby/ritmofit-web/pull/717",
+      "summary": "#717 final review finding 1: the diagnosis was too narrow (finger movement); corrected here.",
       "checkedOn": "2026-11-03"
     }
   ],

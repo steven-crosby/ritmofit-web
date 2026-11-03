@@ -92,6 +92,12 @@
       "ref": "https://github.com/steven-crosby/ritmofit-web/pull/717",
       "summary": "Records PR for the 2026-11-03 iPhone and Mac runs and the owner's verdict; sets RF-151 Done.",
       "checkedOn": "2026-11-03"
+    },
+    {
+      "kind": "pr",
+      "ref": "https://github.com/steven-crosby/ritmofit-web/pull/717",
+      "summary": "#717 final review finding 7, scoping note: acceptance item 7 (1440 and 390 wide, no overflow, axe) is met by the e2e smoke at 1440 and 390 (mock providers, axe clean) and the Mac Chrome check at 1440; on the real iPhone the only width issue was iOS focus zoom from 14px inputs, which is not layout overflow and is tracked in RF-189. Axe has not run on production (CSP blocks injecting axe-core).",
+      "checkedOn": "2026-11-03"
     }
   ],
   "resolution": "Pick mode shipped in #686 (deployed 67496ab, still live in af800c8). The owner's iPhone run and the Air's Mac Chrome check on 2026-11-03 passed every pick-mode check, and the owner kept the checkbox design. RF-172 (row preview) can start; RF-157 (full Spotify pass) and RF-173 stay open. The iOS focus zoom seen on the 14px inputs is RF-189.",
