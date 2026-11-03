@@ -37,7 +37,7 @@
       "checkedOn": "2026-11-02"
     }
   ],
-  "resolution": "AGENTS.md \"Two-machine conductors\" now makes whichever conductor the owner is directing the lead for both repos and lets owner decisions reach the other conductor only through GitHub records; CLAUDE.md points to it. The ritmofit-ios pointers are ritmofit-ios #79, where the record is a PR comment naming the approved head SHA. Superseded on 2026-11-03 by RF-190: no lead; the two conductors have equal authority.",
+  "resolution": "AGENTS.md \"Two-machine conductors\" now makes whichever conductor the owner is directing the lead for both repos and lets owner decisions reach the other conductor only through GitHub records; CLAUDE.md points to it. The ritmofit-ios pointers are ritmofit-ios #79, where the record is a PR comment naming the approved head SHA. Corrected 2026-11-03: the lead rule is superseded by RF-190 (equal authority, no lead); original wording kept above.",
   "followUps": [
     "RF-190"
   ]

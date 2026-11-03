@@ -27,7 +27,7 @@
 <!-- note (Claude Code, 2026-11-02): RF-176 follow-up: PR edits (base retargets) also re-evaluate the owner gate. -->
 <!-- note (Claude Code, Neo, 2026-11-02): RF-182: Two-machine conductors: the lead is whichever conductor the owner is directing, not a per-repo default; owner decisions reach the other conductor only as GitHub records (owner-approved). -->
 <!-- note (Claude Code, Neo, 2026-11-02): RF-184: standing owner rule: either conductor (any Solo or Orchestrator session) applies `owner-approved` once the owner approves that PR's merge in its session; no separate label instruction. The owner still approves every PR. -->
-<!-- note (Claude Code, Air, 2026-11-03): RF-190: Two-machine conductors: "The lead follows the owner" becomes "Equal authority": peers; whichever one the owner works with acts fully on unclaimed work, the second draft PR on the same task stops; Cloudflare credentials are a machine capability; deploys unchanged (RF-191). -->
+<!-- note (Claude Code, Air, 2026-11-03): RF-190: Two-machine conductors: "The lead follows the owner" becomes "Equal authority": peers; whichever one the owner works with acts on unclaimed work under the usual owner permissions without asking the other; a later duplicate claim closes its draft; Cloudflare credentials are a machine capability. Deploy approval from either conductor is RF-191. -->
 
 This is the canonical contributor and agent guide for Ritmo Studio. If another instruction file conflicts
 with it, follow `AGENTS.md`, then repair the stale file. When an AI agent edits this file or adds a note
@@ -201,14 +201,15 @@ context; chat and tool memory are scratch.
   file applies to each unchanged except where this entry says so.
   - _Equal authority._ The two conductors are peers; neither outranks the other, and neither
     machine owns a repo. Whichever conductor the owner is working with in its live session plans
-    and decides with the owner, works in either repo, takes any unclaimed RF task and finishes PRs,
-    with no extra confirmation, even if the owner usually works with the other machine. The owner
-    may work with either, or both on the same day. Each conductor finishes what it already has in
-    flight and leaves work the other has claimed (see "Task sync": the draft PR or open PR is the
-    claim) alone unless the owner hands it over; if both start the same task, the one whose draft
-    PR opened second stops and tells the other. Either conductor answers the owner fully when
-    addressed; neither waits for the other to act on what the owner says in its own session. Deploy
-    approval still follows "Never granted" in the session that deploys (RF-191).
+    and decides with the owner, works in either repo, takes any unclaimed RF task and finishes PRs
+    under the same owner permissions as any session, without first asking the other conductor,
+    even if the owner usually works with the other machine. The owner may work with either, or both
+    on the same day. Each conductor finishes what it already has in flight and leaves work the
+    other has claimed (see "Task sync") alone unless the owner hands it over, apart from finishing
+    an approved PR as "Who finishes a PR" says. If both claim the same task, the later claim closes
+    its draft PR, says so to the other, and leaves the record to the first. Either conductor answers
+    the owner fully when addressed; neither waits for the other to act on what the owner says in its
+    own session.
   - _Owner decisions cross only as GitHub records._ A decision counts in the session the owner gives
     it in. To let the other conductor act on it, the conductor that heard it records the owner's
     words on GitHub: a PR comment, plus `owner-approved` once the owner approves that PR's merge
@@ -220,13 +221,12 @@ context; chat and tool memory are scratch.
   - _Machine limits stay._ The Air runs the self-hosted iOS CI runner, so every iOS PR waits for its
     required check while the Air is offline, whichever conductor opened it.
   - _Only the Air holds Cloudflare credentials._ This is a machine capability, not a difference in
-    authority. Deploys and every other wrangler step against
-    production (remote D1 migrations, secrets, rollback, tail, `wrangler deployments status`) run
-    there. The Neo holds no Cloudflare credentials of any kind: no `wrangler login`, cached wrangler
-    session or `CLOUDFLARE_API_TOKEN`, so it has no production rollback path; while the Air is
-    offline the owner is the backstop. Either machine may run signed-in checks of production in the
-    RitmoFit app itself (never the Cloudflare dashboard); changing production data stays under
-    "Never granted" below.
+    authority. Deploys and every other wrangler step against production (remote D1 migrations,
+    secrets, rollback, tail, `wrangler deployments status`) run there. The Neo holds no Cloudflare
+    credentials of any kind: no `wrangler login`, cached wrangler session or `CLOUDFLARE_API_TOKEN`,
+    so it has no production rollback path; while the Air is offline the owner is the backstop.
+    Either machine may run signed-in checks of production in the RitmoFit app itself (never the
+    Cloudflare dashboard); changing production data stays under "Never granted" below.
   - _Who finishes a PR._ The conductor the owner gives the merge permission to runs its final
     review and merge, whichever conductor opened it. A PR approved through
     `owner-approved` may be finished by either; the one that opened it goes first unless the owner

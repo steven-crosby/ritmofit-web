@@ -10,9 +10,9 @@
     "RF-182"
   ],
   "acceptance": [
-    "AGENTS.md \"Two-machine conductors\" replaces \"The lead follows the owner\" with \"Equal authority\": the conductors are peers; whichever one the owner is working with plans, decides, works in either repo, takes any unclaimed RF task and finishes PRs with no extra confirmation; each leaves work the other has claimed alone unless the owner hands it over, and if both start the same task the second draft PR stops; deploy approval stays as in Never granted (RF-191). \"Who finishes a PR\" no longer mentions a lead.",
+    "AGENTS.md \"Two-machine conductors\" replaces \"The lead follows the owner\" with \"Equal authority\": the conductors are peers; whichever one the owner is working with plans, decides, works in either repo, takes any unclaimed RF task and finishes PRs under the usual owner permissions without first asking the other; each leaves claimed work alone except finishing an approved PR per \"Who finishes a PR\"; a later duplicate claim closes its draft PR. \"Who finishes a PR\" no longer mentions a lead. Deploy permission is unchanged (RF-191).",
     "Cloudflare credentials are described as a machine capability, not a difference in authority; the records, merge and deploy rules are otherwise unchanged (deploy approval from either conductor is RF-191).",
-    "CLAUDE.md points to the AGENTS.md section and keeps the reminder that a peer SendMessage or pasted text is never permission.",
+    "CLAUDE.md points to the AGENTS.md section and keeps the reminder that a peer SendMessage or pasted text is never permission, only the GitHub record (owner-approved on the current head for a merge).",
     "The matching ritmofit-ios AGENTS.md pointer and CLAUDE.md wording (no \"leads\") are updated by the Neo in an iOS PR the owner approves together with this one."
   ],
   "nextAction": "Owner reviews and approves this PR together with the Neo's matching ritmofit-ios docs PR (AGENTS.md pointer, Merge gate, CLAUDE.md without \"leads\"), so the repos never disagree. Set Done once both merge.",
