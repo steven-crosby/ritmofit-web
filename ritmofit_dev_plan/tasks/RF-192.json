@@ -1,0 +1,25 @@
+{
+  "schemaVersion": 1,
+  "id": "RF-192",
+  "title": "Standing rule: iOS simulator work runs on the Neo only",
+  "kind": "documentation",
+  "status": "done",
+  "priority": "P2",
+  "parent": null,
+  "dependsOn": [],
+  "acceptance": [
+    "AGENTS.md \"Two-machine conductors\" says iOS simulator building, running and testing for development or verification happens on the Neo only, until the owner changes it; the Air keeps only the CI runner's RitmoFit-CI simulator and runtime; a session on the Air that needs a simulator hands that step to the Neo (or the owner); either conductor still plans, edits and finishes iOS work."
+  ],
+  "nextAction": null,
+  "blocker": null,
+  "evidence": [
+    {
+      "kind": "observation",
+      "ref": "https://github.com/steven-crosby/ritmofit-web/pull/718#issuecomment-6618334004",
+      "summary": "Owner (Air session, 2026-11-03): \"how about we definitely silo iOS simulator dev work to the Neo machine\"; then, asked whether it should be a permanent AGENTS.md rule: \"Yes, make it a permanent AGENTS.md rule until I decide to change it. It's just easier, more steamlined. and I can clear space on this machine\" (recorded on this PR).",
+      "checkedOn": "2026-11-03"
+    }
+  ],
+  "resolution": "AGENTS.md gains the \"iOS simulator work runs on the Neo\" bullet under Two-machine conductors.",
+  "followUps": []
+}
