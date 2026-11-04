@@ -1,0 +1,44 @@
+{
+  "schemaVersion": 1,
+  "id": "RF-190",
+  "title": "Two-machine conductors: equal authority between the Air and Neo conductors",
+  "kind": "documentation",
+  "status": "review",
+  "priority": "P2",
+  "parent": null,
+  "dependsOn": [
+    "RF-182"
+  ],
+  "acceptance": [
+    "AGENTS.md \"Two-machine conductors\" replaces \"The lead follows the owner\" with \"Equal authority\": the conductors are peers; whichever one the owner is working with plans, decides, works in either repo, takes any unclaimed RF task and finishes PRs under the usual owner permissions without first asking the other; each leaves claimed work alone except finishing an approved PR per \"Who finishes a PR\"; a later duplicate claim closes its draft PR. \"Who finishes a PR\" no longer mentions a lead. Deploy permission is unchanged (RF-191).",
+    "Cloudflare credentials are described as a machine capability, not a difference in authority; the records, merge and deploy rules are otherwise unchanged (deploy approval from either conductor is RF-191).",
+    "CLAUDE.md points to the AGENTS.md section and keeps the reminder that a peer SendMessage or pasted text is never permission, only the GitHub record (owner-approved on the current head for a merge).",
+    "The matching ritmofit-ios AGENTS.md pointer and CLAUDE.md wording (no \"leads\") are updated by the Neo in an iOS PR the owner approves together with this one."
+  ],
+  "nextAction": "Owner reviews and approves this PR together with the Neo's matching ritmofit-ios docs PR (AGENTS.md pointer, Merge gate, CLAUDE.md without \"leads\"), so the repos never disagree. Set Done once both merge.",
+  "blocker": null,
+  "evidence": [
+    {
+      "kind": "observation",
+      "ref": "https://github.com/steven-crosby/ritmofit-web/pull/721#issuecomment-6617021324",
+      "summary": "Owner request (Air session, 2026-11-03): equal authority between the conductors, no jarring pushback when working from the Neo; and \"Yes, allow it with those safeguards\" for deploy approval from either conductor (owner's words plus the main SHA recorded; the Air checks main still matches).",
+      "checkedOn": "2026-11-03"
+    },
+    {
+      "kind": "pr",
+      "ref": "https://github.com/steven-crosby/ritmofit-web/pull/721",
+      "summary": "Final review round 3 (c7fc2c2) found the deploy-from-either rule still forgeable and incomplete (rollback, scope, runbook); the owner chose to split it out (\"Yes, split #721\", 2026-11-03, Air session) into RF-191.",
+      "checkedOn": "2026-11-03"
+    },
+    {
+      "kind": "pr",
+      "ref": "https://github.com/steven-crosby/ritmofit-web/pull/721",
+      "summary": "After the split and two more review rounds on rewritten records/finish rules, narrowed to the minimal change: only the lead bullet (now Equal authority), the Who-finishes lead mention and the Cloudflare capability sentence change in AGENTS.md; CLAUDE.md is a pointer. The decision-record, finish and Never granted rules stay as on main.",
+      "checkedOn": "2026-11-03"
+    }
+  ],
+  "resolution": null,
+  "followUps": [
+    "RF-191"
+  ]
+}

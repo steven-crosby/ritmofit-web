@@ -1,0 +1,36 @@
+{
+  "schemaVersion": 1,
+  "id": "RF-191",
+  "title": "Deploy approval from either conductor (Air runs it), with rollback and a checkable scope",
+  "kind": "documentation",
+  "status": "backlog",
+  "priority": "P2",
+  "parent": null,
+  "dependsOn": [
+    "RF-190"
+  ],
+  "acceptance": [
+    "AGENTS.md defines how a production deploy, rollback, remote D1 migration, secret or production-data change approved in either conductor's session is recorded (owner's exact words, approved origin/main SHA, the PRs in scope, each named change) and when the Air may act on it without asking again.",
+    "The record cannot be used twice or after it goes stale (single-use marker the Air writes, an expiry), and the Air compares the deploy range against the listed PRs mechanically; if anything differs it asks the owner.",
+    "A safeguard against a record no owner gave (agents post as the owner's account): at minimum the Air posts a one-line notice to the owner right before running, and Lanes and subagents never write the record.",
+    "The deployment runbook, \"Never granted\" and agent-prompts/README.md agree with the rule."
+  ],
+  "nextAction": "Owner approved the idea on 2026-11-03 (\"Yes, allow it with those safeguards\", #721 issuecomment-6617021324) and then chose to split it out of #721 after three review rounds found gaps. Draft the rule with rollback, scope-by-PR, single use, expiry and the pre-run notice; owner-gated (AGENTS.md). Agent-created: Backlog until the owner sets Ready.",
+  "blocker": null,
+  "evidence": [
+    {
+      "kind": "observation",
+      "ref": "https://github.com/steven-crosby/ritmofit-web/pull/721#issuecomment-6617021324",
+      "summary": "Owner's deploy decision and equal-authority request (Air session, 2026-11-03).",
+      "checkedOn": "2026-11-03"
+    },
+    {
+      "kind": "pr",
+      "ref": "https://github.com/steven-crosby/ritmofit-web/pull/721",
+      "summary": "Review rounds 1-3 on the first draft (in #721's history before the split): forgeable comment record, no rollback form, free-text scope, runbook in-session line, Used/expiry markers.",
+      "checkedOn": "2026-11-03"
+    }
+  ],
+  "resolution": null,
+  "followUps": []
+}
