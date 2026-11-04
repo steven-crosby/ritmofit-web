@@ -671,26 +671,52 @@ export function LiveMode({
   // provider adapter (RF-108). Built once per mount (a ref, not state) so
   // the window survives across renders.
   const commitThrottleRef = useRef<ReturnType<typeof createTrailingThrottle<number>> | null>(null);
-  commitThrottleRef.current ??= createTrailingThrottle((ms) => {
-    // Re-cue provider playback at the new position (no-op while paused — the
-    // next resume enters at the clock position anyway).
-    const coordinator = coordinatorRef.current;
-    if (coordinator?.getStatus().kind === 'error') {
-      setPlaying(true);
-      void coordinator.resume(ms);
-    } else {
-      void coordinator?.seek(ms);
-    }
-  }, 200);
+  /** True only while an explicit discrete seek (keyboard, Next, Previous)
+   * flushes; see the throttle callback. */
+  const explicitSeekRef = useRef(false);
+  commitThrottleRef.current ??= createTrailingThrottle(
+    (ms) => {
+      // Re-cue provider playback at the new position (no-op while paused — the
+      // next resume enters at the clock position anyway).
+      const coordinator = coordinatorRef.current;
+      if (coordinator?.getStatus().kind === 'error') {
+        // From an error only an explicit seek resumes music. A timeline
+        // gesture never does: its release or trailing drag value only moves
+        // the clock, and Retry stays the instructor's choice (RF-185).
+        if (!explicitSeekRef.current) return;
+        setPlaying(true);
+        void coordinator.resume(ms);
+      } else {
+        void coordinator?.seek(ms);
+      }
+    },
+    200,
+    undefined,
+    // "Already sent" holds only within one playback run: a new coordinator,
+    // Play, Pause, Retry, a stop or a failure starts a new one (RF-185).
+    () => coordinatorRef.current?.getRunGeneration() ?? null,
+  );
 
-  /** Discrete, immediate seek: keyboard, tap, row target, reset. Rebases the
-   * clock (both tiers) and commits the provider position right away. */
+  /** Discrete, immediate seek: keyboard, Next, Previous, row target. Rebases
+   * the clock (both tiers) and commits the provider position right away; from
+   * a playback error it also resumes music, as before. */
   const seek = useCallback(
     (ms: number) => {
       const clamped = clockSeek(ms);
-      commitThrottleRef.current!.flush(clamped);
+      explicitSeekRef.current = true;
+      try {
+        commitThrottleRef.current!.flush(clamped);
+      } finally {
+        explicitSeekRef.current = false;
+      }
     },
     [clockSeek],
+  );
+
+  /** Whether music is stopped on a failure; timeline gestures then move only the clock. */
+  const inPlaybackError = useCallback(
+    () => coordinatorRef.current?.getStatus().kind === 'error',
+    [],
   );
 
   /** Continuous drag preview: cheap, high-frequency position update (writes
@@ -699,9 +725,10 @@ export function LiveMode({
   const seekPreview = useCallback(
     (ms: number) => {
       const clamped = clockPreviewSeek(ms);
+      if (inPlaybackError()) return;
       commitThrottleRef.current!.call(clamped);
     },
-    [clockPreviewSeek],
+    [clockPreviewSeek, inPlaybackError],
   );
 
   /** Timeline pointer release/cancel at the gesture's last previewed position.
@@ -716,6 +743,14 @@ export function LiveMode({
     (ms: number) => {
       const target = Math.max(0, Math.min(ms, payload.class.totalDurationMs));
       const throttle = commitThrottleRef.current!;
+      if (inPlaybackError()) {
+        // A failure during the gesture: the release moves the clock only,
+        // never an automatic resume. Retry resumes from this position.
+        throttle.cancel();
+        liveTimingLog('release-held', () => `ms=${target} (playback error)`);
+        clockSeek(target);
+        return;
+      }
       if (throttle.firedLast(target)) {
         throttle.cancel();
         liveTimingLog('release-skipped', () => `ms=${target} (already sent)`);
@@ -723,20 +758,13 @@ export function LiveMode({
         return;
       }
       liveTimingLog('release-sent', () => `ms=${target}`);
-      seek(target);
+      throttle.flush(clockSeek(target));
     },
-    [seek, clockSeek, clockStore, payload.class.totalDurationMs],
+    [clockSeek, clockStore, inPlaybackError, payload.class.totalDurationMs],
   );
-
-  /** A new timeline gesture: its release is judged only against what this
-   * gesture sent, never a value fired before it (RF-185). */
-  const seekGestureStart = useCallback(() => commitThrottleRef.current?.forget(), []);
 
   /** Start hands-free: build the coordinator and begin playback at 0 (a user gesture). */
   const buildCoordinator = () => {
-    // A new coordinator (Start, Retry, Reset) never received what the throttle
-    // sent the old one: drop the pending call and forget the last fired value.
-    commitThrottleRef.current?.cancel();
     // Observation only — it records what the provider reports and never acts on
     // it, so it cannot interrupt a class that is playing fine. Built per run so
     // each class gets its own buffer, and published for inspection afterwards
@@ -752,10 +780,6 @@ export function LiveMode({
       onStatus: (next) => {
         // Debug timing only (RF-186): the status sequence Live reacts to.
         liveTimingLog('status', () => next.kind);
-        // What the throttle sent no longer describes the provider once it
-        // stops, pauses or fails, so a later release cannot skip on it (RF-185).
-        if (next.kind === 'error' || next.kind === 'paused' || next.kind === 'ended')
-          commitThrottleRef.current?.forget();
         setPlayback(next);
         if (next.kind === 'error') {
           setPlaybackFailure(errMessage(next.error.message));
@@ -795,8 +819,6 @@ export function LiveMode({
       next ? 'toggle-play' : 'toggle-pause',
       () => `${source()} status=${coordinator?.getStatus().kind ?? 'none'}`,
     );
-    // Pause and resume re-enter the provider: what was sent before is stale (RF-185).
-    commitThrottleRef.current?.forget();
     if (coordinator?.getStatus().kind === 'error') {
       retryPlayback();
       return;
@@ -1358,7 +1380,6 @@ export function LiveMode({
           onSeekPreview={seekPreview}
           onSeekCommit={seek}
           onSeekRelease={seekRelease}
-          onGestureStart={seekGestureStart}
           playback={coordinatorRef.current ? playback : null}
           wakeStatus={wakeStatus}
           primaryButtonRef={primaryButtonRef}
@@ -2291,7 +2312,6 @@ function Transport({
   onSeekPreview,
   onSeekCommit,
   onSeekRelease,
-  onGestureStart,
   playback,
   wakeStatus,
   primaryButtonRef,
@@ -2314,7 +2334,6 @@ function Transport({
   onSeekPreview: (ms: number) => void;
   onSeekCommit: (ms: number) => void;
   onSeekRelease: (ms: number) => void;
-  onGestureStart: () => void;
   /** Coordinator status while music runs; null in prompter-only mode. */
   playback: CoordinatorStatus | null;
   /** Whether the screen wake lock is holding — surfaced beside the player rail. */
@@ -2405,7 +2424,6 @@ function Transport({
             onSeekPreview={onSeekPreview}
             onSeekCommit={onSeekCommit}
             onSeekRelease={onSeekRelease}
-            onGestureStart={onGestureStart}
           />
         </div>
       </div>

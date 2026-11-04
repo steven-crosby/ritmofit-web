@@ -20,14 +20,21 @@ import { playbackTimingEnabled, timingLine } from '../lib/playback/start-timing.
 const STEP_MS = 5000;
 const PAGE_MS = 30000;
 /**
- * How far (CSS px) a pressed pointer may wander from pointerdown and still be
- * a tap (RF-185). A still finger reports sub-pixel jitter, and one CSS px is
+ * How far (CSS px) a pressed pointer may wander and still count as resting
+ * (RF-185): from pointerdown for a tap, and from the last previewed spot for a
+ * drag that rests before release. A still finger reports sub-pixel jitter and
+ * a touch centroid can shift a pixel or two on lift, while one CSS px is
  * several seconds of class time on a phone-width strip (about 10 s for a
- * 60-minute class at 360 px), so the tap rule cannot be a millisecond
- * tolerance. 8 px is under UIKit's ~10 pt tap-vs-pan slop and far below the
- * 44 px target height, so a deliberate drag still starts almost at once.
+ * 60-minute class at 360 px), so the rule is in pixels, not milliseconds.
+ *
+ * Why 3 px and not UIKit's ~10 pt tap-vs-pan slop: here the two mistakes cost
+ * differently. Treating jitter as movement costs one extra provider start,
+ * which the release check bounds. Treating a deliberate nudge as a tap
+ * silently drops the instructor's chosen position, and at 8 px that was over
+ * a minute of class time. 3 px still covers sub-pixel and 1-2 px jitter,
+ * and keeps a swallowed nudge to about 30 s on a 60-minute class.
  */
-export const TAP_SLOP_PX = 8;
+export const TAP_SLOP_PX = 3;
 /** Debug timing logs the first moves of a gesture; the release line carries the count. */
 const LOGGED_MOVES = 5;
 const TIMING_PREFIX = '[ritmo live-timeline]';
@@ -37,8 +44,9 @@ interface Gesture {
   downX: number;
   /** The class time under pointerdown; a tap commits it. */
   downMs: number | null;
-  /** The position this gesture last previewed. */
+  /** The position this gesture last previewed, and the clientX it came from. */
   lastMs: number | null;
+  lastX: number;
   /** Moved past the tap slop at least once; previews follow the pointer from then on. */
   dragging: boolean;
   moves: number;
@@ -85,7 +93,6 @@ export function LiveTimeline({
   onSeekPreview,
   onSeekCommit,
   onSeekRelease = onSeekCommit,
-  onGestureStart,
 }: {
   payload: RunPayload;
   /** The raw, frame-rate clock (SPC-18): subscribing directly to it here —
@@ -102,9 +109,6 @@ export function LiveTimeline({
    * a tap or a resting drag does not start a second adapter (RF-108).
    */
   onSeekRelease?: (ms: number) => void;
-  /** A new pointer gesture began. The host forgets what it last sent, so this
-   * gesture's release is judged only against what this gesture sent (RF-185). */
-  onGestureStart?: () => void;
 }) {
   const totalMs = payload.class.totalDurationMs;
   const trackRef = useRef<HTMLDivElement>(null);
@@ -126,8 +130,9 @@ export function LiveTimeline({
     return fractionToMs((clientX - rect.left) / rect.width, totalMs);
   };
 
-  const preview = (g: Gesture, ms: number) => {
+  const preview = (g: Gesture, ms: number, clientX: number) => {
     g.lastMs = ms;
+    g.lastX = clientX;
     onSeekPreview(ms);
   };
 
@@ -156,10 +161,15 @@ export function LiveTimeline({
     gesture.current !== null && e.pointerId !== gesture.current.pointerId;
 
   const onPointerDown = (e: PointerEvent<HTMLDivElement>) => {
-    if (otherPointer(e)) {
+    // A second finger (not primary) never takes over the gesture. A new
+    // primary pointer means every earlier pointer has lifted, so a gesture
+    // still held here lost its release: drop it without a commit rather than
+    // let it lock out every later touch (RF-185).
+    if (otherPointer(e) && !e.isPrimary) {
       logPointer('pointer-down', e, null, '(other pointer, ignored)');
       return;
     }
+    if (gesture.current) logPointer('stale-gesture-dropped', e, null);
     e.currentTarget.setPointerCapture?.(e.pointerId);
     const ms = msAtClientX(e.clientX);
     const g: Gesture = {
@@ -167,32 +177,21 @@ export function LiveTimeline({
       downX: e.clientX,
       downMs: ms,
       lastMs: null,
+      lastX: e.clientX,
       dragging: false,
       moves: 0,
     };
     gesture.current = g;
-    onGestureStart?.();
     logPointer('pointer-down', e, ms);
-    if (ms !== null) preview(g, ms);
+    if (ms !== null) preview(g, ms, e.clientX);
   };
   const onPointerMove = (e: PointerEvent<HTMLDivElement>) => {
-    // Drag-seek only while a button is held (the captured pointer reports buttons).
-    if (e.buttons === 0 || otherPointer(e)) return;
+    // Drag-seek only while a button is held (the captured pointer reports
+    // buttons), and only for a gesture that began with pointerdown here: a
+    // move alone never starts one (RF-185).
+    const g = gesture.current;
+    if (!g || e.buttons === 0 || otherPointer(e)) return;
     const ms = msAtClientX(e.clientX);
-    let g = gesture.current;
-    if (!g) {
-      // A held pointer that entered without a pointerdown here is a drag already.
-      g = {
-        pointerId: e.pointerId,
-        downX: e.clientX,
-        downMs: null,
-        lastMs: null,
-        dragging: true,
-        moves: 0,
-      };
-      gesture.current = g;
-      onGestureStart?.();
-    }
     g.moves++;
     // A still finger can report a move, with sub-pixel jitter, right after
     // pointerdown. Inside the tap slop it is still the tap: no preview, so a
@@ -202,14 +201,17 @@ export function LiveTimeline({
     if (g.moves <= LOGGED_MOVES) logPointer('pointer-move', e, ms, withinSlop ? '(tap slop)' : '');
     if (withinSlop) return;
     g.dragging = true;
-    if (ms !== null) preview(g, ms);
+    if (ms !== null) preview(g, ms, e.clientX);
   };
   // A release is a tap only when no move left the slop and the release itself
-  // is inside it: then it commits the pointerdown position. Otherwise it is a
-  // drag or a deliberate nudge and commits where the pointer was released,
-  // even when no move event reached us (iOS can coalesce a quick nudge into
-  // down + up). The host skips the provider call when that position is the
-  // one it sent last (RF-108, RF-185).
+  // is inside it: then it commits the pointerdown position. A drag released
+  // within the slop of its last previewed spot (a drag that rested) commits
+  // that previewed value, not a fresh reading of pointerup's clientX, so
+  // sub-pixel lift jitter cannot turn into a second seek after the throttle
+  // already sent it. Otherwise it is a deliberate nudge or move and commits
+  // where the pointer was released, even when no move event reached us (iOS
+  // can coalesce a quick nudge into down + up). The host skips the provider
+  // call when that position is the one it sent last (RF-108, RF-185).
   const onPointerUp = (e: PointerEvent<HTMLDivElement>) => {
     if (otherPointer(e)) return;
     const g = gesture.current;
@@ -219,7 +221,8 @@ export function LiveTimeline({
       return;
     }
     const tap = !g.dragging && Math.abs(e.clientX - g.downX) < TAP_SLOP_PX;
-    const ms = tap ? g.downMs : (msAtClientX(e.clientX) ?? g.lastMs);
+    const rested = g.dragging && g.lastMs !== null && Math.abs(e.clientX - g.lastX) < TAP_SLOP_PX;
+    const ms = tap ? g.downMs : rested ? g.lastMs : (msAtClientX(e.clientX) ?? g.lastMs);
     const extra = g.moves > LOGGED_MOVES ? ` moves=${g.moves}` : '';
     logPointer('pointer-up', e, ms, `${tap ? 'tap' : 'drag'}${extra}`);
     if (ms === null) return;

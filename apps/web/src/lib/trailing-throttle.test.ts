@@ -124,19 +124,22 @@ describe('createTrailingThrottle', () => {
     expect(fn).toHaveBeenCalledTimes(1);
   });
 
-  it('forget drops the last fired value but keeps a pending call (RF-185)', () => {
+  it('a value fired under another epoch never counts as sent; pending still fires (RF-185)', () => {
     const clock = fakeNow();
     const fn = vi.fn();
-    const throttle = createTrailingThrottle(fn, 200, clock.now);
-    throttle.call(60_000);
+    let epoch = 1;
+    const throttle = createTrailingThrottle(fn, 200, clock.now, () => epoch);
+    throttle.call(60_000); // sent under epoch 1
+    expect(throttle.firedLast(60_000)).toBe(true);
     clock.advance(10);
-    throttle.call(90_000); // pending
-    throttle.forget();
+    throttle.call(90_000); // pending, not sent
+    epoch = 2; // e.g. Retry built a new coordinator
     expect(throttle.firedLast(60_000)).toBe(false);
+    expect(throttle.firedLast(90_000)).toBe(false);
     clock.advance(190);
     vi.advanceTimersByTime(190);
     expect(fn.mock.calls).toEqual([[60_000], [90_000]]);
-    expect(throttle.firedLast(90_000)).toBe(true);
+    expect(throttle.firedLast(90_000)).toBe(true); // fired under epoch 2
   });
 
   it('never treats a pending, unfired value as sent: down A, pending B, release B sends B (RF-185)', () => {
