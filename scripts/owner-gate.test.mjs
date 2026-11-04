@@ -62,6 +62,7 @@ test('every gated class is caught', () => {
     'agent-prompts/templates/lane-brief.md': 'agent rules',
     'ritmofit_dev_plan/tasks/README.md': 'agent rules',
     'ritmofit_dev_plan/handoffs/README.md': 'agent rules',
+    'ritmofit_dev_plan/two-machine-rules.md': 'agent rules',
     'apps/web/src/components/LiveMode.tsx': 'provider / playback',
     'apps/web/src/components/LiveMode.test.tsx': 'provider / playback',
     'apps/web/src/components/ProviderConnectAction.tsx': 'provider / playback',

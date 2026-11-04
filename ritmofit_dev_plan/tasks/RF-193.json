@@ -1,0 +1,61 @@
+{
+  "schemaVersion": 1,
+  "id": "RF-193",
+  "title": "Shared two-machine rules: one web-canonical file both repos follow (modes, claiming, unattended nights)",
+  "kind": "documentation",
+  "status": "done",
+  "priority": "P2",
+  "parent": null,
+  "dependsOn": [
+    "RF-192"
+  ],
+  "acceptance": [
+    "New ritmofit_dev_plan/two-machine-rules.md is the one shared rules file for both repos. It covers machines and their limits, one-machine and both-machines modes, claiming, owner decisions as GitHub records, who finishes a PR, messaging, task status at approval (iOS RF-1038), and unattended merge nights (pre-approval issue, queue eligibility, merge bar, hard stops, CI hygiene, claims and hygiene).",
+    "AGENTS.md \"Two-machine conductors\" points to that file instead of holding the rules; the stale text saying the Air runs the iOS CI runner and keeps the RitmoFit-CI simulator is gone (iOS CI runs on the Neo since iOS #86).",
+    "AGENTS.md \"Never granted\" allows an agent to apply owner-approved only to a PR covered by a night's pre-approval issue, after that night's merge bar passes, with a comment citing the issue and head SHA. Each repo keeps its own merge mechanics."
+  ],
+  "nextAction": null,
+  "blocker": null,
+  "evidence": [
+    {
+      "kind": "observation",
+      "ref": "https://github.com/steven-crosby/ritmofit-web/pull/718#issuecomment-6637458064",
+      "summary": "Owner decisions (2026-11-04, Neo session), verbatim: the silo ends; one machine works both repos within limits; both on, claim per task; web-canonical file with an iOS parity check; shared scope is machine rules plus unattended nights; owner-approved via a night's pre-approval issue; the Neo writes it now (\"Go as written\").",
+      "checkedOn": "2026-11-04"
+    },
+    {
+      "kind": "pr",
+      "ref": "https://github.com/steven-crosby/ritmofit-web/pull/724",
+      "summary": "Fresh-context /code-review high found 10 issues (eligibility list looser than owner-gate, AGENTS.md permission and push-voids text, wrong snapshot list, night claim vs draft-first, label/merge order, stale record and references, present-tense iOS parity, handoff PR, issue template rendering); all fixed on the branch.",
+      "checkedOn": "2026-11-04"
+    },
+    {
+      "kind": "pr",
+      "ref": "https://github.com/steven-crosby/ritmofit-web/pull/724",
+      "summary": "Second fresh-context /code-review high confirmed the first 10 fixes and found 11 more (agent-written issue could grow: now owner-verbatim, owner-confirmed and frozen; exceptions can never cover agent rules, CI/gate scripts, migrations or auth; no web branch deletion; section applies per repo only once its AGENTS.md names it; checks rule for iOS; open-and-cite step; Never granted conditions; whole-diff re-review and narrow fix pushes; planning-time owner-gate command; push-voids exception in section 6; unclaimed check). All fixed.",
+      "checkedOn": "2026-11-04"
+    },
+    {
+      "kind": "pr",
+      "ref": "https://github.com/steven-crosby/ritmofit-web/pull/724",
+      "summary": "Third review found 5 more, all fixed: an agent-applied owner-approved is removed when a PR is left open and the issue is re-checked before labelling; other nights' queues count as claims; update-from-main is an allowed push; the issue must never be edited (lastEditedAt empty); web exceptions check every gated path against the named area. Never-an-exception list widened; task status set before the review.",
+      "checkedOn": "2026-11-04"
+    },
+    {
+      "kind": "pr",
+      "ref": "https://github.com/steven-crosby/ritmofit-web/pull/724",
+      "summary": "Fourth review confirmed the third-round fixes and found 3 more, all fixed: the agent removes its owner-approved on any stop, not just a failed step; the pre-approval issue is permission only for that night's conductor while the issue is open and the window lasts (AGENTS.md and section 4 say so); closing the issue revokes the night.",
+      "checkedOn": "2026-11-04"
+    },
+    {
+      "kind": "pr",
+      "ref": "https://github.com/steven-crosby/ritmofit-web/pull/724",
+      "summary": "Final review (/code-review medium, 7c0f695) found 3 significant (b) findings, so it was not merged and owner-approved was removed. Fixed: a significant finding stops a night PR; an agent-applied owner-approved citing an issue is never the owner's own permission outside its night, and a later session removes it; Never granted points to merge-bar step 6. Also fixed: never-an-exception follows owner-gate classes; re-review only when the PR's own diff changes; section 4 order wording; no dated note in rules.",
+      "checkedOn": "2026-11-04"
+    }
+  ],
+  "resolution": "ritmofit_dev_plan/two-machine-rules.md is the shared, owner-gated rules file; AGENTS.md, CLAUDE.md, start-session and the deployment runbook point to it, and the merge policy names the unattended-night exception. The iOS copy and its parity check are iOS RF-1041.",
+  "followUps": [
+    "RF-194"
+  ]
+}

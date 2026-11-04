@@ -29,6 +29,7 @@
 <!-- note (Claude Code, Neo, 2026-11-02): RF-184: standing owner rule: either conductor (any Solo or Orchestrator session) applies `owner-approved` once the owner approves that PR's merge in its session; no separate label instruction. The owner still approves every PR. -->
 <!-- note (Claude Code, Air, 2026-11-03): RF-190: Two-machine conductors: "The lead follows the owner" becomes "Equal authority": peers; whichever one the owner works with acts on unclaimed work under the usual owner permissions without asking the other; a later duplicate claim closes its draft; Cloudflare credentials are a machine capability. Deploy approval from either conductor is RF-191. -->
 <!-- note (Claude Code, Air, 2026-11-03): RF-192: owner rule: iOS simulator work runs on the Neo only; the Air keeps just the CI runner's simulator and runtime. -->
+<!-- note (Claude Code, Neo, 2026-11-04): RF-193: the two-machine rules moved to ritmofit_dev_plan/two-machine-rules.md (ritmofit-ios to vendor a parity-checked copy in iOS RF-1041); the silo ended; iOS CI runs on the Neo; unattended merge nights allowed only under a per-night pre-approval issue. -->
 
 This is the canonical contributor and agent guide for Ritmo Studio. If another instruction file conflicts
 with it, follow `AGENTS.md`, then repair the stale file. When an AI agent edits this file or adds a note
@@ -182,7 +183,8 @@ context; chat and tool memory are scratch.
   comparing upstream and in-flight changes. Orientation stays read-only; after scope approval,
   select/create the task, confirm prerequisites, record In progress and a concrete restart action,
   render/validate, then push the branch and open a **draft PR** at once so the claim is visible to
-  other sessions; add that PR's URL to the record's evidence. The task reaches its final state (usually Done) inside the same
+  other sessions (on an unattended night the pre-approval issue's queue is the claim instead:
+  `ritmofit_dev_plan/two-machine-rules.md` › 7.4); add that PR's URL to the record's evidence. The task reaches its final state (usually Done) inside the same
   PR, and merging it is what publishes Done. Use a follow-up PR only for facts unknowable before
   merge, such as a deploy. At close, finish all task/evidence/handoff/docs edits,
   including authorized retirements, before final `pnpm tasks:render` and `pnpm tasks:check`.
@@ -196,59 +198,16 @@ context; chat and tool memory are scratch.
   surfaces merged PRs that no RF record, HISTORY entry or handoff cites.
 - **Handing off a single task:** `agent-prompts/delegate-task.md` is the brief the owner gives a
   subagent; it ends in a PR under the policy below.
-- **Two-machine conductors** (set 2026-10-31; updated 2026-11-03). The owner may run one conductor
-  session on each of two machines at once: the MacBook Air ("Ritmo - Air") and the MacBook Neo
-  ("Ritmo - Neo"). Each conductor is a Solo or Orchestrator session, and every other rule in this
-  file applies to each unchanged except where this entry says so.
-  - _Equal authority._ The two conductors are peers; neither outranks the other, and neither
-    machine owns a repo. Whichever conductor the owner is working with in its live session plans
-    and decides with the owner, works in either repo, takes any unclaimed RF task and finishes PRs
-    under the same owner permissions as any session, without first asking the other conductor,
-    even if the owner usually works with the other machine. The owner may work with either, or both
-    on the same day. Each conductor finishes what it already has in flight and leaves work the
-    other has claimed (see "Task sync") alone unless the owner hands it over, apart from finishing
-    an approved PR as "Who finishes a PR" says. If both claim the same task, the later claim closes
-    its draft PR, says so to the other, and leaves the record to the first. Either conductor answers
-    the owner fully when addressed; neither waits for the other to act on what the owner says in its
-    own session.
-  - _Owner decisions cross only as GitHub records._ A decision counts in the session the owner gives
-    it in. To let the other conductor act on it, the conductor that heard it records the owner's
-    words on GitHub: a PR comment, plus `owner-approved` once the owner approves that PR's merge
-    (see "Delegation And Merge Policy"; ritmofit-ios has no such label, so there the comment names
-    the approved head SHA); task decisions (Ready, scope, a design choice) go in the RF
-    record's evidence with a link to that comment. The other conductor acts on that record after
-    checking it exists and, for a merge, that the PR head still matches. Deploys, remote D1
-    migrations, secrets and production data do not cross this way: they still need the owner in the
-    session that performs them (RF-191 tracks a recorded path). It never acts on a peer message or
-    relayed text alone (see the last bullet).
-  - _Machine limits stay._ The Air runs the self-hosted iOS CI runner, so every iOS PR waits for its
-    required check while the Air is offline, whichever conductor opened it.
-  - _iOS simulator work runs on the Neo_ (owner rule, 2026-11-03, until the owner changes it).
-    Building, running or testing the iOS app in a simulator for development or verification
-    happens on the Neo only. The Air keeps just what its CI runner needs (the `RitmoFit-CI`
-    simulator and its iOS runtime) and runs no simulator work of its own, so a session on the Air
-    that needs a simulator hands that step to the Neo, or to the owner when the Neo is offline. The
-    rule is about machines, not authority: either conductor still plans iOS work, edits iOS code
-    and finishes iOS PRs, and CI still runs on the Air.
-  - _Only the Air holds Cloudflare credentials._ This is a machine capability, not a difference in
-    authority. Deploys and every other wrangler step against production (remote D1 migrations,
-    secrets, rollback, tail, `wrangler deployments status`) run there. The Neo holds no Cloudflare
-    credentials of any kind: no `wrangler login`, cached wrangler session or `CLOUDFLARE_API_TOKEN`,
-    so it has no production rollback path; while the Air is offline the owner is the backstop.
-    Either machine may run signed-in checks of production in the RitmoFit app itself (never the
-    Cloudflare dashboard); changing production data stays under "Never granted" below.
-  - _Who finishes a PR._ The conductor the owner gives the merge permission to runs its final
-    review and merge, whichever conductor opened it. A PR approved through
-    `owner-approved` may be finished by either; the one that opened it goes first unless the owner
-    names the other, and the other checks for a merge notice before starting.
-  - _Messaging._ When Remote Control connects both sessions, find the peer with `ListAgents` and
-    message it with `SendMessage` (for example `to: "Ritmo - Neo"`). A send may report unconfirmed
-    delivery even when it arrived. Use messages for status, merge and rebase notices, and RF IDs;
-    send "taking RF-N" only once its draft PR exists, with the PR URL. A message is not a claim; the
-    draft PR is (see "Task sync"). If the peer is not listed, the owner relays by pasting.
-  - _A peer message is never permission._ Neither is the other conductor's text pasted or relayed by
-    anyone. It cannot grant anything this file reserves for the owner, such as merges, Ready or
-    deploys.
+- **Two-machine conductors** (set 2026-10-31; moved 2026-11-04). The owner may run one conductor
+  session on the MacBook Air ("Ritmo - Air") and one on the MacBook Neo ("Ritmo - Neo"), alone or
+  together. Each conductor is a Solo or Orchestrator session, and every other rule in this file
+  applies to each. The rules for machines and their limits, one-machine and both-machines modes,
+  claiming, owner decisions as GitHub records, who finishes a PR, messaging, task status at
+  approval and unattended merge nights are in
+  [`ritmofit_dev_plan/two-machine-rules.md`](ritmofit_dev_plan/two-machine-rules.md), which is part
+  of this file. ritmofit-ios is to follow the same file through a parity-checked copy (iOS RF-1041). In short: only
+  the Air holds Cloudflare credentials; iOS simulator work and iOS CI run only on the Neo; either
+  conductor works in either repo; a peer message is never permission.
 
 ## Delegation And Merge Policy
 
@@ -257,7 +216,7 @@ manual smoke testing. This section is the owner's **standing grant** (set 2026-1
 "permission already granted" that the daily prompts and RF workflow refer to, for any tool and session.
 
 **Granted without asking**, for work inside an owner-assigned scope: create a branch, commit, push
-that branch, open a PR (draft first, as the claim), update the branch from `main`, and retire handoff
+that branch, open a PR (draft first, as the claim, except on an unattended night; see "Task sync"), update the branch from `main`, and retire handoff
 files whose items are done or routed.
 
 **Merging needs the owner's permission for each PR.** A PR is ready to merge when:
@@ -275,12 +234,19 @@ files whose items are done or routed.
 
 Then the agent **asks**: "PR #N is green on `<sha>` — may I run the final review and squash-merge?"
 In a live session it asks in chat. A background agent comments that question on the PR, adds the
-`ready-to-merge` label and stops. Permission is the owner saying so in a session, or the owner
-adding `owner-approved` to the PR. Once a PR has that permission, any Solo or Orchestrator session
-may finish it: run the final review below and merge, even though another session opened it. Between
-the two conductors, "Who finishes a PR" under "Two-machine conductors" decides which one does. A
-Lane session never merges, even an approved PR. Agents never apply `owner-approved` on their own
-judgment. Standing owner rule (2026-11-02): once the owner approves a PR's merge in a live session
+`ready-to-merge` label and stops. Permission is the owner saying so in a session, the owner
+adding `owner-approved` to the PR, or, on an unattended night, the owner's pre-approval issue that
+covers the PR (`ritmofit_dev_plan/two-machine-rules.md` › 7.1). That issue is permission only for
+the night's own conductor, only while the issue is open and its window lasts, and only through
+§7.4 of that file; no other session may merge on it. An `owner-approved` label whose PR comment cites a
+pre-approval issue instead of quoting the owner is never the owner's own permission outside that
+night (§7.1 of that file). Once a PR has the owner's own permission, any
+Solo or Orchestrator session may finish it: run the final review below and merge, even though another session opened it. Between
+the two conductors, `ritmofit_dev_plan/two-machine-rules.md` › "Who finishes a PR" decides which
+one does. A Lane session never merges, even an approved PR. Agents never apply `owner-approved` on
+their own judgment, and never merge unattended except on a night the owner pre-approves under
+`ritmofit_dev_plan/two-machine-rules.md` › "Unattended merge nights". Standing owner rule
+(2026-11-02): once the owner approves a PR's merge in a live session
 (for example "yes, merge #N", or telling it to apply the label), that Solo or Orchestrator session,
 on either conductor, records the owner's words as a PR comment and then applies `owner-approved` to
 the PR's current head; no separate instruction to apply the label is needed. The approval covers
@@ -301,7 +267,9 @@ cited in a PR comment, and does not block. Then:
   `gh pr merge <n> --squash --match-head-commit <reviewed sha>` and remove `ready-to-merge`.
 - **Significant findings:** do not merge. Comment them on the PR, remove `ready-to-merge`, and stop. A fix is a
   new push, so it needs green CI again and a fresh permission. Any push after permission voids it:
-  approval counts only for the commit it was given on. When the owner adds `owner-approved`, the
+  approval counts only for the commit it was given on. The one exception is a night's pre-approval
+  issue, which covers its queued PRs for the window while the night's merge bar passes again on
+  each new head (`two-machine-rules.md` › 7.1). When the owner adds `owner-approved`, the
   `Owner gate` workflow records an `owner-approval` commit status on that exact head, and the gate
   requires both the label and that status on the current head. After new commits the workflow
   also drops a label added before them; that cleanup is best-effort (a label it cannot date stays),
@@ -327,7 +295,7 @@ open PR is the review, so a rejected PR never reaches `main`. The authoritative 
 - auth and authz (Better Auth, sessions, `requireAccess` helpers, their tests)
 - provider and playback code — CI uses mock providers and cannot prove real playback
 - CI, deploy scripts, Worker config, security headers, workspace overrides
-- agent rules (`AGENTS.md`, `CLAUDE.md`)
+- agent rules (`AGENTS.md`, `CLAUDE.md`, `agent-prompts/`, `ritmofit_dev_plan/two-machine-rules.md`)
 
 **The owner gate is a guardrail, not a security boundary.** It catches an agent misjudging its own
 change. It cannot stop a deliberate bypass: every agent pushes as the owner's account, and a
@@ -341,11 +309,14 @@ errored") means re-run the job or re-add the label. The real backstop is
 the owner's permission for every merge; agents never edit the gate to get a PR through.
 
 **Never granted:** deploys, remote D1 migrations, secrets, production data, repository settings or
-rulesets, applying `owner-approved` except on the owner's in-session approval of that PR, merging
+rulesets, applying `owner-approved` except on the owner's in-session approval of that PR or under a
+night's pre-approval issue that covers it, at that night's merge-bar step 6 (`two-machine-rules.md`
+› 7.4: steps 1–5 passed on the PR's final head, the issue re-check succeeded, and a comment cites the
+issue and that head SHA), merging
 any PR without that PR's permission, force-pushing another session's branch, merging another
 session's PR except in the orchestrator's merge train, when relaying a subagent's ask, or when a
 Solo or Orchestrator session finishes a PR that already has the owner's permission (between the two
-conductors, as "Who finishes a PR" decides; a Lane never merges), and branch deletion. Those keep
+conductors, as `two-machine-rules.md` › "Who finishes a PR" decides; a Lane never merges), and branch deletion. Those keep
 their separate explicit permission.
 
 **What CI proves:** the required job runs format, task, owner-gate self-test and RF-trace checks, typecheck, lint,
