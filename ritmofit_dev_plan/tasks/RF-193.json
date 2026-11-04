@@ -55,5 +55,7 @@
     }
   ],
   "resolution": "ritmofit_dev_plan/two-machine-rules.md is the shared, owner-gated rules file; AGENTS.md, CLAUDE.md, start-session and the deployment runbook point to it, and the merge policy names the unattended-night exception. The iOS copy and its parity check are iOS RF-1041.",
-  "followUps": []
+  "followUps": [
+    "RF-194"
+  ]
 }
