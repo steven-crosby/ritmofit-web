@@ -46,6 +46,12 @@
       "ref": "https://github.com/steven-crosby/ritmofit-web/pull/724",
       "summary": "Fourth review confirmed the third-round fixes and found 3 more, all fixed: the agent removes its owner-approved on any stop, not just a failed step; the pre-approval issue is permission only for that night's conductor while the issue is open and the window lasts (AGENTS.md and section 4 say so); closing the issue revokes the night.",
       "checkedOn": "2026-11-04"
+    },
+    {
+      "kind": "pr",
+      "ref": "https://github.com/steven-crosby/ritmofit-web/pull/724",
+      "summary": "Final review (/code-review medium, 7c0f695) found 3 significant (b) findings, so it was not merged and owner-approved was removed. Fixed: a significant finding stops a night PR; an agent-applied owner-approved citing an issue is never the owner's own permission outside its night, and a later session removes it; Never granted points to merge-bar step 6. Also fixed: never-an-exception follows owner-gate classes; re-review only when the PR's own diff changes; section 4 order wording; no dated note in rules.",
+      "checkedOn": "2026-11-04"
     }
   ],
   "resolution": "ritmofit_dev_plan/two-machine-rules.md is the shared, owner-gated rules file; AGENTS.md, CLAUDE.md, start-session and the deployment runbook point to it, and the merge policy names the unattended-night exception. The iOS copy and its parity check are iOS RF-1041.",

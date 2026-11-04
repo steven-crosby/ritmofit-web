@@ -74,9 +74,9 @@ they need the owner in the session that performs them (web RF-191 tracks a recor
 
 The conductor the owner gives the merge permission to runs the final review and the merge, whichever
 conductor opened the PR. When a PR's approval is a GitHub record (§3), either conductor may finish
-it. A night's pre-approval issue is not such a record: only that night's conductor merges under it
-(§7.1). The one that opened it goes first unless the owner names the other, and the other checks for a
-merge notice before starting.
+it: the conductor that opened the PR goes first unless the owner names the other, and the other
+checks for a merge notice before starting. A night's pre-approval issue is not such a record: only
+that night's conductor merges under it (§7.1).
 
 ## 5. Messaging, and why a message is never permission
 
@@ -121,6 +121,10 @@ is the merge permission for each PR it covers, and for nothing else:
   before the window opens.
 - **Only the night's conductor uses it,** and only while the issue is open and the window lasts.
   The owner closes the issue to stop the night. The issue covers no other session or later time.
+- **A label it applied is never the owner's own permission.** An `owner-approved` whose PR comment
+  cites a pre-approval issue counts only for that night's conductor, within the window. If a night
+  ends with such a label still on an open PR (for example the session died between §7.4 steps 6
+  and 7), any later session treats the PR as unapproved and removes the label.
 - **The issue is never edited.** It is created once, with the full text the owner confirmed. Before
   §7.4 step 6 for each PR, the agent checks that the body was never edited: `lastEditedAt` from
   `gh api graphql -f query='{repository(owner:"steven-crosby",name:"<repo>"){issue(number:<n>){lastEditedAt}}}'`
@@ -183,11 +187,11 @@ passes all five checks:
     their own words, with the gated area spelled out (for example "RF-1013 may change
     `Info.plist`"). It covers only that item and area. Any gated change outside it stops the PR.
     In ritmofit-web it still needs the label from §7.4 step 6, so `owner-gate` records it.
-  - **Never an exception:** agent rules (`AGENTS.md`, `CLAUDE.md`, `agent-prompts/`, this file,
-    and in web `ritmofit_dev_plan/tasks/README.md` and `ritmofit_dev_plan/handoffs/README.md`), CI
-    workflows and the gate, check and deploy scripts (`.github/`, `scripts/owner-gate*`,
-    `scripts/rf-trace*`, the deploy, smoke and secrets scripts, the parity check), D1 migrations and
-    the Drizzle schema, and auth or authz.
+  - **Never an exception:**
+    - in ritmofit-web, any path `owner-gate` puts in its "agent rules", "CI / deploy /
+      infrastructure", "D1 migrations / schema" or "auth / authz" class;
+    - in ritmofit-ios, agent rules (`AGENTS.md`, `CLAUDE.md`, `agent-prompts/`, `web-contract/`),
+      `.github/`, `scripts/check-cross-repo-parity.mjs`, and auth (`Core/Networking`).
 - **Mergeable on its own.** It merges independently. Anything the checks themselves depend on (the
   task tool, for example) merges last.
 
@@ -199,7 +203,9 @@ This replaces the repo's usual final review for the night's PRs.
 
 1. **Task status.** The RF task is set on the branch as §6 says.
 2. **Review.** A fresh-context reviewer subagent runs `/code-review high` on the branch diff
-   *before* the PR is opened. Every finding is fixed, or filed as an RF task with the reason. The
+   *before* the PR is opened. A finding that the repo's merge policy calls significant (in web `AGENTS.md`: a correctness bug in
+   executable code, or a contradiction about who grants permission, sets Ready or merges) is fixed,
+   or it stops this PR. Every other finding is fixed, or filed as an RF task with the reason. The
    review summary goes in the PR body. The pre-approval issue's queue is the night's claim (§2),
    so the PR isn't opened early as a draft.
 3. **Open and cite.** Open the PR, then add its URL as the record's `pr` evidence and push at once,
@@ -210,8 +216,9 @@ This replaces the repo's usual final review for the night's PRs.
    - a conflict resolution, changing only the conflict;
    - an update from `main` with no other change.
 
-   Anything more stops this PR. After any of them, the review in step 2 runs again on the whole
-   diff.
+   Anything more stops this PR. After a push that changes the PR's own diff, the review in step 2
+   runs again on the whole diff. An update from `main` that leaves that diff unchanged needs no
+   re-review.
 5. **Checks.** Every check `gh pr checks` lists for the final head is green: in ritmofit-ios at least
    `ios build · test` and `parity`, in ritmofit-web the required CI job. Pending isn't green. In
    ritmofit-web, re-run the §7.3 `owner-gate` check on the final head.
@@ -242,8 +249,7 @@ This replaces the repo's usual final review for the night's PRs.
 
 ### 7.6 CI hygiene on the Neo
 
-- **Never cancel a CI run by hand.** Both flakes on 2026-11-04 followed a cancelled run (iOS
-  RF-1040). Push a branch only once it's reviewed, so that concurrency cancels are rare.
+- **Never cancel a CI run by hand.** A cancelled run may break the next one (iOS RF-1040). Push a branch only once it's reviewed, so that concurrency cancels are rare.
 - **No local simulator runs during iOS CI.** Don't build, run or test in a local simulator while an
   iOS CI job is running.
 - **Local `pnpm dev:api` only when needed.** Run it only for a PR that touches auth, networking or

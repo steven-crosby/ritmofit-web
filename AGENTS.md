@@ -238,7 +238,9 @@ In a live session it asks in chat. A background agent comments that question on 
 adding `owner-approved` to the PR, or, on an unattended night, the owner's pre-approval issue that
 covers the PR (`ritmofit_dev_plan/two-machine-rules.md` › 7.1). That issue is permission only for
 the night's own conductor, only while the issue is open and its window lasts, and only through
-§7.4 of that file; no other session may merge on it. Once a PR has the owner's own permission, any
+§7.4 of that file; no other session may merge on it. An `owner-approved` label whose PR comment cites a
+pre-approval issue instead of quoting the owner is never the owner's own permission outside that
+night (§7.1 of that file). Once a PR has the owner's own permission, any
 Solo or Orchestrator session may finish it: run the final review below and merge, even though another session opened it. Between
 the two conductors, `ritmofit_dev_plan/two-machine-rules.md` › "Who finishes a PR" decides which
 one does. A Lane session never merges, even an approved PR. Agents never apply `owner-approved` on
@@ -308,9 +310,9 @@ the owner's permission for every merge; agents never edit the gate to get a PR t
 
 **Never granted:** deploys, remote D1 migrations, secrets, production data, repository settings or
 rulesets, applying `owner-approved` except on the owner's in-session approval of that PR or under a
-night's pre-approval issue that covers it, once that night's merge bar has passed on the PR's
-final head and with a comment citing the issue and that head SHA (`two-machine-rules.md` › 7.1 and
-7.4), merging
+night's pre-approval issue that covers it, at that night's merge-bar step 6 (`two-machine-rules.md`
+› 7.4: steps 1–5 passed on the PR's final head, the issue re-check succeeded, and a comment cites the
+issue and that head SHA), merging
 any PR without that PR's permission, force-pushing another session's branch, merging another
 session's PR except in the orchestrator's merge train, when relaying a subagent's ask, or when a
 Solo or Orchestrator session finishes a PR that already has the owner's permission (between the two
