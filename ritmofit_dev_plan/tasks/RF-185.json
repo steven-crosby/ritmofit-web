@@ -12,7 +12,7 @@
     "A LiveTimeline or trailing-throttle test reproduces pointerdown, then a pointermove at the same clientX inside the 200 ms window, then pointerup, and fails before the fix (one tap must send the provider exactly one seek).",
     "Next, Previous, auto-advance and a drag that rests past the throttle window keep their current behaviour."
   ],
-  "nextAction": "After a deploy of #720, the owner re-runs Live on iPhone Safari with ?playback-timing=1 on an Apple Music class: (1) tap one timeline track with a still finger three times, each a few seconds apart: each tap shows one [ritmo live-timeline] pointer-down and pointer-up ... tap, one [ritmo live] release-skipped, and one Apple #N prepare with no #N cancelled about 60-115 ms later; any [ritmo live-timeline] pointer-move lines between them confirm (or refute) the still-finger move premise. (2) quick taps on 2-3 tracks; (3) one drag across several tracks, then rest and release. Next, Previous and auto-advance should behave as before. If acceptance holds, set Done with that observation; otherwise attach the console lines.",
+  "nextAction": "After a deploy of #720, the owner re-runs Live on iPhone Safari with ?playback-timing=1 on an Apple Music class: (1) tap one timeline track with a still finger three times, a few seconds apart: each tap shows one [ritmo live-timeline] pointer-down and pointer-up ... tap, one [ritmo live] release-skipped and one Apple #N prepare with no #N cancelled about 60-115 ms later; any pointer-move lines between them confirm or refute the still-finger move premise. (2) quick taps on 2-3 tracks; (3) one drag across several tracks, rest, release: no extra start after the release; (4) a small deliberate nudge lands where released. Next, Previous and auto-advance behave as before. If acceptance holds, set Done with that observation; otherwise attach the console lines.",
   "blocker": null,
   "evidence": [
     {
@@ -74,6 +74,18 @@
       "ref": "apps/web/src/components/LiveMode.test.tsx",
       "summary": "Added \"after Retry, a tap at the same pixel within 200 ms still reaches the new coordinator\" (keyboard Home fires 0:00, that start fails, Retry, then a tap at 0 inside the window). LiveTimeline.test.tsx adds a nudge released outside the slop, a second finger, and a lost pointer capture. Run against the 0e89399 sources, all four fail. Recorded test result, not device evidence.",
       "checkedOn": "2026-11-03"
+    },
+    {
+      "kind": "pr",
+      "ref": "https://github.com/steven-crosby/ritmofit-web/pull/720",
+      "summary": "Round-3 fixes for the #720 final review of 1d4bc81 (https://github.com/steven-crosby/ritmofit-web/pull/720#issuecomment-6619011721, items 1, 2, 5, 6, 7). A drag released within the slop of its last preview commits that previewed value, not a fresh reading of pointerup clientX. A timeline gesture never resumes music from a playback error; it moves the clock only, and only an explicit seek or Retry resumes. Gestures start only on pointerdown, and a new primary pointer drops a stale one. The slop is now 3 px instead of 8, with the reason in a source comment. The throttle's last-sent value is tied to the coordinator's run generation (RuntimePlaybackCoordinator.getRunGeneration, new on start, resume, pause, stop, destroy and failure, and unique across coordinators); this replaces the five forget() call sites. A pending call still never counts as sent. This supersedes earlier #720 entries where they differ.",
+      "checkedOn": "2026-11-04"
+    },
+    {
+      "kind": "test",
+      "ref": "apps/web/src/components/LiveMode.test.tsx",
+      "summary": "Added \"a drag that rests past the window and lifts with sub-pixel jitter sends no second seek\" and \"an error during a tap never turns the release into an automatic resume\". LiveTimeline.test.tsx adds a 4 px nudge, a rested drag with sub-pixel lift jitter, and pointermove-without-pointerdown (two tests). All six fail on 1d4bc81. trailing-throttle.test.ts adds an epoch test, and runtime.test.ts adds a run-generation test. Recorded test result, not device evidence.",
+      "checkedOn": "2026-11-04"
     }
   ],
   "resolution": null,

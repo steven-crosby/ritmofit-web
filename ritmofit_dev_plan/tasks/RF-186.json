@@ -44,6 +44,12 @@
       "ref": "https://github.com/steven-crosby/ritmofit-web/pull/720",
       "summary": "Diagnostics from the #720 review pass: toggle lines log a missing pointerType as unknown, not mouse, and Live builds its timing strings only when ?playback-timing=1 is on. The blocker and the device lines needed are unchanged.",
       "checkedOn": "2026-11-03"
+    },
+    {
+      "kind": "pr",
+      "ref": "https://github.com/steven-crosby/ritmofit-web/pull/720",
+      "summary": "Round 3 of #720: no change to the RF-186 diagnosis, blocker or device lines needed. A timeline gesture during a playback error now logs [ritmo live] release-held and no longer resumes by itself, which removes one candidate path to an unasked-for start.",
+      "checkedOn": "2026-11-04"
     }
   ],
   "resolution": null,

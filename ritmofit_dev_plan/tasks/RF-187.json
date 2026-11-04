@@ -12,7 +12,7 @@
     "Any play() rejection on a superseded or re-cued start is caught and recorded in the timing log, not surfaced as unhandled.",
     "An adapter test covers the re-cue path (set-queue-start (again)) rejecting."
   ],
-  "nextAction": "After a deploy of #720, the owner re-runs Live on iPhone Safari with ?playback-timing=1 on an Apple Music class: do one timeline drag across several tracks and a few mid-track taps: the console shows no \"Unhandled Promise Rejection: The play() method was called without a previous stop() or pause() call.\"; any such rejection appears instead as [ritmo apple-music] timing musickit-play-rejection (MusicKit's own dropped promise) or [ritmo apple-music #N] timing play-rejected-already-playing (the adapter's play()), and the track still plays. If acceptance holds, set Done with that observation.",
+  "nextAction": "After a deploy of #720, the owner re-runs Live on iPhone Safari with ?playback-timing=1 on an Apple Music class: do one timeline drag across several tracks and a few mid-track taps. The console should show no \"Unhandled Promise Rejection: The play() method was called without a previous stop() or pause() call.\"; any such rejection appears instead as [ritmo apple-music] timing musickit-play-rejection or [ritmo apple-music #N] timing play-rejected-already-playing (handled, this queue playing | waiting for playing), the track plays, and no Retry banner appears while audio plays. If acceptance holds, set Done with that observation.",
   "blocker": null,
   "evidence": [
     {
@@ -62,6 +62,18 @@
       "ref": "apps/web/src/lib/playback/apple-music-adapter.test.ts",
       "summary": "Added \"a rejection while the shared instance still reads playing (the old queue) is no proof: the cap fails it\" and \"destroy() during the wait after a matched rejection ends play() at once as cancelled\". Both fail against the 0e89399 adapter. The success case now needs a playing state after play(). Recorded test result, not device evidence.",
       "checkedOn": "2026-11-03"
+    },
+    {
+      "kind": "pr",
+      "ref": "https://github.com/steven-crosby/ritmofit-web/pull/720",
+      "summary": "Round-3 fixes for the #720 final review of 1d4bc81 (items 3, 4, 8, 9). The evidence for an \"already playing\" rejection is armed at the start of play(), before the re-cue. A playing state counts while this adapter's queue request is the newest and the now-playing item is not another song; MusicKit's now-playing item, when it is this song at this cue position, also counts. The shared instance's state alone never counts. destroy() releases play() at once, but the adapter's starting guard (checked by prepare()) holds until MusicKit settles that play() or the cap ends. The page-level unhandledrejection listener is held by each adapter that played and removed 30 s after the last one is destroyed; tests reset it. finally no longer resolves leftover promises.",
+      "checkedOn": "2026-11-04"
+    },
+    {
+      "kind": "test",
+      "ref": "apps/web/src/lib/playback/apple-music-adapter.test.ts",
+      "summary": "Added \"a re-cue that starts this queue before play() counts as started on the already playing rejection\", \"the now-playing item at this cue counts as proof; another song does not\", \"after destroy() releases play() early, prepare() still waits for MusicKit to settle that play\", and \"the page guard is held while an adapter that played is alive, then removed after the linger\". All four fail on 1d4bc81. Recorded test result, not device evidence.",
+      "checkedOn": "2026-11-04"
     }
   ],
   "resolution": null,
