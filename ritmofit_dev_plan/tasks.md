@@ -12,13 +12,13 @@ owner's queue: any agent may execute a Ready task. Publishing follows AGENTS.md 
 Evidence marked **recorded** is a carried-forward claim, not fresh verification.
 A checked PR proves its GitHub state, not product acceptance or production behavior.
 
-191 tasks. backlog: 67 · ready: 0 · in_progress: 1 · blocked: 2 · review: 10 · done: 109 · cancelled: 2.
+191 tasks. backlog: 67 · ready: 0 · in_progress: 0 · blocked: 2 · review: 10 · done: 110 · cancelled: 2.
 
 ## In progress
 
 | Task | Priority / kind | Relationships | Next action / resolution | Evidence |
 | --- | --- | --- | --- | --- |
-| [RF-193](tasks/RF-193.json) Shared two-machine rules: one web-canonical file both repos follow (modes, claiming, unattended nights) | P2 / documentation | needs RF-192 | Neo session (2026-11-04), branch docs/rf-193-shared-machine-rules: write the shared file and the AGENTS.md pointer, run the final review, get CI green, then ask the owner for owner-approved. After merge, the Neo vendors the file into ritmofit-ios. | checked 2026-11-04 |
+| — | — | — | — | — |
 
 ## Blocked / waiting
 
@@ -151,6 +151,7 @@ A checked PR proves its GitHub state, not product acceptance or production behav
 | [RF-182](tasks/RF-182.json) Two-machine conductors: the lead follows the owner, and owner decisions cross only as GitHub records | P2 / documentation | needs RF-169; follow-ups RF-190 | AGENTS.md "Two-machine conductors" now makes whichever conductor the owner is directing the lead for both repos and lets owner decisions reach the other conductor only through GitHub records; CLAUDE.md points to it. The ritmofit-ios pointers are ritmofit-ios #79, where the record is a PR comment naming the approved head SHA. Corrected 2026-11-03: the lead rule is superseded by RF-190 (equal authority, no lead); original wording kept above. | checked 2026-11-02 |
 | [RF-184](tasks/RF-184.json) Standing rule: either conductor applies owner-approved once the owner approves that PR's merge in its session | P2 / documentation | needs RF-182 | Either conductor now applies owner-approved once the owner approves that PR's merge in its session, after recording the owner's words as a PR comment; agents still never apply it on their own judgment, and the owner still approves every PR. | checked 2026-11-02 |
 | [RF-192](tasks/RF-192.json) Standing rule: iOS simulator work runs on the Neo only | P2 / documentation | — | AGENTS.md gains the "iOS simulator work runs on the Neo" bullet under Two-machine conductors. | checked 2026-11-03 |
+| [RF-193](tasks/RF-193.json) Shared two-machine rules: one web-canonical file both repos follow (modes, claiming, unattended nights) | P2 / documentation | needs RF-192 | ritmofit_dev_plan/two-machine-rules.md is the shared, owner-gated rules file; AGENTS.md, CLAUDE.md, start-session and the deployment runbook point to it, and the merge policy names the unattended-night exception. The iOS copy and its parity check are iOS RF-1041. | checked 2026-11-04 |
 | [RF-100](tasks/RF-100.json) Label changes rerun only the PR gates, not the full CI job | P3 / task | needs RF-98; follow-ups RF-175, RF-176 | Label events run only owner-gate.yml, which writes the required `owner-gate` commit status; ci.yml writes no status and keys concurrency per PR, so a label edit no longer reruns or cancels CI and the required CI check fails only on real checks. The fail-closed issues #700 merged with under a one-time waiver were fixed in RF-176; remaining edge cases are in RF-175. | checked 2026-10-27; checked 2026-10-28; checked 2026-11-01; checked 2026-11-02 |
 | [RF-144](tasks/RF-144.json) The design brief and D21 describe the provider capabilities and Account sections the product has | P3 / documentation | needs RF-131 | Design brief 9.8 and D21 match the product (#679): provider capabilities per providerCapabilities, and the three Account sections with Preferences cut per RF-131 decision 5. | checked 2026-10-29; checked 2026-10-31 |
 | [RF-147](tasks/RF-147.json) Apple Music adapter diagnostics and FairPlay flag handling match the legacy path RF-124 restored | P3 / task | — | Criteria 0-2 shipped in #668; criterion 3 met by the owner's 2026-11-03 iPhone Safari run on af800c8 (Start, Next and auto-advance audible). FairPlay flag clearing is unchanged; once-per-load clear and late-settle checks remain RF-159. | checked 2026-10-29; checked 2026-10-30; checked 2026-11-03 |

@@ -183,7 +183,8 @@ context; chat and tool memory are scratch.
   comparing upstream and in-flight changes. Orientation stays read-only; after scope approval,
   select/create the task, confirm prerequisites, record In progress and a concrete restart action,
   render/validate, then push the branch and open a **draft PR** at once so the claim is visible to
-  other sessions; add that PR's URL to the record's evidence. The task reaches its final state (usually Done) inside the same
+  other sessions (on an unattended night the pre-approval issue's queue is the claim instead:
+  `ritmofit_dev_plan/two-machine-rules.md` › 7.4); add that PR's URL to the record's evidence. The task reaches its final state (usually Done) inside the same
   PR, and merging it is what publishes Done. Use a follow-up PR only for facts unknowable before
   merge, such as a deploy. At close, finish all task/evidence/handoff/docs edits,
   including authorized retirements, before final `pnpm tasks:render` and `pnpm tasks:check`.
@@ -233,8 +234,9 @@ files whose items are done or routed.
 
 Then the agent **asks**: "PR #N is green on `<sha>` — may I run the final review and squash-merge?"
 In a live session it asks in chat. A background agent comments that question on the PR, adds the
-`ready-to-merge` label and stops. Permission is the owner saying so in a session, or the owner
-adding `owner-approved` to the PR. Once a PR has that permission, any Solo or Orchestrator session
+`ready-to-merge` label and stops. Permission is the owner saying so in a session, the owner
+adding `owner-approved` to the PR, or, on an unattended night, the owner's pre-approval issue that
+covers the PR (`ritmofit_dev_plan/two-machine-rules.md` › 7.1). Once a PR has that permission, any Solo or Orchestrator session
 may finish it: run the final review below and merge, even though another session opened it. Between
 the two conductors, `ritmofit_dev_plan/two-machine-rules.md` › "Who finishes a PR" decides which
 one does. A Lane session never merges, even an approved PR. Agents never apply `owner-approved` on
@@ -261,7 +263,9 @@ cited in a PR comment, and does not block. Then:
   `gh pr merge <n> --squash --match-head-commit <reviewed sha>` and remove `ready-to-merge`.
 - **Significant findings:** do not merge. Comment them on the PR, remove `ready-to-merge`, and stop. A fix is a
   new push, so it needs green CI again and a fresh permission. Any push after permission voids it:
-  approval counts only for the commit it was given on. When the owner adds `owner-approved`, the
+  approval counts only for the commit it was given on. The one exception is a night's pre-approval
+  issue, which covers its queued PRs for the window while the night's merge bar passes again on
+  each new head (`two-machine-rules.md` › 7.1). When the owner adds `owner-approved`, the
   `Owner gate` workflow records an `owner-approval` commit status on that exact head, and the gate
   requires both the label and that status on the current head. After new commits the workflow
   also drops a label added before them; that cleanup is best-effort (a label it cannot date stays),

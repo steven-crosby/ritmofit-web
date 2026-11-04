@@ -5,13 +5,13 @@ https://github.com/steven-crosby/ritmofit-web/pull/718#issuecomment-6637458064 -
 
 This file holds the rules for how the owner works with agents on two machines. **It is canonical in
 ritmofit-web.** ritmofit-ios vendors a read-only copy at `web-contract/two-machine-rules.md`, and
-the iOS parity check fails when the copy drifts. Change this file in a web PR first, then refresh
-the iOS copy in an iOS PR.
+its parity check fails when the copy drifts (iOS RF-1041 adds both). Change this file in a web PR
+first, then refresh the iOS copy in an iOS PR.
 
-Each repo's `AGENTS.md` points here and keeps its own merge mechanics: labels, statuses, checks and
-the review level. If this file and a repo's `AGENTS.md` disagree about how a merge is recorded or
-gated, that `AGENTS.md` wins. If they disagree about machines, modes, claiming or unattended nights,
-this file wins. In ritmofit-web this file is owner-gated as agent rules.
+This file is part of each repo's `AGENTS.md`, which points here. Each `AGENTS.md` keeps its own
+merge mechanics: labels, statuses, checks and the review level. Where this file names an exception
+to those mechanics (§7), the matching `AGENTS.md` text names it too. In ritmofit-web this file is
+owner-gated as agent rules.
 
 ## 1. Machines and their limits
 
@@ -45,7 +45,8 @@ comment, and it lasts until the owner ends it.
   either repo. It takes any unclaimed RF task in either repo, and finishes PRs under the usual owner
   permissions, without first asking the other.
   - **Claiming.** A task is claimed by its draft PR (web `AGENTS.md` › "Task sync"), not by a
-    message. If both conductors claim the same task, the later claim closes its draft PR, says so
+    message. On an unattended night, the pre-approval issue's queue is the claim for its items
+    (§7.4), and the other conductor leaves them alone until the issue is closed. If both conductors claim the same task, the later claim closes its draft PR, says so
     to the other, and leaves the record to the first.
   - Each conductor finishes what it has in flight. It leaves work the other has claimed alone unless
     the owner hands it over, except for finishing an approved PR as §4 says.
@@ -111,23 +112,25 @@ records the owner's words verbatim and is the merge permission for each PR it co
 nothing else:
 
 - **ritmofit-ios:** the merge comment cites the issue and the merged head SHA.
-- **ritmofit-web:** once that PR's merge bar (§7.4) passes, the agent applies `owner-approved` to
-  its head with a comment citing the issue and the head SHA. Then it merges as web `AGENTS.md`
-  says. The `Owner gate` two-minute rule still applies.
+- **ritmofit-web:** at §7.4 step 4, the agent applies `owner-approved` to the PR's final head with a
+  comment citing the issue and the head SHA, then merges once `owner-gate` succeeds on that head.
+
+The permission covers each queued PR for the whole window, not one head: a push the merge bar allows
+(a CI fix or a conflict resolution) doesn't void it, but the bar runs again on the new head.
 
 Paste this block into the issue and fill it in:
 
 ```markdown
 Owner pre-approval for one unattended night (ritmofit_dev_plan/two-machine-rules.md › 7).
-**Owner's words:** <verbatim answers, one per line>
-**Machine:** <Air|Neo> · **Repo:** <ritmofit-web|ritmofit-ios>
-**Window:** <start> to <end> (local and Z). No new PR after <end minus 1 hour>.
-**Pre-approved queue, in merge order:** <RF-N: scope; eligibility checked (7.3)>
-**Not pre-approved (opened for the owner's review only):** <RF-N: why>
-**Merge bar:** 7.4, unchanged | <owner's changes>
-**Hard stops:** 7.5, unchanged | <owner's changes>
-**Local dev:api:** <no | only for the auth/networking PRs named above>
-**Report:** <close-out comment and handoff | also a push notification>
+- **Owner's words:** <verbatim answers, one per line>
+- **Machine:** <Air|Neo> · **Repo:** <ritmofit-web|ritmofit-ios>
+- **Window:** <start> to <end> (local and Z). No new PR after <end minus 1 hour>.
+- **Pre-approved queue, in merge order:** <RF-N: scope; eligibility checked (7.3)>
+- **Not pre-approved (opened for the owner's review only):** <RF-N: why>
+- **Merge bar:** 7.4, unchanged | <owner's changes>
+- **Hard stops:** 7.5, unchanged | <owner's changes>
+- **Local dev:api:** <no | only for the auth/networking PRs named above>
+- **Report:** <close-out comment and handoff | also a push notification>
 ```
 
 ### 7.2 Planning
@@ -140,11 +143,23 @@ Check each item while planning, and note the result in the issue. An item is eli
 passes all four checks:
 
 - **No plan needed.** It isn't substantial work that `AGENTS.md` says needs a confirmed plan.
-- **No contract or snapshot changes.** It changes no API contract and no file that the other repo
-  snapshots. In web that's `apps/api/openapi/openapi.json` and `ios-snapshot/`. In iOS it's
-  `Core/Models`, `Core/Networking` and `web-contract/`.
-- **No gated areas.** It changes no auth or authz, migrations or schema, provider playback, deploy,
-  CI workflow, or agent rules. Those go on the not-pre-approved list.
+- **No contract or snapshot changes.** It changes no API contract and no file that one repo copies
+  from the other:
+  - in ritmofit-web: `apps/api/openapi/openapi.json`, every web file iOS vendors (the list in iOS
+    `web-contract/README.md`, plus `ritmofit_design_system/tokens.json`), this file, and
+    `ios-snapshot/`;
+  - in ritmofit-ios: `Core/Models`, `Core/Networking`, `web-contract/` and `design-tokens/`.
+- **No gated areas.**
+  - In ritmofit-web, `owner-gate` must find nothing gated in the planned files:
+    `git diff --name-only origin/main...HEAD | node scripts/owner-gate.mjs` prints "none
+    owner-gated". Run it again on the final head before §7.4 step 4.
+  - In ritmofit-ios, the PR changes no CI workflow or script (`.github/`, `scripts/`), agent
+    rules (`AGENTS.md`, `CLAUDE.md`, `agent-prompts/`), signing, entitlements, `Info.plist`,
+    xcconfig, auth (`Core/Networking`) or the SwiftData schema.
+  - Gated items go on the not-pre-approved list, unless the owner names that item in the issue as
+    an exception, with the gated area spelled out (for example "RF-1013 may change
+    `Info.plist`"). An exception covers only the item and area it names. In ritmofit-web it still
+    needs the label from §7.4 step 4, so `owner-gate` records it.
 - **Mergeable on its own.** It merges independently. Anything the checks themselves depend on (the
   task tool, for example) merges last.
 
@@ -154,14 +169,17 @@ When the queue runs out, the night ends early. Don't add filler.
 
 1. **Review.** A fresh-context reviewer subagent runs `/code-review high` on the branch diff
    *before* the PR is opened. Every finding is fixed, or filed as an RF task with the reason. The
-   review summary goes in the PR body. The pre-approval issue's queue is the night's claim, so the
-   PR is opened once, after review, not as an early draft. If a later push changes the diff (a CI
-   fix or a conflict resolution), the review runs again on what changed.
+   review summary goes in the PR body. The pre-approval issue's queue is the night's claim (§2),
+   so the PR is opened once, after review, not as an early draft. If a later push changes the diff
+   (a CI fix or a conflict resolution), the review runs again on what changed.
 2. **Task status.** The RF task is set on the branch as §6 says.
 3. **Checks.** Every required check is green on the final head, read from `gh pr checks` for that
-   SHA. Pending isn't green.
-4. **Merge.** Merge with `--squash --match-head-commit <sha>`, and cite the issue and SHA (§7.1).
-5. **On failure.** If any step fails, the PR stays open for the owner.
+   SHA. Pending isn't green. In ritmofit-web, re-run the §7.3 `owner-gate` check on the final head.
+4. **Approval record.** In ritmofit-ios, comment the issue and the final head SHA on the PR. In
+   ritmofit-web, apply `owner-approved` at least two minutes after the final push, with that
+   comment, and wait for `owner-gate` to succeed on that head. A refusal stops this PR.
+5. **Merge.** `gh pr merge <n> --squash --delete-branch --match-head-commit <sha>`.
+6. **On failure.** If any step fails, the PR stays open for the owner.
 
 ### 7.5 Hard stops
 
@@ -195,7 +213,9 @@ When the queue runs out, the night ends early. Don't add filler.
 
 ### 7.8 Close-out
 
-1. **Close-out comment.** Comment on each pre-approval issue: what merged (PR, RF ID, head SHA),
+1. **Handoff PR.** Open one last docs PR that only adds the night's handoff and updates RF
+   records. Every pre-approval issue lists it as the queue's last item. It merges under §7.4 like
+   the rest. If it can't merge, it stays open for the owner, and the close-out comment says so.
+2. **Close-out comment.** Comment on each pre-approval issue: what merged (PR, RF ID, head SHA),
    what is open and why, hard stops hit, flakes and re-runs, and any correction.
-2. **Handoff.** Merge a handoff in the night's last queued docs PR.
 3. **Close the issue.**
