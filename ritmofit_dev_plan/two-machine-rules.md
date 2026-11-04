@@ -118,16 +118,18 @@ is the merge permission for each PR it covers, and for nothing else:
   in the owner's verbatim words quoted in the issue. The rest of the issue only restates them, and
   where it says more, the owner's words win. The owner confirms the full issue text in the session
   before the window opens.
-- **The issue is frozen once the window opens.** Before each merge, the agent checks that the issue
-  body wasn't edited after the window opened (`lastEditedAt` from
+- **The issue is never edited.** It is created once, with the full text the owner confirmed. Before
+  §7.4 step 6 for each PR, the agent checks that the body was never edited: `lastEditedAt` from
   `gh api graphql -f query='{repository(owner:"steven-crosby",name:"<repo>"){issue(number:<n>){lastEditedAt}}}'`
-  is empty or earlier). If it was, merging stops for the night. Comments don't count as edits.
+  must be empty. If it isn't, merging stops for the night. A mistake in the issue is fixed by the
+  owner in a session, never by editing it. Comments don't count as edits.
 - **ritmofit-ios:** the merge comment cites the issue and the merged head SHA.
 - **ritmofit-web:** at §7.4 step 6, the agent applies `owner-approved` to the PR's final head with a
   comment citing the issue and the head SHA, then merges once `owner-gate` succeeds on that head.
 
-The permission covers each queued PR for the whole window, not one head: a push the merge bar allows
-(a CI fix or a conflict resolution) doesn't void it, but the bar runs again on the new head.
+The permission covers each queued PR for the whole window, not one head. A push that §7.4 step 4
+allows (a CI fix, a conflict resolution or an update from `main`) doesn't void it, but the bar runs
+again on the new head.
 
 Paste this block into the issue and fill it in:
 
@@ -147,15 +149,16 @@ Owner pre-approval for one unattended night (ritmofit_dev_plan/two-machine-rules
 
 ### 7.2 Planning
 
-Ask the owner one decision at a time. Show the owner the full issue text, record it after the
-owner's yes, and do it before the window opens.
+Ask the owner one decision at a time. Show the owner the full issue text, then create the issue
+with exactly that text after the owner's yes, before the window opens.
 
 ### 7.3 Queue eligibility
 
 Check each item while planning, and note the result in the issue. An item is eligible only if it
 passes all five checks:
 
-- **Unclaimed.** No open draft PR or in-progress RF record from another session claims it.
+- **Unclaimed.** No open draft PR, in-progress RF record or other open pre-approval issue (in
+  either repo) claims it.
 - **No plan needed.** It isn't substantial work that `AGENTS.md` says needs a confirmed plan.
 - **No contract or snapshot changes.** It changes no API contract and no file that one repo copies
   from the other:
@@ -164,21 +167,24 @@ passes all five checks:
     `ios-snapshot/`;
   - in ritmofit-ios: `Core/Models`, `Core/Networking`, `web-contract/` and `design-tokens/`.
 - **No gated areas.**
-  - In ritmofit-web, `owner-gate` must find nothing gated. While planning, list the files the item
-    will change and run `printf '%s\n' <files> | node scripts/owner-gate.mjs`. On the final head,
-    run `git fetch -q origin && git diff --name-only origin/main...HEAD | node scripts/owner-gate.mjs`.
-    Both must print "none owner-gated", and the final-head run is the binding one.
+  - In ritmofit-web, ask `owner-gate`. While planning, list the files the item will change and run
+    `printf '%s\n' <files> | node scripts/owner-gate.mjs`. On the final head, run
+    `git fetch -q origin && git diff --name-only origin/main...HEAD | node scripts/owner-gate.mjs`.
+    The final-head run is the binding one. For an item without an exception, both must print "none
+    owner-gated". For an item with an exception, every path they list must fall inside the area the
+    owner named.
   - In ritmofit-ios, the PR changes no CI workflow or script (`.github/`, `scripts/`), agent
     rules (`AGENTS.md`, `CLAUDE.md`, `agent-prompts/`), signing, entitlements, `Info.plist`,
     xcconfig, auth (`Core/Networking`) or the SwiftData schema.
   - Gated items go on the not-pre-approved list. The owner may name an exception for one item in
     their own words, with the gated area spelled out (for example "RF-1013 may change
-    `Info.plist`"). It covers only that item and area. In ritmofit-web it still needs the label
-    from §7.4 step 6, so `owner-gate` records it.
-  - **Never an exception:** agent rules (`AGENTS.md`, `CLAUDE.md`, `agent-prompts/`, this file),
-    CI workflows and the gate and check scripts (`.github/`, `scripts/owner-gate*`,
-    `scripts/rf-trace*`, the parity check), D1 migrations and the Drizzle schema, and auth or
-    authz.
+    `Info.plist`"). It covers only that item and area. Any gated change outside it stops the PR.
+    In ritmofit-web it still needs the label from §7.4 step 6, so `owner-gate` records it.
+  - **Never an exception:** agent rules (`AGENTS.md`, `CLAUDE.md`, `agent-prompts/`, this file,
+    and in web `ritmofit_dev_plan/tasks/README.md` and `ritmofit_dev_plan/handoffs/README.md`), CI
+    workflows and the gate, check and deploy scripts (`.github/`, `scripts/owner-gate*`,
+    `scripts/rf-trace*`, the deploy, smoke and secrets scripts, the parity check), D1 migrations and
+    the Drizzle schema, and auth or authz.
 - **Mergeable on its own.** It merges independently. Anything the checks themselves depend on (the
   task tool, for example) merges last.
 
@@ -188,28 +194,35 @@ When the queue runs out, the night ends early. Don't add filler.
 
 This replaces the repo's usual final review for the night's PRs.
 
-1. **Review.** A fresh-context reviewer subagent runs `/code-review high` on the branch diff
+1. **Task status.** The RF task is set on the branch as §6 says.
+2. **Review.** A fresh-context reviewer subagent runs `/code-review high` on the branch diff
    *before* the PR is opened. Every finding is fixed, or filed as an RF task with the reason. The
    review summary goes in the PR body. The pre-approval issue's queue is the night's claim (§2),
    so the PR isn't opened early as a draft.
-2. **Task status.** The RF task is set on the branch as §6 says.
 3. **Open and cite.** Open the PR, then add its URL as the record's `pr` evidence and push at once,
-   before the first CI run starts its tests. A run superseded that early hasn't started a
-   simulator.
-4. **Later pushes.** A CI-fix push may change only what the failing check needs. A conflict
-   resolution may change only the conflict. Anything more stops this PR. After either kind of
-   push, the review in step 1 runs again on the whole diff.
+   before the first CI run starts its tests. That push changes only the record's evidence and the
+   rendered board. A run superseded that early hasn't started a simulator.
+4. **Later pushes.** Only three kinds are allowed:
+   - a CI fix, changing only what the failing check needs;
+   - a conflict resolution, changing only the conflict;
+   - an update from `main` with no other change.
+
+   Anything more stops this PR. After any of them, the review in step 2 runs again on the whole
+   diff.
 5. **Checks.** Every check `gh pr checks` lists for the final head is green: in ritmofit-ios at least
    `ios build · test` and `parity`, in ritmofit-web the required CI job. Pending isn't green. In
    ritmofit-web, re-run the §7.3 `owner-gate` check on the final head.
-6. **Approval record.** In ritmofit-ios, comment the issue and the final head SHA on the PR. In
-   ritmofit-web, apply `owner-approved` at least two minutes after the final push, with that
-   comment, and wait for `owner-gate` to succeed on that head. A refusal stops this PR.
+6. **Approval record.** First re-check the issue (§7.1: never edited, window still open). In
+   ritmofit-ios, comment the issue and the final head SHA on the PR. In ritmofit-web, apply
+   `owner-approved` at least two minutes after the final push, with that comment, and wait for
+   `owner-gate` to succeed on that head. A refusal stops this PR.
 7. **Merge.** In ritmofit-ios,
    `gh pr merge <n> --squash --delete-branch --match-head-commit <sha>`. In ritmofit-web,
    `gh pr merge <n> --squash --match-head-commit <sha>` (no branch deletion; web `AGENTS.md`
    doesn't grant it).
-8. **On failure.** If any step fails, the PR stays open for the owner.
+8. **On failure.** If any step fails, the PR stays open for the owner. If the agent applied
+   `owner-approved` to it, the agent removes the label and comments why, so no later session
+   mistakes it for the owner's approval.
 
 ### 7.5 Hard stops
 
