@@ -3,7 +3,7 @@
   "id": "RF-129",
   "title": "The app has real URLs: a refresh returns to the same screen, and sign-in and sign-up have their own paths",
   "kind": "task",
-  "status": "backlog",
+  "status": "in_progress",
   "priority": "P1",
   "parent": null,
   "dependsOn": [],
@@ -14,7 +14,7 @@
     "The service-worker navigation fallback still denies /api/ routes, and OAuth and reset-password callbacks still reach the Worker.",
     "One routing approach covers both refresh-restore and the sign-in/sign-up paths, so the app does not get two routing mechanisms."
   ],
-  "nextAction": "Plan: the app has no router (App.tsx switches on pathname; Dashboard keeps navigation in component state). Decide between URL paths/hash for class detail and Live, or restoring the last screen from session storage. Owner decision on approach first. Absorbs RF-139 (sign-in/sign-up URLs, P1, from the 2026-10-28 UX audit): files App.tsx, Login.tsx, MarketingPage.tsx and the SW navigation config; The SW navigation config (apps/web/vite.config.ts) is owner-gated in scripts/owner-gate.mjs; Login.tsx and App.tsx are not. Surface: web.",
+  "nextAction": "Restart on branch feat/rf-129-real-urls (Neo). Approach is the owner's choice of 2026-11-04: real paths with no router library (/sign-in, /sign-up, /classes/<id>, /classes/<id>/live, /music, /account; old /?auth= links redirect) plus 5 fixes: Back while Live is playing stays in Live; sign-in returns to the deep link; a Class not found state; the URL is written from Dashboard state in one place and Back/Forward call the existing open/close functions; /music and /account move to a follow-up if time runs short. Service-worker config is expected to stay unchanged (fallback already denies /api/).",
   "blocker": null,
   "evidence": [
     {
