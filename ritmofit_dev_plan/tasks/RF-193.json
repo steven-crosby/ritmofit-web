@@ -28,6 +28,12 @@
       "ref": "https://github.com/steven-crosby/ritmofit-web/pull/724",
       "summary": "Fresh-context /code-review high found 10 issues (eligibility list looser than owner-gate, AGENTS.md permission and push-voids text, wrong snapshot list, night claim vs draft-first, label/merge order, stale record and references, present-tense iOS parity, handoff PR, issue template rendering); all fixed on the branch.",
       "checkedOn": "2026-11-04"
+    },
+    {
+      "kind": "pr",
+      "ref": "https://github.com/steven-crosby/ritmofit-web/pull/724",
+      "summary": "Second fresh-context /code-review high confirmed the first 10 fixes and found 11 more (agent-written issue could grow: now owner-verbatim, owner-confirmed and frozen; exceptions can never cover agent rules, CI/gate scripts, migrations or auth; no web branch deletion; section applies per repo only once its AGENTS.md names it; checks rule for iOS; open-and-cite step; Never granted conditions; whole-diff re-review and narrow fix pushes; planning-time owner-gate command; push-voids exception in section 6; unclaimed check). All fixed.",
+      "checkedOn": "2026-11-04"
     }
   ],
   "resolution": "ritmofit_dev_plan/two-machine-rules.md is the shared, owner-gated rules file; AGENTS.md, CLAUDE.md, start-session and the deployment runbook point to it, and the merge policy names the unattended-night exception. The iOS copy and its parity check are iOS RF-1041.",

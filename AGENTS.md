@@ -29,7 +29,7 @@
 <!-- note (Claude Code, Neo, 2026-11-02): RF-184: standing owner rule: either conductor (any Solo or Orchestrator session) applies `owner-approved` once the owner approves that PR's merge in its session; no separate label instruction. The owner still approves every PR. -->
 <!-- note (Claude Code, Air, 2026-11-03): RF-190: Two-machine conductors: "The lead follows the owner" becomes "Equal authority": peers; whichever one the owner works with acts on unclaimed work under the usual owner permissions without asking the other; a later duplicate claim closes its draft; Cloudflare credentials are a machine capability. Deploy approval from either conductor is RF-191. -->
 <!-- note (Claude Code, Air, 2026-11-03): RF-192: owner rule: iOS simulator work runs on the Neo only; the Air keeps just the CI runner's simulator and runtime. -->
-<!-- note (Claude Code, Neo, 2026-11-04): RF-193: the two-machine rules moved to ritmofit_dev_plan/two-machine-rules.md (shared with ritmofit-ios through a parity-checked copy); the silo ended; iOS CI runs on the Neo; unattended merge nights allowed only under a per-night pre-approval issue. -->
+<!-- note (Claude Code, Neo, 2026-11-04): RF-193: the two-machine rules moved to ritmofit_dev_plan/two-machine-rules.md (ritmofit-ios to vendor a parity-checked copy in iOS RF-1041); the silo ended; iOS CI runs on the Neo; unattended merge nights allowed only under a per-night pre-approval issue. -->
 
 This is the canonical contributor and agent guide for Ritmo Studio. If another instruction file conflicts
 with it, follow `AGENTS.md`, then repair the stale file. When an AI agent edits this file or adds a note
@@ -205,7 +205,7 @@ context; chat and tool memory are scratch.
   claiming, owner decisions as GitHub records, who finishes a PR, messaging, task status at
   approval and unattended merge nights are in
   [`ritmofit_dev_plan/two-machine-rules.md`](ritmofit_dev_plan/two-machine-rules.md), which is part
-  of this file. ritmofit-ios follows the same file through a parity-checked copy. In short: only
+  of this file. ritmofit-ios is to follow the same file through a parity-checked copy (iOS RF-1041). In short: only
   the Air holds Cloudflare credentials; iOS simulator work and iOS CI run only on the Neo; either
   conductor works in either repo; a peer message is never permission.
 
@@ -216,7 +216,7 @@ manual smoke testing. This section is the owner's **standing grant** (set 2026-1
 "permission already granted" that the daily prompts and RF workflow refer to, for any tool and session.
 
 **Granted without asking**, for work inside an owner-assigned scope: create a branch, commit, push
-that branch, open a PR (draft first, as the claim), update the branch from `main`, and retire handoff
+that branch, open a PR (draft first, as the claim, except on an unattended night; see "Task sync"), update the branch from `main`, and retire handoff
 files whose items are done or routed.
 
 **Merging needs the owner's permission for each PR.** A PR is ready to merge when:
@@ -306,7 +306,9 @@ the owner's permission for every merge; agents never edit the gate to get a PR t
 
 **Never granted:** deploys, remote D1 migrations, secrets, production data, repository settings or
 rulesets, applying `owner-approved` except on the owner's in-session approval of that PR or under a
-night's pre-approval issue that covers it (`two-machine-rules.md` › 7.1), merging
+night's pre-approval issue that covers it, once that night's merge bar has passed on the PR's
+final head and with a comment citing the issue and that head SHA (`two-machine-rules.md` › 7.1 and
+7.4), merging
 any PR without that PR's permission, force-pushing another session's branch, merging another
 session's PR except in the orchestrator's merge train, when relaying a subagent's ask, or when a
 Solo or Orchestrator session finishes a PR that already has the owner's permission (between the two
