@@ -1,0 +1,30 @@
+{
+  "schemaVersion": 1,
+  "id": "RF-193",
+  "title": "Shared two-machine rules: one web-canonical file both repos follow (modes, claiming, unattended nights)",
+  "kind": "documentation",
+  "status": "in_progress",
+  "priority": "P2",
+  "parent": null,
+  "dependsOn": [
+    "RF-192"
+  ],
+  "acceptance": [
+    "New ritmofit_dev_plan/two-machine-rules.md is the one shared rules file for both repos. It covers machines and their limits, one-machine and both-machines modes, claiming, owner decisions as GitHub records, who finishes a PR, messaging, task status at approval (iOS RF-1038), and unattended merge nights (pre-approval issue, queue eligibility, merge bar, hard stops, CI hygiene, claims and hygiene).",
+    "AGENTS.md \"Two-machine conductors\" points to that file instead of holding the rules; the stale text saying the Air runs the iOS CI runner and keeps the RitmoFit-CI simulator is gone (iOS CI runs on the Neo since iOS #86).",
+    "AGENTS.md \"Never granted\" allows an agent to apply owner-approved only to a PR covered by a night's pre-approval issue, after that night's merge bar passes, with a comment citing the issue and head SHA. Each repo keeps its own merge mechanics.",
+    "ritmofit-ios vendors the file as web-contract/two-machine-rules.md and its parity check fails on drift (separate iOS PR after this one merges)."
+  ],
+  "nextAction": "Neo session (2026-11-04), branch docs/rf-193-shared-machine-rules: write the shared file and the AGENTS.md pointer, run the final review, get CI green, then ask the owner for owner-approved. After merge, the Neo vendors the file into ritmofit-ios.",
+  "blocker": null,
+  "evidence": [
+    {
+      "kind": "observation",
+      "ref": "https://github.com/steven-crosby/ritmofit-web/pull/718#issuecomment-6637458064",
+      "summary": "Owner decisions (2026-11-04, Neo session), verbatim: the silo ends; one machine works both repos within limits; both on, claim per task; web-canonical file with an iOS parity check; shared scope is machine rules plus unattended nights; owner-approved via a night's pre-approval issue; the Neo writes it now (\"Go as written\").",
+      "checkedOn": "2026-11-04"
+    }
+  ],
+  "resolution": null,
+  "followUps": []
+}

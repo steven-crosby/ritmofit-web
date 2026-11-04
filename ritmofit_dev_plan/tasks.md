@@ -12,13 +12,13 @@ owner's queue: any agent may execute a Ready task. Publishing follows AGENTS.md 
 Evidence marked **recorded** is a carried-forward claim, not fresh verification.
 A checked PR proves its GitHub state, not product acceptance or production behavior.
 
-190 tasks. backlog: 67 · ready: 0 · in_progress: 0 · blocked: 2 · review: 10 · done: 109 · cancelled: 2.
+191 tasks. backlog: 67 · ready: 0 · in_progress: 1 · blocked: 2 · review: 10 · done: 109 · cancelled: 2.
 
 ## In progress
 
 | Task | Priority / kind | Relationships | Next action / resolution | Evidence |
 | --- | --- | --- | --- | --- |
-| — | — | — | — | — |
+| [RF-193](tasks/RF-193.json) Shared two-machine rules: one web-canonical file both repos follow (modes, claiming, unattended nights) | P2 / documentation | needs RF-192 | Neo session (2026-11-04), branch docs/rf-193-shared-machine-rules: write the shared file and the AGENTS.md pointer, run the final review, get CI green, then ask the owner for owner-approved. After merge, the Neo vendors the file into ritmofit-ios. | checked 2026-11-04 |
 
 ## Blocked / waiting
 
