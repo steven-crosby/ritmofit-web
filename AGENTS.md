@@ -236,8 +236,10 @@ Then the agent **asks**: "PR #N is green on `<sha>` — may I run the final revi
 In a live session it asks in chat. A background agent comments that question on the PR, adds the
 `ready-to-merge` label and stops. Permission is the owner saying so in a session, the owner
 adding `owner-approved` to the PR, or, on an unattended night, the owner's pre-approval issue that
-covers the PR (`ritmofit_dev_plan/two-machine-rules.md` › 7.1). Once a PR has that permission, any Solo or Orchestrator session
-may finish it: run the final review below and merge, even though another session opened it. Between
+covers the PR (`ritmofit_dev_plan/two-machine-rules.md` › 7.1). That issue is permission only for
+the night's own conductor, only while the issue is open and its window lasts, and only through
+§7.4 of that file; no other session may merge on it. Once a PR has the owner's own permission, any
+Solo or Orchestrator session may finish it: run the final review below and merge, even though another session opened it. Between
 the two conductors, `ritmofit_dev_plan/two-machine-rules.md` › "Who finishes a PR" decides which
 one does. A Lane session never merges, even an approved PR. Agents never apply `owner-approved` on
 their own judgment, and never merge unattended except on a night the owner pre-approves under

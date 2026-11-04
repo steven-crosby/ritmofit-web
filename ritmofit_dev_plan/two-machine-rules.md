@@ -74,7 +74,8 @@ they need the owner in the session that performs them (web RF-191 tracks a recor
 
 The conductor the owner gives the merge permission to runs the final review and the merge, whichever
 conductor opened the PR. When a PR's approval is a GitHub record (§3), either conductor may finish
-it. The one that opened it goes first unless the owner names the other, and the other checks for a
+it. A night's pre-approval issue is not such a record: only that night's conductor merges under it
+(§7.1). The one that opened it goes first unless the owner names the other, and the other checks for a
 merge notice before starting.
 
 ## 5. Messaging, and why a message is never permission
@@ -118,6 +119,8 @@ is the merge permission for each PR it covers, and for nothing else:
   in the owner's verbatim words quoted in the issue. The rest of the issue only restates them, and
   where it says more, the owner's words win. The owner confirms the full issue text in the session
   before the window opens.
+- **Only the night's conductor uses it,** and only while the issue is open and the window lasts.
+  The owner closes the issue to stop the night. The issue covers no other session or later time.
 - **The issue is never edited.** It is created once, with the full text the owner confirmed. Before
   §7.4 step 6 for each PR, the agent checks that the body was never edited: `lastEditedAt` from
   `gh api graphql -f query='{repository(owner:"steven-crosby",name:"<repo>"){issue(number:<n>){lastEditedAt}}}'`
@@ -212,7 +215,8 @@ This replaces the repo's usual final review for the night's PRs.
 5. **Checks.** Every check `gh pr checks` lists for the final head is green: in ritmofit-ios at least
    `ios build · test` and `parity`, in ritmofit-web the required CI job. Pending isn't green. In
    ritmofit-web, re-run the §7.3 `owner-gate` check on the final head.
-6. **Approval record.** First re-check the issue (§7.1: never edited, window still open). In
+6. **Approval record.** First re-check the issue (§7.1): still open, never edited, and the window
+   still open. The owner closing the issue revokes the night. In
    ritmofit-ios, comment the issue and the final head SHA on the PR. In ritmofit-web, apply
    `owner-approved` at least two minutes after the final push, with that comment, and wait for
    `owner-gate` to succeed on that head. A refusal stops this PR.
@@ -220,9 +224,10 @@ This replaces the repo's usual final review for the night's PRs.
    `gh pr merge <n> --squash --delete-branch --match-head-commit <sha>`. In ritmofit-web,
    `gh pr merge <n> --squash --match-head-commit <sha>` (no branch deletion; web `AGENTS.md`
    doesn't grant it).
-8. **On failure.** If any step fails, the PR stays open for the owner. If the agent applied
-   `owner-approved` to it, the agent removes the label and comments why, so no later session
-   mistakes it for the owner's approval.
+8. **On failure or stop.** If any step fails, or the night stops for any reason (§7.5, the window
+   ending, the issue closing), every PR left open stays open for the owner. On each one where the
+   agent applied `owner-approved`, it removes the label and comments why, before stopping, so no
+   later session mistakes it for the owner's approval.
 
 ### 7.5 Hard stops
 
