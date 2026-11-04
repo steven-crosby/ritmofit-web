@@ -28,6 +28,7 @@
 <!-- note (Claude Code, Neo, 2026-11-02): RF-182: Two-machine conductors: the lead is whichever conductor the owner is directing, not a per-repo default; owner decisions reach the other conductor only as GitHub records (owner-approved). -->
 <!-- note (Claude Code, Neo, 2026-11-02): RF-184: standing owner rule: either conductor (any Solo or Orchestrator session) applies `owner-approved` once the owner approves that PR's merge in its session; no separate label instruction. The owner still approves every PR. -->
 <!-- note (Claude Code, Air, 2026-11-03): RF-190: Two-machine conductors: "The lead follows the owner" becomes "Equal authority": peers; whichever one the owner works with acts on unclaimed work under the usual owner permissions without asking the other; a later duplicate claim closes its draft; Cloudflare credentials are a machine capability. Deploy approval from either conductor is RF-191. -->
+<!-- note (Claude Code, Air, 2026-11-03): RF-192: owner rule: iOS simulator work runs on the Neo only; the Air keeps just the CI runner's simulator and runtime. -->
 
 This is the canonical contributor and agent guide for Ritmo Studio. If another instruction file conflicts
 with it, follow `AGENTS.md`, then repair the stale file. When an AI agent edits this file or adds a note
@@ -222,6 +223,13 @@ context; chat and tool memory are scratch.
     relayed text alone (see the last bullet).
   - _Machine limits stay._ The Air runs the self-hosted iOS CI runner, so every iOS PR waits for its
     required check while the Air is offline, whichever conductor opened it.
+  - _iOS simulator work runs on the Neo_ (owner rule, 2026-11-03, until the owner changes it).
+    Building, running or testing the iOS app in a simulator for development or verification
+    happens on the Neo only. The Air keeps just what its CI runner needs (the `RitmoFit-CI`
+    simulator and its iOS runtime) and runs no simulator work of its own, so a session on the Air
+    that needs a simulator hands that step to the Neo, or to the owner when the Neo is offline. The
+    rule is about machines, not authority: either conductor still plans iOS work, edits iOS code
+    and finishes iOS PRs, and CI still runs on the Air.
   - _Only the Air holds Cloudflare credentials._ This is a machine capability, not a difference in
     authority. Deploys and every other wrangler step against production (remote D1 migrations,
     secrets, rollback, tail, `wrangler deployments status`) run there. The Neo holds no Cloudflare
