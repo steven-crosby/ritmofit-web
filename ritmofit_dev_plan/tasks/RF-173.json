@@ -31,6 +31,12 @@
       "ref": "e2e/smoke.spec.ts",
       "summary": "Neo local: with the 'Music songs' KNOWN_AXE entry removed, the smoke failed on main code (label-content-name-mismatch on all three chips, e.g. button[aria-label=\"SoundCloud, Connected\"]) and passed (2/2 at 1440 and 390) with the fix. Dashboard.test.tsx 218 tests passed (chip names unchanged).",
       "checkedOn": "2026-11-05"
+    },
+    {
+      "kind": "pr",
+      "ref": "https://github.com/steven-crosby/ritmofit-web/pull/733",
+      "summary": "RF-173 PR, opened under unattended pre-approval issue #730 after a fresh-context /code-review high with no significant findings (follow-ups in RF-200).",
+      "checkedOn": "2026-11-05"
     }
   ],
   "resolution": "axe joins a control's child text without spaces, so the chip's visible text read as \"soundcloudcatalog only\", which the aria-label \"SoundCloud, Catalog only\" does not contain. A space text node between the service name and the state mark (not rendered inside the flex chip) makes the visible text two words that the aria-label contains; the 'Music songs' KNOWN_AXE entry is removed and the smoke stays green at 1440 and 390. The accessible name is unchanged.",
