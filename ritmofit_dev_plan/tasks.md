@@ -12,13 +12,13 @@ owner's queue: any agent may execute a Ready task. Publishing follows AGENTS.md 
 Evidence marked **recorded** is a carried-forward claim, not fresh verification.
 A checked PR proves its GitHub state, not product acceptance or production behavior.
 
-193 tasks. backlog: 68 · ready: 0 · in_progress: 0 · blocked: 2 · review: 11 · done: 110 · cancelled: 2.
+193 tasks. backlog: 67 · ready: 0 · in_progress: 1 · blocked: 2 · review: 11 · done: 110 · cancelled: 2.
 
 ## In progress
 
 | Task | Priority / kind | Relationships | Next action / resolution | Evidence |
 | --- | --- | --- | --- | --- |
-| — | — | — | — | — |
+| [RF-189](tasks/RF-189.json) iOS Safari zooms the page when a 14px text box is focused | P3 / task | — | Neo, in progress on fix/rf-189-ios-input-zoom: move every text input, search, select and textarea to text-base sm:text-sm (one shared field class), then add a CI check for sub-16px fields. | checked 2026-11-03 |
 
 ## Blocked / waiting
 
@@ -117,7 +117,6 @@ A checked PR proves its GitHub state, not product acceptance or production behav
 | [RF-175](tasks/RF-175.json) PR gate follow-ups from RF-100: robust self-check, base-branch gate scripts, closed-PR label runs | P3 / task | needs RF-100, RF-176 | Owner triages: decide whether the gate-script trust change is worth it for a guardrail that AGENTS.md already calls not a security boundary. | checked 2026-11-02 |
 | [RF-179](tasks/RF-179.json) Deployment runbook fixes from #699 review: owner rollback path, rollback source, verification claim | P3 / documentation | — | Owner triages; fold into the next docs PR on the Air. | checked 2026-11-02 |
 | [RF-181](tasks/RF-181.json) Session middleware cleanups after RF-177/RF-178: refresh short-circuit, explicit cookie strip, per-cookie copies, gate mounts | P3 / task | — | Owner triages. Kept out of RF-183, which ships #703 and #705 as merged; these cleanups get their own PR. | checked 2026-11-02 |
-| [RF-189](tasks/RF-189.json) iOS Safari zooms the page when a 14px text box is focused | P3 / task | — | There is no shared input class: each field sets text-sm inline (about 20 components; ChoreographyEditor has its own fieldClass). Fix every text input, search, select and textarea, starting with the two the owner hit: the Create a class name field (apps/web/src/components/SongPicks.tsx, id song-pick-class-title) and Search songs (Dashboard.tsx), using text-base sm:text-sm; consider one shared field class while doing it; then add the check. Agent-created: Backlog until the owner sets Ready. | checked 2026-11-03 |
 | [RF-194](tasks/RF-194.json) Tighten unattended-night mechanics left from RF-193's final review | P3 / documentation | — | Plan first; it changes agent rules (owner-gated). Logged from the RF-193 final review, not blocking. | checked 2026-11-04 |
 | [RF-195](tasks/RF-195.json) RF-129 routing follow-ups from the #725 final review | P3 / task | needs RF-129 | Non-blocking findings logged from the final review of #725 (24ceeaf). Pick up after the owner's iPhone check of RF-129. Surface: web. | checked 2026-11-04 |
 | [RF-74](tasks/RF-74.json) Spotify playlist dialog offers Try again where retry cannot help | untriaged / task | parent RF-92 | Review the error/action mapping. Spotify reopened by the owner on 2026-10-28; Apple work comes first until about 2026-11-27. Resume risk: the Spotify developer app rejects the connected account ("The user is not registered for this application"), so Web API calls return 403. | recorded; checked 2026-10-28; checked 2026-10-29 |
