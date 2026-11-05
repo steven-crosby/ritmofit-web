@@ -34,6 +34,12 @@
       "ref": "apps/web/src/components/Dashboard.test.tsx",
       "summary": "Neo local: item 1 was already met on main 827ae64 (the library-error state renders only 'Try the library again' in copper; + Create lives in the library view); a new test pins it. Item 2: the new Live queue retry test failed on main (copper dropped to none while a card refetched) and passes with the fix; Dashboard.test.tsx all pass. A fresh-context review found the leading card (one class, or every check failed) still lost its copper Retry while refetching; fixed by keeping the same button as a busy copper \"Checking…\" (it keeps keyboard focus). Its new test failed on the earlier commit and passes now; Dashboard.test.tsx 221 passed.",
       "checkedOn": "2026-11-05"
+    },
+    {
+      "kind": "pr",
+      "ref": "https://github.com/steven-crosby/ritmofit-web/pull/734",
+      "summary": "RF-163 items 1-2 PR, opened under unattended pre-approval issue #730 after two fresh-context /code-review high passes (the significant finding fixed; follow-ups in RF-201).",
+      "checkedOn": "2026-11-05"
     }
   ],
   "resolution": null,
