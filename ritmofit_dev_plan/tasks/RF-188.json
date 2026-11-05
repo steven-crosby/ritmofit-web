@@ -3,7 +3,7 @@
   "id": "RF-188",
   "title": "Live timeline: make tapping a track obvious, easy to hit, and quiet while dragging",
   "kind": "task",
-  "status": "backlog",
+  "status": "in_progress",
   "priority": "P2",
   "parent": null,
   "dependsOn": [],
@@ -13,7 +13,7 @@
     "While a finger is dragging the timeline, Live does not show the \"Waiting for music\" banner and its actions; it shows at most a quiet seeking state, and the banner appears only if playback still has not progressed after release.",
     "The design follows ritmofit_design_system; the owner reviews the design before build."
   ],
-  "nextAction": "Propose two or three design options for the timeline strip (affordance, target size, tap feedback, drag state) for the owner to choose; then build the chosen one. Agent-created: Backlog until the owner sets Ready.",
+  "nextAction": "Neo: propose two or three design options for the Live timeline strip (affordance, target size, tap feedback, drag state) on this PR for the owner to choose; then build the chosen one on this branch (based on main 840255c, after #720).",
   "blocker": null,
   "evidence": [
     {
@@ -33,6 +33,18 @@
       "ref": "https://github.com/steven-crosby/ritmofit-web/pull/717",
       "summary": "#717 final review finding 2: wrong component named; corrected here.",
       "checkedOn": "2026-11-03"
+    },
+    {
+      "kind": "observation",
+      "ref": "https://github.com/steven-crosby/ritmofit-web/pull/720#issuecomment-6651157962",
+      "summary": "Owner set RF-188 Ready in the Neo session on 2026-11-04 (\"Yes, both Ready\"), recorded per two-machine-rules §3.",
+      "checkedOn": "2026-11-05"
+    },
+    {
+      "kind": "observation",
+      "ref": "https://github.com/steven-crosby/ritmofit-web/pull/720#issuecomment-6664043963",
+      "summary": "Owner work split for 2026-11-05: RF-188 moves from the Air to the Neo and starts after #720 merges (merged as 840255c at 17:49:52Z).",
+      "checkedOn": "2026-11-05"
     }
   ],
   "resolution": null,

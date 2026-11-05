@@ -12,13 +12,13 @@ owner's queue: any agent may execute a Ready task. Publishing follows AGENTS.md 
 Evidence marked **recorded** is a carried-forward claim, not fresh verification.
 A checked PR proves its GitHub state, not product acceptance or production behavior.
 
-201 tasks. backlog: 66 · ready: 0 · in_progress: 0 · blocked: 3 · review: 15 · done: 115 · cancelled: 2.
+201 tasks. backlog: 65 · ready: 0 · in_progress: 1 · blocked: 3 · review: 15 · done: 115 · cancelled: 2.
 
 ## In progress
 
 | Task | Priority / kind | Relationships | Next action / resolution | Evidence |
 | --- | --- | --- | --- | --- |
-| — | — | — | — | — |
+| [RF-188](tasks/RF-188.json) Live timeline: make tapping a track obvious, easy to hit, and quiet while dragging | P2 / task | — | Neo: propose two or three design options for the Live timeline strip (affordance, target size, tap feedback, drag state) on this PR for the owner to choose; then build the chosen one on this branch (based on main 840255c, after #720). | checked 2026-11-03; checked 2026-11-05 |
 
 ## Blocked / waiting
 
@@ -77,7 +77,6 @@ A checked PR proves its GitHub state, not product acceptance or production behav
 | [RF-158](tasks/RF-158.json) Scrubbing or pausing Live during a Spotify track start keeps music playing | P2 / task | needs RF-92, RF-108 | Split from RF-108 on 2026-10-30 (#667 final review, item 1) so RF-108 can close on Apple inside the Apple Music window. No parent on purpose: an open child would block RF-108 from Done. Start after RF-92 (Spotify Web API answering) and RF-108 (the adapter-agnostic settle wait in runtime.ts) are Done. Agent-created: Backlog until the owner sets Ready. Owner-gated (playback code). | checked 2026-10-30 |
 | [RF-167](tasks/RF-167.json) A Spotify account outside the developer allowlist sees the real cause and an alternative | P2 / task | needs RF-92 | From RF-131 decision 6 (b). Likely files: apps/api/src/routes/provider*.ts or apps/api/src/lib/music/ (error classification) and apps/web/src/lib/providers.ts: owner-gated (provider). Starts after RF-92, which owns probing the live Spotify response. Surface: web; iOS if the error code is new. Agent-created: Backlog until the owner sets Ready. | checked 2026-10-31 |
 | [RF-180](tasks/RF-180.json) Decide the native sign-out Origin design: server exception vs iOS sending Origin | P2 / investigation | — | Owner decides whenever convenient; it no longer gates RF-183. The server already accepts a native sign-out that sends its own base-URL Origin (integration test), so 'iOS sends Origin' needs only an iOS change plus removing withNativeSignOutOrigin in a later deploy. | checked 2026-11-02 |
-| [RF-188](tasks/RF-188.json) Live timeline: make tapping a track obvious, easy to hit, and quiet while dragging | P2 / task | — | Propose two or three design options for the timeline strip (affordance, target size, tap feedback, drag state) for the owner to choose; then build the chosen one. Agent-created: Backlog until the owner sets Ready. | checked 2026-11-03 |
 | [RF-191](tasks/RF-191.json) Deploy approval from either conductor (Air runs it), with rollback and a checkable scope | P2 / documentation | needs RF-190 | Owner approved the idea on 2026-11-03 ("Yes, allow it with those safeguards", #721 issuecomment-6617021324) and then chose to split it out of #721 after three review rounds found gaps. Draft the rule with rollback, scope-by-PR, single use, expiry and the pre-run notice; owner-gated (AGENTS.md). Agent-created: Backlog until the owner sets Ready. | checked 2026-11-03 |
 | [RF-101](tasks/RF-101.json) Owner-gate route authz call sites and CI-config files | P3 / task | needs RF-98 | Owner decides whether to gate route and CI-config files, given every merge already needs per-PR permission. | checked 2026-10-27; recorded |
 | [RF-102](tasks/RF-102.json) Owner approval binds only to a commit the owner actually saw | P3 / task | needs RF-98 | Owner decides whether to harden further (for example, bind to the reviewed SHA named in the approval) given per-PR merge permission is the backstop. | checked 2026-10-27 |
