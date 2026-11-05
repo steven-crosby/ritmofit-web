@@ -193,6 +193,15 @@ export function rememberReturnTo(path: string) {
   }
 }
 
+/** Forget a remembered path (the visitor gave up on that sign-in). */
+export function clearReturnTo() {
+  try {
+    window.sessionStorage.removeItem(RETURN_KEY);
+  } catch {
+    /* Storage blocked: nothing was remembered. */
+  }
+}
+
 /** The remembered path (a valid signed-in route only), cleared once read. */
 export function consumeReturnTo(): string | null {
   let path: string | null = null;

@@ -146,6 +146,21 @@ describe('App deep links', () => {
     expect(screen.getByTestId('dashboard')).toBeTruthy();
   });
 
+  it('forgets the deep link when the visitor goes back to the landing page', async () => {
+    window.history.pushState({}, '', classPath);
+    const view = render(<App />);
+    expect(window.location.pathname).toBe('/sign-in');
+
+    fireEvent.click(screen.getByRole('button', { name: 'Back to home' }));
+    expect(
+      await screen.findByRole('heading', { name: /find the class inside the music/i }),
+    ).toBeTruthy();
+    fireEvent.click(screen.getByRole('button', { name: 'Sign in' }));
+    sessionState.data = signedIn;
+    view.rerender(<App />);
+    expect(window.location.pathname).toBe('/');
+  });
+
   it('waits for the session check before deciding where a deep link goes', () => {
     sessionState.isPending = true;
     window.history.pushState({}, '', '/music');

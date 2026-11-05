@@ -14,6 +14,7 @@ import { useLayoutEffect, useReducer, useRef, useState } from 'react';
 import { authClient } from './lib/auth-client.js';
 import { clearExplicitSignOut, useLiveActive, wasExplicitSignOut } from './lib/session-guard.js';
 import {
+  clearReturnTo,
   consumeReturnTo,
   isDashboardRoute,
   navigate,
@@ -77,6 +78,13 @@ export function App() {
       navigate('/sign-in', { replace: true });
     } else if (redirect === 'to-root') navigate('/', { replace: true });
   }, [redirect]);
+
+  // The signed-out landing page drops a remembered deep link: a visitor who left
+  // sign-in for the front door has abandoned it, so a later sign-in lands on Classes.
+  const atLanding = !retained && !isPending && !lastUser.current && route.kind === 'root';
+  useLayoutEffect(() => {
+    if (atLanding) clearReturnTo();
+  }, [atLanding]);
 
   const skipLink = (
     <a

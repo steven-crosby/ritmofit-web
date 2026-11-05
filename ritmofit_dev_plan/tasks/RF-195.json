@@ -1,0 +1,32 @@
+{
+  "schemaVersion": 1,
+  "id": "RF-195",
+  "title": "RF-129 routing follow-ups from the #725 final review",
+  "kind": "task",
+  "status": "backlog",
+  "priority": "P3",
+  "parent": null,
+  "dependsOn": [
+    "RF-129"
+  ],
+  "acceptance": [
+    "Refreshing on /classes/<id>/live fetches the run payload once, not twice (loadDetail, then getRunPayload).",
+    "Back/Forward to the class that is already selected switches the destination without refetching the class or reloading its detail.",
+    "A failed Apple sign-in that returns to /sign-in?error=... shows a plain-words error on the sign-in form.",
+    "Dashboard tests no longer rely on a setTimeout(0) wait for a queued jsdom history.back() between tests (stub it, or make the reset deterministic).",
+    "Decide whether stepTo's 'a return goes Back' design (pendingBack/selfPop) is worth its complexity, or replace it with plain pushes plus a Live-specific rule.",
+    "The legacy /?auth= redirect runs outside a useState initializer."
+  ],
+  "nextAction": "Non-blocking findings logged from the final review of #725 (24ceeaf). Pick up after the owner's iPhone check of RF-129. Surface: web.",
+  "blocker": null,
+  "evidence": [
+    {
+      "kind": "pr",
+      "ref": "https://github.com/steven-crosby/ritmofit-web/pull/725",
+      "summary": "Final review (/code-review medium) of 24ceeaf: one significant finding (stale return-to) fixed in #725; these six were logged as non-blocking.",
+      "checkedOn": "2026-11-04"
+    }
+  ],
+  "resolution": null,
+  "followUps": []
+}
