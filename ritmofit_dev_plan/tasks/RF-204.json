@@ -1,7 +1,7 @@
 {
   "schemaVersion": 1,
   "id": "RF-204",
-  "title": "Live playback follow-ups from the #720 round-5 review",
+  "title": "Live playback follow-ups from the #720 final reviews",
   "kind": "task",
   "status": "backlog",
   "priority": "P3",
@@ -12,7 +12,10 @@
     "Apple adapter: when the re-cue setQueue in play() throws, startArmed is cleared at once, with a test.",
     "Live: Next, Previous, Skip track or a Full List row (jumpTo) after a playback error and Retry recover the same way (resume in place or rebuild the coordinator), or the record states why they differ.",
     "Apple adapter: the starting hold kept after destroy() is removed if it has no effect (the runtime builds a new adapter per job), or its purpose is documented.",
-    "resetMusicKitRejectionGuardForTests cannot drive guardHolders negative (test-only)."
+    "resetMusicKitRejectionGuardForTests cannot drive guardHolders negative (test-only).",
+    "Live timeline: the strip ignores non-primary mouse buttons (a right-click or middle-click does not start a gesture or seek), with a test. This already happened before #720.",
+    "Live: togglePlay cancels the commit throttle before resume or pause, consistent with Retry, jumpTo and Continue without music, or the record states why it need not.",
+    "Live: seekRelease reuses seek() for its error and send paths instead of duplicating them."
   ],
   "nextAction": "Pick these up after #720 merges and the owner's iPhone Safari run; the first item needs that device run (?playback-timing=1, a timeline re-cue within the same song). Agent-created: Backlog until the owner sets Ready.",
   "blocker": null,
@@ -21,6 +24,12 @@
       "kind": "pr",
       "ref": "https://github.com/steven-crosby/ritmofit-web/pull/720#issuecomment-6664534810",
       "summary": "Final review of #720 at 8f12fe9 listed these five as not significant, to be logged as Backlog: same-song re-cue evidence in onPlayingState, startArmed after a setQueue throw, jumpTo resuming in place versus Retry rebuilding, the no-op starting hold after destroy(), and the test-only guardHolders reset. Recorded from the review, not verified.",
+      "checkedOn": "2026-11-05"
+    },
+    {
+      "kind": "pr",
+      "ref": "https://github.com/steven-crosby/ritmofit-web/pull/720",
+      "summary": "Final review of #720 at 0f1ea0a (merged as 840255c) found no significant issues. It added three not-significant notes: the strip accepts non-primary mouse buttons (already in production before #720), togglePlay does not cancel the throttle (not reachable as a double start, since every release flushes or cancels), and seekRelease duplicates seek(). The Air conductor checked them against the code.",
       "checkedOn": "2026-11-05"
     }
   ],

@@ -15,7 +15,7 @@
     "The button is keyboard reachable, labeled with the song name, at least 44px, and axe WCAG 2.2 AA clean at 1440 and 390 wide with no nested interactive controls.",
     "Component tests cover that ▶ starts preview without toggling selection; the PR names the real-browser preview check CI cannot prove."
   ],
-  "nextAction": "Owner: against production (deployed 2026-11-05, main ddd4b70), on Music › Songs (desktop and iPhone Safari) tap ▶ on a liked song for each connected provider; it should play from the start in an inline row player with Stop, without ticking the row, and a second ▶ should stop the first. Then set Done. CI cannot prove real provider audio.",
+  "nextAction": "Owner: reconnect Spotify and SoundCloud first (both showed Reconnect on 2026-11-05). Then, against production on Music › Songs, on desktop and iPhone Safari, tap ▶ on a liked song for each of Apple Music, Spotify and SoundCloud, and confirm audio plays from the start for all three. All three are required before Done (owner, 2026-11-05). The row UI already passed in the simulator (inline player with Stop, row not ticked, a second ▶ stops the first). CI cannot prove real provider audio.",
   "blocker": null,
   "evidence": [
     {
@@ -82,6 +82,24 @@
       "kind": "observation",
       "ref": "https://github.com/steven-crosby/ritmofit-web/pull/729#issuecomment-6663990545",
       "summary": "Deployed to production on 2026-11-05 from the Air: main ddd4b70, Worker 4c906295-6506-4bc5-b886-8f568446c527, SPA assets/index-CzpTnNZB.js, rollback 229cf040-3b4e-48ac-80bd-10573d017810 (bd2b8fa). Smoke and security headers passed. The owner's desktop and iPhone ▶ check is still owed.",
+      "checkedOn": "2026-11-05"
+    },
+    {
+      "kind": "observation",
+      "ref": "https://github.com/steven-crosby/ritmofit-web/pull/739#issuecomment-6666424568",
+      "summary": "Owner assigned the RF-129, RF-189/RF-196 and RF-172 checks to the Neo in iOS Simulator Safari, with results counting toward Done; the owner iPhone keeps the final UX/feel pass after a deploy.",
+      "checkedOn": "2026-11-05"
+    },
+    {
+      "kind": "observation",
+      "ref": "https://ritmofit.studio/",
+      "summary": "iOS Simulator Safari (iPhone 17, iOS 27.2), production 840255c (Worker 40a83587), 2026-11-05 about 11:58-12:05 MST, signed in as the owner; Neo run per the owner check assignment: Music › Songs with only Apple Music connected (SoundCloud and Spotify showed Reconnect): tapping ▶ on A.F.U. opened the inline row player (\"Starting on Apple Music…\" with Stop) without ticking the row; a second ▶ on A.I. moved the player to that row and returned the first to ▶; Stop closed it; no row was ticked. Audio not confirmed: the player then showed \"Waiting for Apple Music sign-in…\" and Apple opened its Apple Account sign-in page, which the agent closed without entering anything. Desktop not checked.",
+      "checkedOn": "2026-11-05"
+    },
+    {
+      "kind": "pr",
+      "ref": "https://github.com/steven-crosby/ritmofit-web/pull/740#issuecomment-6666854194",
+      "summary": "Owner, 2026-11-05: \"make Spotify and SoundCloud ▶ checks required for RF-172\". Done now needs real ▶ audio for Apple Music, Spotify and SoundCloud, not Apple Music alone.",
       "checkedOn": "2026-11-05"
     }
   ],
