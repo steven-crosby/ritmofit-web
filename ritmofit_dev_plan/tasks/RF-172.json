@@ -15,7 +15,7 @@
     "The button is keyboard reachable, labeled with the song name, at least 44px, and axe WCAG 2.2 AA clean at 1440 and 390 wide with no nested interactive controls.",
     "Component tests cover that ▶ starts preview without toggling selection; the PR names the real-browser preview check CI cannot prove."
   ],
-  "nextAction": "Owner: on a device or browser signed in to Apple Music (MusicKit), tap ▶ on a liked Apple Music song in Music › Songs on desktop and iPhone Safari and confirm audio plays from the start; reconnect Spotify and SoundCloud first if you want them covered (both showed Reconnect on 2026-11-05). The row UI already passed in the simulator (inline player with Stop, row not ticked, a second ▶ stops the first). Then set Done. CI cannot prove real provider audio.",
+  "nextAction": "Owner: reconnect Spotify and SoundCloud first (both showed Reconnect on 2026-11-05). Then, against production on Music › Songs, on desktop and iPhone Safari, tap ▶ on a liked song for each of Apple Music, Spotify and SoundCloud, and confirm audio plays from the start for all three. All three are required before Done (owner, 2026-11-05). The row UI already passed in the simulator (inline player with Stop, row not ticked, a second ▶ stops the first). CI cannot prove real provider audio.",
   "blocker": null,
   "evidence": [
     {
@@ -94,6 +94,12 @@
       "kind": "observation",
       "ref": "https://ritmofit.studio/",
       "summary": "iOS Simulator Safari (iPhone 17, iOS 27.2), production 840255c (Worker 40a83587), 2026-11-05 about 11:58-12:05 MST, signed in as the owner; Neo run per the owner check assignment: Music › Songs with only Apple Music connected (SoundCloud and Spotify showed Reconnect): tapping ▶ on A.F.U. opened the inline row player (\"Starting on Apple Music…\" with Stop) without ticking the row; a second ▶ on A.I. moved the player to that row and returned the first to ▶; Stop closed it; no row was ticked. Audio not confirmed: the player then showed \"Waiting for Apple Music sign-in…\" and Apple opened its Apple Account sign-in page, which the agent closed without entering anything. Desktop not checked.",
+      "checkedOn": "2026-11-05"
+    },
+    {
+      "kind": "pr",
+      "ref": "https://github.com/steven-crosby/ritmofit-web/pull/740#issuecomment-6666854194",
+      "summary": "Owner, 2026-11-05: \"make Spotify and SoundCloud ▶ checks required for RF-172\". Done now needs real ▶ audio for Apple Music, Spotify and SoundCloud, not Apple Music alone.",
       "checkedOn": "2026-11-05"
     }
   ],
