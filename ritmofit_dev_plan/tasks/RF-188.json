@@ -69,6 +69,18 @@
       "ref": "https://github.com/steven-crosby/ritmofit-web/pull/738",
       "summary": "RF-188 R1 build. Fresh-context review of 3a55402 found one significant bug (a held tap in a silence gap let the frame loop enter the track, so release started a second adapter), fixed in 535b53e with a test; a re-review of 535b53e found nothing significant; its one minor point (host time not restarted after a gesture that ends without a seek) is fixed in the next commit; other minor findings in RF-206. Picks up RF-204 items 6, 7 (moot: no throttle left) and 8.",
       "checkedOn": "2026-11-05"
+    },
+    {
+      "kind": "observation",
+      "ref": "https://github.com/steven-crosby/ritmofit-web/pull/738#issuecomment-6670900994",
+      "summary": "Owner, in the Air session: the Neo runs round 2 on #738 to fix the Air final review significant findings 1-2 with a regression test; findings 3-8 optional or to RF-206.",
+      "checkedOn": "2026-11-05"
+    },
+    {
+      "kind": "test",
+      "ref": "apps/web/src/components/LiveMode.test.tsx",
+      "summary": "Round 2 (Neo local): the recovery panel stays mounted and only turns invisible under the finger, and Transport and the reveal effect see the raw musicBlocked. A new test (music blocked, More reopened, tap and drag the strip) asserts the same panel stays connected, nothing calls scrollIntoView, focus does not move and More stays open; it fails on 4d70bc1 (the panel unmounts). The gesture end banks the clock position before restarting host time (finding 3). Seeking… shows only with a music run that can seek, with a test (finding 6). onKeyDown calls preventDefault once (finding 8).",
+      "checkedOn": "2026-11-05"
     }
   ],
   "resolution": null,

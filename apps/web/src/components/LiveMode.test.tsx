@@ -2573,7 +2573,7 @@ describe('LiveMode timeline scrubber', () => {
     expect(adapters).toHaveLength(2);
   }, 10_000);
 
-  it('a finger on the strip holds "Waiting for music" and the rail reads Seeking… (RF-188)', async () => {
+  it('a finger on the strip quiets "Waiting for music" without reflow, scroll, focus or dock moves (RF-188 round 2)', async () => {
     // Music never confirms progress, so the waiting panel is up before the drag.
     vi.mocked(listConnections).mockResolvedValue([soundcloudConnection]);
     vi.mocked(soundcloudAdapterFactory).mockImplementation(() => ({
@@ -2583,7 +2583,16 @@ describe('LiveMode timeline scrubber', () => {
     render(<LiveMode payload={payload} onExit={() => {}} />);
     await screen.findByRole('list', { name: 'Track playback check' });
     fireEvent.click(screen.getByRole('button', { name: 'Start class' }));
-    await screen.findByRole('heading', { name: 'Waiting for music' }, { timeout: 5_000 });
+    const heading = await screen.findByRole(
+      'heading',
+      { name: 'Waiting for music' },
+      { timeout: 5_000 },
+    );
+    const panel = heading.closest('section')!;
+    // The instructor reopened the short-screen dock while music is blocked.
+    const more = screen.getByRole('button', { name: 'More controls' });
+    fireEvent.click(more);
+    expect(more.getAttribute('aria-expanded')).toBe('true');
     const slider = screen.getByRole('slider', { name: 'Seek class timeline' });
     vi.spyOn(slider, 'getBoundingClientRect').mockReturnValue({
       width: 180_000,
@@ -2596,25 +2605,45 @@ describe('LiveMode timeline scrubber', () => {
       y: 0,
       toJSON: () => ({}),
     } as DOMRect);
+    const scrolled = vi.fn();
+    Element.prototype.scrollIntoView = scrolled;
+    const focused = document.activeElement;
     const built = vi.mocked(soundcloudAdapterFactory).mock.calls.length;
-    fireEvent.pointerDown(slider, { clientX: 30_000, pointerId: 1 });
-    fireEvent.pointerMove(slider, { clientX: 90_000, buttons: 1, pointerId: 1 });
-    expect(screen.queryByRole('heading', { name: 'Waiting for music' })).toBeNull();
-    expect(screen.queryByRole('button', { name: 'Continue without music' })).toBeNull();
-    expect(screen.getByText('Seeking…')).toBeTruthy();
-    expect(screen.getByTestId('live-timeline-callout').textContent).toBe('Track 1 · 1:30');
-    await wait(400);
-    expect(vi.mocked(soundcloudAdapterFactory).mock.calls.length).toBe(built); // nothing sent
-    fireEvent.pointerUp(slider, { clientX: 90_000, pointerId: 1 });
-    expect(screen.queryByText('Seeking…')).toBeNull();
-    await waitFor(() =>
-      expect(vi.mocked(soundcloudAdapterFactory).mock.calls.length).toBe(built + 1),
-    );
-    // Still no progress after release, so the panel comes back.
-    expect(
-      await screen.findByRole('heading', { name: 'Waiting for music' }, { timeout: 5_000 }),
-    ).toBeTruthy();
+    try {
+      fireEvent.pointerDown(slider, { clientX: 30_000, pointerId: 1 });
+      fireEvent.pointerMove(slider, { clientX: 90_000, buttons: 1, pointerId: 1 });
+      // Quieted in place: the same panel stays mounted and keeps its space.
+      expect(heading.closest('section')).toBe(panel);
+      expect(panel.isConnected).toBe(true);
+      expect(panel.className).toContain('invisible');
+      expect(screen.getByText('Seeking…')).toBeTruthy();
+      expect(screen.getByTestId('live-timeline-callout').textContent).toBe('Track 1 · 1:30');
+      await wait(400);
+      expect(vi.mocked(soundcloudAdapterFactory).mock.calls.length).toBe(built); // nothing sent
+      fireEvent.pointerUp(slider, { clientX: 90_000, pointerId: 1 });
+      await waitFor(() =>
+        expect(vi.mocked(soundcloudAdapterFactory).mock.calls.length).toBe(built + 1),
+      );
+      await wait(400);
+      expect(screen.queryByText('Seeking…')).toBeNull();
+      expect(panel.isConnected).toBe(true);
+      expect(panel.className).not.toContain('invisible');
+      expect(scrolled).not.toHaveBeenCalled(); // no reveal after the gesture
+      expect(document.activeElement).toBe(focused);
+      expect(more.getAttribute('aria-expanded')).toBe('true'); // the dock stays open
+    } finally {
+      delete (Element.prototype as { scrollIntoView?: unknown }).scrollIntoView;
+    }
   }, 15_000);
+
+  it('says Seeking… only when a music run can seek, not with music off (RF-188 round 2)', async () => {
+    await renderLive(); // Run without music: no coordinator
+    const slider = screen.getByRole('slider', { name: 'Seek class timeline' });
+    fireEvent.pointerDown(slider, { clientX: 10, pointerId: 1 });
+    expect(screen.queryByText('Seeking…')).toBeNull();
+    expect(screen.getByText('Music off')).toBeTruthy();
+    fireEvent.pointerUp(slider, { clientX: 10, pointerId: 1 });
+  });
 
   it('All tracks opens the Full List, where every track is a jump row (RF-188)', async () => {
     await renderLive();

@@ -687,11 +687,15 @@ export function LiveMode({
     (active: boolean) => {
       scrubbingRef.current = active;
       setScrubbing(active);
-      // The frame loop skipped its ticks under the finger; restart host time
-      // from now so a gesture that ends without a seek does not jump ahead.
-      if (!active) clockStartSegment();
+      // The frame loop skipped its ticks under the finger. Bank the position
+      // the gesture left (as a pause does) and restart host time from now, so
+      // a gesture that ends without a seek neither jumps ahead nor rewinds.
+      if (!active) {
+        clockEndSegment();
+        clockStartSegment();
+      }
     },
-    [clockStartSegment],
+    [clockEndSegment, clockStartSegment],
   );
   const syncPositionUnlessScrubbing = useCallback(
     (ms: number) => {
@@ -1008,10 +1012,13 @@ export function LiveMode({
     suppressWaitingPanel &&
     waitingPanelDeadlineRef.current != null &&
     (waitingPanelNow == null || waitingPanelNow < waitingPanelDeadlineRef.current);
-  // A finger on the timeline holds "Waiting for music": the drag sends nothing
-  // to the provider, and the release decides. A real failure still shows (RF-188).
-  const showRecoveryPanel =
-    ((musicBlocked && !scrubbing) || hasPlaybackFailure) && !waitingPanelHeld;
+  const showRecoveryPanel = (musicBlocked || hasPlaybackFailure) && !waitingPanelHeld;
+  // A finger on the timeline quiets "Waiting for music": the drag sends nothing
+  // to the provider, and the release decides. The panel stays mounted and keeps
+  // its space, so nothing reflows under the finger and the reveal effect (which
+  // scrolls and focuses on a newly shown panel) never sees a gesture. A real
+  // failure still shows (RF-188).
+  const recoveryQuiet = scrubbing && !hasPlaybackFailure;
   // Account for actual chrome height, including wrapped status and section text.
   // Scroll-to/focus and the recovery scrollport then share the same visible bounds.
   useLayoutEffect(() => {
@@ -1242,7 +1249,8 @@ export function LiveMode({
             tabIndex={-1}
             aria-label="Playback recovery"
             role={playbackFailure ? 'alert' : 'status'}
-            className="shrink-0 border-t border-state-caution/30 bg-bg-raised px-4 py-3 rf-focus-ring sm:px-6 [@media(max-height:480px)]:max-h-[calc(100dvh-var(--live-top-height,0px)-var(--live-bottom-height,0px))] [@media(max-height:480px)]:overflow-y-auto [@media(max-height:480px)]:px-2 [@media(max-height:480px)]:py-2"
+            data-quiet={recoveryQuiet || undefined}
+            className={`${recoveryQuiet ? 'invisible ' : ''}shrink-0 border-t border-state-caution/30 bg-bg-raised px-4 py-3 rf-focus-ring sm:px-6 [@media(max-height:480px)]:max-h-[calc(100dvh-var(--live-top-height,0px)-var(--live-bottom-height,0px))] [@media(max-height:480px)]:overflow-y-auto [@media(max-height:480px)]:px-2 [@media(max-height:480px)]:py-2`}
           >
             <h2 className="font-ui text-sm font-semibold text-text-primary">
               {playbackFailure ? 'Playback stopped' : 'Waiting for music'}
@@ -1336,7 +1344,7 @@ export function LiveMode({
         </div>
         <Transport
           playing={playing}
-          musicBlocked={musicBlocked && !scrubbing}
+          musicBlocked={musicBlocked}
           hasPlaybackFailure={hasPlaybackFailure}
           transportRef={transportRef}
           onToggle={togglePlay}
@@ -1363,7 +1371,13 @@ export function LiveMode({
           onSeekPreview={seekPreview}
           onSeekCommit={seek}
           onSeekRelease={seekRelease}
-          scrubbing={scrubbing}
+          scrubbing={
+            scrubbing &&
+            playback.kind !== 'idle' &&
+            playback.kind !== 'paused' &&
+            playback.kind !== 'ended' &&
+            coordinatorRef.current != null
+          }
           onScrubChange={onScrubChange}
           onShowAllTracks={() => setView('list')}
           playback={coordinatorRef.current ? playback : null}

@@ -12,15 +12,22 @@
     "A system pointercancel during a press that never moved (an iOS edge gesture, a notification) leaves the clock where it was before the press and sends no seek, instead of jumping to the start of the pressed track, or the record states why the jump is kept.",
     "The timeline hint also tells keyboard users how to move (for example \"Arrow keys to nudge\"), or the record states why All tracks is enough.",
     "apps/web/src/lib/trailing-throttle.ts and its test, unused since RF-188, are removed, with the RF-108 and RF-185 source evidence that cites them retargeted so pnpm tasks:check still passes.",
-    "Owner device check: whether the 3 px tap slop is right for tap to jump on a real iPhone (a tap that moves more than 3 px commits an exact time instead of the track start)."
+    "Owner device check: whether tap to jump feels right on a real iPhone. A tap that moves more than 3 px commits an exact time instead of the track start, and grabbing the playhead mid-track to nudge it restarts the track if the finger lifts within 3 px (Air final review finding 5).",
+    "While a finger is held on the strip, the runtime transport sampling cannot auto-advance to the next track and then have the release seek enter again (Air final review finding 4; it already happened under the old throttle), or the record states why one extra entry at a track boundary is acceptable."
   ],
-  "nextAction": "Agent-created from the fresh-context review of #738 (RF-188): Backlog until the owner sets Ready. Items 1-4 are web code or records; item 5 waits on the owner real-iPhone feel pass after the RF-188 deploy.",
+  "nextAction": "Agent-created from the RF-188 reviews of #738: Backlog until the owner sets Ready. Items 1-4 and 6 are web code or records; item 5 waits on the owner real-iPhone feel pass after the RF-188 deploy. The Air final review findings 1-2 (significant), 3, 6 and 8 were fixed in #738 round 2 and are not tracked here.",
   "blocker": null,
   "evidence": [
     {
       "kind": "pr",
       "ref": "https://github.com/steven-crosby/ritmofit-web/pull/738",
       "summary": "Fresh-context review of #738 on 3a55402: minor findings 2 (More collapses after release), 5 (cancel of an unmoved press jumps to the track start) and 6 (no keyboard hint) logged here, with the now-unused trailing throttle and the tap-slop device question.",
+      "checkedOn": "2026-11-05"
+    },
+    {
+      "kind": "pr",
+      "ref": "https://github.com/steven-crosby/ritmofit-web/pull/738#issuecomment-6670885230",
+      "summary": "Air final review of #738 on 4d70bc1: significant findings 1 (recovery panel reveal/focus after a gesture while music is blocked) and 2 (More dock collapse on release) and minor 3, 6, 8 fixed in round 2; minor 4 and 5 added here; 7 (dead trailing throttle) was already item 4.",
       "checkedOn": "2026-11-05"
     }
   ],
