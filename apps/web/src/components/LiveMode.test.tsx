@@ -2601,6 +2601,52 @@ describe('LiveMode timeline scrubber', () => {
     expect(adapters).toHaveLength(3);
   }, 10_000);
 
+  it('in a playback error, a keyboard seek on the timeline moves only the clock (round 3 item 4)', async () => {
+    let built = 0;
+    vi.mocked(listConnections).mockResolvedValue([soundcloudConnection]);
+    vi.mocked(soundcloudAdapterFactory).mockImplementation(() => {
+      built++;
+      const adapter = workingAdapter();
+      if (built === 2) adapter.prepare = () => Promise.reject(new Error('widget failed'));
+      return adapter;
+    });
+    render(<LiveMode payload={payload} onExit={() => {}} />);
+    await screen.findByRole('list', { name: 'Track playback check' });
+    fireEvent.click(screen.getByRole('button', { name: 'Start class' }));
+    await screen.findByRole('button', { name: 'Pause' });
+    const slider = screen.getByRole('slider', { name: 'Seek class timeline' });
+    fireEvent.keyDown(slider, { key: 'Home' }); // this start fails
+    await screen.findByRole('button', { name: 'Retry music' });
+    expect(built).toBe(2);
+    fireEvent.keyDown(slider, { key: 'ArrowRight' });
+    await wait(400);
+    expect(built).toBe(2); // no resume: only Retry resumes from an error
+    expect(screen.getByRole('button', { name: 'Retry music' })).toBeTruthy();
+    expect(slider.getAttribute('aria-valuenow')).toBe('5000');
+  }, 10_000);
+
+  it('after the class end, a release at a value sent in the ended run is sent again (round 3 item 3)', async () => {
+    sessionStorage.setItem(PLAYBACK_TIMING_KEY, '1');
+    resetPlaybackTimingForTests();
+    const info = vi.spyOn(console, 'info').mockImplementation(() => {});
+    try {
+      const { slider } = await startWithRealtimeProvider();
+      // Keyboard End sends the class end; the run ends.
+      fireEvent.keyDown(slider, { key: 'End' });
+      await screen.findByRole('button', { name: 'Play' });
+      // A tap at the end pixel: that value was sent, but in the run that ended.
+      fireEvent.pointerDown(slider, { clientX: 180_000, pointerId: 1 });
+      fireEvent.pointerUp(slider, { clientX: 180_000, pointerId: 1 });
+      const lines: string[] = info.mock.calls.map((call: unknown[]) => String(call[0]));
+      expect(lines.some((line) => / release-sent @\d+ms ms=180000$/.test(line))).toBe(true);
+      expect(lines.some((line) => line.includes(' release-skipped '))).toBe(false);
+    } finally {
+      info.mockRestore();
+      sessionStorage.removeItem(PLAYBACK_TIMING_KEY);
+      resetPlaybackTimingForTests();
+    }
+  }, 10_000);
+
   it('an error during a tap never turns the release into an automatic resume (RF-185)', async () => {
     let built = 0;
     vi.mocked(listConnections).mockResolvedValue([soundcloudConnection]);

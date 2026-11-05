@@ -671,24 +671,23 @@ export function LiveMode({
   // provider adapter (RF-108). Built once per mount (a ref, not state) so
   // the window survives across renders.
   const commitThrottleRef = useRef<ReturnType<typeof createTrailingThrottle<number>> | null>(null);
-  /** True only while an explicit discrete seek (keyboard, Next, Previous)
-   * flushes; see the throttle callback. */
-  const explicitSeekRef = useRef(false);
+
+  /** Whether music is stopped on a failure. Then a seek of any kind (timeline
+   * gesture, keyboard, Next, Previous) moves only the clock: only Retry
+   * resumes music (RF-185). */
+  const inPlaybackError = useCallback(
+    () => coordinatorRef.current?.getStatus().kind === 'error',
+    [],
+  );
+
   commitThrottleRef.current ??= createTrailingThrottle(
     (ms) => {
       // Re-cue provider playback at the new position (no-op while paused — the
-      // next resume enters at the clock position anyway).
-      const coordinator = coordinatorRef.current;
-      if (coordinator?.getStatus().kind === 'error') {
-        // From an error only an explicit seek resumes music. A timeline
-        // gesture never does: its release or trailing drag value only moves
-        // the clock, and Retry stays the instructor's choice (RF-185).
-        if (!explicitSeekRef.current) return;
-        setPlaying(true);
-        void coordinator.resume(ms);
-      } else {
-        void coordinator?.seek(ms);
-      }
+      // next resume enters at the clock position anyway). Never from a
+      // playback error: a value still pending when the failure arrived only
+      // moved the clock, and Retry resumes from there.
+      if (inPlaybackError()) return;
+      void coordinatorRef.current?.seek(ms);
     },
     200,
     undefined,
@@ -698,25 +697,18 @@ export function LiveMode({
   );
 
   /** Discrete, immediate seek: keyboard, Next, Previous, row target. Rebases
-   * the clock (both tiers) and commits the provider position right away; from
-   * a playback error it also resumes music, as before. */
+   * the clock (both tiers) and commits the provider position right away. In
+   * a playback error it moves the clock only; Retry resumes from there. */
   const seek = useCallback(
     (ms: number) => {
       const clamped = clockSeek(ms);
-      explicitSeekRef.current = true;
-      try {
-        commitThrottleRef.current!.flush(clamped);
-      } finally {
-        explicitSeekRef.current = false;
+      if (inPlaybackError()) {
+        commitThrottleRef.current!.cancel();
+        return;
       }
+      commitThrottleRef.current!.flush(clamped);
     },
-    [clockSeek],
-  );
-
-  /** Whether music is stopped on a failure; timeline gestures then move only the clock. */
-  const inPlaybackError = useCallback(
-    () => coordinatorRef.current?.getStatus().kind === 'error',
-    [],
+    [clockSeek, inPlaybackError],
   );
 
   /** Continuous drag preview: cheap, high-frequency position update (writes
@@ -819,7 +811,7 @@ export function LiveMode({
       next ? 'toggle-play' : 'toggle-pause',
       () => `${source()} status=${coordinator?.getStatus().kind ?? 'none'}`,
     );
-    if (coordinator?.getStatus().kind === 'error') {
+    if (inPlaybackError()) {
       retryPlayback();
       return;
     }
@@ -841,6 +833,21 @@ export function LiveMode({
     coordinatorRef.current = coordinator;
     setPlaybackFailure(null);
     void coordinator.resume(held);
+  };
+
+  /** Skip track, from the recovery panel: an explicit recovery like Retry, so
+   * it resumes music at the next track's start, while a plain seek in a
+   * playback error only moves the clock (RF-185). */
+  const skipFailedTrack = (ms: number) => {
+    const clamped = clockSeek(ms);
+    commitThrottleRef.current?.cancel();
+    const coordinator = coordinatorRef.current;
+    if (!coordinator || !inPlaybackError()) {
+      seek(clamped);
+      return;
+    }
+    setPlaying(true);
+    void coordinator.resume(clamped);
   };
 
   /** Abandon playback but keep the class running (prompter + timers stay live). */
@@ -1300,7 +1307,7 @@ export function LiveMode({
               {liveIndex >= 0 && liveIndex < payload.tracks.length - 1 && (
                 <button
                   type="button"
-                  onClick={() => seek(payload.tracks[liveIndex + 1]!.startOffsetMs ?? 0)}
+                  onClick={() => skipFailedTrack(payload.tracks[liveIndex + 1]!.startOffsetMs ?? 0)}
                   className="min-h-11 rounded-control px-2 font-ui text-xs text-interactive rf-focus-ring"
                 >
                   Skip track

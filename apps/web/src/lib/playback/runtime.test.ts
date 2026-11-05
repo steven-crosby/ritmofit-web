@@ -236,6 +236,16 @@ describe('RuntimePlaybackCoordinator', () => {
     expect(created).toHaveLength(0);
   });
 
+  it('changes its run generation when the run reaches the class end (round 3 item 3)', async () => {
+    const payload = makePayload([makeEntry({ classTrackId: 'ct-1', durationMs: 180_000 })]);
+    const { coordinator } = makeHarness(payload, connections('soundcloud'));
+    await coordinator.start(0);
+    const running = coordinator.getRunGeneration();
+    await coordinator.seek(payload.class.totalDurationMs);
+    expect(coordinator.getStatus()).toEqual({ kind: 'ended' });
+    expect(coordinator.getRunGeneration()).not.toBe(running);
+  });
+
   it('keeps its run generation across seeks and changes it on pause, resume and destroy (RF-185)', async () => {
     const payload = makePayload([makeEntry({ classTrackId: 'ct-1', durationMs: 180_000 })]);
     const { coordinator } = makeHarness(payload, connections('soundcloud'));

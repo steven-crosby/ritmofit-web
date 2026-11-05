@@ -50,6 +50,12 @@
       "ref": "https://github.com/steven-crosby/ritmofit-web/pull/720",
       "summary": "Round 3 of #720: no change to the RF-186 diagnosis, blocker or device lines needed. A timeline gesture during a playback error now logs [ritmo live] release-held and no longer resumes by itself, which removes one candidate path to an unasked-for start.",
       "checkedOn": "2026-11-04"
+    },
+    {
+      "kind": "pr",
+      "ref": "https://github.com/steven-crosby/ritmofit-web/pull/720",
+      "summary": "Round 4 of #720: in a playback error, a keyboard seek, Next or Previous now moves only the clock, like a timeline gesture since round 3. Only Retry or Skip track resumes, which removes one more candidate path to an unasked-for start. The blocker and the device lines needed are unchanged.",
+      "checkedOn": "2026-11-04"
     }
   ],
   "resolution": null,

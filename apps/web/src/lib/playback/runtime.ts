@@ -196,9 +196,9 @@ export class RuntimePlaybackCoordinator {
 
   /**
    * Changes whenever provider playback is (re)entered or ended by anything
-   * other than a seek: start, resume (Play or Retry), pause, stop, destroy
-   * and failure. Unique across coordinators, so a new coordinator never
-   * repeats an old value. A seek, a tick or an auto-advance keeps it. Live
+   * other than a seek: start, resume (Play or Retry), pause, stop, destroy,
+   * failure and reaching the class end. Unique across coordinators, so a new
+   * coordinator never repeats an old value. A seek, a tick or an auto-advance keeps it. Live
    * ties the timeline's "already sent" check to it (RF-185): a position sent
    * under another generation never counts as sent.
    */
@@ -355,6 +355,8 @@ export class RuntimePlaybackCoordinator {
 
       const segment = segmentAt(this.payload, elapsedMs);
       if (segment.kind === 'ended') {
+        // The run is over, like pause, stop and failure (RF-185).
+        this.nextRunGeneration();
         this.running = false;
         this.setStatus({ kind: 'ended' });
         return;

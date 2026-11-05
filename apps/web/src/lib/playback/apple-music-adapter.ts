@@ -309,6 +309,8 @@ export class AppleMusicAdapter implements PlaybackAdapter {
   private startArmed = false;
   /** MusicKit reported playing this start's queue while armed; see onPlayingState. */
   private playingSeenForStart = false;
+  /** This start's own queue request has resolved (or it needed none). */
+  private cueResolvedForStart = false;
   /** Releases this adapter's hold on the RF-187 rejection listener. */
   private releaseRejectionGuard: (() => void) | null = null;
   /**
@@ -369,14 +371,18 @@ export class AppleMusicAdapter implements PlaybackAdapter {
     if (this.destroyed || !this.instance) return;
     // Armed before the re-cue (RF-187): a re-cue can start the new queue by
     // itself before play() is issued. A playing state counts for this start
-    // only while this adapter's queue request is the newest on the instance
-    // and the now-playing item is not another song.
+    // only while this adapter's queue request is the newest on the instance,
+    // the now-playing item is not another song, and either this start's queue
+    // request has resolved or MusicKit is already at this start's cue. While
+    // the re-cue is still loading, the previous queue (often the same song on
+    // a timeline re-cue) can still report playing at its old position.
     if (
       this.startArmed &&
       this.transportState(event.state) === 'playing' &&
       this.queueGeneration !== null &&
       currentQueueGeneration(this.instance) === this.queueGeneration &&
-      this.nowPlayingSong() !== 'other'
+      this.nowPlayingSong() !== 'other' &&
+      (this.cueResolvedForStart || this.atThisCue())
     )
       this.playingSeenForStart = true;
     if (!this.awaitingFirstPlaying) return;
@@ -412,6 +418,11 @@ export class AppleMusicAdapter implements PlaybackAdapter {
   private thisStartIsPlaying(): boolean {
     if (this.playingSeenForStart) return true;
     if (this.transportState() !== 'playing' || this.nowPlayingSong() !== 'this') return false;
+    return this.atThisCue();
+  }
+
+  /** MusicKit's playhead is at this start's cue (within the start cap). */
+  private atThisCue(): boolean {
     const seconds = this.instance?.currentPlaybackTime;
     if (typeof seconds !== 'number' || !Number.isFinite(seconds)) return false;
     const capSeconds = (this.host.playStartCapMs ?? DEFAULT_PLAY_START_CAP_MS) / 1000;
@@ -525,11 +536,13 @@ export class AppleMusicAdapter implements PlaybackAdapter {
 
   async play(): Promise<void> {
     clearSafariModernFairPlay();
-    this.releaseRejectionGuard ??= retainMusicKitRejectionGuard();
     const instance = this.requireInstance();
+    // Held only once play() can proceed, so a throw above leaves no hold.
+    this.releaseRejectionGuard ??= retainMusicKitRejectionGuard();
     // Armed before the re-cue below, which can start the new queue by itself.
     this.startArmed = true;
     this.playingSeenForStart = false;
+    this.cueResolvedForStart = !this.cueDirty;
     // A pre-play seek (mid-track entry) re-cues here, since seekToTime has no
     // now-playing item to seek until playback has started. Bounded like the
     // prepare-time cue so a hung queue-load can't wedge the transition.
@@ -540,6 +553,7 @@ export class AppleMusicAdapter implements PlaybackAdapter {
         this.trackTitle,
       );
       this.cueDirty = false;
+      this.cueResolvedForStart = true;
     }
     if (this.destroyed) {
       this.startArmed = false;

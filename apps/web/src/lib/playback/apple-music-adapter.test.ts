@@ -1961,6 +1961,47 @@ describe('MusicKit play() rejection after a mid-track re-cue (RF-187)', () => {
     expect(timingLines().some((line) => line.includes('handled, this queue playing'))).toBe(true);
   });
 
+  it('an old-queue playing state during a same-song re-cue is no proof (round 3 item 1)', async () => {
+    const instance = new FakeInstance(true) as FakeInstance & { nowPlayingItem?: unknown };
+    const { adapter } = makeAdapter(instance, { preconfigured: true, playStartCapMs: 30 });
+    await adapter.prepare(makeEntry(), WINDOW_CLIPPED);
+    await adapter.seek(40_000); // a timeline re-cue of the song already playing
+    instance.nowPlayingItem = { id: 'am-123' };
+    const queue = deferred<unknown>();
+    instance.setQueueBehavior = () => {
+      // While the re-cue loads, the old queue (same song, old position) reports playing.
+      instance.playbackState = STATES.playing;
+      instance.currentPlaybackTime = 100;
+      instance.emit(EVENTS.playbackStateDidChange, { state: STATES.playing });
+      // The new queue loads but does not start; MusicKit pauses the old one.
+      queueMicrotask(() => {
+        instance.playbackState = STATES.paused;
+        instance.currentPlaybackTime = 40;
+        queue.resolve(undefined);
+      });
+      return queue.promise;
+    };
+    instance.playBehavior = () => Promise.reject(new Error(ALREADY_PLAYING));
+    await expect(adapter.play()).rejects.toThrow(appleMusicPlayNotStartedMessage('Baiana', 30));
+  });
+
+  it('play() on an unprepared or destroyed adapter takes no guard hold (round 3 item 2)', async () => {
+    const instance = new FakeInstance(true);
+    const unprepared = makeAdapter(instance, { preconfigured: true }).adapter;
+    await expect(unprepared.play()).rejects.toThrow('Apple Music player is not prepared.');
+    const destroyed = makeAdapter(instance, { preconfigured: true }).adapter;
+    await destroyed.prepare(makeEntry(), WINDOW_ZERO);
+    destroyed.destroy();
+    await expect(destroyed.play()).rejects.toThrow('Apple Music player is not prepared.');
+    vi.useFakeTimers({ toFake: ['setTimeout', 'clearTimeout'] });
+    try {
+      vi.advanceTimersByTime(MUSICKIT_GUARD_LINGER_MS + 1);
+      expect(dispatchRejection(new Error(ALREADY_PLAYING))).toBe(false);
+    } finally {
+      vi.useRealTimers();
+    }
+  });
+
   it('the now-playing item at this cue counts as proof; another song does not', async () => {
     const instance = new FakeInstance(true) as FakeInstance & { nowPlayingItem?: unknown };
     const { adapter } = makeAdapter(instance, { preconfigured: true, playStartCapMs: 30 });
