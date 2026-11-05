@@ -1067,6 +1067,52 @@ describe('LiveMode waiting panel grace', () => {
     vi.useRealTimers();
   });
 
+  it('holds the recovery reveal while a finger is on the strip, then reveals once (RF-188 round 3)', async () => {
+    const stalled = { current: false };
+    let transport: NonNullable<AdapterEvents['onTransportState']> = () => {};
+    await startTeaching((events) => {
+      transport = (state) => events.onTransportState?.(state);
+      return playingTransportAdapter(stalled);
+    });
+    const slider = screen.getByRole('slider', { name: 'Seek class timeline' });
+    vi.spyOn(slider, 'getBoundingClientRect').mockReturnValue({
+      width: 180_000,
+      left: 0,
+      right: 180_000,
+      top: 0,
+      bottom: 40,
+      height: 40,
+      x: 0,
+      y: 0,
+      toJSON: () => ({}),
+    } as DOMRect);
+    const scrolled = vi.fn();
+    Element.prototype.scrollIntoView = scrolled;
+    try {
+      fireEvent.pointerDown(slider, { clientX: 60_000, pointerId: 1 });
+      // Music stalls under the finger and the 2 s grace runs out mid-press.
+      stalled.current = true;
+      act(() => transport('buffering'));
+      await act(async () => {
+        await vi.advanceTimersByTimeAsync(2_100);
+      });
+      const panel = screen.getByRole('heading', { name: 'Waiting for music' }).closest('section')!;
+      expect(panel.className).toContain('invisible');
+      expect(scrolled).not.toHaveBeenCalled(); // nothing moves under the finger
+      expect(document.activeElement).not.toBe(panel);
+      // The press ends without a seek: the deferred reveal runs once.
+      fireEvent.pointerCancel(slider, { pointerId: 1 });
+      await act(async () => {
+        await vi.advanceTimersByTimeAsync(0);
+      });
+      expect(panel.className).not.toContain('invisible');
+      expect(scrolled).toHaveBeenCalledTimes(1);
+      expect(document.activeElement).toBe(panel);
+    } finally {
+      delete (Element.prototype as { scrollIntoView?: unknown }).scrollIntoView;
+    }
+  });
+
   it('keeps a sub-2s buffering gap off the recovery panel and leaves focus put', async () => {
     const stalled = { current: false };
     let transport: NonNullable<AdapterEvents['onTransportState']> = () => {};
@@ -2643,6 +2689,72 @@ describe('LiveMode timeline scrubber', () => {
     expect(screen.queryByText('Seeking…')).toBeNull();
     expect(screen.getByText('Music off')).toBeTruthy();
     fireEvent.pointerUp(slider, { clientX: 10, pointerId: 1 });
+  });
+
+  it('a lost release cannot freeze the class clock; a still finger lifted later still seeks once (RF-188 round 3)', async () => {
+    await renderLive(); // prompter-only: the frame loop drives the clock
+    vi.useFakeTimers();
+    try {
+      fireEvent.click(screen.getByRole('button', { name: 'Play' }));
+      const slider = screen.getByRole('slider', { name: 'Seek class timeline' });
+      vi.spyOn(slider, 'getBoundingClientRect').mockReturnValue({
+        width: 180_000,
+        left: 0,
+        right: 180_000,
+        top: 0,
+        bottom: 40,
+        height: 40,
+        x: 0,
+        y: 0,
+        toJSON: () => ({}),
+      } as DOMRect);
+      act(() => {
+        vi.advanceTimersByTime(5_000);
+      });
+      fireEvent.pointerDown(slider, { clientX: 90_000, pointerId: 1 }); // previews 0:00
+      act(() => {
+        vi.advanceTimersByTime(3_000);
+      });
+      expect(slider.getAttribute('aria-valuenow')).toBe('0'); // held under the finger
+      // No pointer event for 10 s: the watchdog lets the clock run again.
+      act(() => {
+        vi.advanceTimersByTime(8_000);
+      });
+      act(() => {
+        vi.advanceTimersByTime(2_000);
+      });
+      expect(Number(slider.getAttribute('aria-valuenow'))).toBeGreaterThan(1_000);
+      // The finger was only resting: lifting it still commits the tap target.
+      fireEvent.pointerUp(slider, { clientX: 90_000, pointerId: 1 });
+      expect(slider.getAttribute('aria-valuenow')).toBe('0');
+    } finally {
+      vi.useRealTimers();
+    }
+  });
+
+  it('a release the strip never saw, seen by the window, ends the scrub (RF-188 round 3)', async () => {
+    await renderLive();
+    vi.useFakeTimers();
+    try {
+      fireEvent.click(screen.getByRole('button', { name: 'Play' }));
+      const slider = screen.getByRole('slider', { name: 'Seek class timeline' });
+      fireEvent.pointerDown(slider, { clientX: 10, pointerId: 1 });
+      act(() => {
+        vi.advanceTimersByTime(1_000);
+      });
+      const held = Number(slider.getAttribute('aria-valuenow'));
+      act(() => {
+        vi.advanceTimersByTime(1_000);
+      });
+      expect(Number(slider.getAttribute('aria-valuenow'))).toBe(held);
+      fireEvent.blur(window); // the page lost focus mid-press
+      act(() => {
+        vi.advanceTimersByTime(1_000);
+      });
+      expect(Number(slider.getAttribute('aria-valuenow'))).toBeGreaterThan(held);
+    } finally {
+      vi.useRealTimers();
+    }
   });
 
   it('All tracks opens the Full List, where every track is a jump row (RF-188)', async () => {

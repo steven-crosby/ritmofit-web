@@ -81,6 +81,18 @@
       "ref": "apps/web/src/components/LiveMode.test.tsx",
       "summary": "Round 2 (Neo local): the recovery panel stays mounted and only turns invisible under the finger, and Transport and the reveal effect see the raw musicBlocked. A new test (music blocked, More reopened, tap and drag the strip) asserts the same panel stays connected, nothing calls scrollIntoView, focus does not move and More stays open; it fails on 4d70bc1 (the panel unmounts). The gesture end banks the clock position before restarting host time (finding 3). Seeking… shows only with a music run that can seek, with a test (finding 6). onKeyDown calls preventDefault once (finding 8).",
       "checkedOn": "2026-11-05"
+    },
+    {
+      "kind": "observation",
+      "ref": "https://github.com/steven-crosby/ritmofit-web/pull/738#issuecomment-6671867898",
+      "summary": "Owner, in the Air session: the Neo runs round 3 on #738 (lost-gesture clock freeze, deferred reveal, unmoved cancel), with the 10 s watchdog ending only the host scrub state so a still finger lifted later still commits its one seek.",
+      "checkedOn": "2026-11-05"
+    },
+    {
+      "kind": "test",
+      "ref": "apps/web/src/components/LiveTimeline.test.tsx",
+      "summary": "Round 3 (Neo local): ten new tests in LiveTimeline.test.tsx and LiveMode.test.tsx, all failing on a6b0acd: a window pointerup, pointercancel, blur or page hide ends a gesture the strip lost; the 10 s no-event watchdog releases only the host and a still finger lifted after it still seeks once; a move after it holds the host again; an unmoved cancel commits nothing and restores the clock; in prompter-only mode a lost release no longer freezes the class clock; the recovery reveal is held under the finger and runs once on release.",
+      "checkedOn": "2026-11-05"
     }
   ],
   "resolution": null,

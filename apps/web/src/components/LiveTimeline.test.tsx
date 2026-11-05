@@ -5,6 +5,7 @@ import type { RunPayload, RunPayloadTrackEntry } from '@ritmofit/shared';
 import type { ClockStore } from '../lib/use-virtual-clock.js';
 import {
   LiveTimeline,
+  SCRUB_WATCHDOG_MS,
   TAP_SLOP_PX,
   blockAt,
   fractionToMs,
@@ -446,7 +447,8 @@ describe('LiveTimeline taps (RF-185)', () => {
     fireEvent.lostPointerCapture(slider, { pointerId: 1 }); // the tail of that end: nothing
     fireEvent.pointerDown(slider, { clientX: 120, pointerId: 2 });
     fireEvent.pointerUp(slider, { clientX: 120, pointerId: 2 });
-    expect(onSeekRelease.mock.calls).toEqual([[0], [120000]]);
+    // The unmoved press commits nothing (RF-188 round 3); the next pointer works.
+    expect(onSeekRelease.mock.calls).toEqual([[120000]]);
   });
 
   describe('debug timing', () => {
@@ -629,5 +631,113 @@ describe('LiveTimeline tap to jump (RF-188)', () => {
   it('has no All tracks button without a list to open', () => {
     renderStrip();
     expect(screen.queryByRole('button', { name: 'All tracks' })).toBeNull();
+  });
+});
+
+describe('LiveTimeline lost releases (RF-188 round 3)', () => {
+  function renderStrip(initialMs = 30_000) {
+    const clock = makeTestClock(initialMs);
+    const onSeekPreview = vi.fn((ms: number) => clock.setValue(ms));
+    const onSeekRelease = vi.fn();
+    const onScrubChange = vi.fn();
+    stubRect(240);
+    render(
+      <LiveTimeline
+        payload={makePayload()}
+        clock={clock.store}
+        onSeekPreview={onSeekPreview}
+        onSeekCommit={() => {}}
+        onSeekRelease={onSeekRelease}
+        onScrubChange={onScrubChange}
+      />,
+    );
+    return {
+      slider: screen.getByRole('slider'),
+      clock,
+      onSeekPreview,
+      onSeekRelease,
+      onScrubChange,
+    };
+  }
+
+  it('a cancelled press that never moved commits nothing and puts the clock back', () => {
+    const { slider, clock, onSeekRelease } = renderStrip(30_000);
+    fireEvent.pointerDown(slider, { clientX: 180, pointerId: 1 }); // previews track 2's start
+    expect(clock.store.getSnapshot()).toBe(120_000);
+    fireEvent.pointerCancel(slider, { pointerId: 1 });
+    expect(onSeekRelease).not.toHaveBeenCalled();
+    expect(clock.store.getSnapshot()).toBe(30_000);
+  });
+
+  it('a window pointerup the strip missed ends the gesture; a drag commits its last position', () => {
+    const { slider, onSeekRelease, onScrubChange } = renderStrip();
+    fireEvent.pointerDown(slider, { clientX: 60, pointerId: 1 });
+    fireEvent.pointerMove(slider, { clientX: 150, buttons: 1, pointerId: 1 });
+    fireEvent.pointerUp(window, { pointerId: 2 }); // another pointer: ignored
+    expect(onScrubChange.mock.calls).toEqual([[true]]);
+    fireEvent.pointerUp(window, { pointerId: 1 });
+    expect(onScrubChange.mock.calls).toEqual([[true], [false]]);
+    expect(onSeekRelease.mock.calls).toEqual([[150000]]);
+    fireEvent.pointerUp(slider, { clientX: 150, pointerId: 1 }); // late: nothing more
+    expect(onSeekRelease).toHaveBeenCalledTimes(1);
+  });
+
+  it.each([
+    ['the window loses focus', () => fireEvent.blur(window)],
+    [
+      'the page is hidden',
+      () => {
+        Object.defineProperty(document, 'visibilityState', { value: 'hidden', configurable: true });
+        fireEvent(document, new Event('visibilitychange'));
+        delete (document as { visibilityState?: unknown }).visibilityState;
+      },
+    ],
+    ['the window sees a pointercancel', () => fireEvent.pointerCancel(window, { pointerId: 1 })],
+  ])(
+    'ends the scrub when %s, without a seek for an unmoved press',
+    (_label: string, end: () => unknown) => {
+      const { slider, onSeekRelease, onScrubChange } = renderStrip();
+      fireEvent.pointerDown(slider, { clientX: 60, pointerId: 1 });
+      end();
+      expect(onScrubChange.mock.calls).toEqual([[true], [false]]);
+      expect(onSeekRelease).not.toHaveBeenCalled();
+    },
+  );
+
+  it('the watchdog releases only the host: a still finger lifted after it still seeks once', () => {
+    vi.useFakeTimers();
+    try {
+      const { slider, onSeekRelease, onScrubChange } = renderStrip();
+      fireEvent.pointerDown(slider, { clientX: 180, pointerId: 1 });
+      vi.advanceTimersByTime(SCRUB_WATCHDOG_MS - 1);
+      expect(onScrubChange.mock.calls).toEqual([[true]]);
+      vi.advanceTimersByTime(1);
+      expect(onScrubChange.mock.calls).toEqual([[true], [false]]);
+      expect(screen.getByTestId('live-timeline-callout')).toBeTruthy(); // the gesture is kept
+      fireEvent.pointerUp(slider, { clientX: 180, pointerId: 1 });
+      expect(onSeekRelease.mock.calls).toEqual([[120000]]);
+      expect(onScrubChange.mock.calls).toEqual([[true], [false]]); // no second false
+    } finally {
+      vi.useRealTimers();
+    }
+  });
+
+  it('a move after the watchdog holds the host again and restarts the timer', () => {
+    vi.useFakeTimers();
+    try {
+      const { slider, onScrubChange } = renderStrip();
+      fireEvent.pointerDown(slider, { clientX: 60, pointerId: 1 });
+      vi.advanceTimersByTime(SCRUB_WATCHDOG_MS);
+      fireEvent.pointerMove(slider, { clientX: 100, buttons: 1, pointerId: 1 });
+      expect(onScrubChange.mock.calls).toEqual([[true], [false], [true]]);
+      vi.advanceTimersByTime(SCRUB_WATCHDOG_MS - 1);
+      fireEvent.pointerMove(slider, { clientX: 110, buttons: 1, pointerId: 1 });
+      vi.advanceTimersByTime(SCRUB_WATCHDOG_MS - 1);
+      expect(onScrubChange.mock.calls).toEqual([[true], [false], [true]]);
+      fireEvent.pointerUp(slider, { clientX: 110, pointerId: 1 });
+      expect(onScrubChange.mock.calls).toEqual([[true], [false], [true], [false]]);
+    } finally {
+      vi.useRealTimers();
+    }
   });
 });

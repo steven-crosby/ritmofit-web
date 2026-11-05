@@ -9,13 +9,16 @@
   "dependsOn": [],
   "acceptance": [
     "On short phones the More panel (which holds the timeline) does not collapse after every timeline release that briefly makes music wait; it still collapses for a real playback failure, or the record states why the collapse is kept.",
-    "A system pointercancel during a press that never moved (an iOS edge gesture, a notification) leaves the clock where it was before the press and sends no seek, instead of jumping to the start of the pressed track, or the record states why the jump is kept.",
+    "Done in #738 round 3: a system pointercancel or lost capture during a press that never moved commits nothing and puts the clock back where it was before the press (kept here as the record of that review finding).",
     "The timeline hint also tells keyboard users how to move (for example \"Arrow keys to nudge\"), or the record states why All tracks is enough.",
-    "apps/web/src/lib/trailing-throttle.ts and its test, unused since RF-188, are removed, with the RF-108 and RF-185 source evidence that cites them retargeted so pnpm tasks:check still passes.",
+    "apps/web/src/lib/trailing-throttle.ts and its test, and the run-generation bookkeeping in lib/playback/runtime.ts (getRunGeneration), all unused since RF-188, are removed, with the RF-108 and RF-185 source evidence that cites them retargeted so pnpm tasks:check still passes.",
     "Owner device check: whether tap to jump feels right on a real iPhone. A tap that moves more than 3 px commits an exact time instead of the track start, and grabbing the playhead mid-track to nudge it restarts the track if the finger lifts within 3 px (Air final review finding 5).",
-    "While a finger is held on the strip, the runtime transport sampling cannot auto-advance to the next track and then have the release seek enter again (Air final review finding 4; it already happened under the old throttle), or the record states why one extra entry at a track boundary is acceptable."
+    "While a finger is held on the strip, the runtime transport sampling cannot auto-advance to the next track and then have the release seek enter again (Air final review finding 4; it already happened under the old throttle), or the record states why one extra entry at a track boundary is acceptable.",
+    "The Live timeline callout and the Live header name the same track in a free-timeline gap: LiveTimeline blockAt and runtime segmentAt / LiveMode trackIndexAt share one rule (Air round-2 review finding 7).",
+    "LiveMode passes no separate onSeekRelease when it equals onSeekCommit (seekRelease is a pure alias of seek), or the record states why the alias is kept (finding 8).",
+    "Scrub state does not re-render the whole Live tree twice per tap (for example a ref plus a small store read only by the rail and the recovery panel), or the record states why two renders per tap are acceptable (finding 9)."
   ],
-  "nextAction": "Agent-created from the RF-188 reviews of #738: Backlog until the owner sets Ready. Items 1-4 and 6 are web code or records; item 5 waits on the owner real-iPhone feel pass after the RF-188 deploy. The Air final review findings 1-2 (significant), 3, 6 and 8 were fixed in #738 round 2 and are not tracked here.",
+  "nextAction": "Agent-created from the RF-188 reviews of #738: Backlog until the owner sets Ready. Item 2 was done in #738 round 3. Items 1, 3, 4 and 6-9 are web code or records; item 5 waits on the owner real-iPhone feel pass after the RF-188 deploy.",
   "blocker": null,
   "evidence": [
     {
@@ -28,6 +31,12 @@
       "kind": "pr",
       "ref": "https://github.com/steven-crosby/ritmofit-web/pull/738#issuecomment-6670885230",
       "summary": "Air final review of #738 on 4d70bc1: significant findings 1 (recovery panel reveal/focus after a gesture while music is blocked) and 2 (More dock collapse on release) and minor 3, 6, 8 fixed in round 2; minor 4 and 5 added here; 7 (dead trailing throttle) was already item 4.",
+      "checkedOn": "2026-11-05"
+    },
+    {
+      "kind": "pr",
+      "ref": "https://github.com/steven-crosby/ritmofit-web/pull/738#issuecomment-6671464477",
+      "summary": "Air final review of #738 on a6b0acd: significant findings 1 (a lost gesture froze the clock) and 2 (the recovery reveal fired under the finger) and minor 3 (unmoved cancel) fixed in round 3; minor 4 and 5 were already items 6 and 5; 6 (dead runtime run-generation) folded into item 4; 7-9 added as items 7-9.",
       "checkedOn": "2026-11-05"
     }
   ],

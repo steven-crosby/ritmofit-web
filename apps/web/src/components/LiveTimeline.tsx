@@ -48,6 +48,13 @@ export const TAP_SLOP_PX = 3;
 /** Debug timing logs the first moves of a gesture; the release line carries the count. */
 const LOGGED_MOVES = 5;
 const TIMING_PREFIX = '[ritmo live-timeline]';
+/**
+ * A gesture with no pointer event for this long stops holding the host
+ * (RF-188 round 3): the clock and provider position sync run again even if
+ * the browser lost the release. The gesture itself is kept, so a finger held
+ * still past this and then lifted still commits its one seek.
+ */
+export const SCRUB_WATCHDOG_MS = 10_000;
 
 interface Gesture {
   pointerId: number;
@@ -60,6 +67,8 @@ interface Gesture {
   /** Moved past the tap slop at least once; previews follow the pointer from then on. */
   dragging: boolean;
   moves: number;
+  /** The clock before pointerdown previewed the tap target; an unmoved cancel restores it. */
+  beforeMs: number;
 }
 
 /** Map a 0..1 position along the strip to a clamped, whole-ms class time. */
@@ -157,16 +166,67 @@ export function LiveTimeline({
   const [pressed, setPressed] = useState(false);
   const hintId = useId();
   const elapsedMs = useSyncExternalStore(clock.subscribe, clock.getSnapshot);
-  // A gesture still open when the strip unmounts must not leave the host
-  // holding position sync and the waiting panel.
+  // What the host was last told: true while it holds the clock and position
+  // sync for a finger on the strip. The watchdog can end it while the gesture
+  // itself stays open (RF-188 round 3).
+  const hostScrubbing = useRef(false);
+  const watchdog = useRef<ReturnType<typeof setTimeout> | null>(null);
   const onScrubChangeRef = useRef(onScrubChange);
   onScrubChangeRef.current = onScrubChange;
+  const reportScrub = (active: boolean) => {
+    if (hostScrubbing.current === active) return;
+    hostScrubbing.current = active;
+    onScrubChangeRef.current?.(active);
+  };
+  const clearWatchdog = () => {
+    if (watchdog.current !== null) clearTimeout(watchdog.current);
+    watchdog.current = null;
+  };
+  /** Restart the no-event timer; when it fires, release only the host. */
+  const armWatchdog = () => {
+    clearWatchdog();
+    watchdog.current = setTimeout(() => {
+      watchdog.current = null;
+      reportScrub(false);
+    }, SCRUB_WATCHDOG_MS);
+  };
+  // A gesture still open when the strip unmounts must not leave the host
+  // holding position sync and the waiting panel.
   useEffect(
     () => () => {
-      if (gesture.current) onScrubChangeRef.current?.(false);
+      if (watchdog.current !== null) clearTimeout(watchdog.current);
+      if (hostScrubbing.current) {
+        hostScrubbing.current = false;
+        onScrubChangeRef.current?.(false);
+      }
     },
     [],
   );
+  // A release the strip never saw (the browser dropped it, the page lost
+  // focus or was hidden) ends the gesture from the window instead, so a lost
+  // pointerup cannot hold the class clock (RF-188 round 3). Each listener
+  // calls the latest handler; a normal release ends the gesture first, so
+  // the window copy of the same event finds nothing to end.
+  const endLostGesture = useRef<(step: string, pointerId: number | null) => void>(() => {});
+  useEffect(() => {
+    if (!pressed) return;
+    const onPointerEnd = (e: Event) =>
+      endLostGesture.current(`window-${e.type}`, (e as globalThis.PointerEvent).pointerId ?? null);
+    const onBlur = () => endLostGesture.current('window-blur', null);
+    const onVisibility = () => {
+      if (document.visibilityState === 'hidden') endLostGesture.current('page-hidden', null);
+    };
+    window.addEventListener('pointerup', onPointerEnd);
+    window.addEventListener('pointercancel', onPointerEnd);
+    window.addEventListener('blur', onBlur);
+    document.addEventListener('visibilitychange', onVisibility);
+    return () => {
+      window.removeEventListener('pointerup', onPointerEnd);
+      window.removeEventListener('pointercancel', onPointerEnd);
+      window.removeEventListener('blur', onBlur);
+      document.removeEventListener('visibilitychange', onVisibility);
+    };
+  }, [pressed]);
   const { blocks, markers } = computeTimeline(payload.tracks, totalMs);
   // Nothing positionable to scrub (no track has a usable duration). Live mode is
   // gated on durations upstream, so this is just a safe empty state — Play/Reset
@@ -214,16 +274,41 @@ export function LiveTimeline({
 
   /** Start following a pointer; tells the host a finger is on the strip. */
   const beginGesture = (g: Gesture) => {
-    const wasActive = gesture.current !== null;
     gesture.current = g;
     setPressed(true);
-    if (!wasActive) onScrubChange?.(true);
+    reportScrub(true);
+    armWatchdog();
   };
   /** Stop following the pointer and hand position sync back to the host. */
   const endGesture = () => {
+    clearWatchdog();
     gesture.current = null;
     setPressed(false);
-    onScrubChange?.(false);
+    reportScrub(false);
+  };
+  /**
+   * End a gesture without a release position (a cancel, a lost capture, or
+   * a lost release seen from the window). A drag commits what it last
+   * previewed, so the playhead and the provider agree. A press that never
+   * moved commits nothing and puts the clock back where it was before the
+   * press: a system cancel must not restart the track (RF-188 round 3).
+   * Returns the committed time, or null.
+   */
+  const cancelGesture = (g: Gesture): number | null => {
+    endGesture();
+    if (g.dragging && g.lastMs !== null) {
+      onSeekRelease(g.lastMs);
+      return g.lastMs;
+    }
+    onSeekPreview(g.beforeMs);
+    return null;
+  };
+  endLostGesture.current = (step, pointerId) => {
+    const g = gesture.current;
+    if (!g || (pointerId !== null && pointerId !== g.pointerId)) return;
+    const ms = cancelGesture(g);
+    if (playbackTimingEnabled())
+      timingLine(TIMING_PREFIX, step, `ms=${ms ?? 'n/a'} id=${g.pointerId}`);
   };
 
   const onPointerDown = (e: PointerEvent<HTMLDivElement>) => {
@@ -253,6 +338,7 @@ export function LiveTimeline({
       lastX: e.clientX,
       dragging: false,
       moves: 0,
+      beforeMs: clock.getSnapshot(),
     };
     beginGesture(g);
     logPointer('pointer-down', e, ms);
@@ -264,6 +350,10 @@ export function LiveTimeline({
     // move alone never starts one (RF-185).
     const g = gesture.current;
     if (!g || e.buttons === 0 || otherPointer(e)) return;
+    // The pointer is alive: hold the host again (the watchdog may have let
+    // go of a finger that rested) and restart the no-event timer.
+    reportScrub(true);
+    armWatchdog();
     const ms = msAtClientX(e.clientX);
     g.moves++;
     // A still finger can report a move, with sub-pixel jitter, right after
@@ -301,10 +391,9 @@ export function LiveTimeline({
     if (ms !== g.lastMs) onSeekPreview(ms);
     onSeekRelease(ms);
   };
-  // A cancel carries no reliable position, so it commits what this gesture
-  // last previewed: a cancelled drag still ends coherent (the playhead and
-  // provider audio agree) rather than silently diverging from what's on
-  // screen. A release or cancel with no gesture in progress (a second event
+  // A cancel carries no reliable position (see cancelGesture): a cancelled
+  // drag commits what it last previewed, an unmoved press commits nothing.
+  // A release or cancel with no gesture in progress (a second event
   // after pointerup, or a pointer that never went down here) sends nothing:
   // it would re-send the current position as a new start (RF-185).
   // Lost capture without a pointerup (the element hid, the browser took the
@@ -314,10 +403,8 @@ export function LiveTimeline({
     if (otherPointer(e)) return;
     const g = gesture.current;
     if (!g && step === 'lost-capture') return; // the normal tail of every release
-    if (g) endGesture();
-    const ms = g?.lastMs ?? null;
+    const ms = g ? cancelGesture(g) : null;
     logPointer(step, e, ms, g ? '' : '(no gesture, ignored)');
-    if (ms !== null) onSeekRelease(ms);
   };
   const onPointerCancel = endWithoutPosition('pointer-cancel');
   const onLostPointerCapture = endWithoutPosition('lost-capture');

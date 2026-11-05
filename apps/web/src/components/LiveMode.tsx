@@ -1038,6 +1038,20 @@ export function LiveMode({
     return () => observer.disconnect();
   }, [phase]);
 
+  /** Scroll the recovery panel (or the teaching card) into view and focus it. */
+  const reveal = (needsRecovery: boolean, viewChanged: boolean) => {
+    const target = needsRecovery ? recoveryRef.current : teachingRef.current;
+    target?.scrollIntoView?.({ block: 'start' });
+    // Switching views reveals their content while the selected tab retains focus.
+    if (viewChanged) return;
+    if (needsRecovery) {
+      recoveryRef.current?.focus({ preventScroll: true });
+    } else {
+      primaryButtonRef.current?.focus({ preventScroll: true });
+    }
+  };
+  /** A reveal held back while a finger was on the timeline (RF-188 round 3). */
+  const deferredRevealRef = useRef<{ viewChanged: boolean } | null>(null);
   // Reveal entry and newly blocked playback, not every status update. Dialog
   // cleanup owns trigger restoration; only place focus if that trigger is gone.
   useEffect(() => {
@@ -1058,16 +1072,24 @@ export function LiveMode({
     ) {
       return;
     }
-    const target = needsRecovery ? recoveryRef.current : teachingRef.current;
-    target?.scrollIntoView?.({ block: 'start' });
-    // Switching views reveals their content while the selected tab retains focus.
-    if (viewChanged) return;
-    if (needsRecovery) {
-      recoveryRef.current?.focus({ preventScroll: true });
-    } else {
-      primaryButtonRef.current?.focus({ preventScroll: true });
+    // Never scroll or move focus under a finger on the timeline: the release
+    // runs the reveal once instead (RF-188 round 3).
+    if (scrubbingRef.current) {
+      deferredRevealRef.current = { viewChanged };
+      return;
     }
+    deferredRevealRef.current = null;
+    reveal(needsRecovery, viewChanged);
   }, [phase, musicBlocked, hasPlaybackFailure, connectionsOpen, view, showRecoveryPanel]);
+  // The reveal a gesture deferred, run once on release against the state then.
+  useEffect(() => {
+    const deferred = deferredRevealRef.current;
+    if (scrubbing || !deferred) return;
+    deferredRevealRef.current = null;
+    if (phase !== 'live' || connectionsOpen) return;
+    if (musicBlocked && !showRecoveryPanel) return;
+    reveal(showRecoveryPanel, deferred.viewChanged);
+  }, [scrubbing, phase, connectionsOpen, musicBlocked, showRecoveryPanel]);
   const runState = ended
     ? 'Class complete'
     : musicBlocked
