@@ -2663,7 +2663,7 @@ describe('LiveMode timeline scrubber', () => {
   }, 10_000);
 
   /** Two 90 s tracks; the factory fails the starts whose build numbers are listed. */
-  async function startTwoTracksWithFailures(failBuilds: number[]) {
+  async function startTwoTracksWithFailures(failBuilds: number[], failAfterMs = 0) {
     const twoTracks = {
       ...payload,
       tracks: [
@@ -2687,7 +2687,10 @@ describe('LiveMode timeline scrubber', () => {
       const fail = failBuilds.includes(built);
       adapter.prepare = (entry, window) => {
         prepared.push(entry.position);
-        return fail ? Promise.reject(new Error('widget failed')) : prepare(entry, window);
+        if (!fail) return prepare(entry, window);
+        return new Promise<never>((_resolve, reject) =>
+          setTimeout(() => reject(new Error('widget failed')), failAfterMs),
+        );
       };
       return adapter;
     });
@@ -2744,24 +2747,74 @@ describe('LiveMode timeline scrubber', () => {
     expect(prepared).toEqual([0, 1]);
   }, 10_000);
 
-  it('a drag across a playback failure starts nothing until Retry, then one resume (RF-188, round 6)', async () => {
-    // Build 1 (Start) plays; build 2, an arrow-key seek, fails while a finger
-    // is already on the strip. The drag itself sends nothing, so no start can
-    // be left pending to fire on the coordinator Retry builds.
-    const { slider, prepared, built } = await startTwoTracksWithFailures([2]);
-    await screen.findByRole('button', { name: 'Pause' });
+  it('a failure that lands mid-drag still shows, and only Retry resumes, once (RF-188, round 6)', async () => {
+    // Start's own provider start fails 300 ms in, while a finger is dragging.
+    const { slider, prepared, built } = await startTwoTracksWithFailures([1], 300);
     fireEvent.pointerDown(slider, { clientX: 20_000, pointerId: 1 });
     fireEvent.pointerMove(slider, { clientX: 60_000, buttons: 1, pointerId: 1 });
-    fireEvent.keyDown(slider, { key: 'ArrowRight' });
-    await screen.findByText('Playback stopped'); // a real failure shows under the finger
+    await screen.findByRole('heading', { name: 'Playback stopped' }); // shows under the finger
     fireEvent.pointerMove(slider, { clientX: 70_000, buttons: 1, pointerId: 1 });
     fireEvent.pointerUp(slider, { clientX: 70_000, pointerId: 1 });
-    expect(built()).toBe(2);
+    await wait(300);
+    expect(built()).toBe(1); // the release moved the clock only
+    expect(slider.getAttribute('aria-valuenow')).toBe('70000');
     fireEvent.click(screen.getByRole('button', { name: 'Retry playback' }));
-    await waitFor(() => expect(built()).toBe(3));
+    await waitFor(() => expect(built()).toBe(2));
     await wait(400);
-    expect(built()).toBe(3);
-    expect(prepared).toEqual([0, 0, 0]);
+    expect(built()).toBe(2); // one resume, nothing pending behind it
+    expect(prepared).toEqual([0, 0]);
+  }, 10_000);
+
+  it('a tap held in a silence gap starts nothing until release, then one adapter (RF-188)', async () => {
+    // Track 1 0:00-1:30, a gap, track 2 from 2:00; the class runs to 3:00.
+    const gapped = {
+      ...payload,
+      class: { ...payload.class, timelineMode: 'free' as const, totalDurationMs: 180_000 },
+      tracks: [
+        { ...activeTrack, track: { ...activeTrack.track, durationMs: 90_000 } },
+        {
+          ...activeTrack,
+          classTrackId: '00000000-0000-4000-8000-0000000000b2',
+          position: 1,
+          startOffsetMs: 120_000,
+          track: { ...activeTrack.track, id: 'tr-2', title: 'Second Track', durationMs: 60_000 },
+        },
+      ],
+    } satisfies RunPayload;
+    let built = 0;
+    vi.mocked(listConnections).mockResolvedValue([soundcloudConnection]);
+    vi.mocked(soundcloudAdapterFactory).mockImplementation(() => {
+      built++;
+      return workingAdapter();
+    });
+    render(<LiveMode payload={gapped} onExit={() => {}} />);
+    await screen.findByRole('list', { name: 'Track playback check' });
+    fireEvent.click(screen.getByRole('button', { name: 'Start class' }));
+    await screen.findByRole('button', { name: 'Pause' });
+    const slider = screen.getByRole('slider', { name: 'Seek class timeline' });
+    vi.spyOn(slider, 'getBoundingClientRect').mockReturnValue({
+      width: 180_000,
+      left: 0,
+      right: 180_000,
+      top: 0,
+      bottom: 40,
+      height: 40,
+      x: 0,
+      y: 0,
+      toJSON: () => ({}),
+    } as DOMRect);
+    for (let i = 0; i < 3; i++) fireEvent.keyDown(slider, { key: 'PageUp' }); // 1:30
+    for (let i = 0; i < 3; i++) fireEvent.keyDown(slider, { key: 'ArrowRight' }); // 1:45, in the gap
+    await waitFor(() => expect(screen.getAllByText('Silence').length).toBeGreaterThan(0));
+    const before = built;
+    fireEvent.pointerDown(slider, { clientX: 150_000, pointerId: 1 }); // inside track 2
+    await wait(300); // several frames while the finger is down
+    expect(built).toBe(before);
+    expect(slider.getAttribute('aria-valuenow')).toBe('120000'); // not clamped to the gap
+    fireEvent.pointerUp(slider, { clientX: 150_000, pointerId: 1 });
+    await waitFor(() => expect(built).toBe(before + 1));
+    await wait(300);
+    expect(built).toBe(before + 1);
   }, 10_000);
 
   it('after a playback error, Retry still resumes music, once (round 5)', async () => {
@@ -2838,16 +2891,14 @@ describe('LiveMode timeline scrubber', () => {
   }, 10_000);
 
   it('an error during a tap never turns the release into an automatic resume (RF-185)', async () => {
-    // Build 2, an arrow-key seek made while a finger is on the strip, fails.
-    const { slider, built } = await startTwoTracksWithFailures([2]);
-    await screen.findByRole('button', { name: 'Pause' });
+    // Start's provider start fails 300 ms in, while a tap is held.
+    const { slider, built } = await startTwoTracksWithFailures([1], 300);
     fireEvent.pointerDown(slider, { clientX: 100_000, pointerId: 1 }); // track 2 starts at 1:30
-    fireEvent.keyDown(slider, { key: 'ArrowRight' });
     await screen.findByRole('button', { name: 'Retry music' });
-    expect(built()).toBe(2);
+    expect(built()).toBe(1);
     fireEvent.pointerUp(slider, { clientX: 100_000, pointerId: 1 });
     await wait(400);
-    expect(built()).toBe(2); // no automatic resume
+    expect(built()).toBe(1); // no automatic resume
     expect(screen.getByRole('button', { name: 'Retry music' })).toBeTruthy();
     expect(slider.getAttribute('aria-valuenow')).toBe('90000'); // the clock still moved
   }, 10_000);

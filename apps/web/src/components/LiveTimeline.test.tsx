@@ -593,6 +593,30 @@ describe('LiveTimeline tap to jump (RF-188)', () => {
     expect(onSeekRelease.mock.calls).toEqual([[120000]]);
   });
 
+  it('ignores seek keys while a finger is on the strip, so the release is the one seek', () => {
+    const clock = makeTestClock(0);
+    const onSeekCommit = vi.fn();
+    const onSeekRelease = vi.fn();
+    stubRect(240);
+    render(
+      <LiveTimeline
+        payload={makePayload()}
+        clock={clock.store}
+        onSeekPreview={(ms) => clock.setValue(ms)}
+        onSeekCommit={onSeekCommit}
+        onSeekRelease={onSeekRelease}
+      />,
+    );
+    const slider = screen.getByRole('slider');
+    fireEvent.pointerDown(slider, { clientX: 60, pointerId: 1 });
+    fireEvent.keyDown(slider, { key: 'ArrowRight' });
+    expect(onSeekCommit).not.toHaveBeenCalled();
+    fireEvent.pointerUp(slider, { clientX: 60, pointerId: 1 });
+    fireEvent.keyDown(slider, { key: 'ArrowRight' });
+    expect(onSeekRelease.mock.calls).toEqual([[0]]);
+    expect(onSeekCommit.mock.calls).toEqual([[5000]]);
+  });
+
   it('says what a tap does, and offers All tracks when the host has a list', () => {
     const onShowAllTracks = vi.fn();
     const { slider } = renderStrip({ onShowAllTracks });

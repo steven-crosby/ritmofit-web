@@ -324,6 +324,11 @@ export function LiveTimeline({
   const onKeyDown = (e: KeyboardEvent<HTMLDivElement>) => {
     const next = keyboardSeekMs(e.key, elapsedMs, totalMs);
     if (next === null) return;
+    // A finger is on the strip: its release is the one seek (RF-188).
+    if (gesture.current) {
+      e.preventDefault();
+      return;
+    }
     e.preventDefault();
     onSeekCommit(next);
   };

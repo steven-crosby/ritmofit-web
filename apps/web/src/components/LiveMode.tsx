@@ -624,6 +624,14 @@ export function LiveMode({
     clockStartSegment();
     let raf = 0;
     const loop = () => {
+      // A finger on the timeline owns the clock until release (RF-188): no
+      // host-time tick (it would clamp the preview to the gap's end or run it
+      // on under a held tap) and no coordinator tick (it would enter the track
+      // under the finger, then the release seek would start a second adapter).
+      if (scrubbingRef.current) {
+        raf = requestAnimationFrame(loop);
+        return;
+      }
       const capped = clockTick(
         playback.kind === 'silence' ? playback.untilMs : payload.class.totalDurationMs,
       );
