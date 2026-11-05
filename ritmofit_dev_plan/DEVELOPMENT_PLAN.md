@@ -21,10 +21,9 @@
 
 **Current actionable state:** [RF board](./tasks.md), backed by canonical [task records](./tasks/README.md).
 The order of work is [Phases](#phases) below; each phase lists RF records, not a second backlog.
-**Main vs production:** production is main `bd2b8fa` (Worker `229cf040-3b4e-48ac-80bd-10573d017810`;
-SPA `assets/index-Cbp8jocW.js`; rollback `d05bb48f-5f85-49c9-b08e-f0f4448d29d6`). It was deployed from the Air
-on 2026-11-04 and carries RF-129 real URLs (#725). Main is ahead with #726 (RF-189) and #727 (RF-172),
-not deployed. See [HISTORY](./HISTORY.md).
+**Main vs production:** production is main `ddd4b70` (Worker `4c906295-6506-4bc5-b886-8f568446c527`;
+SPA `assets/index-CzpTnNZB.js`; rollback `229cf040-3b4e-48ac-80bd-10573d017810`). It was deployed from the Air
+on 2026-11-05 and carries #726, #727 and #731 to #735 on top of `bd2b8fa`. See [HISTORY](./HISTORY.md).
 **In flight:** [RF-183](./tasks/RF-183.json) is Blocked on the owner's checks: sign in again after
 sign-out (the rest of the native check passed on the simulator, #715), and on web two `expiresAt`
 readings from the app's own get-session at least 24 hours apart (first not yet taken). The signed-in

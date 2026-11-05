@@ -15,7 +15,7 @@
     "The button is keyboard reachable, labeled with the song name, at least 44px, and axe WCAG 2.2 AA clean at 1440 and 390 wide with no nested interactive controls.",
     "Component tests cover that ▶ starts preview without toggling selection; the PR names the real-browser preview check CI cannot prove."
   ],
-  "nextAction": "Owner: after a deploy, on Music › Songs (desktop and iPhone Safari) tap ▶ on a liked song for each connected provider; it should play from the start in an inline row player with Stop, without ticking the row, and a second ▶ should stop the first. Then set Done. CI cannot prove real provider audio.",
+  "nextAction": "Owner: against production (deployed 2026-11-05, main ddd4b70), on Music › Songs (desktop and iPhone Safari) tap ▶ on a liked song for each connected provider; it should play from the start in an inline row player with Stop, without ticking the row, and a second ▶ should stop the first. Then set Done. CI cannot prove real provider audio.",
   "blocker": null,
   "evidence": [
     {
@@ -77,6 +77,12 @@
       "ref": "https://github.com/steven-crosby/ritmofit-web/pull/727",
       "summary": "Final review (/code-review medium) of d8d8e99 found two significant correctness bugs, so it was not merged and owner-approved was removed: (1) the lazy row player suspended on its first render, so the first ▶ tap called play() up to ~300 ms after the tap; (2) a preview hidden by a search restarted with no tap when the row came back. Both fixed (the Songs view renders the loaded player directly; a preview closes when its row leaves the list), with a Dashboard regression test that fails on d8d8e99 for each. Web suite 1,666 passed; e2e both viewports; entry 179.37 kB.",
       "checkedOn": "2026-11-04"
+    },
+    {
+      "kind": "observation",
+      "ref": "https://github.com/steven-crosby/ritmofit-web/pull/729#issuecomment-6663990545",
+      "summary": "Deployed to production on 2026-11-05 from the Air: main ddd4b70, Worker 4c906295-6506-4bc5-b886-8f568446c527, SPA assets/index-CzpTnNZB.js, rollback 229cf040-3b4e-48ac-80bd-10573d017810 (bd2b8fa). Smoke and security headers passed. The owner's desktop and iPhone ▶ check is still owed.",
+      "checkedOn": "2026-11-05"
     }
   ],
   "resolution": null,

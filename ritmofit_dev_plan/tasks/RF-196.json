@@ -11,7 +11,7 @@
     "The 16px phone text-field rule also applies to a phone turned sideways (a touch screen under 640px tall and under 960px wide; the widest landscape iPhone is 956px), so a landscape iPhone does not zoom on focus; tablets and desktops keep their own sizes, even when a keyboard shrinks a tablet viewport.",
     "The e2e zoom check uses the same media query as index.css, checks the sign-up form at 844x390 on the touch phone project, and its failure message falls back from aria-label to id to name (`||`, since a missing id is \"\")."
   ],
-  "nextAction": "Owner: with the RF-189 iPhone check after the next deploy, also turn the iPhone sideways and tap the sign-in Email field and Music › Songs Search songs; the page must not zoom. Then set Done. CI proves this only in Chromium touch emulation.",
+  "nextAction": "Owner: with the RF-189 iPhone check against production (deployed 2026-11-05, main ddd4b70), also turn the iPhone sideways and tap the sign-in Email field and Music › Songs Search songs; the page must not zoom. Then set Done. CI proves this only in Chromium touch emulation.",
   "blocker": null,
   "evidence": [
     {
@@ -36,6 +36,12 @@
       "kind": "pr",
       "ref": "https://github.com/steven-crosby/ritmofit-web/pull/731",
       "summary": "RF-196 PR, opened under unattended pre-approval issue #730 after two fresh-context /code-review high passes (findings fixed or logged as RF-198).",
+      "checkedOn": "2026-11-05"
+    },
+    {
+      "kind": "observation",
+      "ref": "https://github.com/steven-crosby/ritmofit-web/pull/729#issuecomment-6663990545",
+      "summary": "Deployed to production on 2026-11-05 from the Air: main ddd4b70, Worker 4c906295-6506-4bc5-b886-8f568446c527, SPA assets/index-CzpTnNZB.js, rollback 229cf040-3b4e-48ac-80bd-10573d017810 (bd2b8fa). Smoke and security headers passed. The owner's landscape iPhone check (with RF-189's) is still owed.",
       "checkedOn": "2026-11-05"
     }
   ],

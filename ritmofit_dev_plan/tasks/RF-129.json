@@ -14,7 +14,7 @@
     "The service-worker navigation fallback still denies /api/ routes, and OAuth and reset-password callbacks still reach the Worker.",
     "One routing approach covers both refresh-restore and the sign-in/sign-up paths, so the app does not get two routing mechanisms."
   ],
-  "nextAction": "Owner device check on iPhone Safari against production (deployed 2026-11-04, main bd2b8fa, which includes PR #725). Check that a refresh on a class and on Live reopens it (Live at its preflight with Start, never playing), that an edge swipe Back during a running class stays in Live, and that the sign-in and sign-up links open their own pages. Set Done once that passes. If /music, /account or /live need more than a path (for example Music's inner view in the URL), log a separate task.",
+  "nextAction": "Owner device check on iPhone Safari against production (bd2b8fa deployed 2026-11-04 and ddd4b70 deployed 2026-11-05 both include PR #725). Check that a refresh on a class and on Live reopens it (Live at its preflight with Start, never playing), that an edge swipe Back during a running class stays in Live, and that the sign-in and sign-up links open their own pages. Set Done once that passes. If /music, /account or /live need more than a path (for example Music's inner view in the URL), log a separate task.",
   "blocker": null,
   "evidence": [
     {
