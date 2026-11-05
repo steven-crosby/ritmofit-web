@@ -1,0 +1,32 @@
+{
+  "schemaVersion": 1,
+  "id": "RF-197",
+  "title": "Music › Songs: a ▶ tapped before the row player chunk loads starts the song once (RF-172 follow-up)",
+  "kind": "task",
+  "status": "done",
+  "priority": "P3",
+  "parent": null,
+  "dependsOn": [],
+  "acceptance": [
+    "A ▶ tap on Music › Songs that lands before the row player's chunk has loaded starts the song once: when Dashboard's own preload of the chunk finishes, the lazy player is not swapped for the loaded component and remounted (each mount starts the song from the beginning).",
+    "A Dashboard test holds the chunk back, taps, releases it, and checks the provider adapter prepared the song once; it fails if the preload lands after the lazy player mounts."
+  ],
+  "nextAction": null,
+  "blocker": null,
+  "evidence": [
+    {
+      "kind": "observation",
+      "ref": "https://github.com/steven-crosby/ritmofit-web/issues/730",
+      "summary": "Owner pre-approved RF-197 (the reserved ID for the #727 final review pre-load swap restart) for the 2026-11-05 unattended Neo session.",
+      "checkedOn": "2026-11-05"
+    },
+    {
+      "kind": "test",
+      "ref": "apps/web/src/components/Dashboard.song-preview-load.test.tsx",
+      "summary": "Neo local: passes on main 6818f67 with no Dashboard change (3 runs). With the preload state update delayed by one task, it fails (prepare called 2 times, not 1), so it catches the swap restart.",
+      "checkedOn": "2026-11-05"
+    }
+  ],
+  "resolution": "Not reproducible in today's code: the lazy player and Dashboard's preload wait on the same module load, so React commits the loaded player in the same render that resolves the lazy one, and the song starts once. No code change; the new test pins one start and fails if a later refactor lets the preload land after the lazy player mounts.",
+  "followUps": []
+}
