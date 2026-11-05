@@ -1113,6 +1113,64 @@ describe('LiveMode waiting panel grace', () => {
     }
   });
 
+  it('keeps the panel quiet and the reveal deferred past the 10 s watchdog, until the lift (RF-188 round 4)', async () => {
+    const stalled = { current: false };
+    let transport: NonNullable<AdapterEvents['onTransportState']> = () => {};
+    await startTeaching((events) => {
+      transport = (state) => events.onTransportState?.(state);
+      return playingTransportAdapter(stalled);
+    });
+    const slider = screen.getByRole('slider', { name: 'Seek class timeline' });
+    vi.spyOn(slider, 'getBoundingClientRect').mockReturnValue({
+      width: 180_000,
+      left: 0,
+      right: 180_000,
+      top: 0,
+      bottom: 40,
+      height: 40,
+      x: 0,
+      y: 0,
+      toJSON: () => ({}),
+    } as DOMRect);
+    const scrolled = vi.fn();
+    Element.prototype.scrollIntoView = scrolled;
+    try {
+      // t=0 press; t=3 s music stalls; t=5.1 s the panel is due (deferred);
+      // t=10 s the watchdog releases the clock; t=11 s the press ends. The
+      // stall would only become a real failure later (it then shows at once).
+      fireEvent.pointerDown(slider, { clientX: 60_000, pointerId: 1 });
+      await act(async () => {
+        await vi.advanceTimersByTimeAsync(3_000);
+      });
+      stalled.current = true;
+      act(() => transport('buffering'));
+      await act(async () => {
+        await vi.advanceTimersByTimeAsync(2_100);
+      });
+      const panel = screen.getByRole('heading', { name: 'Waiting for music' }).closest('section')!;
+      expect(panel.className).toContain('invisible');
+      // A still finger past the watchdog: the clock runs again, the UI stays quiet.
+      for (let ms = 0; ms < 6_000; ms += 500) {
+        await act(async () => {
+          await vi.advanceTimersByTimeAsync(500);
+        });
+        expect(panel.className).toContain('invisible'); // no flicker
+        expect(scrolled).not.toHaveBeenCalled();
+        expect(document.activeElement).not.toBe(panel);
+      }
+      expect(screen.getByText('Seeking…')).toBeTruthy();
+      fireEvent.pointerCancel(slider, { pointerId: 1 }); // the real end
+      await act(async () => {
+        await vi.advanceTimersByTimeAsync(0);
+      });
+      expect(panel.className).not.toContain('invisible');
+      expect(scrolled).toHaveBeenCalledTimes(1);
+      expect(document.activeElement).toBe(panel);
+    } finally {
+      delete (Element.prototype as { scrollIntoView?: unknown }).scrollIntoView;
+    }
+  });
+
   it('drops a deferred reveal when music recovers under the finger (RF-188 round 3)', async () => {
     const stalled = { current: false };
     let transport: NonNullable<AdapterEvents['onTransportState']> = () => {};
@@ -2778,6 +2836,29 @@ describe('LiveMode timeline scrubber', () => {
     } finally {
       vi.useRealTimers();
     }
+  });
+
+  it('a cancelled press while paused shows the pre-press time everywhere, not the tap target (RF-188 round 4)', async () => {
+    await renderLive(); // not playing: no frame loop and no provider to fix the display later
+    const slider = screen.getByRole('slider', { name: 'Seek class timeline' });
+    vi.spyOn(slider, 'getBoundingClientRect').mockReturnValue({
+      width: 180_000,
+      left: 0,
+      right: 180_000,
+      top: 0,
+      bottom: 40,
+      height: 40,
+      x: 0,
+      y: 0,
+      toJSON: () => ({}),
+    } as DOMRect);
+    fireEvent.keyDown(slider, { key: 'PageUp' }); // 0:30
+    expect(screen.getByText('0:30 / 3:00')).toBeTruthy();
+    fireEvent.pointerDown(slider, { clientX: 90_000, pointerId: 1 }); // previews 0:00
+    expect(slider.getAttribute('aria-valuenow')).toBe('0');
+    fireEvent.pointerCancel(slider, { pointerId: 1 });
+    expect(slider.getAttribute('aria-valuenow')).toBe('30000');
+    expect(screen.getByText('0:30 / 3:00')).toBeTruthy(); // the display tier agrees
   });
 
   it('a release the strip never saw, seen by the window, ends the scrub (RF-188 round 3)', async () => {

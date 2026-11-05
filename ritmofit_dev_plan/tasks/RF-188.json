@@ -99,6 +99,18 @@
       "ref": "https://github.com/steven-crosby/ritmofit-web/pull/738",
       "summary": "Fresh-context review of round 3 (d73e068): no clock jump after the watchdog (the scrub end banks the clock; a test pins 3000 ms after a 13 s press with the watchdog at 10 s). Its other points: a reveal deferred under the finger is now dropped when music recovers first (fixed with a test that fails on d73e068); the watchdog-in-a-gap double start and the prompter-only cancel time loss are owner-constraint trade-offs logged in RF-206 item 10.",
       "checkedOn": "2026-11-05"
+    },
+    {
+      "kind": "observation",
+      "ref": "https://github.com/steven-crosby/ritmofit-web/pull/738#issuecomment-6672258720",
+      "summary": "Owner, in the Air session: the Neo runs round 4 on #738 (restore before ending an unmoved cancel; split the watchdog-releasable clock hold from finger-down; retarget RF-185 to one seek-sent per tap).",
+      "checkedOn": "2026-11-05"
+    },
+    {
+      "kind": "test",
+      "ref": "apps/web/src/components/LiveTimeline.test.tsx",
+      "summary": "Round 4 (Neo local): LiveTimeline reports finger-down (onScrubChange, until the real end) and the clock hold (onClockHoldChange, which the watchdog can release) separately; LiveMode holds the frame loop and position sync on the hold and the quiet panel, rail and reveal deferral on the finger. Five new or rewritten tests fail on c3f637b: the watchdog releases only the hold, a move restores it, an unmoved cancel restores the clock before the hold ends, a paused cancel shows the pre-press time in the header, and a blocked press held past 10 s keeps the panel quiet with no scroll or focus until the lift, then reveals once.",
+      "checkedOn": "2026-11-05"
     }
   ],
   "resolution": null,

@@ -640,6 +640,7 @@ describe('LiveTimeline lost releases (RF-188 round 3)', () => {
     const onSeekPreview = vi.fn((ms: number) => clock.setValue(ms));
     const onSeekRelease = vi.fn();
     const onScrubChange = vi.fn();
+    const onClockHoldChange = vi.fn();
     stubRect(240);
     render(
       <LiveTimeline
@@ -649,6 +650,7 @@ describe('LiveTimeline lost releases (RF-188 round 3)', () => {
         onSeekCommit={() => {}}
         onSeekRelease={onSeekRelease}
         onScrubChange={onScrubChange}
+        onClockHoldChange={onClockHoldChange}
       />,
     );
     return {
@@ -657,6 +659,7 @@ describe('LiveTimeline lost releases (RF-188 round 3)', () => {
       onSeekPreview,
       onSeekRelease,
       onScrubChange,
+      onClockHoldChange,
     };
   }
 
@@ -704,40 +707,74 @@ describe('LiveTimeline lost releases (RF-188 round 3)', () => {
     },
   );
 
-  it('the watchdog releases only the host: a still finger lifted after it still seeks once', () => {
+  it('the watchdog releases only the clock hold: the finger stays down, and a still lift seeks once', () => {
     vi.useFakeTimers();
     try {
-      const { slider, onSeekRelease, onScrubChange } = renderStrip();
+      const { slider, onSeekRelease, onScrubChange, onClockHoldChange } = renderStrip();
       fireEvent.pointerDown(slider, { clientX: 180, pointerId: 1 });
       vi.advanceTimersByTime(SCRUB_WATCHDOG_MS - 1);
-      expect(onScrubChange.mock.calls).toEqual([[true]]);
+      expect(onClockHoldChange.mock.calls).toEqual([[true]]);
       vi.advanceTimersByTime(1);
-      expect(onScrubChange.mock.calls).toEqual([[true], [false]]);
+      expect(onClockHoldChange.mock.calls).toEqual([[true], [false]]);
+      // Finger down (panel quiet, reveal deferred) lasts until the real end (round 4).
+      expect(onScrubChange.mock.calls).toEqual([[true]]);
       expect(screen.getByTestId('live-timeline-callout')).toBeTruthy(); // the gesture is kept
       fireEvent.pointerUp(slider, { clientX: 180, pointerId: 1 });
       expect(onSeekRelease.mock.calls).toEqual([[120000]]);
-      expect(onScrubChange.mock.calls).toEqual([[true], [false]]); // no second false
+      expect(onClockHoldChange.mock.calls).toEqual([[true], [false]]); // no second false
+      expect(onScrubChange.mock.calls).toEqual([[true], [false]]);
     } finally {
       vi.useRealTimers();
     }
   });
 
-  it('a move after the watchdog holds the host again and restarts the timer', () => {
+  it('a move after the watchdog holds the clock again and restarts the timer', () => {
     vi.useFakeTimers();
     try {
-      const { slider, onScrubChange } = renderStrip();
+      const { slider, onScrubChange, onClockHoldChange } = renderStrip();
       fireEvent.pointerDown(slider, { clientX: 60, pointerId: 1 });
       vi.advanceTimersByTime(SCRUB_WATCHDOG_MS);
       fireEvent.pointerMove(slider, { clientX: 100, buttons: 1, pointerId: 1 });
-      expect(onScrubChange.mock.calls).toEqual([[true], [false], [true]]);
+      expect(onClockHoldChange.mock.calls).toEqual([[true], [false], [true]]);
       vi.advanceTimersByTime(SCRUB_WATCHDOG_MS - 1);
       fireEvent.pointerMove(slider, { clientX: 110, buttons: 1, pointerId: 1 });
       vi.advanceTimersByTime(SCRUB_WATCHDOG_MS - 1);
-      expect(onScrubChange.mock.calls).toEqual([[true], [false], [true]]);
+      expect(onClockHoldChange.mock.calls).toEqual([[true], [false], [true]]);
       fireEvent.pointerUp(slider, { clientX: 110, pointerId: 1 });
-      expect(onScrubChange.mock.calls).toEqual([[true], [false], [true], [false]]);
+      expect(onClockHoldChange.mock.calls).toEqual([[true], [false], [true], [false]]);
+      expect(onScrubChange.mock.calls).toEqual([[true], [false]]);
     } finally {
       vi.useRealTimers();
     }
+  });
+
+  it('a cancelled unmoved press restores the clock before it lets the host go (round 4)', () => {
+    const order: string[] = [];
+    const clock = makeTestClock(30_000);
+    stubRect(240);
+    render(
+      <LiveTimeline
+        payload={makePayload()}
+        clock={clock.store}
+        onSeekPreview={(ms) => {
+          order.push(`preview ${ms}`);
+          clock.setValue(ms);
+        }}
+        onSeekCommit={() => {}}
+        onScrubChange={(active) => order.push(`finger ${active}`)}
+        onClockHoldChange={(held) => order.push(`hold ${held}`)}
+      />,
+    );
+    const slider = screen.getByRole('slider');
+    fireEvent.pointerDown(slider, { clientX: 180, pointerId: 1 });
+    fireEvent.pointerCancel(slider, { pointerId: 1 });
+    expect(order).toEqual([
+      'finger true',
+      'hold true',
+      'preview 120000',
+      'preview 30000',
+      'hold false',
+      'finger false',
+    ]);
   });
 });

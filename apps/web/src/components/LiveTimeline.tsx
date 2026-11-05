@@ -135,6 +135,7 @@ export function LiveTimeline({
   onSeekCommit,
   onSeekRelease = onSeekCommit,
   onScrubChange,
+  onClockHoldChange,
   onShowAllTracks,
 }: {
   payload: RunPayload;
@@ -151,10 +152,16 @@ export function LiveTimeline({
    * provider seek per gesture (RF-108, RF-185, RF-188).
    */
   onSeekRelease?: (ms: number) => void;
-  /** True from pointerdown until the gesture ends (release, cancel or lost
-   * capture), so the host can hold provider position sync and the waiting
-   * panel while a finger is on the strip (RF-188). */
+  /** True from pointerdown until the gesture really ends (release, cancel,
+   * lost capture or a lost release seen by the window): a finger is on the
+   * strip, so the host keeps the waiting panel quiet and defers its reveal
+   * (RF-188). */
   onScrubChange?: (active: boolean) => void;
+  /** True while the host should hold the clock and provider position sync
+   * for the finger. It starts with the gesture and ends with it, but the
+   * no-event watchdog can end it early (and a move restarts it), so a lost
+   * release cannot stop the class clock (RF-188 round 4). */
+  onClockHoldChange?: (held: boolean) => void;
   /** Opens the Full List, where every track is a full-size jump target. */
   onShowAllTracks?: () => void;
 }) {
@@ -166,28 +173,36 @@ export function LiveTimeline({
   const [pressed, setPressed] = useState(false);
   const hintId = useId();
   const elapsedMs = useSyncExternalStore(clock.subscribe, clock.getSnapshot);
-  // What the host was last told: true while it holds the clock and position
-  // sync for a finger on the strip. The watchdog can end it while the gesture
-  // itself stays open (RF-188 round 3).
-  const hostScrubbing = useRef(false);
+  // What the host was last told, as two signals (RF-188 round 4): the finger
+  // is down (until the gesture really ends), and the clock is held (which
+  // the watchdog can release while the gesture stays open).
+  const hostFinger = useRef(false);
+  const hostHold = useRef(false);
   const watchdog = useRef<ReturnType<typeof setTimeout> | null>(null);
   const onScrubChangeRef = useRef(onScrubChange);
   onScrubChangeRef.current = onScrubChange;
-  const reportScrub = (active: boolean) => {
-    if (hostScrubbing.current === active) return;
-    hostScrubbing.current = active;
+  const onClockHoldChangeRef = useRef(onClockHoldChange);
+  onClockHoldChangeRef.current = onClockHoldChange;
+  const reportFinger = (active: boolean) => {
+    if (hostFinger.current === active) return;
+    hostFinger.current = active;
     onScrubChangeRef.current?.(active);
+  };
+  const reportHold = (held: boolean) => {
+    if (hostHold.current === held) return;
+    hostHold.current = held;
+    onClockHoldChangeRef.current?.(held);
   };
   const clearWatchdog = () => {
     if (watchdog.current !== null) clearTimeout(watchdog.current);
     watchdog.current = null;
   };
-  /** Restart the no-event timer; when it fires, release only the host. */
+  /** Restart the no-event timer; when it fires, release only the clock hold. */
   const armWatchdog = () => {
     clearWatchdog();
     watchdog.current = setTimeout(() => {
       watchdog.current = null;
-      reportScrub(false);
+      reportHold(false);
     }, SCRUB_WATCHDOG_MS);
   };
   // A gesture still open when the strip unmounts must not leave the host
@@ -195,8 +210,12 @@ export function LiveTimeline({
   useEffect(
     () => () => {
       if (watchdog.current !== null) clearTimeout(watchdog.current);
-      if (hostScrubbing.current) {
-        hostScrubbing.current = false;
+      if (hostHold.current) {
+        hostHold.current = false;
+        onClockHoldChangeRef.current?.(false);
+      }
+      if (hostFinger.current) {
+        hostFinger.current = false;
         onScrubChangeRef.current?.(false);
       }
     },
@@ -276,7 +295,8 @@ export function LiveTimeline({
   const beginGesture = (g: Gesture) => {
     gesture.current = g;
     setPressed(true);
-    reportScrub(true);
+    reportFinger(true);
+    reportHold(true);
     armWatchdog();
   };
   /** Stop following the pointer and hand position sync back to the host. */
@@ -284,7 +304,8 @@ export function LiveTimeline({
     clearWatchdog();
     gesture.current = null;
     setPressed(false);
-    reportScrub(false);
+    reportHold(false);
+    reportFinger(false);
   };
   /**
    * End a gesture without a release position (a cancel, a lost capture, or
@@ -295,12 +316,16 @@ export function LiveTimeline({
    * Returns the committed time, or null.
    */
   const cancelGesture = (g: Gesture): number | null => {
-    endGesture();
     if (g.dragging && g.lastMs !== null) {
+      endGesture();
       onSeekRelease(g.lastMs);
       return g.lastMs;
     }
+    // Restore before ending: the host banks the clock as the hold ends, so
+    // its display tier (cue card, header, countdown) shows the pre-press
+    // time, not the tap target (RF-188 round 4).
     onSeekPreview(g.beforeMs);
+    endGesture();
     return null;
   };
   endLostGesture.current = (step, pointerId) => {
@@ -350,9 +375,9 @@ export function LiveTimeline({
     // move alone never starts one (RF-185).
     const g = gesture.current;
     if (!g || e.buttons === 0 || otherPointer(e)) return;
-    // The pointer is alive: hold the host again (the watchdog may have let
+    // The pointer is alive: hold the clock again (the watchdog may have let
     // go of a finger that rested) and restart the no-event timer.
-    reportScrub(true);
+    reportHold(true);
     armWatchdog();
     const ms = msAtClientX(e.clientX);
     g.moves++;

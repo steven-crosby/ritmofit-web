@@ -624,11 +624,12 @@ export function LiveMode({
     clockStartSegment();
     let raf = 0;
     const loop = () => {
-      // A finger on the timeline owns the clock until release (RF-188): no
-      // host-time tick (it would clamp the preview to the gap's end or run it
-      // on under a held tap) and no coordinator tick (it would enter the track
-      // under the finger, then the release seek would start a second adapter).
-      if (scrubbingRef.current) {
+      // A finger on the timeline holds the clock (RF-188): no host-time tick
+      // (it would clamp the preview to the gap's end or run it on under a held
+      // tap) and no coordinator tick (it would enter the track under the
+      // finger, then the release seek would start a second adapter). The
+      // strip's watchdog can end the hold early (round 4).
+      if (clockHeldRef.current) {
         raf = requestAnimationFrame(loop);
         return;
       }
@@ -677,29 +678,37 @@ export function LiveMode({
     [],
   );
 
-  // RF-188: while a finger is on the timeline strip, the provider is left
-  // alone (no seek until release) and its position reports do not pull the
-  // clock back under the finger. The ref gates `onPosition` synchronously; the
-  // state drives the quiet "Seeking…" rail and holds the waiting panel.
+  // RF-188: a finger on the timeline strip is two signals (round 4).
+  // - Finger down (`scrubbing`), until the gesture really ends: the quiet
+  //   "Seeking…" rail, the waiting panel kept quiet, and its reveal deferred.
+  // - Clock held (`clockHeldRef`): the frame loop does not tick and provider
+  //   position reports do not pull the clock back under the finger. The
+  //   strip's no-event watchdog can end this early, so a lost release cannot
+  //   stop the class clock.
+  // The provider itself is left alone either way: one seek on release.
   const scrubbingRef = useRef(false);
   const [scrubbing, setScrubbing] = useState(false);
-  const onScrubChange = useCallback(
-    (active: boolean) => {
-      scrubbingRef.current = active;
-      setScrubbing(active);
-      // The frame loop skipped its ticks under the finger. Bank the position
-      // the gesture left (as a pause does) and restart host time from now, so
-      // a gesture that ends without a seek neither jumps ahead nor rewinds.
-      if (!active) {
+  const onScrubChange = useCallback((active: boolean) => {
+    scrubbingRef.current = active;
+    setScrubbing(active);
+  }, []);
+  const clockHeldRef = useRef(false);
+  const onClockHoldChange = useCallback(
+    (held: boolean) => {
+      clockHeldRef.current = held;
+      // The frame loop skipped its ticks while held. Bank the position the
+      // hold left (as a pause does) and restart host time from now, so the
+      // clock neither jumps ahead nor rewinds when it runs again.
+      if (!held) {
         clockEndSegment();
         clockStartSegment();
       }
     },
     [clockEndSegment, clockStartSegment],
   );
-  const syncPositionUnlessScrubbing = useCallback(
+  const syncPositionUnlessHeld = useCallback(
     (ms: number) => {
-      if (!scrubbingRef.current) clockSyncPosition(ms);
+      if (!clockHeldRef.current) clockSyncPosition(ms);
     },
     [clockSyncPosition],
   );
@@ -746,7 +755,7 @@ export function LiveMode({
       adapters: LIVE_PLAYBACK_ADAPTERS,
       availableProviders: PLAYBACK_ADAPTER_PROVIDERS,
       liveness,
-      onPosition: syncPositionUnlessScrubbing,
+      onPosition: syncPositionUnlessHeld,
       onStatus: (next) => {
         // Debug timing only (RF-186): the status sequence Live reacts to.
         liveTimingLog('status', () => next.kind);
@@ -1403,6 +1412,7 @@ export function LiveMode({
             coordinatorRef.current != null
           }
           onScrubChange={onScrubChange}
+          onClockHoldChange={onClockHoldChange}
           onShowAllTracks={() => setView('list')}
           playback={coordinatorRef.current ? playback : null}
           wakeStatus={wakeStatus}
@@ -2348,6 +2358,7 @@ function Transport({
   onSeekRelease,
   scrubbing,
   onScrubChange,
+  onClockHoldChange,
   onShowAllTracks,
   playback,
   wakeStatus,
@@ -2374,6 +2385,8 @@ function Transport({
   /** A finger is on the timeline strip (RF-188): the rail reads "Seeking…". */
   scrubbing: boolean;
   onScrubChange: (active: boolean) => void;
+  /** The strip holds or releases the clock (the watchdog can release it early). */
+  onClockHoldChange: (held: boolean) => void;
   /** Opens the Full List view, where every track is a full-size jump target. */
   onShowAllTracks: () => void;
   /** Coordinator status while music runs; null in prompter-only mode. */
@@ -2467,6 +2480,7 @@ function Transport({
             onSeekCommit={onSeekCommit}
             onSeekRelease={onSeekRelease}
             onScrubChange={onScrubChange}
+            onClockHoldChange={onClockHoldChange}
             onShowAllTracks={onShowAllTracks}
           />
         </div>
