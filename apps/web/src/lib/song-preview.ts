@@ -19,7 +19,7 @@ export function songPreviewEntry(track: TrackSearchResult): RunPayloadTrackEntry
     displayBpm: null,
     displayRpm: null,
     holdCount: null,
-    intensity: 'moderate',
+    intensity: 'none',
     startOffsetMs: null,
     clipStartMs: 0,
     beatAnchorMs: 0,

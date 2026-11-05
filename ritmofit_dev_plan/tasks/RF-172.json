@@ -3,7 +3,7 @@
   "id": "RF-172",
   "title": "Music Songs: ▶ preview on the song artwork",
   "kind": "task",
-  "status": "in_progress",
+  "status": "review",
   "priority": "P1",
   "parent": "RF-138",
   "dependsOn": [
@@ -15,7 +15,7 @@
     "The button is keyboard reachable, labeled with the song name, at least 44px, and axe WCAG 2.2 AA clean at 1440 and 390 wide with no nested interactive controls.",
     "Component tests cover that ▶ starts preview without toggling selection; the PR names the real-browser preview check CI cannot prove."
   ],
-  "nextAction": "Neo, claimed by its draft PR; starts after RF-189. Restart: SongPicks.tsx SongPickList rows (artwork out of the selection label into a ▶ button), Dashboard.tsx TrackPreview wiring for a TrackSearchResult; playback code under apps/web/src/lib/playback/ is owner-gated, so avoid it or get owner-approved.",
+  "nextAction": "Owner: after a deploy, on Music › Songs (desktop and iPhone Safari) tap ▶ on a liked song for each connected provider; it should play from the start in an inline row player with Stop, without ticking the row, and a second ▶ should stop the first. Then set Done. CI cannot prove real provider audio.",
   "blocker": null,
   "evidence": [
     {
@@ -40,6 +40,36 @@
       "kind": "pr",
       "ref": "https://github.com/steven-crosby/ritmofit-web/pull/727",
       "summary": "Owner set RF-172 Ready for the Neo on 2026-11-04 (\"Yes approved\", quoted in this PR body); this draft PR is the Neo claim.",
+      "checkedOn": "2026-11-04"
+    },
+    {
+      "kind": "observation",
+      "ref": "https://github.com/steven-crosby/ritmofit-web/pull/727",
+      "summary": "Owner chose the inline row player (the row grows to show Stop and elapsed time; one song at a time) over a bottom preview bar, in the Neo session on 2026-11-04.",
+      "checkedOn": "2026-11-04"
+    },
+    {
+      "kind": "source",
+      "ref": "apps/web/src/components/SongPicks.tsx",
+      "summary": "The artwork is a ▶ button between two labels for the checkbox (never inside one), labeled Preview <title> / Stop preview of <title> with aria-expanded, 44px, and live on rows the 15-song cap disables.",
+      "checkedOn": "2026-11-04"
+    },
+    {
+      "kind": "source",
+      "ref": "apps/web/src/components/SongRowPreview.tsx",
+      "summary": "Lazy inline player: plays songPreviewEntry (lib/song-preview.ts, the whole song through its own provider ref) via PreviewPlaybackController and the official adapters; no API call, import, attach or cache. Playback code under lib/playback/ is unchanged.",
+      "checkedOn": "2026-11-04"
+    },
+    {
+      "kind": "source",
+      "ref": "apps/web/src/components/Dashboard.tsx",
+      "summary": "SongPicks (rows, bar, sheet) now loads with the Songs view, and the player chunk preloads once songs are listed, so play() runs inside the ▶ tap. Startup entry 179.26 kB gzip (was 179.94; it reached 180.41 before the split).",
+      "checkedOn": "2026-11-04"
+    },
+    {
+      "kind": "test",
+      "ref": "apps/web/src/components/SongRowPreview.test.tsx",
+      "summary": "▶ previews without toggling, stops from the same button, moves between rows, stays live on capped rows (SongPicks.test.tsx); the player plays on mount with no API call, Stop and unmount release the adapter, unplayable names the fix, a failure offers Play again; song-preview.test.ts covers the adapter. Web suite 1,665 passed; e2e both viewports pass with axe WCAG 2.2 AA on Music songs.",
       "checkedOn": "2026-11-04"
     }
   ],

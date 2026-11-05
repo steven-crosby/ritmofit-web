@@ -175,8 +175,7 @@ import { TrackSearch, providerTrackKeysFromRun } from './TrackSearch.js';
 import { CreateClassDialog, type CreateClassMode } from './CreateClassDialog.js';
 import { ClassPlanBlocks, planBlockOptionLabel, type PlanBlockTarget } from './ClassPlanBlocks.js';
 import { SourceList, sourceCandidateKey } from './SourceList.js';
-import { SongPickBar, SongPickCreateDialog, SongPickList } from './SongPicks.js';
-import { orderPicks, songPickScope, useSongPicks } from '../lib/song-picks.js';
+import { orderPicks, songPickKey, songPickScope, useSongPicks } from '../lib/song-picks.js';
 import {
   consumeOnboardingVideoPending,
   markOnboardingVideoDismissed,
@@ -214,6 +213,21 @@ const MovesSection = lazyWithReload(() =>
 // builder paint) and loads when a track is selected.
 const TrackPreview = lazyWithReload(() =>
   import('./TrackPreview.js').then((m) => ({ default: m.TrackPreview })),
+);
+// Music › Songs inline row player (RF-172). Same playback chunks as TrackPreview;
+// SongShelf preloads it once songs are listed, so a ▶ tap mounts it at once.
+const loadSongRowPreview = () =>
+  import('./SongRowPreview.js').then((m) => ({ default: m.SongRowPreview }));
+const SongRowPreview = lazyWithReload(loadSongRowPreview);
+// Music › Songs pick mode (RF-151) loads with the Songs view, not the startup
+// bundle: its rows, bar and sheet share one chunk.
+const loadSongPicks = () => import('./SongPicks.js');
+const SongPickList = lazyWithReload(() =>
+  loadSongPicks().then((m) => ({ default: m.SongPickList })),
+);
+const SongPickBar = lazyWithReload(() => loadSongPicks().then((m) => ({ default: m.SongPickBar })));
+const SongPickCreateDialog = lazyWithReload(() =>
+  loadSongPicks().then((m) => ({ default: m.SongPickCreateDialog })),
 );
 
 type DashboardDestination = 'classes' | 'music' | 'live' | 'account';
@@ -2455,6 +2469,10 @@ function MusicWorkspace({
     songPickScope(selectedProvider, connectionState === 'connected', connection),
   );
   const [songPickCreateOpen, setSongPickCreateOpen] = useState(false);
+  // RF-172: the one Songs row whose inline player is open. Changing provider or
+  // leaving Songs closes it, which unmounts the player and releases the SDK.
+  const [songPreviewKey, setSongPreviewKey] = useState<string | null>(null);
+  useEffect(() => setSongPreviewKey(null), [selectedProvider, libraryKind]);
   const statusMark = musicConnectionMark(connectionsStatus, connectionState);
   const truth = providerCapabilityTruth(selectedProvider, connection, Date.now());
   const connectBusy = !!flow.operation && !flow.operation.error && flow.operation.stage !== 'ready';
@@ -2830,6 +2848,28 @@ function MusicWorkspace({
             onClear: songPicks.clear,
             onCreate: () => setSongPickCreateOpen(true),
           }}
+          preview={{
+            key: songPreviewKey,
+            onPreview: (track) => {
+              const key = songPickKey(track);
+              setSongPreviewKey((open) => (open === key ? null : key));
+            },
+            render: (track) => (
+              <Suspense
+                fallback={
+                  <p role="status" className="ml-14 mt-1 font-data text-xs text-text-secondary">
+                    Starting preview…
+                  </p>
+                }
+              >
+                <SongRowPreview
+                  track={track}
+                  connections={connections}
+                  onStop={() => setSongPreviewKey(null)}
+                />
+              </Suspense>
+            ),
+          }}
         />
       ) : (
         <section className="min-w-0">
@@ -2940,23 +2980,25 @@ function MusicWorkspace({
         </section>
       )}
       {songPickCreateOpen && songPicks.tracks.length > 0 && (
-        <SongPickCreateDialog
-          count={songPicks.tracks.length}
-          defaultTitle={`${label} likes`}
-          onClose={() => setSongPickCreateOpen(false)}
-          onCreate={(title, chosenTemplate) =>
-            onCreateClass(
-              // The class follows the list order the instructor sees.
-              orderPicks(
-                songPicks.tracks,
-                orderLibrary(likedTracks ?? [], sort, (row) => row.title),
-              ),
-              title,
-              chosenTemplate,
-              true,
-            )
-          }
-        />
+        <Suspense fallback={null}>
+          <SongPickCreateDialog
+            count={songPicks.tracks.length}
+            defaultTitle={`${label} likes`}
+            onClose={() => setSongPickCreateOpen(false)}
+            onCreate={(title, chosenTemplate) =>
+              onCreateClass(
+                // The class follows the list order the instructor sees.
+                orderPicks(
+                  songPicks.tracks,
+                  orderLibrary(likedTracks ?? [], sort, (row) => row.title),
+                ),
+                title,
+                chosenTemplate,
+                true,
+              )
+            }
+          />
+        </Suspense>
       )}
     </section>
   );
@@ -3118,6 +3160,7 @@ function SongShelf({
   note = null,
   loadMore = null,
   picks,
+  preview = null,
 }: {
   label: string;
   loading: boolean;
@@ -3148,16 +3191,30 @@ function SongShelf({
     onClear: () => void;
     onCreate: () => void;
   };
+  /** The ▶ artwork preview (RF-172): the open row, its toggle, and its player. */
+  preview?: {
+    key: string | null;
+    onPreview: (track: TrackSearchResult) => void;
+    render: (track: TrackSearchResult) => ReactNode;
+  } | null;
 }) {
+  // Fetch the player chunk once songs are on screen, so the first ▶ tap does not
+  // wait for it (and play() still runs inside that tap).
+  const preloadPreview = rows.length > 0 && preview != null;
+  useEffect(() => {
+    if (preloadPreview) void loadSongRowPreview().catch(() => {});
+  }, [preloadPreview]);
   // The bar outlives an empty search so the selection stays reachable.
   const bar =
     rows.length > 0 || picks.count > 0 ? (
-      <SongPickBar
-        count={picks.count}
-        cap={picks.cap}
-        onClear={picks.onClear}
-        onCreate={picks.onCreate}
-      />
+      <Suspense fallback={null}>
+        <SongPickBar
+          count={picks.count}
+          cap={picks.cap}
+          onClear={picks.onClear}
+          onCreate={picks.onCreate}
+        />
+      </Suspense>
     ) : null;
   const footer =
     note || loadMore ? (
@@ -3232,12 +3289,17 @@ function SongShelf({
   }
   return (
     <div className="flex flex-col gap-2">
-      <SongPickList
-        rows={rows}
-        selectedKeys={picks.selectedKeys}
-        full={picks.full}
-        onToggle={picks.onToggle}
-      />
+      <Suspense fallback={null}>
+        <SongPickList
+          rows={rows}
+          selectedKeys={picks.selectedKeys}
+          full={picks.full}
+          onToggle={picks.onToggle}
+          previewKey={preview?.key ?? null}
+          onPreview={preview?.onPreview}
+          renderPreview={preview?.render}
+        />
+      </Suspense>
       {footer}
       {bar}
     </div>
