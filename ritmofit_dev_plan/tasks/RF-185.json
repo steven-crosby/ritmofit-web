@@ -98,6 +98,24 @@
       "ref": "apps/web/src/components/LiveMode.test.tsx",
       "summary": "Added \"in a playback error, a keyboard seek on the timeline moves only the clock\" and \"after the class end, a release at a value sent in the ended run is sent again\". runtime.test.ts adds \"changes its run generation when the run reaches the class end\". All three fail on cfa0687. Recorded test result, not device evidence.",
       "checkedOn": "2026-11-04"
+    },
+    {
+      "kind": "observation",
+      "ref": "https://github.com/steven-crosby/ritmofit-web/pull/720#issuecomment-6664016585",
+      "summary": "Owner approved round 5 of #720 (record at the linked PR comment): restore Next, Previous and Skip track resuming after a playback error, and keep the timeline strip clock-only in an error.",
+      "checkedOn": "2026-11-05"
+    },
+    {
+      "kind": "pr",
+      "ref": "https://github.com/steven-crosby/ritmofit-web/pull/720",
+      "summary": "Round 5: after a playback error, Next, Previous, Skip track and a Full List row jump resume music at the new track (jumpTo: one coordinator.resume, any pending throttled seek dropped first). Round 4 had made Next and Previous clock-only in an error. The timeline strip (taps, drags, arrow keys) still only moves the clock in an error and never calls the provider; the throttle callback's early return now applies only to strip input. Retry unchanged.",
+      "checkedOn": "2026-11-05"
+    },
+    {
+      "kind": "test",
+      "ref": "apps/web/src/components/LiveMode.test.tsx",
+      "summary": "Added five round-5 tests: after a playback error, Next and Previous each resume music once; Skip track and Retry each resume once; strip taps, drags and arrow keys move only the clock. Run against d295b29, the Next and Previous tests fail (no resume). The Skip track, Retry and strip tests pass there too and guard behaviour already correct. Recorded test result, not device evidence.",
+      "checkedOn": "2026-11-05"
     }
   ],
   "resolution": null,

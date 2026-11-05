@@ -696,9 +696,9 @@ export function LiveMode({
     () => coordinatorRef.current?.getRunGeneration() ?? null,
   );
 
-  /** Discrete, immediate seek: keyboard, Next, Previous, row target. Rebases
-   * the clock (both tiers) and commits the provider position right away. In
-   * a playback error it moves the clock only; Retry resumes from there. */
+  /** Discrete, immediate seek from the timeline strip (arrow keys) and the base
+   * of jumpTo. Rebases the clock (both tiers) and commits the provider position
+   * right away. In a playback error it moves the clock only (RF-185). */
   const seek = useCallback(
     (ms: number) => {
       const clamped = clockSeek(ms);
@@ -835,17 +835,20 @@ export function LiveMode({
     void coordinator.resume(held);
   };
 
-  /** Skip track, from the recovery panel: an explicit recovery like Retry, so
-   * it resumes music at the next track's start, while a plain seek in a
-   * playback error only moves the clock (RF-185). */
-  const skipFailedTrack = (ms: number) => {
-    const clamped = clockSeek(ms);
-    commitThrottleRef.current?.cancel();
+  /** A deliberate jump to a track: Next, Previous, Skip track and a Full List
+   * row. In a playback error it is an explicit recovery like Retry, so it
+   * resumes music at the new position: one resume, with any pending
+   * throttled seek dropped first so none fires afterwards. Otherwise it is
+   * one discrete seek. Only the timeline strip (taps, drags, arrow keys)
+   * moves the clock alone in an error (RF-185). */
+  const jumpTo = (ms: number) => {
     const coordinator = coordinatorRef.current;
     if (!coordinator || !inPlaybackError()) {
-      seek(clamped);
+      seek(ms);
       return;
     }
+    const clamped = clockSeek(ms);
+    commitThrottleRef.current?.cancel();
     setPlaying(true);
     void coordinator.resume(clamped);
   };
@@ -1307,7 +1310,7 @@ export function LiveMode({
               {liveIndex >= 0 && liveIndex < payload.tracks.length - 1 && (
                 <button
                   type="button"
-                  onClick={() => skipFailedTrack(payload.tracks[liveIndex + 1]!.startOffsetMs ?? 0)}
+                  onClick={() => jumpTo(payload.tracks[liveIndex + 1]!.startOffsetMs ?? 0)}
                   className="min-h-11 rounded-control px-2 font-ui text-xs text-interactive rf-focus-ring"
                 >
                   Skip track
@@ -1353,7 +1356,7 @@ export function LiveMode({
               eventsByTrack={eventsByTrack}
               liveIndex={liveIndex}
               elapsedMs={elapsedMs}
-              onSeek={seek}
+              onSeek={jumpTo}
             />
           )}
         </div>
@@ -1376,11 +1379,11 @@ export function LiveMode({
           liveIndex={liveIndex}
           onPreviousTrack={() => {
             if (liveIndex <= 0) return;
-            seek(payload.tracks[liveIndex - 1]?.startOffsetMs ?? 0);
+            jumpTo(payload.tracks[liveIndex - 1]?.startOffsetMs ?? 0);
           }}
           onNextTrack={() => {
             if (liveIndex < 0 || liveIndex >= payload.tracks.length - 1) return;
-            seek(payload.tracks[liveIndex + 1]?.startOffsetMs ?? 0);
+            jumpTo(payload.tracks[liveIndex + 1]?.startOffsetMs ?? 0);
           }}
           payload={payload}
           clock={clockStore}

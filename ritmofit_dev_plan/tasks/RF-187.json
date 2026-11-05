@@ -86,6 +86,18 @@
       "ref": "apps/web/src/lib/playback/apple-music-adapter.test.ts",
       "summary": "Added \"an old-queue playing state during a same-song re-cue is no proof\" and \"play() on an unprepared or destroyed adapter takes no guard hold\". Both fail on cfa0687. Recorded test result, not device evidence.",
       "checkedOn": "2026-11-04"
+    },
+    {
+      "kind": "observation",
+      "ref": "https://github.com/steven-crosby/ritmofit-web/pull/720#issuecomment-6664016585",
+      "summary": "Owner approved round 5 of #720 (record at the linked PR comment): restore Next, Previous and Skip track resuming after a playback error, and keep the timeline strip clock-only in an error.",
+      "checkedOn": "2026-11-05"
+    },
+    {
+      "kind": "pr",
+      "ref": "https://github.com/steven-crosby/ritmofit-web/pull/720",
+      "summary": "Round 5 of #720 changes only Live's error-state navigation (RF-185). The Apple adapter is unchanged since round 4.",
+      "checkedOn": "2026-11-05"
     }
   ],
   "resolution": null,

@@ -56,6 +56,18 @@
       "ref": "https://github.com/steven-crosby/ritmofit-web/pull/720",
       "summary": "Round 4 of #720: in a playback error, a keyboard seek, Next or Previous now moves only the clock, like a timeline gesture since round 3. Only Retry or Skip track resumes, which removes one more candidate path to an unasked-for start. The blocker and the device lines needed are unchanged.",
       "checkedOn": "2026-11-04"
+    },
+    {
+      "kind": "observation",
+      "ref": "https://github.com/steven-crosby/ritmofit-web/pull/720#issuecomment-6664016585",
+      "summary": "Owner approved round 5 of #720 (record at the linked PR comment): restore Next, Previous and Skip track resuming after a playback error, and keep the timeline strip clock-only in an error.",
+      "checkedOn": "2026-11-05"
+    },
+    {
+      "kind": "pr",
+      "ref": "https://github.com/steven-crosby/ritmofit-web/pull/720",
+      "summary": "Round 5 of #720: Next, Previous and Skip track resume music after a playback error again (an explicit press each). Timeline strip input stays clock-only, so no strip gesture can start music by itself. The blocker and the device lines needed are unchanged.",
+      "checkedOn": "2026-11-05"
     }
   ],
   "resolution": null,
