@@ -34,5 +34,7 @@
     }
   ],
   "resolution": "axe joins a control's child text without spaces, so the chip's visible text read as \"soundcloudcatalog only\", which the aria-label \"SoundCloud, Catalog only\" does not contain. A space text node between the service name and the state mark (not rendered inside the flex chip) makes the visible text two words that the aria-label contains; the 'Music songs' KNOWN_AXE entry is removed and the smoke stays green at 1440 and 390. The accessible name is unchanged.",
-  "followUps": []
+  "followUps": [
+    "RF-200"
+  ]
 }

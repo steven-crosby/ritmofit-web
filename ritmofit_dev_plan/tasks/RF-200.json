@@ -1,0 +1,27 @@
+{
+  "schemaVersion": 1,
+  "id": "RF-200",
+  "title": "Music service chips: label-in-name follow-ups from the RF-173 review",
+  "kind": "task",
+  "status": "backlog",
+  "priority": "P3",
+  "parent": null,
+  "dependsOn": [],
+  "acceptance": [
+    "The word break between a chip's service name and its state no longer rests on a space-only JSX text node a reflow could drop: a sturdier separator, or no aria-label, with a unit test that fails if the visible text runs the two together.",
+    "The reconnect chip's busy state ('Reconnecting…') keeps its visible text inside its accessible name, or the record says why the disabled state is exempt.",
+    "The expired-chip branch reuses the shared chip shell classes instead of copying them, and drops the aria-label that only repeats its visible text."
+  ],
+  "nextAction": "Logged from the fresh-context review of the RF-173 PR (2026-11-05 unattended Neo session). Agent-created: Backlog until the owner sets Ready.",
+  "blocker": null,
+  "evidence": [
+    {
+      "kind": "observation",
+      "ref": "https://github.com/steven-crosby/ritmofit-web/issues/730",
+      "summary": "Non-blocking findings from the RF-173 pre-PR review, not fixed in that PR.",
+      "checkedOn": "2026-11-05"
+    }
+  ],
+  "resolution": null,
+  "followUps": []
+}
