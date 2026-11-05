@@ -12,13 +12,13 @@ owner's queue: any agent may execute a Ready task. Publishing follows AGENTS.md 
 Evidence marked **recorded** is a carried-forward claim, not fresh verification.
 A checked PR proves its GitHub state, not product acceptance or production behavior.
 
-193 tasks. backlog: 67 · ready: 0 · in_progress: 1 · blocked: 2 · review: 11 · done: 110 · cancelled: 2.
+193 tasks. backlog: 67 · ready: 0 · in_progress: 0 · blocked: 2 · review: 12 · done: 110 · cancelled: 2.
 
 ## In progress
 
 | Task | Priority / kind | Relationships | Next action / resolution | Evidence |
 | --- | --- | --- | --- | --- |
-| [RF-189](tasks/RF-189.json) iOS Safari zooms the page when a 14px text box is focused | P3 / task | — | Neo, in progress on fix/rf-189-ios-input-zoom: move every text input, search, select and textarea to text-base sm:text-sm (one shared field class), then add a CI check for sub-16px fields. | checked 2026-11-03; checked 2026-11-04 |
+| — | — | — | — | — |
 
 ## Blocked / waiting
 
@@ -39,6 +39,7 @@ A checked PR proves its GitHub state, not product acceptance or production behav
 | [RF-108](tasks/RF-108.json) Scrubbing or pausing Live during a track start keeps music playing | P2 / task | needs RF-107; follow-ups RF-158, RF-159, RF-161, RF-185, RF-186, RF-187, RF-188 | Device check run 2026-11-03 (evidence below): criteria 3 and 5 pass on iPhone Safari; criterion 4 (Retry after a hung setQueue) was not exercised because no hang occurred. Stays For review until the owner either accepts criterion 4 on the mock tests plus this run, or sees a hang and a Retry on device. Defects found in the run are separate: RF-185 (double start per tap), RF-186 (quick taps show Paused), RF-187 (unhandled play() rejection), RF-188 (timeline UX). Spotify half: RF-158. Late-settle detection and clear-once: RF-159. Review follow-ups: RF-161. | recorded; checked 2026-10-28; checked 2026-10-30; checked 2026-10-31; checked 2026-11-03 |
 | [RF-128](tasks/RF-128.json) Apple Music Start class sounds within 1 s on iPhone Safari | P2 / task | needs RF-124 | Wi-Fi timing on 2026-11-03 (evidence below): the two Start class taps reached first playing state 647 and 819 ms after prepare, and later starts ranged 479-1052 ms (one over 1 s). The log measures from prepare, not from the tap, so the tap-to-audio time is not yet measured. Criterion 0 still needs the owner's timed Start on 5G (audible within 1 s of the tap); the owner may instead decide how to treat this Wi-Fi run. #668 review items 3-8 stay noted in this record's evidence. | checked 2026-10-28; checked 2026-10-29; checked 2026-10-30; checked 2026-10-31; checked 2026-11-03 |
 | [RF-190](tasks/RF-190.json) Two-machine conductors: equal authority between the Air and Neo conductors | P2 / documentation | needs RF-182; follow-ups RF-191 | Owner reviews and approves this PR together with the Neo's matching ritmofit-ios docs PR (AGENTS.md pointer, Merge gate, CLAUDE.md without "leads"), so the repos never disagree. Set Done once both merge. | checked 2026-11-03 |
+| [RF-189](tasks/RF-189.json) iOS Safari zooms the page when a 14px text box is focused | P3 / task | — | Owner: after the next deploy, on iPhone Safari tap Music › Songs Search songs, the Create a class name field and the sign-in Email field; the page must not zoom. Then set Done. | checked 2026-11-03; checked 2026-11-04 |
 | [RF-16](tasks/RF-16.json) Editorial Spotify playlist 404 still shares the outage envelope | untriaged / investigation | — | Reconfirm the 404/error mapping against current code. Spotify reopened by the owner on 2026-10-28; any provider change needs its own approved task. Resume risk: the Spotify developer app rejects the connected account ("The user is not registered for this application"), so Web API calls return 403. | recorded; checked 2026-10-28 |
 | [RF-23](tasks/RF-23.json) Health check touches D1 and an authed smoke uses a gitignored token | untriaged / verification | — | Reconcile the merged implementation with its outstanding review/verification; current public probes returned 403 and do not certify production health. | recorded; checked 2026-10-27 |
 | [RF-32](tasks/RF-32.json) Reconcile Classes redesign B → A → C against shipped work | untriaged / plan | — | Reconcile #598 (B), #601 (A), and #607 (builder navigation) against the plan, especially remaining C stretch acceptance. Request approval only for newly identified implementation scope. | recorded; checked 2026-10-27 |

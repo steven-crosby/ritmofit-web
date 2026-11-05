@@ -3,7 +3,7 @@
   "id": "RF-189",
   "title": "iOS Safari zooms the page when a 14px text box is focused",
   "kind": "task",
-  "status": "in_progress",
+  "status": "review",
   "priority": "P3",
   "parent": null,
   "dependsOn": [],
@@ -12,7 +12,7 @@
     "The viewport meta keeps user zoom enabled (no maximum-scale or user-scalable=no).",
     "A check (lint rule, test or grep in CI) flags a new form field below 16px on mobile."
   ],
-  "nextAction": "Neo, in progress on fix/rf-189-ios-input-zoom: move every text input, search, select and textarea to text-base sm:text-sm (one shared field class), then add a CI check for sub-16px fields.",
+  "nextAction": "Owner: after the next deploy, on iPhone Safari tap Music › Songs Search songs, the Create a class name field and the sign-in Email field; the page must not zoom. Then set Done.",
   "blocker": null,
   "evidence": [
     {
@@ -43,6 +43,18 @@
       "kind": "pr",
       "ref": "https://github.com/steven-crosby/ritmofit-web/pull/726",
       "summary": "Owner set RF-189 Ready for the Neo on 2026-11-04 (\"Yes approved\", quoted in this PR body); this draft PR is the Neo claim.",
+      "checkedOn": "2026-11-04"
+    },
+    {
+      "kind": "source",
+      "ref": "apps/web/src/index.css",
+      "summary": "Substitution flagged: one phone-only rule (below 640px) sets every text-entry input, select and textarea to 16px !important, instead of editing about 80 fields to text-base sm:text-sm. It covers fields added later too; desktop sizes are unchanged. The viewport meta in apps/web/index.html is unchanged (no maximum-scale, no user-scalable=no).",
+      "checkedOn": "2026-11-04"
+    },
+    {
+      "kind": "test",
+      "ref": "e2e/smoke.spec.ts",
+      "summary": "expectNoZoomingFields fails the phone-390 smoke for any visible text field under 16px (sign-up form, Music search, Create a class sheet, and every checkPage destination). Without the CSS rule it fails on login-name and login-email at 14px; with it both projects pass.",
       "checkedOn": "2026-11-04"
     }
   ],
