@@ -14,7 +14,7 @@
     "The service-worker navigation fallback still denies /api/ routes, and OAuth and reset-password callbacks still reach the Worker.",
     "One routing approach covers both refresh-restore and the sign-in/sign-up paths, so the app does not get two routing mechanisms."
   ],
-  "nextAction": "Owner device check on iPhone Safari against a deploy that includes PR #725: refresh on a class and on Live (Live reopens at its preflight with Start, never playing); an edge swipe Back during a running class stays in Live; sign-in and sign-up links open their own pages. Set Done once that passes. If /music, /account or /live need more than a path (for example Music's inner view in the URL), log a separate task.",
+  "nextAction": "Owner device check on iPhone Safari against production (bd2b8fa deployed 2026-11-04 and ddd4b70 deployed 2026-11-05 both include PR #725). Check that a refresh on a class and on Live reopens it (Live at its preflight with Start, never playing), that an edge swipe Back during a running class stays in Live, and that the sign-in and sign-up links open their own pages. Set Done once that passes. If /music, /account or /live need more than a path (for example Music's inner view in the URL), log a separate task.",
   "blocker": null,
   "evidence": [
     {
@@ -33,6 +33,12 @@
       "kind": "pr",
       "ref": "https://github.com/steven-crosby/ritmofit-web/pull/725",
       "summary": "Real paths with no router library (owner's choice in the Neo session, 2026-11-04, after an adversarial check): /sign-in, /sign-up, /classes/<id>, /classes/<id>/live, /music, /live, /account; old /?auth= links redirect. Dashboard writes the URL from state in one place and Back/Forward call the same open/close paths. Covered by lib/app-route.test.ts, App and Dashboard tests, and the e2e smoke's reload on a class. Real URLs without a router library. App routes on the path: signed-out visits to signed-in paths go to /sign-in and return afterwards; a signed-in visit to /sign-in goes on. Dashboard restores a class path by fetching the class (Class not found or Retry when it can't), opens Live at its preflight for a /live path, and never leaves Live on Back (Exit does). The service-worker config is unchanged: its fallback already denies /api/, so OAuth and reset-password callbacks still reach the Worker. Final review of 24ceeaf found one significant bug (a deep link remembered after an abandoned sign-in), fixed here: the signed-out landing page now clears it. Non-blocking findings: RF-195.",
+      "checkedOn": "2026-11-04"
+    },
+    {
+      "kind": "observation",
+      "ref": "https://github.com/steven-crosby/ritmofit-web/pull/725#issuecomment-6648404740",
+      "summary": "Deployed to production on 2026-11-04 from the Air: main bd2b8fa, Worker 229cf040-3b4e-48ac-80bd-10573d017810, SPA assets/index-Cbp8jocW.js, rollback d05bb48f. Unauthenticated GETs of /sign-in, /sign-up, /classes/<id> and /classes/<id>/live each return 200 (SPA fallback). This proves only that the paths are served; the owner's iPhone Safari check is still owed.",
       "checkedOn": "2026-11-04"
     }
   ],

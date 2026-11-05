@@ -12,7 +12,7 @@
     "The viewport meta keeps user zoom enabled (no maximum-scale or user-scalable=no).",
     "A check (lint rule, test or grep in CI) flags a new form field below 16px on mobile."
   ],
-  "nextAction": "Owner: after the next deploy, on iPhone Safari tap Music › Songs Search songs, the Create a class name field and the sign-in Email field; the page must not zoom. Then set Done.",
+  "nextAction": "Owner: against production (deployed 2026-11-05, main ddd4b70), on iPhone Safari tap Music › Songs Search songs, the Create a class name field and the sign-in Email field; the page must not zoom. Then set Done.",
   "blocker": null,
   "evidence": [
     {
@@ -56,6 +56,12 @@
       "ref": "e2e/smoke.spec.ts",
       "summary": "expectNoZoomingFields fails the phone-390 smoke for any visible text field under 16px (sign-up form, Music search, Create a class sheet, and every checkPage destination). Without the CSS rule it fails on login-name and login-email at 14px; with it both projects pass.",
       "checkedOn": "2026-11-04"
+    },
+    {
+      "kind": "observation",
+      "ref": "https://github.com/steven-crosby/ritmofit-web/pull/729#issuecomment-6663990545",
+      "summary": "Deployed to production on 2026-11-05 from the Air: main ddd4b70, Worker 4c906295-6506-4bc5-b886-8f568446c527, SPA assets/index-CzpTnNZB.js, rollback 229cf040-3b4e-48ac-80bd-10573d017810 (bd2b8fa). Smoke and security headers passed. The owner's iPhone Safari check is still owed.",
+      "checkedOn": "2026-11-05"
     }
   ],
   "resolution": null,
