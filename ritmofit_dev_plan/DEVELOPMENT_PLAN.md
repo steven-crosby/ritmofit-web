@@ -21,9 +21,9 @@
 
 **Current actionable state:** [RF board](./tasks.md), backed by canonical [task records](./tasks/README.md).
 The order of work is [Phases](#phases) below; each phase lists RF records, not a second backlog.
-**Main vs production:** production is main `af800c8` (Worker `d05bb48f-5f85-49c9-b08e-f0f4448d29d6`;
-SPA `assets/index-ChxMwIpX.js`; rollback `feac7dde-dc10-4462-bd2d-79075d289bda`), the standalone auth
-deploy [RF-183](./tasks/RF-183.json) from the Air on 2026-11-02. See [HISTORY](./HISTORY.md).
+**Main vs production:** production is main `bd2b8fa` (Worker `229cf040-3b4e-48ac-80bd-10573d017810`;
+SPA `assets/index-Cbp8jocW.js`; rollback `d05bb48f-5f85-49c9-b08e-f0f4448d29d6`). It was deployed from the Air
+on 2026-11-04 and carries RF-129 real URLs (#725). See [HISTORY](./HISTORY.md).
 **In flight:** [RF-183](./tasks/RF-183.json) is Blocked on the owner's checks: sign in again after
 sign-out (the rest of the native check passed on the simulator, #715), and on web two `expiresAt`
 readings from the app's own get-session at least 24 hours apart (first not yet taken). The signed-in
