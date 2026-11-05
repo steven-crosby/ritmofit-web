@@ -214,11 +214,15 @@ const MovesSection = lazyWithReload(() =>
 const TrackPreview = lazyWithReload(() =>
   import('./TrackPreview.js').then((m) => ({ default: m.TrackPreview })),
 );
-// Music › Songs inline row player (RF-172). Same playback chunks as TrackPreview;
-// SongShelf preloads it once songs are listed, so a ▶ tap mounts it at once.
+// Music › Songs inline row player (RF-172). Same playback chunks as TrackPreview.
+// MusicWorkspace loads it with the Songs view and renders the loaded component
+// directly, so a ▶ tap mounts it (and calls play()) inside the tap. A lazy
+// component would suspend on its first render even with the chunk cached, and
+// play after the tap. The lazy one covers only a tap before the chunk arrives.
 const loadSongRowPreview = () =>
   import('./SongRowPreview.js').then((m) => ({ default: m.SongRowPreview }));
-const SongRowPreview = lazyWithReload(loadSongRowPreview);
+const SongRowPreviewLazy = lazyWithReload(loadSongRowPreview);
+type SongRowPreviewComponent = Awaited<ReturnType<typeof loadSongRowPreview>>['default'];
 // Music › Songs pick mode (RF-151) loads with the Songs view, not the startup
 // bundle: its rows, bar and sheet share one chunk.
 const loadSongPicks = () => import('./SongPicks.js');
@@ -2473,6 +2477,20 @@ function MusicWorkspace({
   // leaving Songs closes it, which unmounts the player and releases the SDK.
   const [songPreviewKey, setSongPreviewKey] = useState<string | null>(null);
   useEffect(() => setSongPreviewKey(null), [selectedProvider, libraryKind]);
+  const [SongRowPreview, setSongRowPreview] = useState<SongRowPreviewComponent | null>(null);
+  const songsView = libraryKind === 'songs';
+  useEffect(() => {
+    if (!songsView || SongRowPreview) return;
+    let cancelled = false;
+    loadSongRowPreview()
+      .then((m) => {
+        if (!cancelled) setSongRowPreview(() => m.default);
+      })
+      .catch(() => {});
+    return () => {
+      cancelled = true;
+    };
+  }, [songsView, SongRowPreview]);
   const statusMark = musicConnectionMark(connectionsStatus, connectionState);
   const truth = providerCapabilityTruth(selectedProvider, connection, Date.now());
   const connectBusy = !!flow.operation && !flow.operation.error && flow.operation.stage !== 'ready';
@@ -2854,21 +2872,29 @@ function MusicWorkspace({
               const key = songPickKey(track);
               setSongPreviewKey((open) => (open === key ? null : key));
             },
-            render: (track) => (
-              <Suspense
-                fallback={
-                  <p role="status" className="ml-14 mt-1 font-data text-xs text-text-secondary">
-                    Starting preview…
-                  </p>
-                }
-              >
+            onClose: () => setSongPreviewKey(null),
+            render: (track) =>
+              SongRowPreview ? (
                 <SongRowPreview
                   track={track}
                   connections={connections}
                   onStop={() => setSongPreviewKey(null)}
                 />
-              </Suspense>
-            ),
+              ) : (
+                <Suspense
+                  fallback={
+                    <p role="status" className="ml-14 mt-1 font-data text-xs text-text-secondary">
+                      Starting preview…
+                    </p>
+                  }
+                >
+                  <SongRowPreviewLazy
+                    track={track}
+                    connections={connections}
+                    onStop={() => setSongPreviewKey(null)}
+                  />
+                </Suspense>
+              ),
           }}
         />
       ) : (
@@ -3195,15 +3221,18 @@ function SongShelf({
   preview?: {
     key: string | null;
     onPreview: (track: TrackSearchResult) => void;
+    onClose: () => void;
     render: (track: TrackSearchResult) => ReactNode;
   } | null;
 }) {
-  // Fetch the player chunk once songs are on screen, so the first ▶ tap does not
-  // wait for it (and play() still runs inside that tap).
-  const preloadPreview = rows.length > 0 && preview != null;
+  // A preview whose row leaves the list (a search hides it) closes, so the row
+  // coming back never restarts the song without a tap.
+  const openPreview = preview?.key ?? null;
+  const openRowShown = openPreview != null && rows.some((row) => songPickKey(row) === openPreview);
+  const closePreview = preview?.onClose;
   useEffect(() => {
-    if (preloadPreview) void loadSongRowPreview().catch(() => {});
-  }, [preloadPreview]);
+    if (openPreview != null && !openRowShown) closePreview?.();
+  }, [openPreview, openRowShown, closePreview]);
   // The bar outlives an empty search so the selection stays reachable.
   const bar =
     rows.length > 0 || picks.count > 0 ? (

@@ -24,6 +24,15 @@ import {
 } from '../lib/onboarding-video.js';
 
 vi.mock('../lib/api.js');
+// RF-172: the Songs inline player, replaced so tests can count its mounts (each
+// mount is one play() in the real component).
+const songRowPreview = vi.hoisted(() => ({ mounts: [] as string[] }));
+vi.mock('./SongRowPreview.js', () => ({
+  SongRowPreview: ({ track }: { track: { title: string } }) => {
+    songRowPreview.mounts.push(track.title);
+    return <p>player for {track.title}</p>;
+  },
+}));
 
 // Lets one test crash the builder below Dashboard's destination boundary.
 const crash = vi.hoisted(() => ({ planBlocks: false }));
@@ -700,6 +709,58 @@ describe('Dashboard class library states', () => {
     const list = screen.getByRole('list', { name: 'Liked songs' });
     expect(within(list).getAllByRole('checkbox')).toHaveLength(2);
     expect(screen.getByText('Tick up to 15 songs to create a class.')).toBeTruthy();
+  });
+
+  it('previews a liked song inside the tap, and a song hidden by search does not restart (RF-172)', async () => {
+    songRowPreview.mounts.length = 0;
+    vi.mocked(api.listClasses).mockResolvedValue(page([]));
+    vi.mocked(api.listConnections).mockResolvedValue([spotifyConnection()]);
+    vi.mocked(api.listLikes).mockResolvedValue([
+      {
+        provider: 'spotify',
+        providerTrackId: 'tr-1',
+        providerUri: null,
+        title: 'Levels',
+        artist: 'Avicii',
+        albumArtUrl: null,
+        durationMs: 200000,
+      },
+      {
+        provider: 'spotify',
+        providerTrackId: 'tr-2',
+        providerUri: null,
+        title: 'Wake Me Up',
+        artist: 'Avicii',
+        albumArtUrl: null,
+        durationMs: 240000,
+      },
+    ]);
+
+    renderDashboard();
+    fireEvent.click(await screen.findByRole('button', { name: 'Music' }));
+    await selectMusicService('Spotify');
+    fireEvent.click(screen.getByRole('button', { name: 'Songs' }));
+    const preview = await screen.findByRole('button', { name: 'Preview Levels' });
+    // Let the Songs view finish loading the player chunk, then tap: the player
+    // mounts in the same commit as the tap, with no "Starting preview…" step.
+    await act(async () => {
+      await new Promise((resolve) => setTimeout(resolve, 0));
+    });
+    fireEvent.click(preview);
+    expect(screen.getByText('player for Levels')).toBeTruthy();
+    expect(screen.queryByText('Starting preview…')).toBeNull();
+    expect(songRowPreview.mounts).toEqual(['Levels']);
+    expect(screen.getByRole('checkbox', { name: /Levels/ })).toHaveProperty('checked', false);
+
+    // A search that hides the row closes its preview; clearing it does not replay.
+    const search = screen.getByRole('searchbox', { name: 'Search songs' });
+    fireEvent.change(search, { target: { value: 'Wake' } });
+    await waitFor(() => expect(screen.queryByText('Levels')).toBeNull());
+    expect(screen.queryByText('player for Levels')).toBeNull();
+    fireEvent.change(search, { target: { value: '' } });
+    expect(await screen.findByRole('button', { name: 'Preview Levels' })).toBeTruthy();
+    expect(screen.queryByText('player for Levels')).toBeNull();
+    expect(songRowPreview.mounts).toEqual(['Levels']);
   });
 
   it('does not create a class when the provider collection fetch fails', async () => {

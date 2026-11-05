@@ -71,6 +71,12 @@
       "ref": "apps/web/src/components/SongRowPreview.test.tsx",
       "summary": "▶ previews without toggling, stops from the same button, moves between rows, stays live on capped rows (SongPicks.test.tsx); the player plays on mount with no API call, Stop and unmount release the adapter, unplayable names the fix, a failure offers Play again; song-preview.test.ts covers the adapter. Web suite 1,665 passed; e2e both viewports pass with axe WCAG 2.2 AA on Music songs.",
       "checkedOn": "2026-11-04"
+    },
+    {
+      "kind": "pr",
+      "ref": "https://github.com/steven-crosby/ritmofit-web/pull/727",
+      "summary": "Final review (/code-review medium) of d8d8e99 found two significant correctness bugs, so it was not merged and owner-approved was removed: (1) the lazy row player suspended on its first render, so the first ▶ tap called play() up to ~300 ms after the tap; (2) a preview hidden by a search restarted with no tap when the row came back. Both fixed (the Songs view renders the loaded player directly; a preview closes when its row leaves the list), with a Dashboard regression test that fails on d8d8e99 for each. Web suite 1,666 passed; e2e both viewports; entry 179.37 kB.",
+      "checkedOn": "2026-11-04"
     }
   ],
   "resolution": null,
