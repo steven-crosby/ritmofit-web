@@ -360,3 +360,27 @@
     animation: none;
   }
 }
+
+/* RF-189: iOS Safari zooms the page when a text field under 16px gets focus, and the
+   page stays zoomed. On phones (below Tailwind's sm, 640px) every text-entry field is
+   16px, whatever size utility it carries; sm and up keep their own size. `!important`
+   because a field's own `text-sm`/`text-xs` utility would otherwise win. The viewport
+   meta keeps user zoom on, so this is the only fix. The e2e smoke checks it at 390px. */
+@media (max-width: 639.98px) {
+  input:not(
+    [type='checkbox'],
+    [type='radio'],
+    [type='range'],
+    [type='file'],
+    [type='color'],
+    [type='button'],
+    [type='submit'],
+    [type='reset'],
+    [type='image'],
+    [type='hidden']
+  ),
+  select,
+  textarea {
+    font-size: 16px !important;
+  }
+}
