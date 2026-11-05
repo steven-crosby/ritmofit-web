@@ -44,20 +44,17 @@ function Picker({ rows, cap = 15 }: { rows: TrackSearchResult[]; cap?: number })
 const box = (title: string) => screen.getByRole('checkbox', { name: new RegExp(title) });
 
 describe('SongPickList', () => {
-  it('toggles exactly once per click on the row text or the artwork', () => {
+  it('toggles exactly once per click on the row text or the checkbox', () => {
     const onToggle = vi.fn();
     const rows = [song('1')];
     render(<SongPickList rows={rows} selectedKeys={new Set()} full={false} onToggle={onToggle} />);
     fireEvent.click(screen.getByText('Song 1'));
     expect(onToggle).toHaveBeenCalledTimes(1);
-    const item = screen.getByRole('listitem');
-    fireEvent.click(item.querySelector('label')!.children[1]!);
-    expect(onToggle).toHaveBeenCalledTimes(2);
     fireEvent.click(box('Song 1'));
-    expect(onToggle).toHaveBeenCalledTimes(3);
+    expect(onToggle).toHaveBeenCalledTimes(2);
   });
 
-  it('holds one control per row, inside the build slot, and nothing that plays', () => {
+  it('holds one checkbox per row, inside the build slot, and nothing that plays without a preview', () => {
     render(
       <SongPickList rows={[song('1')]} selectedKeys={new Set()} full={false} onToggle={() => {}} />,
     );
@@ -67,6 +64,59 @@ describe('SongPickList', () => {
     expect(within(item).queryByRole('button')).toBeNull();
     expect(within(item).queryByRole('link')).toBeNull();
     expect(item.querySelector('audio, video, iframe')).toBeNull();
+  });
+
+  describe('▶ artwork preview (RF-172)', () => {
+    function PreviewList({ full = false }: { full?: boolean }) {
+      const [open, setOpen] = useState<string | null>(null);
+      return (
+        <SongPickList
+          rows={[song('1'), song('2')]}
+          selectedKeys={new Set()}
+          full={full}
+          onToggle={onToggle}
+          previewKey={open}
+          onPreview={(track) =>
+            setOpen((key) => (key === songPickKey(track) ? null : songPickKey(track)))
+          }
+          renderPreview={(track) => <p>player for {track.title}</p>}
+        />
+      );
+    }
+    const onToggle = vi.fn();
+    afterEach(() => onToggle.mockClear());
+
+    it('starts a preview from the artwork without toggling selection', () => {
+      render(<PreviewList />);
+      fireEvent.click(screen.getByRole('button', { name: 'Preview Song 1' }));
+      expect(screen.getByText('player for Song 1')).toBeTruthy();
+      expect(screen.queryByText('player for Song 2')).toBeNull();
+      expect(onToggle).not.toHaveBeenCalled();
+      expect(box('Song 1')).toHaveProperty('checked', false);
+    });
+
+    it('stops from the same button and moves to another row on its ▶', () => {
+      render(<PreviewList />);
+      fireEvent.click(screen.getByRole('button', { name: 'Preview Song 1' }));
+      const stop = screen.getByRole('button', { name: 'Stop preview of Song 1' });
+      expect(stop.getAttribute('aria-expanded')).toBe('true');
+      fireEvent.click(screen.getByRole('button', { name: 'Preview Song 2' }));
+      expect(screen.queryByText('player for Song 1')).toBeNull();
+      expect(screen.getByText('player for Song 2')).toBeTruthy();
+      fireEvent.click(screen.getByRole('button', { name: 'Stop preview of Song 2' }));
+      expect(screen.queryByText(/player for/)).toBeNull();
+    });
+
+    it('keeps ▶ beside the labels, never inside one, and live on rows the cap disables', () => {
+      render(<PreviewList full />);
+      const play = screen.getByRole('button', { name: 'Preview Song 1' });
+      expect(play.closest('label')).toBeNull();
+      expect(play).toHaveProperty('disabled', false);
+      expect(box('Song 1')).toHaveProperty('disabled', true);
+      fireEvent.click(play);
+      expect(screen.getByText('player for Song 1')).toBeTruthy();
+      expect(onToggle).not.toHaveBeenCalled();
+    });
   });
 
   it('marks a ticked song as checked', () => {
