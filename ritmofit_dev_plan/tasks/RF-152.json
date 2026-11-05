@@ -40,10 +40,12 @@
     {
       "kind": "test",
       "ref": "apps/web/src/components/Dashboard.test.tsx",
-      "summary": "Neo local: four new RF-152 tests and the extended previous-account test all failed with the Dashboard change reverted (15 autoload requests against at most 10 per minute; 2 Apple searches for a whitespace edit; stale Apple result shown; 6 requests after Keep loading taps in a running round; old account songs visible) and pass with it. music-library songSearchAutoLoadDelay tests added. Dashboard.test.tsx and music-library.test.ts: 247 passed before the new tests.",
+      "summary": "Neo local: four new RF-152 tests and the extended previous-account test all failed with the Dashboard change reverted (15 autoload requests against at most 10 per minute; 2 Apple searches for a whitespace edit; stale Apple result shown; 6 requests after Keep loading taps in a running round; old account songs visible) and pass with it. music-library songSearchAutoLoadDelay tests added. Dashboard.test.tsx and music-library.test.ts: 247 passed before the new tests. A fresh-context review found the per-minute budget was per service while the server limit is per user; it is now one budget across services, and a new cross-service test failed on the earlier commit (15 requests against at most 10) and passes now.",
       "checkedOn": "2026-11-05"
     }
   ],
   "resolution": null,
-  "followUps": []
+  "followUps": [
+    "RF-202"
+  ]
 }

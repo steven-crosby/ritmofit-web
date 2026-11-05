@@ -12,7 +12,7 @@ owner's queue: any agent may execute a Ready task. Publishing follows AGENTS.md 
 Evidence marked **recorded** is a carried-forward claim, not fresh verification.
 A checked PR proves its GitHub state, not product acceptance or production behavior.
 
-197 tasks. backlog: 67 · ready: 0 · in_progress: 0 · blocked: 3 · review: 13 · done: 112 · cancelled: 2.
+198 tasks. backlog: 68 · ready: 0 · in_progress: 0 · blocked: 3 · review: 13 · done: 112 · cancelled: 2.
 
 ## In progress
 
@@ -25,7 +25,7 @@ A checked PR proves its GitHub state, not product acceptance or production behav
 | Task | Priority / kind | Relationships | Next action / resolution | Evidence |
 | --- | --- | --- | --- | --- |
 | [RF-183](tasks/RF-183.json) Standalone auth deploy of RF-177/RF-178 (#703, #705) | P2 / release | — | Waiting on the owner's web session-extension check (two expiresAt readings at least 24 hours apart; the first is not yet taken as of 2026-11-03), and on a renewed QA token (RF-155) for the signed-in /auth/session and old-cookie-after-sign-out checks, which no agent can run without it. Next: Owner checks: the native check passed on the simulator 2026-11-03, sign-in again included (evidence below). (1) On web, in a signed-in tab: open DevTools › Network, refocus the tab, and note session.expiresAt and the time from the app's own get-session response; at least 24 hours later, refocus the same tab and read it again. The second expiresAt must be later. Do not open the get-session URL by hand: that request extends the session itself. The first reading had not been taken as of 2026-11-03. (2) Once the owner renews the QA token (RF-155), the Air conductor runs the signed-in checks with it (POST /api/v1/auth/session returns 200 with no Set-Cookie; after a native sign-out the old cookie gets 401) and records them here as evidence. RF-155's own acceptance does not cover these. Then the owner closes RF-183 or files a bug. | checked 2026-11-02; checked 2026-11-01; checked 2026-11-03 |
-| [RF-152](tasks/RF-152.json) Music Songs search and Load more behave cleanly at the edges (RF-132 review follow-ups) | P3 / task | — | Item 6 is an owner decision: whether the first search's 1,000-song bound counts songs already loaded (today it does, matching the 2026-10-29 ruling) or is relative. Items 1-5 and 7 are done. Next: Owner: decide item 6 (keep the bound counting loaded songs, or make it relative); then an agent implements it if needed and sets Done. | checked 2026-10-30; checked 2026-11-05 |
+| [RF-152](tasks/RF-152.json) Music Songs search and Load more behave cleanly at the edges (RF-132 review follow-ups) | P3 / task | follow-ups RF-202 | Item 6 is an owner decision: whether the first search's 1,000-song bound counts songs already loaded (today it does, matching the 2026-10-29 ruling) or is relative. Items 1-5 and 7 are done. Next: Owner: decide item 6 (keep the bound counting loaded songs, or make it relative); then an agent implements it if needed and sets Done. | checked 2026-10-30; checked 2026-11-05 |
 | [RF-80](tasks/RF-80.json) Define device playback verification before Start | untriaged / plan | — | Full plan and root-cause document exist only in the prior tool project store; contents are not available in git. Next: Recover the original plan and root-cause document into the repo, then request owner review. This task does not authorize preflight implementation. | recorded |
 
 ## For review
@@ -122,6 +122,7 @@ A checked PR proves its GitHub state, not product acceptance or production behav
 | [RF-195](tasks/RF-195.json) RF-129 routing follow-ups from the #725 final review | P3 / task | needs RF-129 | Non-blocking findings logged from the final review of #725 (24ceeaf). Pick up after the owner's iPhone check of RF-129. Surface: web. | checked 2026-11-04 |
 | [RF-198](tasks/RF-198.json) Phone text-field zoom rule: follow-ups from the RF-196 review | P3 / task | — | Logged from the fresh-context review of the RF-196 PR (2026-11-05 unattended Neo session). Agent-created: Backlog until the owner sets Ready. | checked 2026-11-05 |
 | [RF-199](tasks/RF-199.json) Music › Songs row player: harden the lazy/loaded swap and its test (RF-197 review follow-ups) | P3 / task | — | Logged from the fresh-context review of the RF-197 PR (2026-11-05 unattended Neo session). Agent-created: Backlog until the owner sets Ready. | checked 2026-11-05 |
+| [RF-202](tasks/RF-202.json) Music Songs search autoload: pacing, clock and test follow-ups from the RF-152 review | P3 / task | — | Logged from the fresh-context reviews of the RF-152 PR (2026-11-05 unattended Neo session). Agent-created: Backlog until the owner sets Ready. | checked 2026-11-05 |
 | [RF-74](tasks/RF-74.json) Spotify playlist dialog offers Try again where retry cannot help | untriaged / task | parent RF-92 | Review the error/action mapping. Spotify reopened by the owner on 2026-10-28; Apple work comes first until about 2026-11-27. Resume risk: the Spotify developer app rejects the connected account ("The user is not registered for this application"), so Web API calls return 403. | recorded; checked 2026-10-28; checked 2026-10-29 |
 
 ## Done

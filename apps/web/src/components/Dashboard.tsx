@@ -141,6 +141,8 @@ import {
   serverSongSearchState,
   shouldAutoLoadForSearch,
   SONG_SEARCH_AUTOLOAD_BOUND,
+  SONG_SEARCH_AUTOLOAD_DEBOUNCE_MS,
+  SONG_SEARCH_AUTOLOAD_WINDOW_MS,
   songSearchAutoLoadDelay,
   songSearchAutoLoadSpent,
   songSearchMode,
@@ -2277,9 +2279,9 @@ function MusicWorkspace({
   // the state copy only re-renders the note.
   const songAutoLoadRef = useRef({ key: '', bound: SONG_SEARCH_AUTOLOAD_BOUND, requests: 0 });
   const [songAutoLoad, setSongAutoLoad] = useState(songAutoLoadRef.current);
-  // When each search autoload request went out, per service, across search sessions
-  // (RF-152), so clearing and retyping searches stays inside a per-minute budget.
-  const songAutoLoadSentAt = useRef<Partial<Record<Provider, number[]>>>({});
+  // When each search autoload request went out, across search sessions and services
+  // (RF-152): the server's likes limit is per user, so one per-minute budget covers all.
+  const songAutoLoadSentAt = useRef<number[]>([]);
   const [librarySearch, setLibrarySearch] = useState<{
     provider: Provider;
     query: string;
@@ -2443,7 +2445,7 @@ function MusicWorkspace({
       return;
     }
     const provider = selectedProvider;
-    const delay = songSearchAutoLoadDelay(songAutoLoadSentAt.current[provider] ?? [], Date.now());
+    const delay = songSearchAutoLoadDelay(songAutoLoadSentAt.current, Date.now());
     const timeout = window.setTimeout(() => {
       const current = songAutoLoadRef.current;
       const loadedCount = autoLoadLikedTracks?.length ?? 0;
@@ -2451,13 +2453,15 @@ function MusicWorkspace({
       // RF-152: only a request that actually goes out counts against the budgets.
       if (!canLoadMoreLikes(provider)) return;
       const now = Date.now();
-      if (songSearchAutoLoadDelay(songAutoLoadSentAt.current[provider] ?? [], now) > 300) {
+      if (
+        songSearchAutoLoadDelay(songAutoLoadSentAt.current, now) > SONG_SEARCH_AUTOLOAD_DEBOUNCE_MS
+      ) {
         // Still inside the per-minute budget's wait (a re-render shortened it): retry.
         setSongAutoLoad({ ...current });
         return;
       }
-      songAutoLoadSentAt.current[provider] = [
-        ...(songAutoLoadSentAt.current[provider] ?? []).filter((at) => now - at < 60_000),
+      songAutoLoadSentAt.current = [
+        ...songAutoLoadSentAt.current.filter((at) => now - at < SONG_SEARCH_AUTOLOAD_WINDOW_MS),
         now,
       ];
       const next = { ...current, requests: current.requests + 1 };

@@ -5398,6 +5398,42 @@ describe('Music Songs paging and search (RF-132)', () => {
     expect(pageRequests.length).toBeLessThanOrEqual(10);
   }, 15_000);
 
+  // RF-152 review: the server's likes limit is per user, so searching one service and
+  // then another must share one per-minute autoload budget.
+  it('shares the per-minute search autoload budget across services (RF-152)', async () => {
+    vi.mocked(api.listClasses).mockResolvedValue(page([]));
+    vi.mocked(api.listConnections).mockResolvedValue([
+      spotifyConnection(),
+      { ...spotifyConnection(), id: 'conn-soundcloud', provider: 'soundcloud' },
+    ]);
+    vi.mocked(api.listPlaylists).mockResolvedValue([]);
+    let calls = 0;
+    vi.mocked(api.listLikesPage).mockImplementation(async (provider: Provider) => {
+      calls += 1;
+      if (calls > 40) throw new Error('Runaway autoload');
+      return { items: [song('same', 'Same Song', provider)], nextCursor: `cursor-${calls}` };
+    });
+
+    await openSongs('Spotify');
+    expect(await screen.findByText('Same Song')).toBeTruthy();
+    let search = screen.getByRole('searchbox', { name: 'Search songs' });
+    for (const query of ['first', 'second']) {
+      fireEvent.change(search, { target: { value: query } });
+      await new Promise((resolve) => setTimeout(resolve, 2_200));
+      fireEvent.change(search, { target: { value: '' } });
+    }
+    await selectMusicService('SoundCloud');
+    fireEvent.click(screen.getByRole('button', { name: 'Songs' }));
+    expect(await screen.findByText('Same Song')).toBeTruthy();
+    search = screen.getByRole('searchbox', { name: 'Search songs' });
+    fireEvent.change(search, { target: { value: 'third' } });
+    await new Promise((resolve) => setTimeout(resolve, 2_200));
+    const pageRequests = vi
+      .mocked(api.listLikesPage)
+      .mock.calls.filter((call: unknown[]) => (call[1] as LikesQuery | undefined)?.cursor);
+    expect(pageRequests.length).toBeLessThanOrEqual(10);
+  }, 15_000);
+
   // RF-152 item 2: a whitespace-only edit re-sent the Apple library search.
   it('does not search the Apple library again for a whitespace-only edit (RF-152)', async () => {
     vi.mocked(api.listClasses).mockResolvedValue(page([]));

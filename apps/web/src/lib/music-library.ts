@@ -140,13 +140,16 @@ export const SONG_SEARCH_AUTOLOAD_BOUND = 1000;
 export const SONG_SEARCH_AUTOLOAD_REQUESTS = 5;
 
 /**
- * Search autoload page requests per service per rolling minute, across search sessions
- * (RF-152). The server allows 20 liked-song reads a minute per user; autoload keeps
- * to half, so clearing and retyping searches cannot use it up and leave Load more or a
- * first page with "Couldn't load more songs".
+ * Search autoload page requests per rolling minute, across search sessions and across
+ * services (RF-152). The server allows 20 liked-song reads a minute per user, whatever the
+ * service; autoload keeps to half, so clearing and retyping searches (on one service or
+ * several) cannot use it up and leave Load more or a first page with "Couldn't load more
+ * songs".
  */
 export const SONG_SEARCH_AUTOLOAD_PER_MINUTE = 10;
-const SONG_SEARCH_AUTOLOAD_WINDOW_MS = 60_000;
+export const SONG_SEARCH_AUTOLOAD_WINDOW_MS = 60_000;
+/** The typing debounce before a search autoload request. */
+export const SONG_SEARCH_AUTOLOAD_DEBOUNCE_MS = 300;
 
 /**
  * How long the next search autoload request waits: the typing debounce, or longer
@@ -156,7 +159,7 @@ const SONG_SEARCH_AUTOLOAD_WINDOW_MS = 60_000;
 export function songSearchAutoLoadDelay(
   sentAt: readonly number[],
   now: number,
-  debounceMs = 300,
+  debounceMs = SONG_SEARCH_AUTOLOAD_DEBOUNCE_MS,
 ): number {
   const recent = sentAt.filter((at) => now - at < SONG_SEARCH_AUTOLOAD_WINDOW_MS);
   if (recent.length < SONG_SEARCH_AUTOLOAD_PER_MINUTE) return debounceMs;
