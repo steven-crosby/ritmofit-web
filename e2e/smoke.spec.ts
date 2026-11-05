@@ -73,6 +73,8 @@ async function signUp(page: Page, email: string) {
   await page.goto('/');
   await page.locator('#marketing-signin-btn').click();
   await page.getByRole('button', { name: /Need an (invited )?account\? Sign up/ }).click();
+  // RF-129: sign-in and sign-up have their own paths.
+  await expect(page).toHaveURL(/\/sign-up$/);
   await page.getByLabel('Name').fill(NAME);
   await page.getByLabel('Email').fill(email);
   await page.locator('#login-password').fill('e2e-pass-1234');
@@ -181,4 +183,10 @@ test('signed-in core loop: build a class, run it live, End Class', async ({ page
   await expect(page.getByRole('heading', { name: CLASS_TITLE })).toBeVisible();
   await expect(page.getByRole('button', { name: /Run live/ })).toBeVisible();
   await expectNoSidewaysOverflow(page, 'builder after End Class');
+
+  // RF-129: the class has a real URL, so a refresh returns to it, not the Classes home.
+  await expect(page).toHaveURL(/\/classes\/[0-9a-f-]{36}$/);
+  await page.reload();
+  await expect(page.getByRole('heading', { name: CLASS_TITLE })).toBeVisible();
+  await expect(page.getByRole('button', { name: /Run live/ })).toBeVisible();
 });

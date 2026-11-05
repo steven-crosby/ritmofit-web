@@ -80,15 +80,20 @@ describe('App path routing', () => {
 });
 
 describe('App acquisition intent', () => {
-  it('opens returning instructors in sign-in mode and returns to marketing', () => {
+  it('opens returning instructors in sign-in mode and returns to marketing', async () => {
     render(<App />);
 
     fireEvent.click(screen.getByRole('button', { name: 'Sign in' }));
+    expect(window.location.pathname).toBe('/sign-in');
     expect(screen.getByRole('button', { name: 'Sign in' })).toBeTruthy();
     expect(screen.queryByLabelText('Name')).toBeNull();
 
+    // Back to home is the browser's own Back, so Forward returns to sign-in.
     fireEvent.click(screen.getByRole('button', { name: 'Back to home' }));
-    expect(screen.getByRole('heading', { name: /find the class inside the music/i })).toBeTruthy();
+    expect(
+      await screen.findByRole('heading', { name: /find the class inside the music/i }),
+    ).toBeTruthy();
+    expect(window.location.pathname).toBe('/');
   });
 
   it('opens prospective instructors in sign-up mode from Start building', () => {
@@ -106,12 +111,71 @@ describe('App acquisition intent', () => {
     expect(screen.getByRole('button', { name: 'Create account' })).toBeTruthy();
   });
 
-  it('uses the reset safe-return query to open sign-in directly', () => {
+  it('redirects an old "/?auth=signin" link to /sign-in', () => {
     window.history.pushState({}, '', '/?auth=signin');
     render(<App />);
 
+    expect(window.location.pathname).toBe('/sign-in');
     expect(screen.getByRole('heading', { name: 'Welcome back, instructor.' })).toBeTruthy();
     expect(screen.getByRole('button', { name: 'Sign in' })).toBeTruthy();
+  });
+
+  it('opens sign-in and sign-up at their own paths, and keeps the path on the shown mode', () => {
+    window.history.pushState({}, '', '/sign-up');
+    render(<App />);
+    expect(screen.getByRole('button', { name: 'Create account' })).toBeTruthy();
+
+    fireEvent.click(screen.getByRole('button', { name: 'Have an account? Sign in' }));
+    expect(window.location.pathname).toBe('/sign-in');
+    expect(screen.queryByLabelText('Name')).toBeNull();
+  });
+});
+
+describe('App deep links', () => {
+  const classPath = '/classes/3f2b8c1e-5d4a-4b7f-9a1c-0e2d3c4b5a69/live';
+
+  it('signs in first on a signed-in path, then returns to it', () => {
+    window.history.pushState({}, '', classPath);
+    const view = render(<App />);
+    expect(window.location.pathname).toBe('/sign-in');
+    expect(screen.queryByTestId('dashboard')).toBeNull();
+
+    sessionState.data = signedIn;
+    view.rerender(<App />);
+    expect(window.location.pathname).toBe(classPath);
+    expect(screen.getByTestId('dashboard')).toBeTruthy();
+  });
+
+  it('waits for the session check before deciding where a deep link goes', () => {
+    sessionState.isPending = true;
+    window.history.pushState({}, '', '/music');
+    const view = render(<App />);
+    expect(window.location.pathname).toBe('/music');
+
+    sessionState.isPending = false;
+    sessionState.data = signedIn;
+    view.rerender(<App />);
+    expect(window.location.pathname).toBe('/music');
+    expect(screen.getByTestId('dashboard')).toBeTruthy();
+  });
+
+  it('sends a signed-in visit to /sign-in on to the Classes home', () => {
+    sessionState.data = signedIn;
+    window.history.pushState({}, '', '/sign-in');
+    render(<App />);
+    expect(window.location.pathname).toBe('/');
+    expect(screen.getByTestId('dashboard')).toBeTruthy();
+  });
+
+  it('lands an explicit Sign out on a signed-in path at the front door', async () => {
+    sessionState.data = signedIn;
+    window.history.pushState({}, '', '/account');
+    const view = render(<App />);
+    await signOutByUser();
+    sessionState.data = null;
+    view.rerender(<App />);
+    expect(window.location.pathname).toBe('/');
+    expect(screen.getByRole('heading', { name: /find the class inside the music/i })).toBeTruthy();
   });
 });
 

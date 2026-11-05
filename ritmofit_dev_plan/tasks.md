@@ -12,13 +12,13 @@ owner's queue: any agent may execute a Ready task. Publishing follows AGENTS.md 
 Evidence marked **recorded** is a carried-forward claim, not fresh verification.
 A checked PR proves its GitHub state, not product acceptance or production behavior.
 
-192 tasks. backlog: 67 · ready: 0 · in_progress: 1 · blocked: 2 · review: 10 · done: 110 · cancelled: 2.
+192 tasks. backlog: 67 · ready: 0 · in_progress: 0 · blocked: 2 · review: 11 · done: 110 · cancelled: 2.
 
 ## In progress
 
 | Task | Priority / kind | Relationships | Next action / resolution | Evidence |
 | --- | --- | --- | --- | --- |
-| [RF-129](tasks/RF-129.json) The app has real URLs: a refresh returns to the same screen, and sign-in and sign-up have their own paths | P1 / task | — | Restart on branch feat/rf-129-real-urls (Neo). Approach is the owner's choice of 2026-11-04: real paths with no router library (/sign-in, /sign-up, /classes/&lt;id&gt;, /classes/&lt;id&gt;/live, /music, /account; old /?auth= links redirect) plus 5 fixes: Back while Live is playing stays in Live; sign-in returns to the deep link; a Class not found state; the URL is written from Dashboard state in one place and Back/Forward call the existing open/close functions; /music and /account move to a follow-up if time runs short. Service-worker config is expected to stay unchanged (fallback already denies /api/). | checked 2026-10-29 |
+| — | — | — | — | — |
 
 ## Blocked / waiting
 
@@ -33,6 +33,7 @@ A checked PR proves its GitHub state, not product acceptance or production behav
 | --- | --- | --- | --- | --- |
 | [RF-91](tasks/RF-91.json) Triage D1 parameter-limit finding D-1 | P1 / plan | — | Review packet 2 and seek approval; do not query production or modify data. | recorded |
 | [RF-93](tasks/RF-93.json) Triage latent migration rebuild finding A-7 | P1 / plan | — | Review packet 4 and seek approval for a local guard. No historical or production data-loss claim. | recorded |
+| [RF-129](tasks/RF-129.json) The app has real URLs: a refresh returns to the same screen, and sign-in and sign-up have their own paths | P1 / task | — | Owner device check on iPhone Safari against a deploy that includes PR #725: refresh on a class and on Live (Live reopens at its preflight with Start, never playing); an edge swipe Back during a running class stays in Live; sign-in and sign-up links open their own pages. Set Done once that passes. If /music, /account or /live need more than a path (for example Music's inner view in the URL), log a separate task. | checked 2026-10-29; checked 2026-11-04 |
 | [RF-94](tasks/RF-94.json) Disposition the remaining engineering audit findings | P2 / plan | follow-ups RF-115, RF-116 | Review the remaining ranked findings with Steven before scheduling implementation. | recorded |
 | [RF-96](tasks/RF-96.json) Disposition legacy planning and handoff obligations | P2 / plan | — | Triage legacy planning and handoffs without treating their old approval or merge instructions as current authority. | recorded |
 | [RF-108](tasks/RF-108.json) Scrubbing or pausing Live during a track start keeps music playing | P2 / task | needs RF-107; follow-ups RF-158, RF-159, RF-161, RF-185, RF-186, RF-187, RF-188 | Device check run 2026-11-03 (evidence below): criteria 3 and 5 pass on iPhone Safari; criterion 4 (Retry after a hung setQueue) was not exercised because no hang occurred. Stays For review until the owner either accepts criterion 4 on the mock tests plus this run, or sees a hang and a Retry on device. Defects found in the run are separate: RF-185 (double start per tap), RF-186 (quick taps show Paused), RF-187 (unhandled play() rejection), RF-188 (timeline UX). Spotify half: RF-158. Late-settle detection and clear-once: RF-159. Review follow-ups: RF-161. | recorded; checked 2026-10-28; checked 2026-10-30; checked 2026-10-31; checked 2026-11-03 |

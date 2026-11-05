@@ -1,16 +1,27 @@
 /**
- * Root: gate on the Better Auth session.
- * - Signed out at "/" → MarketingPage (public front door, D15).
- *   Marketing CTAs carry an explicit sign-in/sign-up intent into Login.
- * - Signed in → Dashboard.
+ * Root: gate on the Better Auth session, routed by the URL (RF-129, `lib/app-route.ts`).
+ * - Signed out at "/" → MarketingPage (public front door, D15). Its CTAs go to
+ *   "/sign-in" and "/sign-up", which have their own paths; old "/?auth=" links redirect.
+ * - Signed out on a signed-in path ("/classes/<id>", "/music", …) → "/sign-in",
+ *   then back to that path once signed in.
+ * - Signed in → Dashboard, which restores the screen the path names.
  * - Session lost during Live → Live stays mounted with a signed-out line.
  * - Session lost elsewhere (not Sign out) → Login with a "session ended" line.
  * - "/reset-password" → ResetPassword (works while signed out).
  * - Unknown path → NotFound.
  */
-import { useReducer, useRef, useState } from 'react';
+import { useLayoutEffect, useReducer, useRef, useState } from 'react';
 import { authClient } from './lib/auth-client.js';
 import { clearExplicitSignOut, useLiveActive, wasExplicitSignOut } from './lib/session-guard.js';
+import {
+  consumeReturnTo,
+  isDashboardRoute,
+  navigate,
+  parseRoute,
+  rememberReturnTo,
+  usePathname,
+  type RouteHistoryState,
+} from './lib/app-route.js';
 import { Login } from './components/Login.js';
 import { Dashboard } from './components/Dashboard.js';
 import { MarketingPage } from './components/MarketingPage.js';
@@ -20,21 +31,23 @@ import { PrivacyPage } from './components/PrivacyPage.js';
 import { WorkspaceLoadingState } from './components/SharedState.js';
 import { markOnboardingVideoPending } from './lib/onboarding-video.js';
 
-// The app navigates in-component (no router); the real URL surface is '/' and
-// '/reset-password'. Everything else is an unknown path → NotFound.
-const KNOWN_PATHS = new Set(['/', '/privacy', '/reset-password']);
-
-function initialAuthIntent(): 'signin' | 'signup' | null {
-  if (window.location.pathname !== '/') return null;
+/** Old marketing links ("/?auth=signin|signup") now have their own paths. */
+function redirectLegacyAuthIntent() {
+  if (window.location.pathname !== '/') return;
   const intent = new URLSearchParams(window.location.search).get('auth');
-  return intent === 'signin' || intent === 'signup' ? intent : null;
+  if (intent === 'signin') window.history.replaceState(null, '', '/sign-in');
+  else if (intent === 'signup') window.history.replaceState(null, '', '/sign-up');
 }
+
+/** A redirect App makes before it paints the screen it lands on. */
+type Redirect = 'after-sign-in' | 'to-sign-in' | 'to-root';
 
 export function App() {
   const { data: session, isPending } = authClient.useSession();
-  // Preserve the acquisition promise across the signed-out state switch: a
-  // "Start building" click must land on account creation, never generic sign-in.
-  const [authIntent, setAuthIntent] = useState<'signin' | 'signup' | null>(initialAuthIntent);
+  // Runs once, before the first path read below.
+  useState(redirectLegacyAuthIntent);
+  const pathname = usePathname();
+  const route = parseRoute(pathname);
   const liveActive = useLiveActive();
   const [, rerender] = useReducer((n: number) => n + 1, 0);
   // The last signed-in user, kept so a session lost mid-class can leave Live mounted
@@ -47,6 +60,24 @@ export function App() {
     lastUser.current = null;
   }
 
+  const retained = session || liveActive ? lastUser.current : null;
+  const authRoute = route.kind === 'sign-in' || route.kind === 'sign-up';
+  let redirect: Redirect | null = null;
+  if (retained) {
+    if (authRoute) redirect = 'after-sign-in';
+  } else if (!isPending && !lastUser.current && isDashboardRoute(route) && route.kind !== 'root') {
+    // Sign out lands on the front door; any other signed-out visit signs in first.
+    redirect = wasExplicitSignOut() ? 'to-root' : 'to-sign-in';
+  }
+
+  useLayoutEffect(() => {
+    if (redirect === 'after-sign-in') navigate(consumeReturnTo() ?? '/', { replace: true });
+    else if (redirect === 'to-sign-in') {
+      rememberReturnTo(window.location.pathname);
+      navigate('/sign-in', { replace: true });
+    } else if (redirect === 'to-root') navigate('/', { replace: true });
+  }, [redirect]);
+
   const skipLink = (
     <a
       href="#main-content"
@@ -58,14 +89,15 @@ export function App() {
 
   // Reset-password lands here from the email link; render before the session
   // gate so it works while signed out.
-  if (window.location.pathname === '/reset-password') return <ResetPassword />;
-  if (window.location.pathname === '/privacy') return <PrivacyPage />;
+  if (route.kind === 'reset-password') return <ResetPassword />;
+  if (route.kind === 'privacy') return <PrivacyPage />;
 
   // Unknown path → 404 (Cloudflare SPA fallback serves index.html for all paths).
-  if (!KNOWN_PATHS.has(window.location.pathname)) return <NotFound />;
+  if (route.kind === 'not-found') return <NotFound />;
+
+  if (redirect) return <WorkspaceLoadingState />;
 
   // Signed in → Dashboard. A session lost while Live runs keeps Live mounted.
-  const retained = session || liveActive ? lastUser.current : null;
   if (retained) {
     return (
       <>
@@ -88,8 +120,7 @@ export function App() {
           statusNotice="Your session ended. Sign in to continue."
           onBack={() => {
             lastUser.current = null;
-            window.history.replaceState({}, '', '/');
-            setAuthIntent(null);
+            navigate('/', { replace: true });
             rerender();
           }}
         />
@@ -97,17 +128,22 @@ export function App() {
     );
   }
 
-  // Signed out + user clicked a CTA → Login with a back link.
-  if (authIntent) {
+  // Signed out on "/sign-in" or "/sign-up" → Login with a back link.
+  if (authRoute) {
     return (
       <>
         {skipLink}
         <Login
-          initialMode={authIntent}
+          initialMode={route.kind === 'sign-up' ? 'signup' : 'signin'}
           onBack={() => {
-            window.history.replaceState({}, '', '/');
-            setAuthIntent(null);
+            // From the landing page, Back is the browser's own Back.
+            const state = window.history.state as RouteHistoryState | null;
+            if (state?.from === '/') window.history.back();
+            else navigate('/', { replace: true });
           }}
+          onModeChange={(mode) =>
+            navigate(mode === 'signup' ? '/sign-up' : '/sign-in', { replace: true })
+          }
           onSignedUp={markOnboardingVideoPending}
         />
       </>
@@ -117,8 +153,8 @@ export function App() {
   // Signed out, default → Marketing landing (D15).
   return (
     <MarketingPage
-      onSignIn={() => setAuthIntent('signin')}
-      onStartBuilding={() => setAuthIntent('signup')}
+      onSignIn={() => navigate('/sign-in')}
+      onStartBuilding={() => navigate('/sign-up')}
     />
   );
 }

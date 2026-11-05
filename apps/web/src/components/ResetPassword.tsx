@@ -104,7 +104,7 @@ export function ResetPassword() {
                 Your classes and music connections did not change. Sign in with the new password.
               </p>
               <a
-                href="/?auth=signin"
+                href="/sign-in"
                 className="mt-4 inline-flex min-h-11 items-center rounded-control rf-btn-primary px-5 font-ui font-semibold text-text-on-accent sm:rounded-pill"
               >
                 Go to sign in
@@ -124,7 +124,7 @@ export function ResetPassword() {
                 No password or saved work changed. Return to sign in and request a fresh link.
               </p>
               <a
-                href="/?auth=signin"
+                href="/sign-in"
                 className="mt-4 inline-flex min-h-11 items-center rounded-control rf-btn-primary px-5 font-ui font-semibold text-text-on-accent sm:rounded-pill"
               >
                 Back to sign in
@@ -181,7 +181,7 @@ export function ResetPassword() {
                 {busy ? 'Resetting password…' : 'Set password'}
               </button>
               <a
-                href="/?auth=signin"
+                href="/sign-in"
                 className="inline-flex min-h-11 items-center self-start rounded-control px-2 font-ui text-sm text-interactive"
               >
                 Back to sign in
