@@ -15,6 +15,7 @@ import { UpdatePrompt } from './UpdatePrompt.js';
 import * as api from '../lib/api.js';
 import { rememberConnectionReturn } from '../lib/connection-return.js';
 import { isLiveActive } from '../lib/session-guard.js';
+import { resetAppRouteForTests } from '../lib/app-route.js';
 import type { ClassListPage } from '../lib/api.js';
 import { DEFAULT_SCAFFOLD_DURATION, scaffoldRecipeId } from '../lib/class-scaffold.js';
 import {
@@ -281,8 +282,10 @@ beforeEach(() => {
   });
 });
 
-afterEach(() => {
+afterEach(async () => {
   cleanup();
+  // Let a Back that Dashboard queued (RF-129 `stepTo`) land before the next test.
+  await new Promise((resolve) => setTimeout(resolve, 0));
   crash.planBlocks = false;
   vi.clearAllMocks();
   window.localStorage?.clear();
@@ -290,6 +293,9 @@ afterEach(() => {
   // does survive a re-render — clear it or one test's switch is the next one's
   // default.
   window.sessionStorage?.clear();
+  // Dashboard writes the URL (RF-129); start every test at the Classes home.
+  resetAppRouteForTests();
+  window.history.replaceState(null, '', '/');
 });
 
 describe('Dashboard class library states', () => {
@@ -5465,5 +5471,153 @@ describe('Music Songs paging and search (RF-132)', () => {
     fireEvent.click(screen.getByRole('button', { name: 'Songs' }));
     const box = (await screen.findByRole('checkbox', { name: /spotify song/ })) as HTMLInputElement;
     expect(box.checked).toBe(false);
+  });
+});
+
+describe('Dashboard URLs (RF-129)', () => {
+  const ME = {
+    id: 'me',
+    name: 'Tester',
+    email: 'tester@example.test',
+  } as unknown as Awaited<ReturnType<typeof api.getMe>>;
+
+  function runnable(ride: ClassWithAccess): RunPayload {
+    const payload = liveRunPayload([
+      { classTrackId: 'ct-1', durationMs: 240000, title: 'First Light' },
+    ]);
+    payload.class = { ...payload.class, id: ride.id, title: ride.title, totalDurationMs: 240000 };
+    payload.sections = [];
+    return payload;
+  }
+
+  function stubClass(ride: ClassListItem) {
+    vi.mocked(api.listClasses).mockResolvedValue(page([ride]));
+    vi.mocked(api.getClass).mockResolvedValue(ride);
+    vi.mocked(api.listClassTracks).mockResolvedValue([] as ClassTrack[]);
+    vi.mocked(api.listConnections).mockResolvedValue([]);
+    vi.mocked(api.getMe).mockResolvedValue(ME);
+  }
+
+  /** What the browser does on Back/Forward: the path changes, then popstate. */
+  function browserGoesTo(path: string) {
+    act(() => {
+      window.history.replaceState(null, '', path);
+      window.dispatchEvent(new PopStateEvent('popstate'));
+    });
+  }
+
+  it('reopens the class a refreshed path names', async () => {
+    const ride = makeClass('Sunset climb');
+    stubClass(ride);
+    vi.mocked(api.getRunPayload).mockRejectedValue(new Error('no payload'));
+    window.history.replaceState(null, '', `/classes/${ride.id}`);
+
+    renderDashboard();
+
+    expect(await screen.findByRole('heading', { name: 'Sunset climb' })).toBeTruthy();
+    expect(api.getClass).toHaveBeenCalledWith(ride.id);
+    expect(window.location.pathname).toBe(`/classes/${ride.id}`);
+  });
+
+  it('reopens Live at its preflight after a refresh, and Exit returns to the class', async () => {
+    const ride = makeClass('Sunset climb');
+    stubClass(ride);
+    vi.mocked(api.getRunPayload).mockResolvedValue(runnable(ride));
+    window.history.replaceState(null, '', `/classes/${ride.id}/live`);
+
+    renderDashboard();
+
+    const exit = await screen.findByRole('button', { name: 'Exit' });
+    expect(isLiveActive()).toBe(true);
+    expect(window.location.pathname).toBe(`/classes/${ride.id}/live`);
+
+    fireEvent.click(exit);
+    expect(await screen.findByRole('heading', { name: 'Sunset climb' })).toBeTruthy();
+    await waitFor(() => expect(window.location.pathname).toBe(`/classes/${ride.id}`));
+  });
+
+  it('keeps Live on Back, so an edge swipe mid-class does not end it', async () => {
+    const ride = makeClass('Sunset climb');
+    stubClass(ride);
+    vi.mocked(api.getRunPayload).mockResolvedValue(runnable(ride));
+    window.history.replaceState(null, '', `/classes/${ride.id}/live`);
+    renderDashboard();
+    await screen.findByRole('button', { name: 'Exit' });
+
+    browserGoesTo(`/classes/${ride.id}`);
+
+    expect(window.location.pathname).toBe(`/classes/${ride.id}/live`);
+    expect(screen.getByRole('button', { name: 'Exit' })).toBeTruthy();
+    expect(isLiveActive()).toBe(true);
+  });
+
+  it('shows Class not found for a dead link, with a way back to Classes', async () => {
+    const ride = makeClass('Sunset climb');
+    stubClass(ride);
+    const missing = Object.assign(new api.ApiError('Not found', 'not_found', 404), {
+      status: 404,
+      message: 'Not found',
+    });
+    vi.mocked(api.getClass).mockRejectedValue(missing);
+    const deadPath = '/classes/00000000-0000-4000-8000-999999999999';
+    window.history.replaceState(null, '', deadPath);
+
+    renderDashboard();
+
+    expect(await screen.findByText("This class isn't available.")).toBeTruthy();
+    expect(window.location.pathname).toBe(deadPath);
+    fireEvent.click(screen.getByRole('button', { name: 'Go to Classes' }));
+    expect(await screen.findByRole('button', { name: /^Sunset climb$/ })).toBeTruthy();
+    expect(window.location.pathname).toBe('/');
+  });
+
+  it('offers Retry when a class path fails for another reason', async () => {
+    const ride = makeClass('Sunset climb');
+    stubClass(ride);
+    vi.mocked(api.getRunPayload).mockRejectedValue(new Error('no payload'));
+    vi.mocked(api.getClass)
+      .mockRejectedValueOnce(new Error('Network is down'))
+      .mockResolvedValue(ride);
+    window.history.replaceState(null, '', `/classes/${ride.id}`);
+
+    renderDashboard();
+
+    expect(await screen.findByText("This class didn't load.")).toBeTruthy();
+    fireEvent.click(screen.getByRole('button', { name: 'Retry' }));
+    expect(await screen.findByRole('heading', { name: 'Sunset climb' })).toBeTruthy();
+  });
+
+  it('writes the path for each destination and follows Back to the Classes home', async () => {
+    const ride = makeClass('Sunset climb');
+    stubClass(ride);
+    vi.mocked(api.getRunPayload).mockRejectedValue(new Error('no payload'));
+    renderDashboard();
+    fireEvent.click(await screen.findByRole('button', { name: /^Sunset climb$/ }));
+    await screen.findByRole('heading', { name: 'Sunset climb' });
+    expect(window.location.pathname).toBe(`/classes/${ride.id}`);
+
+    fireEvent.click(screen.getByRole('button', { name: 'Account' }));
+    expect(window.location.pathname).toBe('/account');
+
+    browserGoesTo('/');
+    await waitFor(() =>
+      expect(screen.getByRole('button', { name: 'Classes' }).getAttribute('aria-current')).toBe(
+        'page',
+      ),
+    );
+    expect(screen.queryByRole('heading', { name: 'Sunset climb' })).toBeNull();
+    expect(window.location.pathname).toBe('/');
+  });
+
+  it('opens the destination a refreshed path names', async () => {
+    vi.mocked(api.listClasses).mockResolvedValue(page([]));
+    vi.mocked(api.listConnections).mockResolvedValue([]);
+    vi.mocked(api.getMe).mockResolvedValue(ME);
+    window.history.replaceState(null, '', '/account');
+    renderDashboard();
+    expect(
+      (await screen.findByRole('button', { name: 'Account' })).getAttribute('aria-current'),
+    ).toBe('page');
+    expect(window.location.pathname).toBe('/account');
   });
 });

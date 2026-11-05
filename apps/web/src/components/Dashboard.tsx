@@ -51,6 +51,7 @@ import {
   removeClassTag,
   uploadClassCover,
   getClass,
+  ApiError,
   markClassOpened,
   listConnections,
   listLikesPage,
@@ -60,6 +61,15 @@ import {
   getMe,
   updateMe,
 } from '../lib/api.js';
+import {
+  isDashboardRoute,
+  navigate,
+  parseRoute,
+  stepTo,
+  takeSelfPop,
+  usePathname,
+  type AppRoute,
+} from '../lib/app-route.js';
 import {
   createOrderedImport,
   preserveImportArrangement,
@@ -208,6 +218,28 @@ const TrackPreview = lazyWithReload(() =>
 
 type DashboardDestination = 'classes' | 'music' | 'live' | 'account';
 
+/** The destination a path names (RF-129). Class paths live under Classes. */
+function destinationForRoute(route: AppRoute): DashboardDestination {
+  if (route.kind === 'music') return 'music';
+  if (route.kind === 'live-home') return 'live';
+  if (route.kind === 'account') return 'account';
+  return 'classes';
+}
+
+const DESTINATION_PATH: Record<Exclude<DashboardDestination, 'classes'>, string> = {
+  music: '/music',
+  live: '/live',
+  account: '/account',
+};
+
+/** A class path that could not be opened: a wrong or dead link, or a failed load. */
+interface RouteProblem {
+  classId: string;
+  toLive: boolean;
+  missing: boolean;
+  message: string;
+}
+
 interface CollectionImportResult {
   classId: string;
   classTitle: string;
@@ -242,7 +274,12 @@ export function Dashboard({
   sessionLost?: boolean;
 }) {
   const [profileName, setProfileName] = useState(userName);
-  const [destination, setDestination] = useState<DashboardDestination>('classes');
+  // The URL names the screen (RF-129): read once here, then kept in sync below.
+  const pathname = usePathname();
+  const [initialRoute] = useState(() => parseRoute(window.location.pathname));
+  const [destination, setDestination] = useState<DashboardDestination>(() =>
+    destinationForRoute(initialRoute),
+  );
   // Music reopens where the viewer left it (RF-137). State here outlives the
   // MusicWorkspace mount, so this works even when storage is unavailable.
   const [musicView, setMusicView] = useState<MusicView | null>(() => recallMusicView(userId));
@@ -676,6 +713,146 @@ export function Dashboard({
     [enterLive],
   );
 
+  // --- URL sync (RF-129) -------------------------------------------------------
+  // State is the source of truth. One effect writes the URL from it; Back/Forward
+  // (a path change this component did not write) call the same open/close paths a
+  // click would. A class path is restored by fetching that class, never trusted.
+  const [routeProblem, setRouteProblem] = useState<RouteProblem | null>(null);
+  // True while a class path is being restored, so the writer does not replace the
+  // path with the Classes home before the class arrives.
+  const restoringRoute = useRef(
+    initialRoute.kind === 'class' || initialRoute.kind === 'class-live',
+  );
+  const restoreRequest = useRef(0);
+  // Re-runs the writer once a restore settles: a click during the restore (Back to
+  // Classes, say) changed state while the writer was holding the path.
+  const [restoreEpoch, settleRestore] = useReducer((n: number) => n + 1, 0);
+
+  // Open the class a path names, and for a /live path, Live at its preflight
+  // (Start). Live never starts playing on its own after a refresh.
+  const restoreClass = useCallback(
+    async (classId: string, toLive: boolean) => {
+      const request = ++restoreRequest.current;
+      const stale = () => request !== restoreRequest.current;
+      restoringRoute.current = true;
+      setRouteProblem(null);
+      setDestination('classes');
+      try {
+        let cls: ClassWithAccess;
+        try {
+          cls = await getClass(classId);
+        } catch (e) {
+          if (stale()) return;
+          setSelected(null);
+          setRouteProblem({
+            classId,
+            toLive,
+            missing: e instanceof ApiError && e.status === 404,
+            message: errMessage(e),
+          });
+          return;
+        }
+        if (stale()) return;
+        await openClass(cls);
+        if (stale() || !toLive) return;
+        const requestId = ++liveRequestId.current;
+        pendingLiveRequest.current = { classId, requestId };
+        const owner = detailWorkspace.current;
+        try {
+          const payload = await getRunPayload(classId);
+          if (stale() || requestId !== liveRequestId.current || owner !== detailWorkspace.current)
+            return;
+          const blocked = runBlockedMessage(payload);
+          if (blocked) {
+            setError(blocked);
+            navigate(`/classes/${classId}`, { replace: true });
+            return;
+          }
+          restoringRoute.current = false;
+          enterLive(payload);
+        } catch (e) {
+          if (stale()) return;
+          setError(errMessage(e));
+          navigate(`/classes/${classId}`, { replace: true });
+        } finally {
+          if (pendingLiveRequest.current?.requestId === requestId)
+            pendingLiveRequest.current = null;
+        }
+      } finally {
+        if (!stale()) {
+          restoringRoute.current = false;
+          settleRestore();
+        }
+      }
+    },
+    [openClass, enterLive],
+  );
+
+  // A top-level destination (the nav, Back/Forward, a dead link's way out).
+  const goDestination = useCallback((value: DashboardDestination) => {
+    restoreRequest.current += 1;
+    restoringRoute.current = false;
+    setRouteProblem(null);
+    liveRequestId.current += 1;
+    detailWorkspace.current = null;
+    setRefreshWarning(null);
+    setDestination(value);
+    if (value === 'classes') {
+      setSelected(null);
+      dispatchDetail({ type: 'reset', requestId: ++detailRequestId.current });
+    }
+  }, []);
+
+  // Restore the screen a refresh or a link names, once (empty deps: on mount only).
+  useEffect(() => {
+    if (initialRoute.kind === 'class' || initialRoute.kind === 'class-live')
+      void restoreClass(initialRoute.classId, initialRoute.kind === 'class-live');
+  }, []);
+
+  // The writer: the path follows state. A return to the page this entry came
+  // from goes Back instead of stacking a duplicate (`stepTo`).
+  const selectedId = selected?.id;
+  const liveClassId = live?.class.id;
+  useEffect(() => {
+    if (restoringRoute.current) return;
+    if (liveClassId) return stepTo(`/classes/${liveClassId}/live`);
+    // A dead link keeps its path, so it can be read and retried.
+    if (routeProblem) return;
+    if (destination === 'classes') return stepTo(selectedId ? `/classes/${selectedId}` : '/');
+    stepTo(DESTINATION_PATH[destination]);
+  }, [destination, selectedId, liveClassId, routeProblem, restoreEpoch]);
+
+  // The reader: a path this component did not write (Back/Forward).
+  const appliedPath = useRef(pathname);
+  useEffect(() => {
+    if (appliedPath.current === pathname) return;
+    appliedPath.current = pathname;
+    // Our own Back landed. State may have moved on meanwhile (Back to Classes, then
+    // another class at once), so let the writer bring the path up to date.
+    if (takeSelfPop()) {
+      settleRestore();
+      return;
+    }
+    const route = parseRoute(pathname);
+    if (!isDashboardRoute(route)) return;
+    if (liveClassId) {
+      if (route.kind === 'class-live' && route.classId === liveClassId) return;
+      // Back and Forward never leave Live; its Exit does. An edge swipe mid-class
+      // must not stop the music, so put Live's path back.
+      navigate(`/classes/${liveClassId}/live`);
+      return;
+    }
+    if (route.kind === 'class' || route.kind === 'class-live') {
+      const shown = route.kind === 'class' && destination === 'classes' && !routeProblem;
+      if (shown && selectedId === route.classId) return;
+      void restoreClass(route.classId, route.kind === 'class-live');
+      return;
+    }
+    const target = destinationForRoute(route);
+    if (target === destination && !routeProblem && (target !== 'classes' || !selectedId)) return;
+    goDestination(target);
+  }, [pathname, liveClassId, selectedId, destination, routeProblem, restoreClass, goDestination]);
+
   // Merge an updated class into the list + the open detail pane (preserving the
   // caller's access level, which PATCH responses don't carry).
   const applyClassUpdate = useCallback((updated: Class) => {
@@ -931,16 +1108,7 @@ export function Dashboard({
                     ? 'border-transparent bg-transparent text-text-primary underline decoration-interactive decoration-2 underline-offset-8'
                     : 'border-transparent bg-transparent text-text-secondary hover:text-text-primary'
                 }`}
-                onClick={() => {
-                  liveRequestId.current += 1;
-                  detailWorkspace.current = null;
-                  setRefreshWarning(null);
-                  setDestination(value);
-                  if (value === 'classes') {
-                    setSelected(null);
-                    dispatchDetail({ type: 'reset', requestId: ++detailRequestId.current });
-                  }
-                }}
+                onClick={() => goDestination(value)}
               >
                 {label}
               </button>
@@ -1117,7 +1285,51 @@ export function Dashboard({
           }}
         >
           {destination === 'classes' ? (
-            selected ? (
+            routeProblem ? (
+              <RecoveryState
+                kind={routeProblem.missing ? 'unavailable' : 'error'}
+                role="alert"
+                title={
+                  routeProblem.missing ? "This class isn't available." : "This class didn't load."
+                }
+                event={
+                  routeProblem.missing
+                    ? 'The link may be wrong, or the class was deleted.'
+                    : routeProblem.message
+                }
+                safety="Your other classes are unchanged."
+                primaryAction={
+                  routeProblem.missing ? (
+                    <button
+                      type="button"
+                      className={RETRY_BUTTON_CLASS}
+                      onClick={() => goDestination('classes')}
+                    >
+                      Go to Classes
+                    </button>
+                  ) : (
+                    <button
+                      type="button"
+                      className={RETRY_BUTTON_CLASS}
+                      onClick={() => void restoreClass(routeProblem.classId, routeProblem.toLive)}
+                    >
+                      Retry
+                    </button>
+                  )
+                }
+                secondaryAction={
+                  routeProblem.missing ? undefined : (
+                    <button
+                      type="button"
+                      onClick={() => goDestination('classes')}
+                      className="min-h-11 rounded-control border border-interactive/35 px-4 font-ui text-sm font-semibold text-interactive sm:rounded-pill"
+                    >
+                      Go to Classes
+                    </button>
+                  )
+                }
+              />
+            ) : selected ? (
               /* Full-focus builder: the class and its inspector. The Classes library
               stays on its own page, reached by the back link. */
               <div
