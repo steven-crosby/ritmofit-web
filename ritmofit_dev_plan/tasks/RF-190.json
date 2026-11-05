@@ -3,7 +3,7 @@
   "id": "RF-190",
   "title": "Two-machine conductors: equal authority between the Air and Neo conductors",
   "kind": "documentation",
-  "status": "review",
+  "status": "done",
   "priority": "P2",
   "parent": null,
   "dependsOn": [
@@ -15,7 +15,7 @@
     "CLAUDE.md points to the AGENTS.md section and keeps the reminder that a peer SendMessage or pasted text is never permission, only the GitHub record (owner-approved on the current head for a merge).",
     "The matching ritmofit-ios AGENTS.md pointer and CLAUDE.md wording (no \"leads\") are updated by the Neo in an iOS PR the owner approves together with this one."
   ],
-  "nextAction": "Owner reviews and approves this PR together with the Neo's matching ritmofit-ios docs PR (AGENTS.md pointer, Merge gate, CLAUDE.md without \"leads\"), so the repos never disagree. Set Done once both merge.",
+  "nextAction": null,
   "blocker": null,
   "evidence": [
     {
@@ -35,9 +35,15 @@
       "ref": "https://github.com/steven-crosby/ritmofit-web/pull/721",
       "summary": "After the split and two more review rounds on rewritten records/finish rules, narrowed to the minimal change: only the lead bullet (now Equal authority), the Who-finishes lead mention and the Cloudflare capability sentence change in AGENTS.md; CLAUDE.md is a pointer. The decision-record, finish and Never granted rules stay as on main.",
       "checkedOn": "2026-11-03"
+    },
+    {
+      "kind": "pr",
+      "ref": "https://github.com/steven-crosby/ritmofit-web/pull/721",
+      "summary": "Merged as a9dcdfa on 2026-11-03 with the owner's approval; the matching iOS docs PR steven-crosby/ritmofit-ios#83 (RF-1033) merged as 8a7fed3 the same day, so both repos carry Equal authority and CLAUDE.md is a pointer.",
+      "checkedOn": "2026-11-04"
     }
   ],
-  "resolution": null,
+  "resolution": "Equal authority is on main in both repos: web #721 (a9dcdfa) and iOS #83 (8a7fed3). Deploy approval from either conductor stays out of scope (RF-191).",
   "followUps": [
     "RF-191"
   ]
