@@ -2809,6 +2809,9 @@ function MusicWorkspace({
               className={`${shell} justify-between px-3 rf-focus-ring`}
             >
               <span className="truncate font-ui text-sm text-text-primary">{name}</span>
+              {/* RF-173: a flex container doesn't render this space, but it keeps the visible
+                  text "SoundCloud Catalog only" two words, so the aria-label contains it (WCAG
+                  2.5.3 Label in Name; axe joins child text without spaces). */}{' '}
               <ConnectionStateMark
                 kind={chip.kind}
                 label={chip.label}
@@ -3465,24 +3468,43 @@ function LiveWorkspace({
     };
   }, []);
 
-  const fetchOne = useCallback((classId: string) => {
-    setPayloads((prev) => ({ ...prev, [classId]: { status: 'loading' } }));
-    void getRunPayload(classId)
-      .then((payload) => {
-        if (!mountedRef.current) return;
-        setPayloads((prev) => ({
-          ...prev,
-          [classId]: { status: 'ready', payload, readiness: classReadiness(payload) },
-        }));
-      })
-      .catch((err: unknown) => {
-        if (!mountedRef.current) return;
-        setPayloads((prev) => ({
-          ...prev,
-          [classId]: { status: 'error', error: errMessage(err) },
-        }));
-      });
+  // RF-163: a card's Retry keeps its last result in `payloads` while it refetches, so the
+  // queue stays resolved: the ranking and the one copper action do not drop or move under
+  // the instructor. Only that card shows the refetch, through `retrying`.
+  const [retrying, setRetrying] = useState<ReadonlySet<string>>(() => new Set());
+  const setRetryingFor = useCallback((classId: string, on: boolean) => {
+    setRetrying((prev) => {
+      if (prev.has(classId) === on) return prev;
+      const next = new Set(prev);
+      if (on) next.add(classId);
+      else next.delete(classId);
+      return next;
+    });
   }, []);
+  const fetchOne = useCallback(
+    (classId: string) => {
+      setRetryingFor(classId, true);
+      void getRunPayload(classId)
+        .then((payload) => {
+          if (!mountedRef.current) return;
+          setPayloads((prev) => ({
+            ...prev,
+            [classId]: { status: 'ready', payload, readiness: classReadiness(payload) },
+          }));
+        })
+        .catch((err: unknown) => {
+          if (!mountedRef.current) return;
+          setPayloads((prev) => ({
+            ...prev,
+            [classId]: { status: 'error', error: errMessage(err) },
+          }));
+        })
+        .finally(() => {
+          if (mountedRef.current) setRetryingFor(classId, false);
+        });
+    },
+    [setRetryingFor],
+  );
 
   // Fetch a run-payload per candidate whenever the candidate set changes. Concurrent
   // (N is small for a solo creator); each card resolves independently. Ready results
@@ -3626,6 +3648,7 @@ function LiveWorkspace({
               key={cls.id}
               cls={cls}
               state={payloads[cls.id]}
+              retrying={retrying.has(cls.id)}
               primary={allResolved && index === 0}
               onRun={() => onRunClass(cls.id)}
               onEdit={() => void onOpenClass(cls)}
@@ -3657,6 +3680,7 @@ function LiveQueueCard({
   cls,
   state,
   primary,
+  retrying = false,
   onRun,
   onEdit,
   onRetry,
@@ -3664,11 +3688,14 @@ function LiveQueueCard({
   cls: ClassListItem;
   state: LivePayloadState | undefined;
   primary: boolean;
+  /** RF-163: the card's readiness Retry is refetching; its last result stays in `state`. */
+  retrying?: boolean;
   onRun: () => void;
   onEdit: () => void;
   onRetry: () => void;
 }) {
   const canRun = state?.status === 'ready' && state.readiness.runnable;
+  const checking = state === undefined || state.status === 'loading' || retrying;
   const reasonId = `live-blocked-${cls.id}`;
   const blockReason =
     state?.status === 'error'
@@ -3689,7 +3716,7 @@ function LiveQueueCard({
   return (
     <article
       className="min-w-0 rounded-card border border-border-subtle bg-bg-raised p-3"
-      aria-busy={state === undefined || state.status === 'loading'}
+      aria-busy={checking}
     >
       <div className="flex items-center gap-3">
         <div className="min-w-0 flex-1">
@@ -3700,7 +3727,7 @@ function LiveQueueCard({
             {formatTemplateLabel(cls.template) ?? 'Class'} · {cls.trackCount}{' '}
             {cls.trackCount === 1 ? 'track' : 'tracks'} · {formatDuration(cls.totalDurationMs)}
           </p>
-          {(state === undefined || state.status === 'loading') && (
+          {checking && (
             <span
               aria-hidden="true"
               className="mt-1.5 block h-2 w-24 rounded-pill bg-bg-sunken motion-safe:animate-pulse"
@@ -3742,13 +3769,18 @@ function LiveQueueCard({
             {step.action}
           </button>
         ) : state?.status === 'error' ? (
+          // RF-163: during a retry the same button stays (with its copper and keyboard
+          // focus) as a busy "Checking…", instead of leaving the queue without its action.
           <button
             type="button"
-            onClick={onRetry}
-            aria-label={`Retry readiness — ${cls.title}`}
-            className={actionClass}
+            aria-disabled={retrying ? 'true' : undefined}
+            onClick={retrying ? noop : onRetry}
+            aria-label={
+              retrying ? `Checking readiness — ${cls.title}` : `Retry readiness — ${cls.title}`
+            }
+            className={retrying ? `${actionClass} cursor-progress` : actionClass}
           >
-            Retry
+            {retrying ? 'Checking…' : 'Retry'}
           </button>
         ) : null}
         {state?.status === 'ready' && (
@@ -3774,7 +3806,7 @@ function LiveQueueCard({
         )}
       </div>
 
-      {state?.status === 'error' && (
+      {state?.status === 'error' && !retrying && (
         <p id={reasonId} role="alert" className="mt-1 font-ui text-xs text-state-caution">
           <span aria-hidden className="font-data">
             !{' '}

@@ -1399,6 +1399,108 @@ describe('Dashboard class library states', () => {
     }
   });
 
+  it('keeps the Live queue order and its one copper action while a card retries (RF-163)', async () => {
+    const make = (title: string) => ({
+      ...makeClass(title, 'owner', 'me'),
+      trackCount: 1,
+      totalDurationMs: 60_000,
+    });
+    const alpha = make('Alpha ride');
+    const beta = make('Beta ride');
+    vi.mocked(api.listClasses).mockResolvedValue(page([alpha, beta]));
+    const payload = liveRunPayload([{ classTrackId: 'ct-1', durationMs: 60_000 }]);
+    payload.sections = [];
+    const retry = deferred<RunPayload>();
+    let betaCalls = 0;
+    vi.mocked(api.getRunPayload).mockImplementation(async (id: string) => {
+      if (id !== beta.id) return payload;
+      betaCalls += 1;
+      if (betaCalls === 1) throw new Error('readiness check failed');
+      return retry.promise;
+    });
+    renderDashboard();
+
+    fireEvent.click(await screen.findByRole('button', { name: 'Live' }));
+    const retryButton = await screen.findByRole('button', { name: 'Retry readiness — Beta ride' });
+    const order = () =>
+      screen
+        .getAllByRole('article')
+        .map((card) => ['Alpha ride', 'Beta ride'].find((t) => card.textContent?.includes(t)));
+    const copper = () =>
+      screen
+        .getAllByRole('button')
+        .filter((b) => b.className.includes('rf-btn-primary'))
+        .map((b) => b.getAttribute('aria-label'));
+    const before = order();
+    expect(copper()).toEqual(['Preflight Alpha ride']);
+
+    fireEvent.click(retryButton);
+    // While Beta refetches: only its card shows the check; the order and copper hold.
+    const betaCard = screen
+      .getAllByRole('article')
+      .find((card) => card.textContent?.includes('Beta ride'))!;
+    await waitFor(() => expect(betaCard.getAttribute('aria-busy')).toBe('true'));
+    expect(order()).toEqual(before);
+    expect(copper()).toEqual(['Preflight Alpha ride']);
+    expect(screen.queryByText(/Checking readiness for/)).toBeNull();
+
+    await act(async () => {
+      retry.resolve(payload);
+      await retry.promise;
+    });
+    await screen.findByRole('button', { name: 'Preflight Beta ride' });
+    expect(copper()).toHaveLength(1);
+  });
+
+  it('keeps the copper on a leading card while its Retry refetches (RF-163)', async () => {
+    const only = {
+      ...makeClass('Solo ride', 'owner', 'me'),
+      trackCount: 1,
+      totalDurationMs: 60_000,
+    };
+    vi.mocked(api.listClasses).mockResolvedValue(page([only]));
+    const payload = liveRunPayload([{ classTrackId: 'ct-1', durationMs: 60_000 }]);
+    payload.sections = [];
+    const retry = deferred<RunPayload>();
+    vi.mocked(api.getRunPayload)
+      .mockRejectedValueOnce(new Error('readiness check failed'))
+      .mockImplementationOnce(() => retry.promise);
+    renderDashboard();
+
+    fireEvent.click(await screen.findByRole('button', { name: 'Live' }));
+    const button = await screen.findByRole('button', { name: 'Retry readiness — Solo ride' });
+    expect(button.className).toContain('rf-btn-primary');
+    button.focus();
+    fireEvent.click(button);
+
+    // The same button stays, busy and copper, and keeps focus.
+    const checking = await screen.findByRole('button', { name: 'Checking readiness — Solo ride' });
+    expect(checking).toBe(button);
+    expect(checking.getAttribute('aria-disabled')).toBe('true');
+    expect(checking.className).toContain('rf-btn-primary');
+    expect(document.activeElement).toBe(checking);
+    fireEvent.click(checking);
+    expect(api.getRunPayload).toHaveBeenCalledTimes(2);
+
+    await act(async () => {
+      retry.resolve(payload);
+      await retry.promise;
+    });
+    expect(await screen.findByRole('button', { name: 'Preflight Solo ride' })).toBeTruthy();
+  });
+
+  it('shows one copper action when the class library fails to load (RF-163)', async () => {
+    vi.mocked(api.listClasses).mockRejectedValue(new Error('library down'));
+    renderDashboard();
+
+    const retry = await screen.findByRole('button', { name: 'Try the library again' });
+    const copper = screen
+      .getAllByRole('button')
+      .filter((b) => b.className.includes('rf-btn-primary'));
+    expect(copper).toEqual([retry]);
+    expect(screen.queryByRole('button', { name: /Create/ })).toBeNull();
+  });
+
   it('stamps last opened when Live starts, not when the queue is only listed', async () => {
     const alpha = {
       ...makeClass('Alpha ride', 'owner', 'me'),
