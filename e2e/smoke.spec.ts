@@ -36,14 +36,47 @@ async function expectNoSidewaysOverflow(page: Page, where: string) {
   ).toBeLessThanOrEqual(clientWidth);
 }
 
+// RF-189: iOS Safari zooms the page when a text field under 16px gets focus. On a phone
+// (the index.css query, copied here and kept in step by hand: under 640px wide, or a phone
+// turned sideways, RF-196) every visible text-entry field must compute to 16px or more.
+const PHONE_FIELDS_QUERY =
+  '(max-width: 639.98px), (pointer: coarse) and (max-height: 639.98px) and (max-width: 959.98px)';
+
+async function expectNoZoomingFields(page: Page, where: string) {
+  const small = await page.evaluate((query) => {
+    if (!window.matchMedia(query).matches) return [];
+    const skip = [
+      'checkbox',
+      'radio',
+      'range',
+      'file',
+      'color',
+      'button',
+      'submit',
+      'reset',
+      'image',
+      'hidden',
+    ];
+    return [...document.querySelectorAll<HTMLElement>('input, select, textarea')]
+      .filter((el) => !(el instanceof HTMLInputElement && skip.includes(el.type)))
+      .filter((el) => el.getClientRects().length > 0)
+      .map((el) => ({ el, size: parseFloat(getComputedStyle(el).fontSize) }))
+      .filter(({ size }) => size < 16)
+      .map(({ el, size }) => {
+        // `||`: a missing id is "", so `??` would never reach the name (RF-196).
+        const label = el.getAttribute('aria-label') || el.id || el.getAttribute('name') || '';
+        return `${el.tagName.toLowerCase()} "${label}" ${size}px`;
+      });
+  }, PHONE_FIELDS_QUERY);
+  expect(small, `${where}: form fields under 16px zoom iOS Safari`).toEqual([]);
+}
+
 // Violations that are tracked but not fixed yet, by page. An entry that stops firing fails the
 // smoke too, so the list can only shrink.
 const KNOWN_AXE: Record<string, string[]> = {
   // WCAG 2.5.3 Label in Name: the class row, Jump back in card, and template tile buttons set an
   // aria-label that leaves out part of their visible text. axe 4.14 enables this rule by default.
   Classes: ['label-content-name-mismatch'],
-  // The Music service chips ("SoundCloud, Connected") have the same mismatch (RF-173).
-  'Music songs': ['label-content-name-mismatch'],
 };
 
 async function expectNoAxeViolations(page: Page, where: string) {
@@ -66,6 +99,7 @@ async function checkPage(page: Page, where: string) {
   const slug = where.toLowerCase().replace(/[^a-z0-9]+/g, '-');
   await page.screenshot({ path: `.state/shots/${project}-${slug}.png`, fullPage: true });
   await expectNoSidewaysOverflow(page, where);
+  await expectNoZoomingFields(page, where);
   await expectNoAxeViolations(page, where);
 }
 
@@ -78,6 +112,18 @@ async function signUp(page: Page, email: string) {
   await page.getByLabel('Name').fill(NAME);
   await page.getByLabel('Email').fill(email);
   await page.locator('#login-password').fill('e2e-pass-1234');
+  await expectNoZoomingFields(page, 'sign-up');
+  const portrait = page.viewportSize();
+  if (test.info().project.use.hasTouch && portrait) {
+    // RF-196: the same phone turned sideways is wider than sm but still zooms.
+    await page.setViewportSize({ width: portrait.height, height: portrait.width });
+    expect(
+      await page.evaluate((query) => window.matchMedia(query).matches, PHONE_FIELDS_QUERY),
+      'sign-up (landscape): the phone query matches a sideways touch screen',
+    ).toBe(true);
+    await expectNoZoomingFields(page, 'sign-up (landscape)');
+    await page.setViewportSize(portrait);
+  }
   await page.getByRole('button', { name: 'Create account' }).click();
   const tutorial = page.getByRole('dialog', { name: 'New instructor four-count tutorial' });
   await tutorial.waitFor();
@@ -130,6 +176,7 @@ async function createClassFromPickedSongs(page: Page) {
   await page.getByRole('button', { name: 'Create a class' }).click();
   const sheet = page.getByRole('dialog', { name: 'Create a class' });
   await sheet.getByLabel('Class name').fill(PICKED_TITLE);
+  await expectNoZoomingFields(page, 'Create a class sheet');
   await sheet.getByRole('button', { name: 'Create class' }).click();
   await expect(page.getByRole('heading', { name: PICKED_TITLE })).toBeVisible();
 }
@@ -142,6 +189,7 @@ test('signed-in core loop: build a class, run it live, End Class', async ({ page
   await page.getByRole('button', { name: 'Music search' }).click();
   await addMockTrack(page, 'Instinct', 'Lane 8', 1);
   await addMockTrack(page, 'Baianá', 'Bakermat', 2);
+  await expectNoZoomingFields(page, 'Music search');
   await page.getByRole('button', { name: 'Close music' }).click();
 
   // Adding the first track opens its inspector.

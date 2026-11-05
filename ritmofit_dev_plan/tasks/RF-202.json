@@ -1,0 +1,33 @@
+{
+  "schemaVersion": 1,
+  "id": "RF-202",
+  "title": "Music Songs search autoload: pacing, clock and test follow-ups from the RF-152 review",
+  "kind": "task",
+  "status": "backlog",
+  "priority": "P3",
+  "parent": null,
+  "dependsOn": [],
+  "acceptance": [
+    "While autoload waits for the per-minute budget, the note says it is paced (not \"Searching…\" with no request in flight), and a Keep loading tap in that wait counts against the same per-minute budget.",
+    "The per-minute budget uses a monotonic clock (performance.now()), so a backward wall-clock change cannot pause autoload.",
+    "A decision is recorded on server-side protection for the likes limit (a separate autoload limiter, or honouring a 429 Retry-After), since a client budget cannot see other tabs, first pages or manual Load more taps.",
+    "The RF-152 autoload tests use fake timers instead of multi-second real waits, so they are fast and cannot flake on a slow runner.",
+    "A retry tap after a round stopped on a load error is decided: it counts as one of that round's requests (today) or starts a new round.",
+    "A test proves search autoload resumes once the oldest request leaves the per-minute window, not only that it stays under the cap.",
+    "A test covers an Apple library search result after an account switch on the same service while the query stays typed (RF-152 keys the result to likesConnectionKey; no component test reaches a connection refresh from the Songs view yet).",
+    "A failed Apple library search can be retried without clearing the query (a whitespace edit no longer re-sends it), and a result for the same query is not shown again after switching away and back.",
+    "Liked songs and the Apple search result are keyed to the provider account, not only the connection row: the API stores providerUserId as null and keeps the row id when a service is re-authorized without a disconnect (for example from iOS), so likesConnectionKey cannot tell two accounts apart."
+  ],
+  "nextAction": "Logged from the fresh-context reviews of the RF-152 PR (2026-11-05 unattended Neo session). Agent-created: Backlog until the owner sets Ready.",
+  "blocker": null,
+  "evidence": [
+    {
+      "kind": "observation",
+      "ref": "https://github.com/steven-crosby/ritmofit-web/issues/730",
+      "summary": "Non-blocking findings from the four RF-152 pre-PR reviews, not fixed in that PR.",
+      "checkedOn": "2026-11-05"
+    }
+  ],
+  "resolution": null,
+  "followUps": []
+}
