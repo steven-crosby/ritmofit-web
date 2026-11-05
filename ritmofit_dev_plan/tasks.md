@@ -18,7 +18,7 @@ A checked PR proves its GitHub state, not product acceptance or production behav
 
 | Task | Priority / kind | Relationships | Next action / resolution | Evidence |
 | --- | --- | --- | --- | --- |
-| [RF-189](tasks/RF-189.json) iOS Safari zooms the page when a 14px text box is focused | P3 / task | — | Neo, in progress on fix/rf-189-ios-input-zoom: move every text input, search, select and textarea to text-base sm:text-sm (one shared field class), then add a CI check for sub-16px fields. | checked 2026-11-03 |
+| [RF-189](tasks/RF-189.json) iOS Safari zooms the page when a 14px text box is focused | P3 / task | — | Neo, in progress on fix/rf-189-ios-input-zoom: move every text input, search, select and textarea to text-base sm:text-sm (one shared field class), then add a CI check for sub-16px fields. | checked 2026-11-03; checked 2026-11-04 |
 
 ## Blocked / waiting
 
