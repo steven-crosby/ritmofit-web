@@ -83,7 +83,8 @@ export const GATES = [
       p === 'CLAUDE.md' ||
       p.startsWith('agent-prompts/') ||
       p === 'ritmofit_dev_plan/tasks/README.md' ||
-      p === 'ritmofit_dev_plan/handoffs/README.md',
+      p === 'ritmofit_dev_plan/handoffs/README.md' ||
+      p === 'ritmofit_dev_plan/two-machine-rules.md',
   },
 ];
 

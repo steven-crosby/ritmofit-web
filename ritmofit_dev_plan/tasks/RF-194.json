@@ -1,0 +1,27 @@
+{
+  "schemaVersion": 1,
+  "id": "RF-194",
+  "title": "Tighten unattended-night mechanics left from RF-193's final review",
+  "kind": "documentation",
+  "status": "backlog",
+  "priority": "P3",
+  "parent": null,
+  "dependsOn": [],
+  "acceptance": [
+    "The pre-approval issue check also catches a title change and ties the body to the text the owner confirmed (for example a hash quoted in the owner's confirmation).",
+    "The open-and-cite push in two-machine-rules.md 7.4 step 3 no longer races the first CI run (for example the PR is opened from a branch whose record already cites the issue, with the PR URL added at close-out).",
+    "The night exception is stated once (two-machine-rules.md 7.1); AGENTS.md, CLAUDE.md and the PR template point to it instead of restating its conditions."
+  ],
+  "nextAction": "Plan first; it changes agent rules (owner-gated). Logged from the RF-193 final review, not blocking.",
+  "blocker": null,
+  "evidence": [
+    {
+      "kind": "pr",
+      "ref": "https://github.com/steven-crosby/ritmofit-web/pull/724",
+      "summary": "Non-significant findings from the RF-193 final review (/code-review medium, 7c0f695), logged per AGENTS.md.",
+      "checkedOn": "2026-11-04"
+    }
+  ],
+  "resolution": null,
+  "followUps": []
+}

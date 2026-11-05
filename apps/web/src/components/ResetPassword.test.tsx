@@ -27,7 +27,7 @@ describe('ResetPassword', () => {
     expect(alert.textContent).toContain('No password or saved work changed');
     expect(document.activeElement).toBe(alert);
     expect(screen.getByRole('link', { name: 'Back to sign in' }).getAttribute('href')).toBe(
-      '/?auth=signin',
+      '/sign-in',
     );
   });
 

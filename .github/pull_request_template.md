@@ -10,7 +10,8 @@ enforces this for apps/, packages/ and e2e/ changes. -->
 review and squash-merge (PR comment + `ready-to-merge` if the owner is not in the session). If the
 `owner-gate` status fails because owner-gated paths changed, also add `needs-owner`.
 `owner-approved` comes from the owner, or from the agent once the owner approves this PR's merge in
-a session, recorded first as a PR comment; it counts only for the commit it was given on. -->
+a session, recorded first as a PR comment; it counts only for the commit it was given on. On an unattended
+night, the owner's pre-approval issue is the permission instead (ritmofit_dev_plan/two-machine-rules.md › 7). -->
 
 - [ ] Not owner-gated
 - [ ] Owner-gated (migrations / auth / provider-playback / CI-deploy / agent rules) — `needs-owner`

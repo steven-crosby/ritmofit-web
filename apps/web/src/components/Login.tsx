@@ -14,6 +14,8 @@ interface LoginProps {
   onSignedUp?: () => void;
   /** Replaces the sign-in description, e.g. to say the session ended. */
   statusNotice?: string;
+  /** Sign in and Sign up have their own paths (RF-129); App keeps the URL on the shown mode. */
+  onModeChange?: (mode: 'signin' | 'signup') => void;
 }
 
 type LoginMode = 'signin' | 'signup' | 'forgot';
@@ -24,6 +26,7 @@ export function Login({
   onBack,
   onSignedUp,
   statusNotice,
+  onModeChange,
 }: LoginProps = {}) {
   const [mode, setMode] = useState<LoginMode>(initialMode);
   const [name, setName] = useState('');
@@ -89,6 +92,7 @@ export function Login({
 
   function switchMode(next: LoginMode) {
     setMode(next);
+    if (next !== 'forgot') onModeChange?.(next);
     setError(null);
     setNotice(null);
     // Announce the new panel to screen-reader users (Studio Pulse Check SPC-04)
@@ -106,8 +110,9 @@ export function Login({
     try {
       const res = await authClient.signIn.social({
         provider: 'apple',
-        callbackURL: window.location.origin,
-        errorCallbackURL: window.location.origin,
+        // App sends a signed-in visit to /sign-in on to the page that asked for sign-in.
+        callbackURL: `${window.location.origin}/sign-in`,
+        errorCallbackURL: `${window.location.origin}/sign-in`,
         disableRedirect: true,
       });
       if (res.error) {
