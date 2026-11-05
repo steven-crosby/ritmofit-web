@@ -18,7 +18,7 @@ A checked PR proves its GitHub state, not product acceptance or production behav
 
 | Task | Priority / kind | Relationships | Next action / resolution | Evidence |
 | --- | --- | --- | --- | --- |
-| [RF-172](tasks/RF-172.json) Music Songs: ▶ preview on the song artwork | P1 / task | parent RF-138; needs RF-151 | Neo, claimed by its draft PR; starts after RF-189. Restart: SongPicks.tsx SongPickList rows (artwork out of the selection label into a ▶ button), Dashboard.tsx TrackPreview wiring for a TrackSearchResult; playback code under apps/web/src/lib/playback/ is owner-gated, so avoid it or get owner-approved. | checked 2026-10-31 |
+| [RF-172](tasks/RF-172.json) Music Songs: ▶ preview on the song artwork | P1 / task | parent RF-138; needs RF-151 | Neo, claimed by its draft PR; starts after RF-189. Restart: SongPicks.tsx SongPickList rows (artwork out of the selection label into a ▶ button), Dashboard.tsx TrackPreview wiring for a TrackSearchResult; playback code under apps/web/src/lib/playback/ is owner-gated, so avoid it or get owner-approved. | checked 2026-10-31; checked 2026-11-04 |
 
 ## Blocked / waiting
 

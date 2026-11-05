@@ -35,6 +35,12 @@
       "ref": "https://github.com/steven-crosby/ritmofit-web/pull/687",
       "summary": "Final review of #687 (merged e4d27f2): TrackPreview takes a RunPayloadTrackEntry, not a TrackSearchResult; Dashboard.tsx belongs in Files; ▶ on cap-disabled rows was undefined. Folded into this record.",
       "checkedOn": "2026-10-31"
+    },
+    {
+      "kind": "pr",
+      "ref": "https://github.com/steven-crosby/ritmofit-web/pull/727",
+      "summary": "Owner set RF-172 Ready for the Neo on 2026-11-04 (\"Yes approved\", quoted in this PR body); this draft PR is the Neo claim.",
+      "checkedOn": "2026-11-04"
     }
   ],
   "resolution": null,
