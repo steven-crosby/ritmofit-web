@@ -45,6 +45,12 @@
       "ref": "https://github.com/steven-crosby/ritmofit-web/pull/720#issuecomment-6664043963",
       "summary": "Owner work split for 2026-11-05: RF-188 moves from the Air to the Neo and starts after #720 merges (merged as 840255c at 17:49:52Z).",
       "checkedOn": "2026-11-05"
+    },
+    {
+      "kind": "pr",
+      "ref": "https://github.com/steven-crosby/ritmofit-web/pull/738",
+      "summary": "RF-188 claim and build PR (draft), opened on the Neo after #720 merged.",
+      "checkedOn": "2026-11-05"
     }
   ],
   "resolution": null,
