@@ -5434,6 +5434,40 @@ describe('Music Songs paging and search (RF-132)', () => {
     expect(pageRequests.length).toBeLessThanOrEqual(10);
   }, 15_000);
 
+  // RF-152 review: leaving Music and coming back must not reset the per-minute budget.
+  it('keeps the per-minute search autoload budget across leaving Music (RF-152)', async () => {
+    vi.mocked(api.listClasses).mockResolvedValue(page([]));
+    vi.mocked(api.listConnections).mockResolvedValue([spotifyConnection()]);
+    let calls = 0;
+    vi.mocked(api.listLikesPage).mockImplementation(async () => {
+      calls += 1;
+      if (calls > 40) throw new Error('Runaway autoload');
+      return { items: [song('same', 'Same Song')], nextCursor: `cursor-${calls}` };
+    });
+
+    await openSongs('Spotify');
+    expect(await screen.findByText('Same Song')).toBeTruthy();
+    for (const query of ['first', 'second']) {
+      const search = screen.getByRole('searchbox', { name: 'Search songs' });
+      fireEvent.change(search, { target: { value: query } });
+      await new Promise((resolve) => setTimeout(resolve, 2_200));
+      fireEvent.change(search, { target: { value: '' } });
+    }
+    fireEvent.click(screen.getByRole('button', { name: 'Classes' }));
+    fireEvent.click(await screen.findByRole('button', { name: 'Music' }));
+    const songs = await screen.findByRole('button', { name: 'Songs' });
+    if (songs.getAttribute('aria-pressed') !== 'true') fireEvent.click(songs);
+    expect(await screen.findByText('Same Song')).toBeTruthy();
+    fireEvent.change(screen.getByRole('searchbox', { name: 'Search songs' }), {
+      target: { value: 'third' },
+    });
+    await new Promise((resolve) => setTimeout(resolve, 2_200));
+    const pageRequests = vi
+      .mocked(api.listLikesPage)
+      .mock.calls.filter((call: unknown[]) => (call[1] as LikesQuery | undefined)?.cursor);
+    expect(pageRequests.length).toBeLessThanOrEqual(10);
+  }, 15_000);
+
   // RF-152 item 2: a whitespace-only edit re-sent the Apple library search.
   it('does not search the Apple library again for a whitespace-only edit (RF-152)', async () => {
     vi.mocked(api.listClasses).mockResolvedValue(page([]));

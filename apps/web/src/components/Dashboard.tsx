@@ -141,7 +141,6 @@ import {
   serverSongSearchState,
   shouldAutoLoadForSearch,
   SONG_SEARCH_AUTOLOAD_BOUND,
-  SONG_SEARCH_AUTOLOAD_DEBOUNCE_MS,
   SONG_SEARCH_AUTOLOAD_WINDOW_MS,
   songSearchAutoLoadDelay,
   songSearchAutoLoadSpent,
@@ -304,6 +303,10 @@ export function Dashboard({
   // Music reopens where the viewer left it (RF-137). State here outlives the
   // MusicWorkspace mount, so this works even when storage is unavailable.
   const [musicView, setMusicView] = useState<MusicView | null>(() => recallMusicView(userId));
+  // RF-152: when each Songs search autoload request went out, across search sessions and
+  // services. Held here, not in MusicWorkspace, so leaving Music and coming back within
+  // the minute keeps the budget (the server's likes limit is per user).
+  const songAutoLoadSentAt = useRef<number[]>([]);
   const rememberView = useCallback(
     (view: MusicView) => {
       setMusicView(view);
@@ -1454,6 +1457,7 @@ export function Dashboard({
           ) : destination === 'music' ? (
             <MusicWorkspace
               userId={userId}
+              autoLoadSentAt={songAutoLoadSentAt}
               connectionRevision={connectionRevision}
               rememberedView={musicView}
               onViewChange={rememberView}
@@ -2049,7 +2053,11 @@ function useProviderBrowseState(connectionRevision = 0) {
       const connection = connections.find((row) => row.provider === provider);
       const state = providerConnectionState(provider, connection, Date.now());
       if (state !== 'connected' || !connection) {
-        // Disconnected: forget its pages so a reconnect starts from page 1.
+        // Disconnected: forget its pages so a reconnect starts from page 1, and its songs,
+        // so a reconnect as another account never shows them (RF-152).
+        if (likesLoadedKey.current[provider] !== undefined) {
+          setLikes((prev) => ({ ...prev, [provider]: undefined }));
+        }
         delete likesLoadedKey.current[provider];
         delete likesRequestKey.current[provider];
         likesToken.current[provider] = (likesToken.current[provider] ?? 0) + 1;
@@ -2219,6 +2227,7 @@ function ProviderConnectionsLoadState({
 
 function MusicWorkspace({
   userId,
+  autoLoadSentAt: songAutoLoadSentAt,
   connectionRevision,
   rememberedView,
   onViewChange,
@@ -2227,6 +2236,8 @@ function MusicWorkspace({
   onCreateClass,
 }: {
   userId: string;
+  /** RF-152: search autoload send times, owned by Dashboard (see there). */
+  autoLoadSentAt: { current: number[] };
   connectionRevision: number;
   rememberedView: MusicView | null;
   onViewChange: (view: MusicView) => void;
@@ -2279,9 +2290,6 @@ function MusicWorkspace({
   // the state copy only re-renders the note.
   const songAutoLoadRef = useRef({ key: '', bound: SONG_SEARCH_AUTOLOAD_BOUND, requests: 0 });
   const [songAutoLoad, setSongAutoLoad] = useState(songAutoLoadRef.current);
-  // When each search autoload request went out, across search sessions and services
-  // (RF-152): the server's likes limit is per user, so one per-minute budget covers all.
-  const songAutoLoadSentAt = useRef<number[]>([]);
   const [librarySearch, setLibrarySearch] = useState<{
     provider: Provider;
     query: string;
@@ -2453,13 +2461,6 @@ function MusicWorkspace({
       // RF-152: only a request that actually goes out counts against the budgets.
       if (!canLoadMoreLikes(provider)) return;
       const now = Date.now();
-      if (
-        songSearchAutoLoadDelay(songAutoLoadSentAt.current, now) > SONG_SEARCH_AUTOLOAD_DEBOUNCE_MS
-      ) {
-        // Still inside the per-minute budget's wait (a re-render shortened it): retry.
-        setSongAutoLoad({ ...current });
-        return;
-      }
       songAutoLoadSentAt.current = [
         ...songAutoLoadSentAt.current.filter((at) => now - at < SONG_SEARCH_AUTOLOAD_WINDOW_MS),
         now,
@@ -2595,7 +2596,7 @@ function MusicWorkspace({
   const likesHasMore = Boolean(likesNext[selectedProvider]);
   const loadingMoreLikes = Boolean(likesLoadingMore[selectedProvider]);
   const loadMoreLikesError = likesMoreError[selectedProvider] ?? null;
-  const songQuery = libraryQuery.trim();
+  const songQuery = libraryQueryTrimmed;
   const songSearch = songSearchMode(selectedProvider);
   const serverSearchState = serverSongSearchState({
     onSongs: libraryKind === 'songs',
