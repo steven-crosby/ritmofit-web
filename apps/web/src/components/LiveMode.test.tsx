@@ -3087,6 +3087,65 @@ describe('LiveMode timeline scrubber', () => {
     expect(built).toBe(before + 1);
   }, 10_000);
 
+  it('a still tap held in a gap past the 10 s watchdog still starts one adapter, on release (RF-188 round 4)', async () => {
+    // Track 1 0:00-1:30, a gap, track 2 from 2:00; the class runs to 3:00.
+    const gapped = {
+      ...payload,
+      class: { ...payload.class, timelineMode: 'free' as const, totalDurationMs: 180_000 },
+      tracks: [
+        { ...activeTrack, track: { ...activeTrack.track, durationMs: 90_000 } },
+        {
+          ...activeTrack,
+          classTrackId: '00000000-0000-4000-8000-0000000000b2',
+          position: 1,
+          startOffsetMs: 120_000,
+          track: { ...activeTrack.track, id: 'tr-2', title: 'Second Track', durationMs: 60_000 },
+        },
+      ],
+    } satisfies RunPayload;
+    let built = 0;
+    vi.mocked(listConnections).mockResolvedValue([soundcloudConnection]);
+    vi.mocked(soundcloudAdapterFactory).mockImplementation(() => {
+      built++;
+      return workingAdapter();
+    });
+    render(<LiveMode payload={gapped} onExit={() => {}} />);
+    await screen.findByRole('list', { name: 'Track playback check' });
+    fireEvent.click(screen.getByRole('button', { name: 'Start class' }));
+    await screen.findByRole('button', { name: 'Pause' });
+    const slider = screen.getByRole('slider', { name: 'Seek class timeline' });
+    vi.spyOn(slider, 'getBoundingClientRect').mockReturnValue({
+      width: 180_000,
+      left: 0,
+      right: 180_000,
+      top: 0,
+      bottom: 40,
+      height: 40,
+      x: 0,
+      y: 0,
+      toJSON: () => ({}),
+    } as DOMRect);
+    for (let i = 0; i < 3; i++) fireEvent.keyDown(slider, { key: 'PageUp' }); // 1:30
+    for (let i = 0; i < 3; i++) fireEvent.keyDown(slider, { key: 'ArrowRight' }); // 1:45, in the gap
+    await waitFor(() => expect(screen.getAllByText('Silence').length).toBeGreaterThan(0));
+    const before = built;
+    vi.useFakeTimers();
+    try {
+      fireEvent.pointerDown(slider, { clientX: 150_000, pointerId: 1 }); // inside track 2
+      // The watchdog lets the clock run at 10 s; the coordinator still waits.
+      await act(async () => {
+        await vi.advanceTimersByTimeAsync(11_000);
+      });
+      expect(built).toBe(before);
+    } finally {
+      vi.useRealTimers();
+    }
+    fireEvent.pointerUp(slider, { clientX: 150_000, pointerId: 1 });
+    await waitFor(() => expect(built).toBe(before + 1));
+    await wait(300);
+    expect(built).toBe(before + 1);
+  }, 10_000);
+
   it('after a playback error, Retry still resumes music, once (round 5)', async () => {
     const { prepared, built } = await startTwoTracksWithFailures([1]);
     fireEvent.click(await screen.findByRole('button', { name: 'Retry music' }));

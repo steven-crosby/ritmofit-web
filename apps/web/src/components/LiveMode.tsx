@@ -624,11 +624,9 @@ export function LiveMode({
     clockStartSegment();
     let raf = 0;
     const loop = () => {
-      // A finger on the timeline holds the clock (RF-188): no host-time tick
-      // (it would clamp the preview to the gap's end or run it on under a held
-      // tap) and no coordinator tick (it would enter the track under the
-      // finger, then the release seek would start a second adapter). The
-      // strip's watchdog can end the hold early (round 4).
+      // A finger on the timeline holds the clock (RF-188): no host-time tick,
+      // which would clamp the preview to the gap's end or run it on under a
+      // held tap. The strip's watchdog can end the hold early (round 4).
       if (clockHeldRef.current) {
         raf = requestAnimationFrame(loop);
         return;
@@ -638,7 +636,11 @@ export function LiveMode({
       );
       // Only intentional gaps use host time in music mode. Cap at the next
       // song's boundary so asynchronous preparation cannot advance teaching.
-      void coordinatorRef.current?.tick(capped);
+      // While a finger is down (even after the watchdog let the clock run),
+      // the coordinator is not ticked: entering the track under the finger
+      // would start the provider, and the release seek would start it again.
+      // The release is the one provider entry (RF-188 round 4 review).
+      if (!scrubbingRef.current) void coordinatorRef.current?.tick(capped);
       if (capped >= payload.class.totalDurationMs) {
         setPlaying(false);
         return;

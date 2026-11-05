@@ -111,6 +111,12 @@
       "ref": "apps/web/src/components/LiveTimeline.test.tsx",
       "summary": "Round 4 (Neo local): LiveTimeline reports finger-down (onScrubChange, until the real end) and the clock hold (onClockHoldChange, which the watchdog can release) separately; LiveMode holds the frame loop and position sync on the hold and the quiet panel, rail and reveal deferral on the finger. Five new or rewritten tests fail on c3f637b: the watchdog releases only the hold, a move restores it, an unmoved cancel restores the clock before the hold ends, a paused cancel shows the pre-press time in the header, and a blocked press held past 10 s keeps the panel quiet with no scroll or focus until the lift, then reveals once.",
       "checkedOn": "2026-11-05"
+    },
+    {
+      "kind": "pr",
+      "ref": "https://github.com/steven-crosby/ritmofit-web/pull/738",
+      "summary": "Fresh-context review of round 4 (023ef66): a still press past the watchdog in a silence gap still let the frame loop tick the coordinator into the pressed track, so the lift started a second adapter. Fixed by ticking the coordinator only when no finger is down (the clock hold still gates the clock tick and sync); a new test holds a gap tap for 11 s and fails on 023ef66 (3 adapters, not 2). Its minor points are in RF-206 items 10 and 13.",
+      "checkedOn": "2026-11-05"
     }
   ],
   "resolution": null,
