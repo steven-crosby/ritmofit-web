@@ -1,0 +1,27 @@
+{
+  "schemaVersion": 1,
+  "id": "RF-198",
+  "title": "Phone text-field zoom rule: follow-ups from the RF-196 review",
+  "kind": "task",
+  "status": "backlog",
+  "priority": "P3",
+  "parent": null,
+  "dependsOn": [],
+  "acceptance": [
+    "A decision is recorded on targeting iOS WebKit directly (for example @supports (-webkit-touch-callout: none)) instead of viewport size and pointer type, weighing that Chromium e2e cannot exercise an iOS-only guard.",
+    "The landscape zoom check covers Music › Songs search and the Create a class sheet, not only sign-up, or the record says why not.",
+    "The media query lives in one place that index.css and e2e/smoke.spec.ts both read, or a check fails when the two copies differ."
+  ],
+  "nextAction": "Logged from the fresh-context review of the RF-196 PR (2026-11-05 unattended Neo session). Agent-created: Backlog until the owner sets Ready.",
+  "blocker": null,
+  "evidence": [
+    {
+      "kind": "observation",
+      "ref": "https://github.com/steven-crosby/ritmofit-web/issues/730",
+      "summary": "Non-blocking findings from the RF-196 pre-PR review, not fixed in that PR.",
+      "checkedOn": "2026-11-05"
+    }
+  ],
+  "resolution": null,
+  "followUps": []
+}

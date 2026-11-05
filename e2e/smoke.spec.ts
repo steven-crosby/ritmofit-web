@@ -37,9 +37,10 @@ async function expectNoSidewaysOverflow(page: Page, where: string) {
 }
 
 // RF-189: iOS Safari zooms the page when a text field under 16px gets focus. On a phone
-// (the index.css query: under 640px wide, or a touch screen under 640px tall, RF-196) every
-// visible text-entry field must compute to 16px or more.
-const PHONE_FIELDS_QUERY = '(max-width: 639.98px), (pointer: coarse) and (max-height: 639.98px)';
+// (the index.css query, copied here and kept in step by hand: under 640px wide, or a phone
+// turned sideways, RF-196) every visible text-entry field must compute to 16px or more.
+const PHONE_FIELDS_QUERY =
+  '(max-width: 639.98px), (pointer: coarse) and (max-height: 639.98px) and (max-width: 959.98px)';
 
 async function expectNoZoomingFields(page: Page, where: string) {
   const small = await page.evaluate((query) => {
@@ -114,15 +115,16 @@ async function signUp(page: Page, email: string) {
   await page.getByLabel('Email').fill(email);
   await page.locator('#login-password').fill('e2e-pass-1234');
   await expectNoZoomingFields(page, 'sign-up');
-  if (test.info().project.name === 'phone-390') {
+  const portrait = page.viewportSize();
+  if (test.info().project.use.hasTouch && portrait) {
     // RF-196: the same phone turned sideways is wider than sm but still zooms.
-    await page.setViewportSize({ width: 844, height: 390 });
+    await page.setViewportSize({ width: portrait.height, height: portrait.width });
     expect(
       await page.evaluate((query) => window.matchMedia(query).matches, PHONE_FIELDS_QUERY),
       'sign-up (landscape): the phone query matches a sideways touch screen',
     ).toBe(true);
     await expectNoZoomingFields(page, 'sign-up (landscape)');
-    await page.setViewportSize({ width: 390, height: 844 });
+    await page.setViewportSize(portrait);
   }
   await page.getByRole('button', { name: 'Create account' }).click();
   const tutorial = page.getByRole('dialog', { name: 'New instructor four-count tutorial' });
