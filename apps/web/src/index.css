@@ -362,11 +362,16 @@
 }
 
 /* RF-189: iOS Safari zooms the page when a text field under 16px gets focus, and the
-   page stays zoomed. On phones (below Tailwind's sm, 640px) every text-entry field is
-   16px, whatever size utility it carries; sm and up keep their own size. `!important`
-   because a field's own `text-sm`/`text-xs` utility would otherwise win. The viewport
-   meta keeps user zoom on, so this is the only fix. The e2e smoke checks it at 390px. */
-@media (max-width: 639.98px) {
+   page stays zoomed. On phones every text-entry field is 16px, whatever size utility it
+   carries: below Tailwind's sm (640px) wide, and (RF-196) a phone turned sideways, which
+   is wider than sm: a touch screen under 640px tall and under 960px wide (the widest
+   landscape iPhone is 956px). The width cap keeps tablets out even when a keyboard shrinks
+   their viewport. Tablets and desktops keep their own size. `!important` because a
+   field's own `text-sm`/`text-xs` utility would otherwise win. The viewport meta keeps
+   user zoom on, so this is the only fix. The e2e smoke checks it at 390x844 and 844x390;
+   keep its query in step. */
+@media (max-width: 639.98px),
+  (pointer: coarse) and (max-height: 639.98px) and (max-width: 959.98px) {
   input:not(
     [type='checkbox'],
     [type='radio'],

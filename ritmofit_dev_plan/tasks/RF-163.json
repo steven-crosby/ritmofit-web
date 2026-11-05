@@ -3,7 +3,7 @@
   "id": "RF-163",
   "title": "One copper primary holds in Classes' error state and through Live queue retries",
   "kind": "task",
-  "status": "backlog",
+  "status": "done",
   "priority": "P3",
   "parent": null,
   "dependsOn": [
@@ -14,7 +14,7 @@
     "A per-card readiness Retry in the Live queue does not drop or move the copper action while that card refetches.",
     "A decision is recorded on whether the Live queue's copper goes to the first runnable class (Preflight) when the leading card only offers a fix action."
   ],
-  "nextAction": "From the RF-135 final review (#673). Files: apps/web/src/components/ClassesHome.tsx (RecoveryState primaryAction vs + Create), Dashboard.tsx LiveWorkspace (primary while allResolved is false after fetchOne). Agent-created: Backlog until the owner sets Ready.",
+  "nextAction": null,
   "blocker": null,
   "evidence": [
     {
@@ -22,8 +22,34 @@
       "ref": "https://github.com/steven-crosby/ritmofit-web/pull/673",
       "summary": "Final review of #673 on 60bff17, logged, not blocking: the Classes library-error state renders two copper buttons; a Live queue card Retry makes allResolved false so copper drops and may move; copper can land on a fix verb while a runnable class sits lower.",
       "checkedOn": "2026-10-31"
+    },
+    {
+      "kind": "observation",
+      "ref": "https://github.com/steven-crosby/ritmofit-web/issues/730",
+      "summary": "Owner pre-approved RF-163 items 1-2 for the 2026-11-05 unattended Neo session; item 3 stays an owner decision.",
+      "checkedOn": "2026-11-05"
+    },
+    {
+      "kind": "test",
+      "ref": "apps/web/src/components/Dashboard.test.tsx",
+      "summary": "Neo local: item 1 was already met on main 827ae64 (the library-error state renders only 'Try the library again' in copper; + Create lives in the library view); a new test pins it. Item 2: the new Live queue retry test failed on main (copper dropped to none while a card refetched) and passes with the fix; Dashboard.test.tsx all pass. A fresh-context review found the leading card (one class, or every check failed) still lost its copper Retry while refetching; fixed by keeping the same button as a busy copper \"Checking…\" (it keeps keyboard focus). Its new test failed on the earlier commit and passes now; Dashboard.test.tsx 221 passed.",
+      "checkedOn": "2026-11-05"
+    },
+    {
+      "kind": "pr",
+      "ref": "https://github.com/steven-crosby/ritmofit-web/pull/734",
+      "summary": "RF-163 items 1-2 PR, opened under unattended pre-approval issue #730 after two fresh-context /code-review high passes (the significant finding fixed; follow-ups in RF-201).",
+      "checkedOn": "2026-11-05"
+    },
+    {
+      "kind": "observation",
+      "ref": "apps/web/src/components/Dashboard.tsx",
+      "summary": "Owner decision on item 3 (live Neo session, 2026-11-05): keep the Live queue copper on the leading card, including when that card only offers a fix; it does not move to the first runnable class. Main already does this (LiveQueue renders primary={allResolved && index === 0}), so no code change is needed.",
+      "checkedOn": "2026-11-05"
     }
   ],
-  "resolution": null,
-  "followUps": []
+  "resolution": "Items 1-2 shipped in #734 (Classes library-error state holds one copper; a Live queue card Retry keeps the copper in place as a busy \"Checking…\"). Item 3: the owner decided the copper stays on the leading card even when it only offers a fix, which is main's existing behavior, so nothing further ships. Follow-ups in RF-201.",
+  "followUps": [
+    "RF-201"
+  ]
 }

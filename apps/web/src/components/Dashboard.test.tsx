@@ -1399,6 +1399,108 @@ describe('Dashboard class library states', () => {
     }
   });
 
+  it('keeps the Live queue order and its one copper action while a card retries (RF-163)', async () => {
+    const make = (title: string) => ({
+      ...makeClass(title, 'owner', 'me'),
+      trackCount: 1,
+      totalDurationMs: 60_000,
+    });
+    const alpha = make('Alpha ride');
+    const beta = make('Beta ride');
+    vi.mocked(api.listClasses).mockResolvedValue(page([alpha, beta]));
+    const payload = liveRunPayload([{ classTrackId: 'ct-1', durationMs: 60_000 }]);
+    payload.sections = [];
+    const retry = deferred<RunPayload>();
+    let betaCalls = 0;
+    vi.mocked(api.getRunPayload).mockImplementation(async (id: string) => {
+      if (id !== beta.id) return payload;
+      betaCalls += 1;
+      if (betaCalls === 1) throw new Error('readiness check failed');
+      return retry.promise;
+    });
+    renderDashboard();
+
+    fireEvent.click(await screen.findByRole('button', { name: 'Live' }));
+    const retryButton = await screen.findByRole('button', { name: 'Retry readiness — Beta ride' });
+    const order = () =>
+      screen
+        .getAllByRole('article')
+        .map((card) => ['Alpha ride', 'Beta ride'].find((t) => card.textContent?.includes(t)));
+    const copper = () =>
+      screen
+        .getAllByRole('button')
+        .filter((b) => b.className.includes('rf-btn-primary'))
+        .map((b) => b.getAttribute('aria-label'));
+    const before = order();
+    expect(copper()).toEqual(['Preflight Alpha ride']);
+
+    fireEvent.click(retryButton);
+    // While Beta refetches: only its card shows the check; the order and copper hold.
+    const betaCard = screen
+      .getAllByRole('article')
+      .find((card) => card.textContent?.includes('Beta ride'))!;
+    await waitFor(() => expect(betaCard.getAttribute('aria-busy')).toBe('true'));
+    expect(order()).toEqual(before);
+    expect(copper()).toEqual(['Preflight Alpha ride']);
+    expect(screen.queryByText(/Checking readiness for/)).toBeNull();
+
+    await act(async () => {
+      retry.resolve(payload);
+      await retry.promise;
+    });
+    await screen.findByRole('button', { name: 'Preflight Beta ride' });
+    expect(copper()).toHaveLength(1);
+  });
+
+  it('keeps the copper on a leading card while its Retry refetches (RF-163)', async () => {
+    const only = {
+      ...makeClass('Solo ride', 'owner', 'me'),
+      trackCount: 1,
+      totalDurationMs: 60_000,
+    };
+    vi.mocked(api.listClasses).mockResolvedValue(page([only]));
+    const payload = liveRunPayload([{ classTrackId: 'ct-1', durationMs: 60_000 }]);
+    payload.sections = [];
+    const retry = deferred<RunPayload>();
+    vi.mocked(api.getRunPayload)
+      .mockRejectedValueOnce(new Error('readiness check failed'))
+      .mockImplementationOnce(() => retry.promise);
+    renderDashboard();
+
+    fireEvent.click(await screen.findByRole('button', { name: 'Live' }));
+    const button = await screen.findByRole('button', { name: 'Retry readiness — Solo ride' });
+    expect(button.className).toContain('rf-btn-primary');
+    button.focus();
+    fireEvent.click(button);
+
+    // The same button stays, busy and copper, and keeps focus.
+    const checking = await screen.findByRole('button', { name: 'Checking readiness — Solo ride' });
+    expect(checking).toBe(button);
+    expect(checking.getAttribute('aria-disabled')).toBe('true');
+    expect(checking.className).toContain('rf-btn-primary');
+    expect(document.activeElement).toBe(checking);
+    fireEvent.click(checking);
+    expect(api.getRunPayload).toHaveBeenCalledTimes(2);
+
+    await act(async () => {
+      retry.resolve(payload);
+      await retry.promise;
+    });
+    expect(await screen.findByRole('button', { name: 'Preflight Solo ride' })).toBeTruthy();
+  });
+
+  it('shows one copper action when the class library fails to load (RF-163)', async () => {
+    vi.mocked(api.listClasses).mockRejectedValue(new Error('library down'));
+    renderDashboard();
+
+    const retry = await screen.findByRole('button', { name: 'Try the library again' });
+    const copper = screen
+      .getAllByRole('button')
+      .filter((b) => b.className.includes('rf-btn-primary'));
+    expect(copper).toEqual([retry]);
+    expect(screen.queryByRole('button', { name: /Create/ })).toBeNull();
+  });
+
   it('stamps last opened when Live starts, not when the queue is only listed', async () => {
     const alpha = {
       ...makeClass('Alpha ride', 'owner', 'me'),
@@ -5371,6 +5473,202 @@ describe('Music Songs paging and search (RF-132)', () => {
     expect(pageRequests.length).toBeLessThanOrEqual(5);
   });
 
+  // RF-152 item 1: clearing and retyping searches each got a fresh 5-request budget,
+  // so a few searches in a minute used up the server's 20/min likes limit.
+  it('keeps search autoload inside a per-minute budget across cleared searches (RF-152)', async () => {
+    vi.mocked(api.listClasses).mockResolvedValue(page([]));
+    vi.mocked(api.listConnections).mockResolvedValue([spotifyConnection()]);
+    let calls = 0;
+    vi.mocked(api.listLikesPage).mockImplementation(async () => {
+      calls += 1;
+      if (calls > 40) throw new Error('Runaway autoload');
+      return { items: [song('same', 'Same Song')], nextCursor: `cursor-${calls}` };
+    });
+
+    await openSongs('Spotify');
+    expect(await screen.findByText('Same Song')).toBeTruthy();
+    const search = screen.getByRole('searchbox', { name: 'Search songs' });
+    for (const query of ['first', 'second', 'third']) {
+      fireEvent.change(search, { target: { value: query } });
+      await new Promise((resolve) => setTimeout(resolve, 2_200));
+      fireEvent.change(search, { target: { value: '' } });
+    }
+    const pageRequests = vi
+      .mocked(api.listLikesPage)
+      .mock.calls.filter((call: unknown[]) => (call[1] as LikesQuery | undefined)?.cursor);
+    expect(pageRequests.length).toBeGreaterThanOrEqual(5);
+    expect(pageRequests.length).toBeLessThanOrEqual(10);
+  }, 15_000);
+
+  // RF-152 review: the server's likes limit is per user, so searching one service and
+  // then another must share one per-minute autoload budget.
+  it('shares the per-minute search autoload budget across services (RF-152)', async () => {
+    vi.mocked(api.listClasses).mockResolvedValue(page([]));
+    vi.mocked(api.listConnections).mockResolvedValue([
+      spotifyConnection(),
+      { ...spotifyConnection(), id: 'conn-soundcloud', provider: 'soundcloud' },
+    ]);
+    vi.mocked(api.listPlaylists).mockResolvedValue([]);
+    let calls = 0;
+    vi.mocked(api.listLikesPage).mockImplementation(async (provider: Provider) => {
+      calls += 1;
+      if (calls > 40) throw new Error('Runaway autoload');
+      return { items: [song('same', 'Same Song', provider)], nextCursor: `cursor-${calls}` };
+    });
+
+    await openSongs('Spotify');
+    expect(await screen.findByText('Same Song')).toBeTruthy();
+    let search = screen.getByRole('searchbox', { name: 'Search songs' });
+    for (const query of ['first', 'second']) {
+      fireEvent.change(search, { target: { value: query } });
+      await new Promise((resolve) => setTimeout(resolve, 2_200));
+      fireEvent.change(search, { target: { value: '' } });
+    }
+    await selectMusicService('SoundCloud');
+    fireEvent.click(screen.getByRole('button', { name: 'Songs' }));
+    expect(await screen.findByText('Same Song')).toBeTruthy();
+    search = screen.getByRole('searchbox', { name: 'Search songs' });
+    fireEvent.change(search, { target: { value: 'third' } });
+    await new Promise((resolve) => setTimeout(resolve, 2_200));
+    const pageRequests = vi
+      .mocked(api.listLikesPage)
+      .mock.calls.filter((call: unknown[]) => (call[1] as LikesQuery | undefined)?.cursor);
+    expect(pageRequests.length).toBeLessThanOrEqual(10);
+  }, 15_000);
+
+  // RF-152 review: leaving Music and coming back must not reset the per-minute budget.
+  it('keeps the per-minute search autoload budget across leaving Music (RF-152)', async () => {
+    vi.mocked(api.listClasses).mockResolvedValue(page([]));
+    vi.mocked(api.listConnections).mockResolvedValue([spotifyConnection()]);
+    let calls = 0;
+    vi.mocked(api.listLikesPage).mockImplementation(async () => {
+      calls += 1;
+      if (calls > 40) throw new Error('Runaway autoload');
+      return { items: [song('same', 'Same Song')], nextCursor: `cursor-${calls}` };
+    });
+
+    await openSongs('Spotify');
+    expect(await screen.findByText('Same Song')).toBeTruthy();
+    for (const query of ['first', 'second']) {
+      const search = screen.getByRole('searchbox', { name: 'Search songs' });
+      fireEvent.change(search, { target: { value: query } });
+      await new Promise((resolve) => setTimeout(resolve, 2_200));
+      fireEvent.change(search, { target: { value: '' } });
+    }
+    fireEvent.click(screen.getByRole('button', { name: 'Classes' }));
+    fireEvent.click(await screen.findByRole('button', { name: 'Music' }));
+    const songs = await screen.findByRole('button', { name: 'Songs' });
+    if (songs.getAttribute('aria-pressed') !== 'true') fireEvent.click(songs);
+    expect(await screen.findByText('Same Song')).toBeTruthy();
+    fireEvent.change(screen.getByRole('searchbox', { name: 'Search songs' }), {
+      target: { value: 'third' },
+    });
+    await new Promise((resolve) => setTimeout(resolve, 2_200));
+    const pageRequests = vi
+      .mocked(api.listLikesPage)
+      .mock.calls.filter((call: unknown[]) => (call[1] as LikesQuery | undefined)?.cursor);
+    expect(pageRequests.length).toBeLessThanOrEqual(10);
+  }, 15_000);
+
+  // RF-152 item 2: a whitespace-only edit re-sent the Apple library search.
+  it('does not search the Apple library again for a whitespace-only edit (RF-152)', async () => {
+    vi.mocked(api.listClasses).mockResolvedValue(page([]));
+    vi.mocked(api.listConnections).mockResolvedValue([
+      { ...spotifyConnection(), provider: 'apple_music' },
+    ]);
+    vi.mocked(api.listPlaylists).mockResolvedValue([]);
+    vi.mocked(api.listLikesPage).mockImplementation(
+      async (_provider: Provider, options: LikesQuery = {}) =>
+        options.q
+          ? { items: [song('d', 'Deep Cut', 'apple_music')], nextCursor: null }
+          : { items: [song('a', 'A.F.U.', 'apple_music')], nextCursor: null },
+    );
+    const searches = () =>
+      vi
+        .mocked(api.listLikesPage)
+        .mock.calls.filter((call: unknown[]) => (call[1] as LikesQuery | undefined)?.q).length;
+
+    await openSongs('Apple Music');
+    expect(await screen.findByText('A.F.U.')).toBeTruthy();
+    const search = screen.getByRole('searchbox', { name: 'Search songs' });
+    fireEvent.change(search, { target: { value: 'deep' } });
+    expect(await screen.findByText('Deep Cut')).toBeTruthy();
+    expect(searches()).toBe(1);
+    fireEvent.change(search, { target: { value: 'deep ' } });
+    fireEvent.change(search, { target: { value: ' deep  ' } });
+    await new Promise((resolve) => setTimeout(resolve, 450));
+    expect(searches()).toBe(1);
+  });
+
+  // RF-152 item 5: retyping a cleared query briefly showed the old Apple result.
+  it('does not show a stale Apple search result when a cleared query is retyped (RF-152)', async () => {
+    vi.mocked(api.listClasses).mockResolvedValue(page([]));
+    vi.mocked(api.listConnections).mockResolvedValue([
+      { ...spotifyConnection(), provider: 'apple_music' },
+    ]);
+    vi.mocked(api.listPlaylists).mockResolvedValue([]);
+    const second = deferred<{ items: ReturnType<typeof song>[]; nextCursor: string | null }>();
+    let searchCalls = 0;
+    vi.mocked(api.listLikesPage).mockImplementation(
+      async (_provider: Provider, options: LikesQuery = {}) => {
+        if (!options.q) return { items: [song('a', 'A.F.U.', 'apple_music')], nextCursor: null };
+        searchCalls += 1;
+        if (searchCalls === 1) {
+          return { items: [song('o', 'Old Deep Result', 'apple_music')], nextCursor: null };
+        }
+        return second.promise;
+      },
+    );
+
+    await openSongs('Apple Music');
+    expect(await screen.findByText('A.F.U.')).toBeTruthy();
+    const search = screen.getByRole('searchbox', { name: 'Search songs' });
+    fireEvent.change(search, { target: { value: 'deep' } });
+    expect(await screen.findByText('Old Deep Result')).toBeTruthy();
+    fireEvent.change(search, { target: { value: '' } });
+    fireEvent.change(search, { target: { value: 'deep' } });
+    await new Promise((resolve) => setTimeout(resolve, 0));
+    expect(screen.queryByText('Old Deep Result')).toBeNull();
+    await waitFor(() => expect(searchCalls).toBe(2));
+    expect(screen.queryByText('Old Deep Result')).toBeNull();
+
+    second.resolve({ items: [song('n', 'New Deep Result', 'apple_music')], nextCursor: null });
+    expect(await screen.findByText('New Deep Result')).toBeTruthy();
+  });
+
+  // RF-152 item 3: a Keep loading tap during a running round restarted its budget.
+  it('does not restart a running search round when Keep loading is tapped (RF-152)', async () => {
+    vi.mocked(api.listClasses).mockResolvedValue(page([]));
+    vi.mocked(api.listConnections).mockResolvedValue([spotifyConnection()]);
+    let calls = 0;
+    vi.mocked(api.listLikesPage).mockImplementation(async () => {
+      calls += 1;
+      if (calls > 40) throw new Error('Runaway autoload');
+      return { items: [song('same', 'Same Song')], nextCursor: `cursor-${calls}` };
+    });
+
+    await openSongs('Spotify');
+    expect(await screen.findByText('Same Song')).toBeTruthy();
+    fireEvent.change(screen.getByRole('searchbox', { name: 'Search songs' }), {
+      target: { value: 'nothing matches' },
+    });
+    // Tap Keep loading twice while the round's 5 requests are still running.
+    for (let i = 0; i < 2; i += 1) {
+      const keep = await screen.findByRole('button', { name: 'Keep loading' });
+      await waitFor(() => expect(keep).toHaveProperty('disabled', false));
+      fireEvent.click(keep);
+      await new Promise((resolve) => setTimeout(resolve, 50));
+    }
+    expect(
+      await screen.findByText('Searched your first 1 liked songs.', {}, { timeout: 5000 }),
+    ).toBeTruthy();
+    await new Promise((resolve) => setTimeout(resolve, 500));
+    const pageRequests = vi
+      .mocked(api.listLikesPage)
+      .mock.calls.filter((call: unknown[]) => (call[1] as LikesQuery | undefined)?.cursor);
+    expect(pageRequests).toHaveLength(5);
+  });
+
   // Regression (#665 second review item 1): during a first-page reload for a new
   // account, Load more still used the old account's cursor and appended its songs.
   it('does not load more from the previous account while a new account reloads', async () => {
@@ -5407,6 +5705,8 @@ describe('Music Songs paging and search (RF-132)', () => {
     await waitFor(() => expect(firstPages).toBe(2));
 
     fireEvent.click(screen.getByRole('button', { name: 'Songs' }));
+    // RF-152 item 4: the old account's songs leave at once, not when page 1 lands.
+    expect(screen.queryByText('Old Account Song')).toBeNull();
     const loadMore = screen.queryByRole('button', { name: 'Load more songs' });
     if (loadMore) fireEvent.click(loadMore);
     expect(api.listLikesPage).not.toHaveBeenCalledWith('spotify', { cursor: 'a-cursor' });
