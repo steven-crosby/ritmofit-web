@@ -3,7 +3,7 @@
   "id": "RF-185",
   "title": "Live timeline tap starts Apple Music twice on iPhone Safari",
   "kind": "task",
-  "status": "backlog",
+  "status": "review",
   "priority": "P2",
   "parent": null,
   "dependsOn": [],
@@ -12,7 +12,7 @@
     "A LiveTimeline or trailing-throttle test reproduces pointerdown, then a pointermove at the same clientX inside the 200 ms window, then pointerup, and fails before the fix (one tap must send the provider exactly one seek).",
     "Next, Previous, auto-advance and a drag that rests past the throttle window keep their current behaviour."
   ],
-  "nextAction": "Cause (from the #717 review, checked in source): createTrailingThrottle.call clears calledFire and, inside the 200 ms window, sets pending even for the same value; LiveTimeline.onPointerMove calls previewToClientX on every pointermove while pressed, and iOS Safari sends one right after pointerdown even with a still finger. So firedLast(target) is false at release, seekRelease flushes, and a second adapter starts about 60-115 ms later. A pixel tolerance alone will not fix it; firedLast (or the release path) must treat a pending call with the same value as already sent. Files: apps/web/src/lib/trailing-throttle.ts, apps/web/src/components/LiveTimeline.tsx, LiveMode.tsx seekRelease. Then re-run the tap step on iPhone. Agent-created: Backlog until the owner sets Ready.",
+  "nextAction": "After a deploy of #720, the owner re-runs Live on iPhone Safari with ?playback-timing=1 on an Apple Music class: (1) tap one timeline track with a still finger three times, a few seconds apart: each tap shows one [ritmo live-timeline] pointer-down and pointer-up ... tap, one [ritmo live] release-skipped and one Apple #N prepare with no #N cancelled about 60-115 ms later; any pointer-move lines between them confirm or refute the still-finger move premise. (2) quick taps on 2-3 tracks; (3) one drag across several tracks, rest, release: no extra start after the release; (4) a small deliberate nudge lands where released. Next, Previous and auto-advance behave as before. If acceptance holds, set Done with that observation; otherwise attach the console lines.",
   "blocker": null,
   "evidence": [
     {
@@ -38,6 +38,96 @@
       "ref": "https://github.com/steven-crosby/ritmofit-web/pull/717",
       "summary": "#717 final review finding 1: the diagnosis was too narrow (finger movement); corrected here.",
       "checkedOn": "2026-11-03"
+    },
+    {
+      "kind": "observation",
+      "ref": "https://github.com/steven-crosby/ritmofit-web/pull/718#issuecomment-6616802366",
+      "summary": "Owner decision (2026-11-03, Air session), verbatim: \"Yes, move RF-185–187 to Ready and start the lane.\" Moved Ready → In progress by the RF-185 lane (branch fix/rf-185-live-timeline-seek).",
+      "checkedOn": "2026-11-03"
+    },
+    {
+      "kind": "pr",
+      "ref": "https://github.com/steven-crosby/ritmofit-web/pull/720",
+      "summary": "Fix: trailing-throttle firedLast now means \"the value fn actually ran with last\" (call, its trailing timer, or flush); a pending, unfired value never counts. LiveMode seekRelease skips the provider seek only when that fired value equals the release target, then cancels the pending call. LiveTimeline keeps moves within a tap slop (TAP_SLOP_PX, 8 px in that round, 3 px since round 3) part of the tap, because one CSS px is several seconds of class time on a phone strip, so a ms tolerance cannot express sub-pixel jitter; a release or cancel with no gesture in progress now sends nothing (it used to re-send the current clock as a second start, a possible second path via pointercancel). ?playback-timing=1 logs pointer down/move/up/cancel with clientX and the mapped ms, and the release decision.",
+      "checkedOn": "2026-11-03"
+    },
+    {
+      "kind": "test",
+      "ref": "apps/web/src/components/LiveMode.test.tsx",
+      "summary": "Added \"a tap with a still-finger move at the same ms inside the window sends one provider seek\", \"... sub-pixel or small jitter ...\", and \"a pointercancel after the release starts nothing more\" (one adapter per tap). Run against the pre-fix throttle and timeline, all three fail (two adapters for one tap); with only the throttle fix the same-ms test passes and the jitter and cancel tests still fail, so each layer is needed. The existing \"a release before the throttle sends the drag position still commits it once\" covers down A, pending B, release B sends B. Recorded test result, not device evidence.",
+      "checkedOn": "2026-11-03"
+    },
+    {
+      "kind": "test",
+      "ref": "apps/web/src/lib/trailing-throttle.test.ts",
+      "summary": "firedLast rule tests: a same-value call inside the window stays fired (fails before the fix); down A, pending B, release B sends B. LiveTimeline.test.tsx adds tap-slop, drag-past-slop, stray pointercancel and timing-line tests.",
+      "checkedOn": "2026-11-03"
+    },
+    {
+      "kind": "pr",
+      "ref": "https://github.com/steven-crosby/ritmofit-web/pull/720",
+      "summary": "Fixes for the #720 final review of 0e89399 (items 3-5): the throttle gains forget(), and Live calls it on every new timeline gesture, Pause/Play and an error/paused/ended status; a new coordinator (Start, Retry, Reset) cancels the throttle. So a last fired value never outlives the coordinator, the provider epoch or the gesture it was sent in. A release is a tap only if no move left the tap slop (8 px in that round, 3 px since round 3) and the release is inside it; a nudge or drag commits the release position even with no move event. The timeline keeps one gesture ref and follows one pointerId; other pointers are ignored, and a lost pointer capture ends the gesture. This supersedes the earlier #720 entry where they differ.",
+      "checkedOn": "2026-11-03"
+    },
+    {
+      "kind": "test",
+      "ref": "apps/web/src/components/LiveMode.test.tsx",
+      "summary": "Added \"after Retry, a tap at the same pixel within 200 ms still reaches the new coordinator\" (keyboard Home fires 0:00, that start fails, Retry, then a tap at 0 inside the window). LiveTimeline.test.tsx adds a nudge released outside the slop, a second finger, and a lost pointer capture. Run against the 0e89399 sources, all four fail. Recorded test result, not device evidence.",
+      "checkedOn": "2026-11-03"
+    },
+    {
+      "kind": "pr",
+      "ref": "https://github.com/steven-crosby/ritmofit-web/pull/720",
+      "summary": "Round-3 fixes for the #720 final review of 1d4bc81 (https://github.com/steven-crosby/ritmofit-web/pull/720#issuecomment-6619011721, items 1, 2, 5, 6, 7). A drag released within the slop of its last preview commits that previewed value, not a fresh reading of pointerup clientX. A timeline gesture never resumes music from a playback error; it moves the clock only, and only an explicit seek or Retry resumes. Gestures start only on pointerdown, and a new primary pointer drops a stale one. The slop is now 3 px instead of 8, with the reason in a source comment. The throttle's last-sent value is tied to the coordinator's run generation (RuntimePlaybackCoordinator.getRunGeneration, new on start, resume, pause, stop, destroy and failure, and unique across coordinators); this replaces the five forget() call sites. A pending call still never counts as sent. This supersedes earlier #720 entries where they differ.",
+      "checkedOn": "2026-11-04"
+    },
+    {
+      "kind": "test",
+      "ref": "apps/web/src/components/LiveMode.test.tsx",
+      "summary": "Added \"a drag that rests past the window and lifts with sub-pixel jitter sends no second seek\" and \"an error during a tap never turns the release into an automatic resume\". LiveTimeline.test.tsx adds a 4 px nudge, a rested drag with sub-pixel lift jitter, and pointermove-without-pointerdown (two tests). All six fail on 1d4bc81. trailing-throttle.test.ts adds an epoch test, and runtime.test.ts adds a run-generation test. Recorded test result, not device evidence.",
+      "checkedOn": "2026-11-04"
+    },
+    {
+      "kind": "pr",
+      "ref": "https://github.com/steven-crosby/ritmofit-web/pull/720",
+      "summary": "Round-4 fixes for the #720 final review of cfa0687 (https://github.com/steven-crosby/ritmofit-web/pull/720#issuecomment-6622998017, items 3-5). Reaching the class end now starts a new run generation, as pause, stop and failure do, so a value sent in the ended run never counts as sent. In a playback error, every seek (a timeline gesture, a keyboard seek, Next or Previous) moves only the clock, and the throttle callback and Play use one inPlaybackError() check. Retry and the recovery panel's Skip track remain the explicit ways to resume music. TAP_SLOP_PX is 3 px; earlier entries that said 8 px are annotated.",
+      "checkedOn": "2026-11-04"
+    },
+    {
+      "kind": "test",
+      "ref": "apps/web/src/components/LiveMode.test.tsx",
+      "summary": "Added \"in a playback error, a keyboard seek on the timeline moves only the clock\" and \"after the class end, a release at a value sent in the ended run is sent again\". runtime.test.ts adds \"changes its run generation when the run reaches the class end\". All three fail on cfa0687. Recorded test result, not device evidence.",
+      "checkedOn": "2026-11-04"
+    },
+    {
+      "kind": "observation",
+      "ref": "https://github.com/steven-crosby/ritmofit-web/pull/720#issuecomment-6664016585",
+      "summary": "Owner approved round 5 of #720 (record at the linked PR comment): restore Next, Previous and Skip track resuming after a playback error, and keep the timeline strip clock-only in an error.",
+      "checkedOn": "2026-11-05"
+    },
+    {
+      "kind": "pr",
+      "ref": "https://github.com/steven-crosby/ritmofit-web/pull/720",
+      "summary": "Round 5: after a playback error, Next, Previous, Skip track and a Full List row jump resume music at the new track (jumpTo: one coordinator.resume, any pending throttled seek dropped first). Round 4 had made Next and Previous clock-only in an error. The timeline strip (taps, drags, arrow keys) still only moves the clock in an error and never calls the provider; the throttle callback's early return now applies only to strip input. Retry unchanged.",
+      "checkedOn": "2026-11-05"
+    },
+    {
+      "kind": "test",
+      "ref": "apps/web/src/components/LiveMode.test.tsx",
+      "summary": "Added five round-5 tests: after a playback error, Next and Previous each resume music once; Skip track and Retry each resume once; strip taps, drags and arrow keys move only the clock. Run against d295b29, the Next and Previous tests fail (no resume). The Skip track, Retry and strip tests pass there too and guard behaviour already correct. Recorded test result, not device evidence.",
+      "checkedOn": "2026-11-05"
+    },
+    {
+      "kind": "pr",
+      "ref": "https://github.com/steven-crosby/ritmofit-web/pull/720",
+      "summary": "Round 6 (owner-approved on #720 after https://github.com/steven-crosby/ritmofit-web/pull/720#issuecomment-6664534810): retryPlayback() now cancels the commit throttle before rebuilding the coordinator. A drag value still pending when playback failed can no longer fire seek() on the new coordinator after Retry, which was a second start. The inPlaybackError doc comment now matches round 5. Remaining review notes are logged as RF-204 (Backlog).",
+      "checkedOn": "2026-11-05"
+    },
+    {
+      "kind": "test",
+      "ref": "apps/web/src/components/LiveMode.test.tsx",
+      "summary": "Added \"a drag value pending when playback fails never fires after the recovery panel Retry\" and \"... after Play routed to Retry\" (round 6): exactly one resume, no later seek. Against 8f12fe9 both fail: expected 4 to be 3, a second adapter from the stale pending seek. Recorded test result, not device evidence.",
+      "checkedOn": "2026-11-05"
     }
   ],
   "resolution": null,

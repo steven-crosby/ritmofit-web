@@ -18,6 +18,7 @@ import {
 } from '../lib/playback/apple-music-adapter.js';
 import { soundcloudAdapterFactory } from '../lib/playback/soundcloud-adapter.js';
 import type { AdapterEvents, PlaybackAdapter } from '../lib/playback/types.js';
+import { PLAYBACK_TIMING_KEY, resetPlaybackTimingForTests } from '../lib/playback/start-timing.js';
 import { classReadiness } from '../lib/readiness.js';
 import {
   choreographyQueueAt,
@@ -2456,7 +2457,7 @@ describe('LiveMode timeline scrubber', () => {
     await act(async () => {
       await new Promise((resolve) => setTimeout(resolve, 60));
     });
-    fireEvent.pointerUp(slider);
+    fireEvent.pointerUp(slider, { clientX: 90_000, pointerId: 1 });
     await waitFor(() => expect(soundcloudAdapterFactory).toHaveBeenCalledTimes(2));
     await act(async () => {
       await new Promise((resolve) => setTimeout(resolve, 300));
@@ -2548,7 +2549,7 @@ describe('LiveMode timeline scrubber', () => {
     const { adapters, slider } = await startWithRealtimeProvider();
     fireEvent.pointerDown(slider, { clientX: 90_000, pointerId: 1 });
     await wait(2_000); // the finger rests; the provider plays from 1:30
-    fireEvent.pointerUp(slider);
+    fireEvent.pointerUp(slider, { clientX: 90_000, pointerId: 1 });
     await expectClockMatchesProvider(slider, adapters.at(-1)!, 91_500);
     expect(adapters).toHaveLength(2); // Start + the one tap
   }, 10_000);
@@ -2556,9 +2557,9 @@ describe('LiveMode timeline scrubber', () => {
   it('a drag that pauses then releases leaves the clock and the provider agreeing (RF-108)', async () => {
     const { adapters, slider } = await startWithRealtimeProvider();
     fireEvent.pointerDown(slider, { clientX: 30_000, pointerId: 1 });
-    fireEvent.pointerMove(slider, { clientX: 90_000, buttons: 1 });
+    fireEvent.pointerMove(slider, { clientX: 90_000, buttons: 1, pointerId: 1 });
     await wait(2_000); // the throttle sends 1:30, then the finger rests
-    fireEvent.pointerUp(slider);
+    fireEvent.pointerUp(slider, { clientX: 90_000, pointerId: 1 });
     await expectClockMatchesProvider(slider, adapters.at(-1)!, 91_000);
     // Start, the drag's leading 0:30 and trailing 1:30; release adds nothing.
     expect(adapters).toHaveLength(3);
@@ -2567,14 +2568,397 @@ describe('LiveMode timeline scrubber', () => {
   it('a release before the throttle sends the drag position still commits it once', async () => {
     const { adapters, slider } = await startWithRealtimeProvider();
     fireEvent.pointerDown(slider, { clientX: 30_000, pointerId: 1 });
-    fireEvent.pointerMove(slider, { clientX: 120_000, buttons: 1 });
-    fireEvent.pointerUp(slider); // within the 200 ms window
+    fireEvent.pointerMove(slider, { clientX: 120_000, buttons: 1, pointerId: 1 });
+    fireEvent.pointerUp(slider, { clientX: 120_000, pointerId: 1 }); // within the 200 ms window
     await wait(400);
     expect(Number(slider.getAttribute('aria-valuenow'))).toBeGreaterThanOrEqual(120_000);
     // The leading 0:30 seek is superseded before it builds an adapter; the
     // release commits 2:00 once.
     expect(adapters).toHaveLength(2);
     await expectClockMatchesProvider(slider, adapters.at(-1)!, 120_000);
+  }, 10_000);
+
+  it('a tap with a still-finger move at the same ms inside the window sends one provider seek (RF-185)', async () => {
+    const { adapters, slider } = await startWithRealtimeProvider();
+    fireEvent.pointerDown(slider, { clientX: 90_000, pointerId: 1 });
+    await wait(16);
+    fireEvent.pointerMove(slider, { clientX: 90_000, buttons: 1, pointerId: 1 }); // same ms
+    await wait(60);
+    fireEvent.pointerUp(slider, { clientX: 90_000, pointerId: 1 });
+    await wait(400);
+    expect(adapters).toHaveLength(2); // Start + the one tap
+    await expectClockMatchesProvider(slider, adapters.at(-1)!, 90_000);
+  }, 10_000);
+
+  it('a drag that rests past the window and lifts with sub-pixel jitter sends no second seek (RF-185)', async () => {
+    const { adapters, slider } = await startWithRealtimeProvider();
+    fireEvent.pointerDown(slider, { clientX: 30_000, pointerId: 1 });
+    fireEvent.pointerMove(slider, { clientX: 90_000, buttons: 1, pointerId: 1 });
+    await wait(400); // the throttle sends 1:30, then the finger rests
+    expect(adapters).toHaveLength(3); // Start, the leading 0:30, the trailing 1:30
+    fireEvent.pointerUp(slider, { clientX: 90_000.6, pointerId: 1 }); // maps to 90001 ms
+    await wait(400);
+    expect(adapters).toHaveLength(3);
+  }, 10_000);
+
+  /** Two 90 s tracks; the factory fails the starts whose build numbers are listed. */
+  async function startTwoTracksWithFailures(failBuilds: number[]) {
+    const twoTracks = {
+      ...payload,
+      tracks: [
+        { ...activeTrack, track: { ...activeTrack.track, durationMs: 90_000 } },
+        {
+          ...activeTrack,
+          classTrackId: '00000000-0000-4000-8000-0000000000b2',
+          position: 1,
+          startOffsetMs: 90_000,
+          track: { ...activeTrack.track, id: 'tr-2', title: 'Second Track', durationMs: 90_000 },
+        },
+      ],
+    } satisfies RunPayload;
+    const prepared: number[] = [];
+    let built = 0;
+    vi.mocked(listConnections).mockResolvedValue([soundcloudConnection]);
+    vi.mocked(soundcloudAdapterFactory).mockImplementation(() => {
+      built++;
+      const adapter = workingAdapter();
+      const prepare = adapter.prepare.bind(adapter);
+      const fail = failBuilds.includes(built);
+      adapter.prepare = (entry, window) => {
+        prepared.push(entry.position);
+        return fail ? Promise.reject(new Error('widget failed')) : prepare(entry, window);
+      };
+      return adapter;
+    });
+    render(<LiveMode payload={twoTracks} onExit={() => {}} />);
+    await screen.findByRole('list', { name: 'Track playback check' });
+    fireEvent.click(screen.getByRole('button', { name: 'Start class' }));
+    const slider = screen.getByRole('slider', { name: 'Seek class timeline' });
+    vi.spyOn(slider, 'getBoundingClientRect').mockReturnValue({
+      width: 180_000,
+      left: 0,
+      right: 180_000,
+      top: 0,
+      bottom: 40,
+      height: 40,
+      x: 0,
+      y: 0,
+      toJSON: () => ({}),
+    } as DOMRect);
+    return { slider, prepared, built: () => built };
+  }
+
+  it('after a playback error, Next resumes music on the next track, once (round 5)', async () => {
+    const { prepared, built } = await startTwoTracksWithFailures([1]);
+    await screen.findByRole('button', { name: 'Retry music' });
+    fireEvent.click(screen.getByRole('button', { name: /^Next track/ }));
+    await waitFor(() => expect(built()).toBe(2));
+    await wait(400);
+    expect(built()).toBe(2); // one resume, no stale throttled seek afterwards
+    expect(prepared).toEqual([0, 1]);
+    expect(screen.queryByRole('button', { name: 'Retry music' })).toBeNull();
+  }, 10_000);
+
+  it('after a playback error, Previous resumes music on the previous track, once (round 5)', async () => {
+    const { slider, prepared, built } = await startTwoTracksWithFailures([2]);
+    await screen.findByRole('button', { name: 'Pause' });
+    fireEvent.keyDown(slider, { key: 'End' }); // into track 2, whose start fails
+    fireEvent.keyDown(slider, { key: 'PageDown' }); // 2:30, still track 2
+    await screen.findByRole('button', { name: 'Retry music' });
+    expect(built()).toBe(2);
+    fireEvent.click(screen.getByRole('button', { name: /^Previous track/ }));
+    await waitFor(() => expect(built()).toBe(3));
+    await wait(400);
+    expect(built()).toBe(3);
+    expect(prepared).toEqual([0, 1, 0]);
+    expect(screen.queryByRole('button', { name: 'Retry music' })).toBeNull();
+  }, 10_000);
+
+  it('after a playback error, Skip track resumes music on the next track, once (round 5)', async () => {
+    const { prepared, built } = await startTwoTracksWithFailures([1]);
+    fireEvent.click(await screen.findByRole('button', { name: 'Skip track' }));
+    await waitFor(() => expect(built()).toBe(2));
+    await wait(400);
+    expect(built()).toBe(2);
+    expect(prepared).toEqual([0, 1]);
+  }, 10_000);
+
+  it.each([
+    ['the recovery panel Retry', 'Retry playback'],
+    ['Play routed to Retry', 'Retry music'],
+  ])(
+    'a drag value pending when playback fails never fires after %s (round 6)',
+    async (_label: string, retryName: string) => {
+      // Build 1 (Start) plays; build 2, the drag's leading seek, fails.
+      const { slider, prepared, built } = await startTwoTracksWithFailures([2]);
+      await screen.findByRole('button', { name: 'Pause' });
+      fireEvent.pointerDown(slider, { clientX: 20_000, pointerId: 1 }); // fires 0:20
+      fireEvent.pointerMove(slider, { clientX: 60_000, buttons: 1, pointerId: 1 }); // 1:00 pending
+      const pendingAt = performance.now();
+      for (let i = 0; i < 20 && !screen.queryByRole('button', { name: retryName }); i++)
+        await act(async () => {});
+      expect(built()).toBe(2);
+      fireEvent.click(screen.getByRole('button', { name: retryName }));
+      expect(performance.now() - pendingAt).toBeLessThan(200); // Retry inside the window
+      await waitFor(() => expect(built()).toBe(3));
+      await wait(400); // past the throttle window
+      expect(built()).toBe(3); // exactly one resume; the pending 1:00 never reaches it
+      expect(prepared).toEqual([0, 0, 0]);
+    },
+    10_000,
+  );
+
+  it('after a playback error, Retry still resumes music, once (round 5)', async () => {
+    const { prepared, built } = await startTwoTracksWithFailures([1]);
+    fireEvent.click(await screen.findByRole('button', { name: 'Retry music' }));
+    await waitFor(() => expect(built()).toBe(2));
+    await wait(400);
+    expect(built()).toBe(2);
+    expect(prepared).toEqual([0, 0]);
+  }, 10_000);
+
+  it('after a playback error, strip taps, drags and arrow keys move only the clock (round 5)', async () => {
+    const { slider, built } = await startTwoTracksWithFailures([1]);
+    await screen.findByRole('button', { name: 'Retry music' });
+    fireEvent.pointerDown(slider, { clientX: 100_000, pointerId: 1 });
+    fireEvent.pointerUp(slider, { clientX: 100_000, pointerId: 1 });
+    expect(slider.getAttribute('aria-valuenow')).toBe('100000');
+    fireEvent.pointerDown(slider, { clientX: 20_000, pointerId: 1 });
+    fireEvent.pointerMove(slider, { clientX: 40_000, buttons: 1, pointerId: 1 });
+    await wait(250); // past the throttle window
+    fireEvent.pointerMove(slider, { clientX: 60_000, buttons: 1, pointerId: 1 });
+    fireEvent.pointerUp(slider, { clientX: 60_000, pointerId: 1 });
+    expect(slider.getAttribute('aria-valuenow')).toBe('60000');
+    fireEvent.keyDown(slider, { key: 'ArrowRight' });
+    expect(slider.getAttribute('aria-valuenow')).toBe('65000');
+    await wait(400);
+    expect(built()).toBe(1); // no resume and no provider start
+    expect(screen.getByRole('button', { name: 'Retry music' })).toBeTruthy();
+  }, 10_000);
+
+  it('in a playback error, a keyboard seek on the timeline moves only the clock (round 3 item 4)', async () => {
+    let built = 0;
+    vi.mocked(listConnections).mockResolvedValue([soundcloudConnection]);
+    vi.mocked(soundcloudAdapterFactory).mockImplementation(() => {
+      built++;
+      const adapter = workingAdapter();
+      if (built === 2) adapter.prepare = () => Promise.reject(new Error('widget failed'));
+      return adapter;
+    });
+    render(<LiveMode payload={payload} onExit={() => {}} />);
+    await screen.findByRole('list', { name: 'Track playback check' });
+    fireEvent.click(screen.getByRole('button', { name: 'Start class' }));
+    await screen.findByRole('button', { name: 'Pause' });
+    const slider = screen.getByRole('slider', { name: 'Seek class timeline' });
+    fireEvent.keyDown(slider, { key: 'Home' }); // this start fails
+    await screen.findByRole('button', { name: 'Retry music' });
+    expect(built).toBe(2);
+    fireEvent.keyDown(slider, { key: 'ArrowRight' });
+    await wait(400);
+    expect(built).toBe(2); // no resume: only Retry resumes from an error
+    expect(screen.getByRole('button', { name: 'Retry music' })).toBeTruthy();
+    expect(slider.getAttribute('aria-valuenow')).toBe('5000');
+  }, 10_000);
+
+  it('after the class end, a release at a value sent in the ended run is sent again (round 3 item 3)', async () => {
+    sessionStorage.setItem(PLAYBACK_TIMING_KEY, '1');
+    resetPlaybackTimingForTests();
+    const info = vi.spyOn(console, 'info').mockImplementation(() => {});
+    try {
+      const { slider } = await startWithRealtimeProvider();
+      // Keyboard End sends the class end; the run ends.
+      fireEvent.keyDown(slider, { key: 'End' });
+      await screen.findByRole('button', { name: 'Play' });
+      // A tap at the end pixel: that value was sent, but in the run that ended.
+      fireEvent.pointerDown(slider, { clientX: 180_000, pointerId: 1 });
+      fireEvent.pointerUp(slider, { clientX: 180_000, pointerId: 1 });
+      const lines: string[] = info.mock.calls.map((call: unknown[]) => String(call[0]));
+      expect(lines.some((line) => / release-sent @\d+ms ms=180000$/.test(line))).toBe(true);
+      expect(lines.some((line) => line.includes(' release-skipped '))).toBe(false);
+    } finally {
+      info.mockRestore();
+      sessionStorage.removeItem(PLAYBACK_TIMING_KEY);
+      resetPlaybackTimingForTests();
+    }
+  }, 10_000);
+
+  it('an error during a tap never turns the release into an automatic resume (RF-185)', async () => {
+    let built = 0;
+    vi.mocked(listConnections).mockResolvedValue([soundcloudConnection]);
+    vi.mocked(soundcloudAdapterFactory).mockImplementation(() => {
+      built++;
+      const adapter = workingAdapter();
+      // The tap's own start fails while the finger is still down.
+      if (built === 2) adapter.prepare = () => Promise.reject(new Error('widget failed'));
+      return adapter;
+    });
+    render(<LiveMode payload={payload} onExit={() => {}} />);
+    await screen.findByRole('list', { name: 'Track playback check' });
+    fireEvent.click(screen.getByRole('button', { name: 'Start class' }));
+    await screen.findByRole('button', { name: 'Pause' });
+    const slider = screen.getByRole('slider', { name: 'Seek class timeline' });
+    vi.spyOn(slider, 'getBoundingClientRect').mockReturnValue({
+      width: 180_000,
+      left: 0,
+      right: 180_000,
+      top: 0,
+      bottom: 40,
+      height: 40,
+      x: 0,
+      y: 0,
+      toJSON: () => ({}),
+    } as DOMRect);
+    fireEvent.pointerDown(slider, { clientX: 90_000, pointerId: 1 });
+    await screen.findByRole('button', { name: 'Retry music' });
+    expect(built).toBe(2);
+    fireEvent.pointerUp(slider, { clientX: 90_000, pointerId: 1 });
+    await wait(400);
+    expect(built).toBe(2); // no automatic resume
+    expect(screen.getByRole('button', { name: 'Retry music' })).toBeTruthy();
+    expect(slider.getAttribute('aria-valuenow')).toBe('90000'); // the clock still moved
+  }, 10_000);
+
+  it('a tap with sub-pixel or small jitter inside the window sends one provider seek (RF-185)', async () => {
+    const { adapters, slider } = await startWithRealtimeProvider();
+    fireEvent.pointerDown(slider, { clientX: 90_000, pointerId: 1 });
+    fireEvent.pointerMove(slider, { clientX: 90_000.4, buttons: 1, pointerId: 1 });
+    fireEvent.pointerMove(slider, { clientX: 90_002, buttons: 1, pointerId: 1 }); // another ms, inside the slop
+    await wait(60);
+    fireEvent.pointerUp(slider, { clientX: 90_002, pointerId: 1 });
+    await wait(400);
+    expect(adapters).toHaveLength(2);
+  }, 10_000);
+
+  it('after Retry, a tap at the same pixel within 200 ms still reaches the new coordinator (RF-185)', async () => {
+    let built = 0;
+    vi.mocked(listConnections).mockResolvedValue([soundcloudConnection]);
+    vi.mocked(soundcloudAdapterFactory).mockImplementation(() => {
+      built++;
+      const adapter = workingAdapter();
+      // The keyboard seek's start fails; Start, Retry and later starts work.
+      if (built === 2) adapter.prepare = () => Promise.reject(new Error('widget failed'));
+      return adapter;
+    });
+    render(<LiveMode payload={payload} onExit={() => {}} />);
+    await screen.findByRole('list', { name: 'Track playback check' });
+    fireEvent.click(screen.getByRole('button', { name: 'Start class' }));
+    await screen.findByRole('button', { name: 'Pause' });
+    const slider = screen.getByRole('slider', { name: 'Seek class timeline' });
+    vi.spyOn(slider, 'getBoundingClientRect').mockReturnValue({
+      width: 180_000,
+      left: 0,
+      right: 180_000,
+      top: 0,
+      bottom: 40,
+      height: 40,
+      x: 0,
+      y: 0,
+      toJSON: () => ({}),
+    } as DOMRect);
+    // A discrete seek (keyboard Home) fires 0:00 to the first coordinator and
+    // its start fails at once: Live offers Retry, which builds a new one.
+    fireEvent.keyDown(slider, { key: 'Home' });
+    // Only microtasks pass, so the tap below stays inside the 200 ms window.
+    const tappedAt = performance.now();
+    for (let i = 0; i < 20 && !screen.queryByRole('button', { name: 'Retry music' }); i++)
+      await act(async () => {});
+    fireEvent.click(screen.getByRole('button', { name: 'Retry music' }));
+    expect(built).toBe(3);
+    expect(performance.now() - tappedAt).toBeLessThan(200);
+    // A tap at the pixel the old coordinator was sent: the new one must get it.
+    fireEvent.pointerDown(slider, { clientX: 0, pointerId: 1 });
+    fireEvent.pointerUp(slider, { clientX: 0, pointerId: 1 });
+    await waitFor(() => expect(built).toBe(4));
+  }, 10_000);
+
+  it('a pointercancel after the release starts nothing more (RF-185)', async () => {
+    const { adapters, slider } = await startWithRealtimeProvider();
+    fireEvent.pointerDown(slider, { clientX: 90_000, pointerId: 1 });
+    await wait(60);
+    fireEvent.pointerUp(slider, { clientX: 90_000, pointerId: 1 });
+    fireEvent.pointerCancel(slider, { pointerId: 1 });
+    await wait(400);
+    expect(adapters).toHaveLength(2);
+  }, 10_000);
+
+  it('quick timeline taps over slow starts never show Paused or the Play button (RF-186)', async () => {
+    const made: PlaybackAdapter[] = [];
+    vi.mocked(listConnections).mockResolvedValue([soundcloudConnection]);
+    vi.mocked(soundcloudAdapterFactory).mockImplementation(() => {
+      const adapter = workingAdapter();
+      const prepare = adapter.prepare.bind(adapter);
+      // A slow queue load, so later taps cancel starts still in flight.
+      adapter.prepare = (entry, window) =>
+        new Promise((resolve) => setTimeout(resolve, 150)).then(() => prepare(entry, window));
+      made.push(adapter);
+      return adapter;
+    });
+    render(<LiveMode payload={payload} onExit={() => {}} />);
+    await screen.findByRole('list', { name: 'Track playback check' });
+    fireEvent.click(screen.getByRole('button', { name: 'Start class' }));
+    await screen.findByRole('button', { name: 'Pause' });
+    const slider = screen.getByRole('slider', { name: 'Seek class timeline' });
+    vi.spyOn(slider, 'getBoundingClientRect').mockReturnValue({
+      width: 180_000,
+      left: 0,
+      right: 180_000,
+      top: 0,
+      bottom: 40,
+      height: 40,
+      x: 0,
+      y: 0,
+      toJSON: () => ({}),
+    } as DOMRect);
+    const expectNotPaused = () => {
+      expect(screen.queryByRole('button', { name: 'Play' })).toBeNull();
+      expect(screen.queryByText('Paused')).toBeNull();
+    };
+    for (const x of [30_000, 70_000, 120_000, 150_000]) {
+      fireEvent.pointerDown(slider, { clientX: x, pointerId: 1 });
+      await wait(40);
+      fireEvent.pointerUp(slider, { clientX: x, pointerId: 1 });
+      expectNotPaused();
+      await wait(80);
+      expectNotPaused();
+    }
+    await waitFor(() => expect(screen.getByText(/^Now teaching/)).toBeTruthy(), {
+      timeout: 3_000,
+    });
+    expectNotPaused();
+    // Start + one start per tap, the in-flight ones cancelled by the next tap.
+    expect(made).toHaveLength(5);
+  }, 10_000);
+
+  it('logs each Pause/Play activation and the status sequence under ?playback-timing=1 (RF-186)', async () => {
+    sessionStorage.setItem(PLAYBACK_TIMING_KEY, '1');
+    resetPlaybackTimingForTests();
+    const info = vi.spyOn(console, 'info').mockImplementation(() => {});
+    try {
+      const { slider } = await startWithRealtimeProvider();
+      fireEvent.pointerDown(slider, { clientX: 90_000, pointerId: 1 });
+      fireEvent.pointerUp(slider, { clientX: 90_000, pointerId: 1 });
+      // The tap's start is still in flight, so the button reads "Pause start".
+      fireEvent.click(screen.getByRole('button', { name: /^Pause/ }));
+      const lines: string[] = info.mock.calls.map((call: unknown[]) => String(call[0]));
+      const live = lines.filter((line) => line.startsWith('[ritmo live] timing '));
+      expect(live.some((line) => / status @\d+ms idle$/.test(line))).toBe(true);
+      expect(
+        live.some((line) => / release-skipped @\d+ms ms=90000 \(already sent\)$/.test(line)),
+      ).toBe(true);
+      expect(
+        live.some((line) =>
+          / toggle-pause @\d+ms click pointer=\S+ \S+ x=\d+ y=\d+ status=/.test(line),
+        ),
+      ).toBe(true);
+      expect(live.at(-1)).toMatch(/ status @\d+ms paused$/);
+      expect(
+        lines.some((line) => line.startsWith('[ritmo live-timeline] timing pointer-down')),
+      ).toBe(true);
+    } finally {
+      info.mockRestore();
+      sessionStorage.removeItem(PLAYBACK_TIMING_KEY);
+      resetPlaybackTimingForTests();
+    }
   }, 10_000);
 
   it('seeks the virtual clock from the timeline (keyboard)', async () => {
@@ -2609,12 +2993,12 @@ describe('LiveMode timeline scrubber', () => {
 
     fireEvent.pointerDown(slider, { clientX: 30000, pointerId: 1 });
     expect(slider.getAttribute('aria-valuenow')).toBe('30000');
-    fireEvent.pointerMove(slider, { clientX: 60000, buttons: 1 });
+    fireEvent.pointerMove(slider, { clientX: 60000, buttons: 1, pointerId: 1 });
     expect(slider.getAttribute('aria-valuenow')).toBe('60000');
-    fireEvent.pointerMove(slider, { clientX: 90000, buttons: 1 });
+    fireEvent.pointerMove(slider, { clientX: 90000, buttons: 1, pointerId: 1 });
     expect(slider.getAttribute('aria-valuenow')).toBe('90000');
     // The header readout mirrors the same position once released.
-    fireEvent.pointerUp(slider);
+    fireEvent.pointerUp(slider, { clientX: 90000, pointerId: 1 });
     expect(screen.getByText('1:30 / 3:00')).toBeTruthy();
   });
 
@@ -2969,7 +3353,7 @@ function seekTo(ms: number, totalMs: number) {
     toJSON: () => ({}),
   } as DOMRect);
   fireEvent.pointerDown(slider, { clientX: ms, pointerId: 1 });
-  fireEvent.pointerUp(slider);
+  fireEvent.pointerUp(slider, { clientX: ms, pointerId: 1 });
 }
 
 /** Used font size from the inline clamp or rem the element actually ships. */

@@ -119,6 +119,9 @@ const RETIRED_SETTLE_WAIT_MS = 3_000;
  */
 let retired: Array<{ provider: Provider; idle: Promise<void> }> = [];
 
+/** Page-wide source for `RuntimePlaybackCoordinator.getRunGeneration` values. */
+let runGenerationSeq = 0;
+
 export interface RuntimeCoordinatorOptions extends SelectionOptions {
   adapters: AdapterRegistry;
   onStatus?: (status: CoordinatorStatus) => void;
@@ -191,6 +194,24 @@ export class RuntimePlaybackCoordinator {
     return this.status;
   }
 
+  /**
+   * Changes whenever provider playback is (re)entered or ended by anything
+   * other than a seek: start, resume (Play or Retry), pause, stop, destroy,
+   * failure and reaching the class end. Unique across coordinators, so a new
+   * coordinator never repeats an old value. A seek, a tick or an auto-advance keeps it. Live
+   * ties the timeline's "already sent" check to it (RF-185): a position sent
+   * under another generation never counts as sent.
+   */
+  getRunGeneration(): number {
+    return this.runGeneration;
+  }
+
+  private runGeneration = ++runGenerationSeq;
+
+  private nextRunGeneration(): void {
+    this.runGeneration = ++runGenerationSeq;
+  }
+
   /** Static preflight (connections/refs/durations) — run before offering Start. */
   preflight(): PreflightResult {
     return preflightPayload(this.payload, this.connections, this.options);
@@ -215,6 +236,7 @@ export class RuntimePlaybackCoordinator {
       return;
     }
     this.running = true;
+    this.nextRunGeneration();
     await this.enter(fromMs, ++this.epoch);
   }
 
@@ -240,6 +262,7 @@ export class RuntimePlaybackCoordinator {
 
   /** Pause provider audio. The host pauses its clock in the same gesture. */
   async pause(): Promise<void> {
+    this.nextRunGeneration();
     this.epoch++;
     this.running = false;
     this.stopTransportTimer();
@@ -260,6 +283,7 @@ export class RuntimePlaybackCoordinator {
    */
   async resume(elapsedMs: number): Promise<void> {
     this.running = true;
+    this.nextRunGeneration();
     await this.enter(elapsedMs, ++this.epoch);
   }
 
@@ -276,6 +300,7 @@ export class RuntimePlaybackCoordinator {
 
   /** Stop the run and release the active adapter. Safe to call repeatedly. */
   async stop(): Promise<void> {
+    this.nextRunGeneration();
     this.epoch++;
     this.running = false;
     this.destroyTransitioningAdapter();
@@ -289,6 +314,7 @@ export class RuntimePlaybackCoordinator {
 
   /** Synchronous teardown for unmount. */
   destroy(): void {
+    this.nextRunGeneration();
     this.epoch++;
     this.running = false;
     // Assigns `status` directly below rather than via setStatus, so the probe
@@ -329,6 +355,8 @@ export class RuntimePlaybackCoordinator {
 
       const segment = segmentAt(this.payload, elapsedMs);
       if (segment.kind === 'ended') {
+        // The run is over, like pause, stop and failure (RF-185).
+        this.nextRunGeneration();
         this.running = false;
         this.setStatus({ kind: 'ended' });
         return;
@@ -765,6 +793,7 @@ export class RuntimePlaybackCoordinator {
 
   /** Enter the error state: playback halts, the host offers recovery actions. */
   private fail(error: PlaybackRuntimeError): void {
+    this.nextRunGeneration();
     this.running = false;
     this.epoch++;
     this.destroyTransitioningAdapter();

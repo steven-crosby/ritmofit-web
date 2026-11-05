@@ -3,7 +3,7 @@
   "id": "RF-187",
   "title": "Unhandled MusicKit play() rejection after a mid-track Apple start",
   "kind": "task",
-  "status": "backlog",
+  "status": "review",
   "priority": "P2",
   "parent": null,
   "dependsOn": [],
@@ -12,7 +12,7 @@
     "Any play() rejection on a superseded or re-cued start is caught and recorded in the timing log, not surfaced as unhandled.",
     "An adapter test covers the re-cue path (set-queue-start (again)) rejecting."
   ],
-  "nextAction": "Reproduce first with a timeline drag (the two rejections came at the start and end of one drag, #15 and #32), then with discrete mid-track taps. Trace the mid-track re-cue in apps/web/src/lib/playback/apple-music-adapter.ts (prepare cues the window start, the pre-play seek dirties the cue, play() re-queues at the entered position) and find the play() call whose promise is not handled. Agent-created: Backlog until the owner sets Ready.",
+  "nextAction": "After a deploy of #720, the owner re-runs Live on iPhone Safari with ?playback-timing=1 on an Apple Music class: do one timeline drag across several tracks and a few mid-track taps. The console should show no \"Unhandled Promise Rejection: The play() method was called without a previous stop() or pause() call.\"; any such rejection appears instead as [ritmo apple-music] timing musickit-play-rejection or [ritmo apple-music #N] timing play-rejected-already-playing (handled, this queue playing | waiting for playing), the track plays, and no Retry banner appears while audio plays. If acceptance holds, set Done with that observation.",
   "blocker": null,
   "evidence": [
     {
@@ -32,6 +32,72 @@
       "ref": "https://github.com/steven-crosby/ritmofit-web/pull/717",
       "summary": "#717 final review finding 5: trigger was a drag, not discrete jumps; corrected here.",
       "checkedOn": "2026-11-03"
+    },
+    {
+      "kind": "observation",
+      "ref": "https://github.com/steven-crosby/ritmofit-web/pull/718#issuecomment-6616802366",
+      "summary": "Owner decision (2026-11-03, Air session), verbatim: \"Yes, move RF-185–187 to Ready and start the lane.\" Moved Ready → In progress by the RF-185 lane (branch fix/rf-185-live-timeline-seek).",
+      "checkedOn": "2026-11-03"
+    },
+    {
+      "kind": "pr",
+      "ref": "https://github.com/steven-crosby/ritmofit-web/pull/720",
+      "summary": "Fix in apple-music-adapter.ts: every play() promise the adapter receives already had a handler, so the unhandled rejection is one MusicKit creates and drops (likely while it starts the re-cued queue itself). A page-level unhandledrejection listener, installed on the first Apple play(), handles only that exact MusicKit message and logs musickit-play-rejection; other rejections are untouched. If the adapter's own play() rejects with that message it counts as started when MusicKit already reports playing, otherwise it waits for the first playing state or the 5 s cap (before, it became \"Apple Music would not play\" and a Retry banner). Judgment call flagged in the PR: the source of the dropped promise is inferred, not read from MusicKit.",
+      "checkedOn": "2026-11-03"
+    },
+    {
+      "kind": "test",
+      "ref": "apps/web/src/lib/playback/apple-music-adapter.test.ts",
+      "summary": "Added \"MusicKit play() rejection after a mid-track re-cue (RF-187)\": the re-cue path (setQueue:15, setQueue:40, play) with play() rejecting while MusicKit plays counts as started and logs set-queue-start (again) and play-rejected-already-playing; not yet playing waits for the first playing state; never playing ends at the cap; another rejection still fails with the sentence; the page guard prevents only that message and logs it. Four of the five fail against the pre-fix adapter. Recorded test result, not device evidence.",
+      "checkedOn": "2026-11-03"
+    },
+    {
+      "kind": "pr",
+      "ref": "https://github.com/steven-crosby/ritmofit-web/pull/720",
+      "summary": "Fixes for the #720 final review of 0e89399 (items 1, 2, 7, 9). An \"already playing\" play() rejection now counts as started only on this start's own evidence: the first playing state MusicKit reports after this play(). The shared instance's current state, which can describe the previous queue, no longer counts. Without that evidence, the 5 s cap ends the start with the Retry error. destroy() during the wait ends play() at once as cancelled, and every wait the start creates settles. The page-level unhandledrejection listener stays page-wide and is documented in source: MusicKit is a page singleton, and its dropped promise can reject after the start ends. The message match reuses errMessage. This supersedes the earlier #720 entry where they differ.",
+      "checkedOn": "2026-11-03"
+    },
+    {
+      "kind": "test",
+      "ref": "apps/web/src/lib/playback/apple-music-adapter.test.ts",
+      "summary": "Added \"a rejection while the shared instance still reads playing (the old queue) is no proof: the cap fails it\" and \"destroy() during the wait after a matched rejection ends play() at once as cancelled\". Both fail against the 0e89399 adapter. The success case now needs a playing state after play(). Recorded test result, not device evidence.",
+      "checkedOn": "2026-11-03"
+    },
+    {
+      "kind": "pr",
+      "ref": "https://github.com/steven-crosby/ritmofit-web/pull/720",
+      "summary": "Round-3 fixes for the #720 final review of 1d4bc81 (items 3, 4, 8, 9). The evidence for an \"already playing\" rejection is armed at the start of play(), before the re-cue. A playing state counts while this adapter's queue request is the newest and the now-playing item is not another song; MusicKit's now-playing item, when it is this song at this cue position, also counts. The shared instance's state alone never counts. destroy() releases play() at once, but the adapter's starting guard (checked by prepare()) holds until MusicKit settles that play() or the cap ends. The page-level unhandledrejection listener is held by each adapter that played and removed 30 s after the last one is destroyed; tests reset it. finally no longer resolves leftover promises.",
+      "checkedOn": "2026-11-04"
+    },
+    {
+      "kind": "test",
+      "ref": "apps/web/src/lib/playback/apple-music-adapter.test.ts",
+      "summary": "Added \"a re-cue that starts this queue before play() counts as started on the already playing rejection\", \"the now-playing item at this cue counts as proof; another song does not\", \"after destroy() releases play() early, prepare() still waits for MusicKit to settle that play\", and \"the page guard is held while an adapter that played is alive, then removed after the linger\". All four fail on 1d4bc81. Recorded test result, not device evidence.",
+      "checkedOn": "2026-11-04"
+    },
+    {
+      "kind": "pr",
+      "ref": "https://github.com/steven-crosby/ritmofit-web/pull/720",
+      "summary": "Round-4 fixes for the #720 final review of cfa0687 (items 1, 2). A playing state counts as evidence for this start only once its own queue request has resolved (or it needed none), or while MusicKit is already at this start's cue. So the previous queue, often the same song on a timeline re-cue, can no longer mark a start as playing. play() takes the page rejection-guard hold only after requireInstance(), so an unprepared or destroyed adapter leaves no hold.",
+      "checkedOn": "2026-11-04"
+    },
+    {
+      "kind": "test",
+      "ref": "apps/web/src/lib/playback/apple-music-adapter.test.ts",
+      "summary": "Added \"an old-queue playing state during a same-song re-cue is no proof\" and \"play() on an unprepared or destroyed adapter takes no guard hold\". Both fail on cfa0687. Recorded test result, not device evidence.",
+      "checkedOn": "2026-11-04"
+    },
+    {
+      "kind": "observation",
+      "ref": "https://github.com/steven-crosby/ritmofit-web/pull/720#issuecomment-6664016585",
+      "summary": "Owner approved round 5 of #720 (record at the linked PR comment): restore Next, Previous and Skip track resuming after a playback error, and keep the timeline strip clock-only in an error.",
+      "checkedOn": "2026-11-05"
+    },
+    {
+      "kind": "pr",
+      "ref": "https://github.com/steven-crosby/ritmofit-web/pull/720",
+      "summary": "Round 5 of #720 changes only Live's error-state navigation (RF-185). The Apple adapter is unchanged since round 4.",
+      "checkedOn": "2026-11-05"
     }
   ],
   "resolution": null,

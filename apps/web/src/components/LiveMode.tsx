@@ -25,6 +25,7 @@ import {
   useState,
   type CSSProperties,
   type KeyboardEvent,
+  type MouseEvent as ReactMouseEvent,
   type RefObject,
 } from 'react';
 import type {
@@ -51,6 +52,7 @@ import { useWakeLock, type WakeLockStatus } from '../lib/use-wake-lock.js';
 import { useOnline } from '../lib/use-online.js';
 import { useVirtualClock, type ClockStore } from '../lib/use-virtual-clock.js';
 import { createTrailingThrottle } from '../lib/trailing-throttle.js';
+import { playbackTimingEnabled, timingLine } from '../lib/playback/start-timing.js';
 import { ConnectionsDialog } from './ConnectionsDialog.js';
 import { ClassPulse } from './ClassPulse.js';
 import { IntensityReadout } from './IntensityReadout.js';
@@ -440,6 +442,28 @@ function LiveSectionBar({ section }: { section: LiveSection }) {
 /** Presentation delay before a post-playback handover gap mounts recovery. */
 const WAITING_PANEL_GRACE_MS = 2_000;
 
+/**
+ * Debug timing only (`?playback-timing=1`): one Live line, a no-op when timing
+ * is off. Lines carry state names and positions only, never titles or ids.
+ * RF-185 logs the timeline release decision; RF-186 logs the coordinator
+ * status sequence and each Pause/Play activation, so a device run shows
+ * which path put Live in Paused.
+ */
+function liveTimingLog(step: string, detail: () => string): void {
+  if (!playbackTimingEnabled()) return;
+  timingLine('[ritmo live]', step, detail());
+}
+
+/** How the primary transport button was activated, for the timing log (RF-186). */
+function describeActivation(e: ReactMouseEvent<HTMLButtonElement>): string {
+  const native = e.nativeEvent as MouseEvent & { pointerType?: string };
+  // A missing pointerType says nothing about the input (a touch can arrive as
+  // a plain MouseEvent click), so it is logged as unknown, never as mouse.
+  const pointer = native.pointerType || (e.detail === 0 ? 'keyboard-or-programmatic' : 'unknown');
+  const trusted = native.isTrusted ? 'trusted' : 'untrusted';
+  return `click pointer=${pointer} ${trusted} x=${Math.round(e.clientX)} y=${Math.round(e.clientY)}`;
+}
+
 export function LiveMode({
   payload,
   onExit,
@@ -647,26 +671,45 @@ export function LiveMode({
   // provider adapter (RF-108). Built once per mount (a ref, not state) so
   // the window survives across renders.
   const commitThrottleRef = useRef<ReturnType<typeof createTrailingThrottle<number>> | null>(null);
-  commitThrottleRef.current ??= createTrailingThrottle((ms) => {
-    // Re-cue provider playback at the new position (no-op while paused — the
-    // next resume enters at the clock position anyway).
-    const coordinator = coordinatorRef.current;
-    if (coordinator?.getStatus().kind === 'error') {
-      setPlaying(true);
-      void coordinator.resume(ms);
-    } else {
-      void coordinator?.seek(ms);
-    }
-  }, 200);
 
-  /** Discrete, immediate seek: keyboard, tap, row target, reset. Rebases the
-   * clock (both tiers) and commits the provider position right away. */
+  /** Whether music is stopped on a failure. Then timeline strip input (taps,
+   * drags, arrow keys) moves only the clock and never reaches the provider,
+   * while a deliberate recovery resumes music: Next, Previous, Skip track and
+   * a Full List row jump (jumpTo), and Retry (RF-185). */
+  const inPlaybackError = useCallback(
+    () => coordinatorRef.current?.getStatus().kind === 'error',
+    [],
+  );
+
+  commitThrottleRef.current ??= createTrailingThrottle(
+    (ms) => {
+      // Re-cue provider playback at the new position (no-op while paused — the
+      // next resume enters at the clock position anyway). Never from a
+      // playback error: a value still pending when the failure arrived only
+      // moved the clock, and Retry resumes from there.
+      if (inPlaybackError()) return;
+      void coordinatorRef.current?.seek(ms);
+    },
+    200,
+    undefined,
+    // "Already sent" holds only within one playback run: a new coordinator,
+    // Play, Pause, Retry, a stop or a failure starts a new one (RF-185).
+    () => coordinatorRef.current?.getRunGeneration() ?? null,
+  );
+
+  /** Discrete, immediate seek from the timeline strip (arrow keys) and the base
+   * of jumpTo. Rebases the clock (both tiers) and commits the provider position
+   * right away. In a playback error it moves the clock only (RF-185). */
   const seek = useCallback(
     (ms: number) => {
       const clamped = clockSeek(ms);
+      if (inPlaybackError()) {
+        commitThrottleRef.current!.cancel();
+        return;
+      }
       commitThrottleRef.current!.flush(clamped);
     },
-    [clockSeek],
+    [clockSeek, inPlaybackError],
   );
 
   /** Continuous drag preview: cheap, high-frequency position update (writes
@@ -675,29 +718,42 @@ export function LiveMode({
   const seekPreview = useCallback(
     (ms: number) => {
       const clamped = clockPreviewSeek(ms);
+      if (inPlaybackError()) return;
       commitThrottleRef.current!.call(clamped);
     },
-    [clockPreviewSeek],
+    [clockPreviewSeek, inPlaybackError],
   );
 
   /** Timeline pointer release/cancel at the gesture's last previewed position.
-   * When the throttle already sent exactly that position to the provider (a
-   * tap, or a drag that rested past the window), send nothing and settle the
-   * clock where it already is (it has followed the provider since, so the two
-   * keep agreeing; this only refreshes the display tier). One tap starts one
-   * adapter, not two (RF-108). Otherwise it is a normal discrete seek. */
+   * When the value the throttle actually fired last is exactly that position
+   * (a tap, or a drag that rested past the window), drop anything still
+   * pending, send nothing, and settle the clock where it already is (it has
+   * followed the provider since, so the two keep agreeing; this only refreshes
+   * the display tier). A pending, unfired value never counts as sent. One tap
+   * starts one adapter, not two (RF-108, RF-185). Otherwise it is a normal
+   * discrete seek. */
   const seekRelease = useCallback(
     (ms: number) => {
       const target = Math.max(0, Math.min(ms, payload.class.totalDurationMs));
       const throttle = commitThrottleRef.current!;
+      if (inPlaybackError()) {
+        // A failure during the gesture: the release moves the clock only,
+        // never an automatic resume. Retry resumes from this position.
+        throttle.cancel();
+        liveTimingLog('release-held', () => `ms=${target} (playback error)`);
+        clockSeek(target);
+        return;
+      }
       if (throttle.firedLast(target)) {
         throttle.cancel();
+        liveTimingLog('release-skipped', () => `ms=${target} (already sent)`);
         clockSeek(clockStore.getSnapshot());
         return;
       }
-      seek(target);
+      liveTimingLog('release-sent', () => `ms=${target}`);
+      throttle.flush(clockSeek(target));
     },
-    [seek, clockSeek, clockStore, payload.class.totalDurationMs],
+    [clockSeek, clockStore, inPlaybackError, payload.class.totalDurationMs],
   );
 
   /** Start hands-free: build the coordinator and begin playback at 0 (a user gesture). */
@@ -715,6 +771,8 @@ export function LiveMode({
       liveness,
       onPosition: clockSyncPosition,
       onStatus: (next) => {
+        // Debug timing only (RF-186): the status sequence Live reacts to.
+        liveTimingLog('status', () => next.kind);
         setPlayback(next);
         if (next.kind === 'error') {
           setPlaybackFailure(errMessage(next.error.message));
@@ -746,10 +804,15 @@ export function LiveMode({
     void coordinator.start(0);
   };
 
-  const togglePlay = () => {
+  const togglePlay = (source: () => string = () => 'button') => {
     const next = !playing;
     const coordinator = coordinatorRef.current;
-    if (coordinator?.getStatus().kind === 'error') {
+    // Debug timing only (RF-186): which activation paused or resumed, and how.
+    liveTimingLog(
+      next ? 'toggle-play' : 'toggle-pause',
+      () => `${source()} status=${coordinator?.getStatus().kind ?? 'none'}`,
+    );
+    if (inPlaybackError()) {
       retryPlayback();
       return;
     }
@@ -766,11 +829,32 @@ export function LiveMode({
     setHasStarted(true);
     if (!playing) setPlaying(true);
     const held = clockStore.getSnapshot();
+    // A drag value still pending in the throttle window must not fire on the
+    // new coordinator after Retry: that would be a second start (RF-185).
+    commitThrottleRef.current?.cancel();
     coordinatorRef.current?.destroy();
     const coordinator = buildCoordinator();
     coordinatorRef.current = coordinator;
     setPlaybackFailure(null);
     void coordinator.resume(held);
+  };
+
+  /** A deliberate jump to a track: Next, Previous, Skip track and a Full List
+   * row. In a playback error it is an explicit recovery like Retry, so it
+   * resumes music at the new position: one resume, with any pending
+   * throttled seek dropped first so none fires afterwards. Otherwise it is
+   * one discrete seek. Only the timeline strip (taps, drags, arrow keys)
+   * moves the clock alone in an error (RF-185). */
+  const jumpTo = (ms: number) => {
+    const coordinator = coordinatorRef.current;
+    if (!coordinator || !inPlaybackError()) {
+      seek(ms);
+      return;
+    }
+    const clamped = clockSeek(ms);
+    commitThrottleRef.current?.cancel();
+    setPlaying(true);
+    void coordinator.resume(clamped);
   };
 
   /** Abandon playback but keep the class running (prompter + timers stay live). */
@@ -1230,7 +1314,7 @@ export function LiveMode({
               {liveIndex >= 0 && liveIndex < payload.tracks.length - 1 && (
                 <button
                   type="button"
-                  onClick={() => seek(payload.tracks[liveIndex + 1]!.startOffsetMs ?? 0)}
+                  onClick={() => jumpTo(payload.tracks[liveIndex + 1]!.startOffsetMs ?? 0)}
                   className="min-h-11 rounded-control px-2 font-ui text-xs text-interactive rf-focus-ring"
                 >
                   Skip track
@@ -1276,7 +1360,7 @@ export function LiveMode({
               eventsByTrack={eventsByTrack}
               liveIndex={liveIndex}
               elapsedMs={elapsedMs}
-              onSeek={seek}
+              onSeek={jumpTo}
             />
           )}
         </div>
@@ -1299,11 +1383,11 @@ export function LiveMode({
           liveIndex={liveIndex}
           onPreviousTrack={() => {
             if (liveIndex <= 0) return;
-            seek(payload.tracks[liveIndex - 1]?.startOffsetMs ?? 0);
+            jumpTo(payload.tracks[liveIndex - 1]?.startOffsetMs ?? 0);
           }}
           onNextTrack={() => {
             if (liveIndex < 0 || liveIndex >= payload.tracks.length - 1) return;
-            seek(payload.tracks[liveIndex + 1]?.startOffsetMs ?? 0);
+            jumpTo(payload.tracks[liveIndex + 1]?.startOffsetMs ?? 0);
           }}
           payload={payload}
           clock={clockStore}
@@ -2250,7 +2334,9 @@ function Transport({
   playing: boolean;
   musicBlocked: boolean;
   hasPlaybackFailure: boolean;
-  onToggle: () => void;
+  /** `source` describes the activation for the opt-in timing log (RF-186);
+   * it is only called when timing is on. */
+  onToggle: (source: () => string) => void;
   onReset: () => void;
   liveIndex: number;
   onPreviousTrack: () => void;
@@ -2299,7 +2385,7 @@ function Transport({
         <button
           ref={primaryButtonRef}
           className="min-h-11 rounded-control rf-btn-primary px-3 py-2 font-ui font-semibold text-text-on-accent sm:rounded-pill sm:px-6 [@media(max-height:480px)]:px-2 [@media(max-height:800px)_and_(max-width:639px)]:px-2"
-          onClick={onToggle}
+          onClick={(e) => onToggle(() => describeActivation(e))}
           aria-label={playing && musicBlocked ? 'Pause preparation' : undefined}
         >
           {playing

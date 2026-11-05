@@ -1,0 +1,29 @@
+{
+  "schemaVersion": 1,
+  "id": "RF-204",
+  "title": "Live playback follow-ups from the #720 round-5 review",
+  "kind": "task",
+  "status": "backlog",
+  "priority": "P3",
+  "parent": null,
+  "dependsOn": [],
+  "acceptance": [
+    "Apple adapter: during a same-song re-cue, a playing state from the previous queue that falls inside atThisCue()'s window no longer counts as this start's evidence, or a real-device run shows that case cannot happen; either way the outcome is recorded.",
+    "Apple adapter: when the re-cue setQueue in play() throws, startArmed is cleared at once, with a test.",
+    "Live: Next, Previous, Skip track or a Full List row (jumpTo) after a playback error and Retry recover the same way (resume in place or rebuild the coordinator), or the record states why they differ.",
+    "Apple adapter: the starting hold kept after destroy() is removed if it has no effect (the runtime builds a new adapter per job), or its purpose is documented.",
+    "resetMusicKitRejectionGuardForTests cannot drive guardHolders negative (test-only)."
+  ],
+  "nextAction": "Pick these up after #720 merges and the owner's iPhone Safari run; the first item needs that device run (?playback-timing=1, a timeline re-cue within the same song). Agent-created: Backlog until the owner sets Ready.",
+  "blocker": null,
+  "evidence": [
+    {
+      "kind": "pr",
+      "ref": "https://github.com/steven-crosby/ritmofit-web/pull/720#issuecomment-6664534810",
+      "summary": "Final review of #720 at 8f12fe9 listed these five as not significant, to be logged as Backlog: same-song re-cue evidence in onPlayingState, startArmed after a setQueue throw, jumpTo resuming in place versus Retry rebuilding, the no-op starting hold after destroy(), and the test-only guardHolders reset. Recorded from the review, not verified.",
+      "checkedOn": "2026-11-05"
+    }
+  ],
+  "resolution": null,
+  "followUps": []
+}
