@@ -28,5 +28,7 @@
     }
   ],
   "resolution": "Not reproducible in today's code: the lazy player and Dashboard's preload wait on the same module load, so React commits the loaded player in the same render that resolves the lazy one, and the song starts once. No code change; the new test pins one start and fails if a later refactor lets the preload land after the lazy player mounts.",
-  "followUps": []
+  "followUps": [
+    "RF-199"
+  ]
 }
