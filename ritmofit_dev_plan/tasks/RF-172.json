@@ -13,9 +13,10 @@
     "On Music › Songs each row's artwork becomes a ▶ preview button. This moves the artwork out of the row's selection <label> (RF-151 keeps it inside and toggling until this ships) so the button sits beside the label, not inside it; RF-151's artwork-toggle tests are updated to match. Tapping ▶ previews the song; tapping the rest of the row still selects and never plays. On rows disabled by the 15-song cap, ▶ still previews, since previewing adds nothing.",
     "Preview plays a not-yet-imported provider song (TrackSearchResult) through the same official provider SDK or widget path the builder TrackPreview uses, via an adapter or a shared preview entry type, with no import or other side effect; nothing is cached.",
     "The button is keyboard reachable, labeled with the song name, at least 44px, and axe WCAG 2.2 AA clean at 1440 and 390 wide with no nested interactive controls.",
-    "Component tests cover that ▶ starts preview without toggling selection; the PR names the real-browser preview check CI cannot prove."
+    "Component tests cover that ▶ starts preview without toggling selection; the PR names the real-browser preview check CI cannot prove.",
+    "Owner check before Done (owner, 2026-11-05): against production, ▶ plays real audio from the start for Apple Music (desktop and iPhone Safari, in a browser signed in to Apple Music) and for SoundCloud (desktop and iPhone Safari). Spotify ▶ is checked separately in RF-205."
   ],
-  "nextAction": "Owner: reconnect Spotify and SoundCloud first (both showed Reconnect on 2026-11-05). Then, against production on Music › Songs, on desktop and iPhone Safari, tap ▶ on a liked song for each of Apple Music, Spotify and SoundCloud, and confirm audio plays from the start for all three. All three are required before Done (owner, 2026-11-05). The row UI already passed in the simulator (inline player with Stop, row not ticked, a second ▶ stops the first). CI cannot prove real provider audio.",
+  "nextAction": "Owner: against production on Music › Songs, tap ▶ on a liked Apple Music song on desktop and on iPhone Safari, each in a browser already signed in to Apple Music (the simulator run stalled at the Apple Music sign-in), and on a liked SoundCloud song on desktop and iPhone Safari. Confirm audio plays from the start each time. Then set Done. The row UI already passed in the simulator (inline player with Stop, row not ticked, a second ▶ stops the first). Spotify ▶ is RF-205. CI cannot prove real provider audio.",
   "blocker": null,
   "evidence": [
     {
@@ -101,8 +102,16 @@
       "ref": "https://github.com/steven-crosby/ritmofit-web/pull/740#issuecomment-6666854194",
       "summary": "Owner, 2026-11-05: \"make Spotify and SoundCloud ▶ checks required for RF-172\". Done now needs real ▶ audio for Apple Music, Spotify and SoundCloud, not Apple Music alone.",
       "checkedOn": "2026-11-05"
+    },
+    {
+      "kind": "observation",
+      "ref": "https://github.com/steven-crosby/ritmofit-web/pull/741#issuecomment-6668006472",
+      "summary": "Owner, 2026-11-05: split RF-172. It closes on Apple Music and SoundCloud ▶ audio; Spotify ▶ (desktop) moves to RF-205, which depends on RF-92. The owner also reconnected Spotify and SoundCloud on the test account the same day.",
+      "checkedOn": "2026-11-05"
     }
   ],
   "resolution": null,
-  "followUps": []
+  "followUps": [
+    "RF-205"
+  ]
 }

@@ -17,7 +17,7 @@
     "Live: togglePlay cancels the commit throttle before resume or pause, consistent with Retry, jumpTo and Continue without music, or the record states why it need not.",
     "Live: seekRelease reuses seek() for its error and send paths instead of duplicating them."
   ],
-  "nextAction": "Pick these up after #720 merges and the owner's iPhone Safari run; the first item needs that device run (?playback-timing=1, a timeline re-cue within the same song). Agent-created: Backlog until the owner sets Ready.",
+  "nextAction": "Pick these up after the owner's iPhone Safari run (#720 is merged and deployed in 840255c); the first item needs that device run (?playback-timing=1, a timeline re-cue within the same song). Agent-created: Backlog until the owner sets Ready.",
   "blocker": null,
   "evidence": [
     {
@@ -28,7 +28,7 @@
     },
     {
       "kind": "pr",
-      "ref": "https://github.com/steven-crosby/ritmofit-web/pull/720",
+      "ref": "https://github.com/steven-crosby/ritmofit-web/pull/720#issuecomment-6665131783",
       "summary": "Final review of #720 at 0f1ea0a (merged as 840255c) found no significant issues. It added three not-significant notes: the strip accepts non-primary mouse buttons (already in production before #720), togglePlay does not cancel the throttle (not reachable as a double start, since every release flushes or cancels), and seekRelease duplicates seek(). The Air conductor checked them against the code.",
       "checkedOn": "2026-11-05"
     }
