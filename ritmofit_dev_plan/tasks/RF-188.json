@@ -3,7 +3,7 @@
   "id": "RF-188",
   "title": "Live timeline: make tapping a track obvious, easy to hit, and quiet while dragging",
   "kind": "task",
-  "status": "in_progress",
+  "status": "review",
   "priority": "P2",
   "parent": null,
   "dependsOn": [],
@@ -13,7 +13,7 @@
     "While a finger is dragging the timeline, Live does not show the \"Waiting for music\" banner and its actions; it shows at most a quiet seeking state, and the banner appears only if playback still has not progressed after release.",
     "The design follows ritmofit_design_system; the owner reviews the design before build."
   ],
-  "nextAction": "Neo: propose two or three design options for the Live timeline strip (affordance, target size, tap feedback, drag state) on this PR for the owner to choose; then build the chosen one on this branch (based on main 840255c, after #720).",
+  "nextAction": "Owner: after #738 merges and the Air deploys it, on a real iPhone in Live with Apple Music playing, check that a tap on a timeline track jumps to that track start first time, the hint and callout read clearly, and dragging shows Seeking… with no Waiting for music banner until release (and the banner only if music still has not started). Then set Done; anything that feels wrong becomes a new task. CI and the simulator cannot prove real provider playback.",
   "blocker": null,
   "evidence": [
     {
@@ -51,8 +51,28 @@
       "ref": "https://github.com/steven-crosby/ritmofit-web/pull/738",
       "summary": "RF-188 claim and build PR (draft), opened on the Neo after #720 merged.",
       "checkedOn": "2026-11-05"
+    },
+    {
+      "kind": "observation",
+      "ref": "https://github.com/steven-crosby/ritmofit-web/pull/738#issuecomment-6668147437",
+      "summary": "Owner chose R1 for RF-188 (recorded by the Air conductor): hint, Track N callout, tap jumps to the track start, All tracks opens Full List, provider seek only on release, Waiting for music quiet during a drag while real failures still show.",
+      "checkedOn": "2026-11-05"
+    },
+    {
+      "kind": "test",
+      "ref": "apps/web/src/components/LiveMode.test.tsx",
+      "summary": "Neo local on 535b53e: LiveTimeline.test.tsx and LiveMode.test.tsx cover tap-to-track-start, the callout, scrub start/end pairing (incl. unmount), right/middle-click ignored, seek keys ignored mid-gesture, no provider call until release (held tap, rested drag, silence gap), clock not pulled back by provider reports, Waiting for music held and Seeking… shown while pressed, a failure still shown mid-drag, one resume after Retry. The waiting-panel and silence-gap tests fail with their fixes reverted. The RF-185 one-seek-per-tap tests still pass. Full local gate green (1737 web, 655 api unit, 265 integration, e2e 2 passed).",
+      "checkedOn": "2026-11-05"
+    },
+    {
+      "kind": "pr",
+      "ref": "https://github.com/steven-crosby/ritmofit-web/pull/738",
+      "summary": "RF-188 R1 build. Fresh-context review of 3a55402 found one significant bug (a held tap in a silence gap let the frame loop enter the track, so release started a second adapter), fixed in 535b53e with a test; a re-review of 535b53e found nothing significant; its one minor point (host time not restarted after a gesture that ends without a seek) is fixed in the next commit; other minor findings in RF-206. Picks up RF-204 items 6, 7 (moot: no throttle left) and 8.",
+      "checkedOn": "2026-11-05"
     }
   ],
   "resolution": null,
-  "followUps": []
+  "followUps": [
+    "RF-206"
+  ]
 }

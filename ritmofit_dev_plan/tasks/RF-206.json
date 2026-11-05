@@ -1,0 +1,29 @@
+{
+  "schemaVersion": 1,
+  "id": "RF-206",
+  "title": "Live timeline follow-ups from the RF-188 review",
+  "kind": "task",
+  "status": "backlog",
+  "priority": "P3",
+  "parent": "RF-188",
+  "dependsOn": [],
+  "acceptance": [
+    "On short phones the More panel (which holds the timeline) does not collapse after every timeline release that briefly makes music wait; it still collapses for a real playback failure, or the record states why the collapse is kept.",
+    "A system pointercancel during a press that never moved (an iOS edge gesture, a notification) leaves the clock where it was before the press and sends no seek, instead of jumping to the start of the pressed track, or the record states why the jump is kept.",
+    "The timeline hint also tells keyboard users how to move (for example \"Arrow keys to nudge\"), or the record states why All tracks is enough.",
+    "apps/web/src/lib/trailing-throttle.ts and its test, unused since RF-188, are removed, with the RF-108 and RF-185 source evidence that cites them retargeted so pnpm tasks:check still passes.",
+    "Owner device check: whether the 3 px tap slop is right for tap to jump on a real iPhone (a tap that moves more than 3 px commits an exact time instead of the track start)."
+  ],
+  "nextAction": "Agent-created from the fresh-context review of #738 (RF-188): Backlog until the owner sets Ready. Items 1-4 are web code or records; item 5 waits on the owner real-iPhone feel pass after the RF-188 deploy.",
+  "blocker": null,
+  "evidence": [
+    {
+      "kind": "pr",
+      "ref": "https://github.com/steven-crosby/ritmofit-web/pull/738",
+      "summary": "Fresh-context review of #738 on 3a55402: minor findings 2 (More collapses after release), 5 (cancel of an unmoved press jumps to the track start) and 6 (no keyboard hint) logged here, with the now-unused trailing throttle and the tap-slop device question.",
+      "checkedOn": "2026-11-05"
+    }
+  ],
+  "resolution": null,
+  "followUps": []
+}

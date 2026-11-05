@@ -683,10 +683,16 @@ export function LiveMode({
   // state drives the quiet "Seeking…" rail and holds the waiting panel.
   const scrubbingRef = useRef(false);
   const [scrubbing, setScrubbing] = useState(false);
-  const onScrubChange = useCallback((active: boolean) => {
-    scrubbingRef.current = active;
-    setScrubbing(active);
-  }, []);
+  const onScrubChange = useCallback(
+    (active: boolean) => {
+      scrubbingRef.current = active;
+      setScrubbing(active);
+      // The frame loop skipped its ticks under the finger; restart host time
+      // from now so a gesture that ends without a seek does not jump ahead.
+      if (!active) clockStartSegment();
+    },
+    [clockStartSegment],
+  );
   const syncPositionUnlessScrubbing = useCallback(
     (ms: number) => {
       if (!scrubbingRef.current) clockSyncPosition(ms);
