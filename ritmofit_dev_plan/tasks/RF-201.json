@@ -10,7 +10,9 @@
   "acceptance": [
     "A card's readiness Retry cannot be overwritten by an older fetch: fetchOne shares the candidate effect's generation guard (or a per-class token), so a candidate change during a retry, or a class removed and re-added, never leaves a stale error or an orphan result.",
     "Screen-reader users hear a retry start and finish: the queue status or the card announces \"Checking readiness…\" and the outcome, not only aria-busy.",
-    "The retrying flag lives in LivePayloadState (for example a refreshing error variant) rather than a separate set the card and the ranking read differently, and fetchOne reuses the effect's fetch-and-map helper."
+    "The retrying flag lives in LivePayloadState (for example a refreshing error variant) rather than a separate set the card and the ranking read differently, and fetchOne reuses the effect's fetch-and-map helper.",
+    "A card whose retry lands runnable is re-ranked deliberately: either it may take the copper at once (documented), or the queue holds its order until the instructor acts, and the ranking comment says which.",
+    "The busy \"Checking…\" copper button looks busy (not just cursor-progress), so it does not read as an enabled action that does nothing."
   ],
   "nextAction": "Logged from the fresh-context review of the RF-163 PR (2026-11-05 unattended Neo session). Agent-created: Backlog until the owner sets Ready.",
   "blocker": null,
@@ -18,7 +20,7 @@
     {
       "kind": "observation",
       "ref": "https://github.com/steven-crosby/ritmofit-web/issues/730",
-      "summary": "Non-blocking findings from the RF-163 pre-PR review, not fixed in that PR.",
+      "summary": "Non-blocking findings from the two RF-163 pre-PR reviews, not fixed in that PR (a candidate change during a retry still resets the card to loading; see item 1).",
       "checkedOn": "2026-11-05"
     }
   ],
