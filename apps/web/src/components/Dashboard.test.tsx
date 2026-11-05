@@ -5451,7 +5451,8 @@ describe('Music Songs paging and search (RF-132)', () => {
     expect(within(list).getAllByRole('listitem')).toHaveLength(350);
     expect(within(list).getByText('Love 299')).toBeTruthy();
     expect(screen.getByRole('button', { name: 'Load more songs' })).toBeTruthy();
-  });
+    // Renders 350 rows several times: 3.8-5 s on the CI runner, about 1.3 s locally.
+  }, 15_000);
 
   it('keeps the song selection across search and Load more, and creates in list order (RF-151)', async () => {
     vi.mocked(api.listClasses).mockResolvedValue(page([]));
