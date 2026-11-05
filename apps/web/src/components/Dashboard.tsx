@@ -141,6 +141,7 @@ import {
   serverSongSearchState,
   shouldAutoLoadForSearch,
   SONG_SEARCH_AUTOLOAD_BOUND,
+  songSearchAutoLoadDelay,
   songSearchAutoLoadSpent,
   songSearchMode,
   songSearchScopeNote,
@@ -2066,6 +2067,13 @@ function useProviderBrowseState(connectionRevision = 0) {
       // "Load more" cannot append the previous library's next page (#665 review).
       likesNextRef.current = { ...likesNextRef.current, [provider]: null };
       setLikesNext((prev) => ({ ...prev, [provider]: null }));
+      // RF-152: another account's (or connection's) songs leave at once, rather than
+      // staying on screen as this library until its first page arrives.
+      if (likesLoadedKey.current[provider] !== undefined) {
+        delete likesLoadedKey.current[provider];
+        setLikes((prev) => ({ ...prev, [provider]: undefined }));
+        setLikesMoreError((prev) => ({ ...prev, [provider]: undefined }));
+      }
       const current = () =>
         likesMounted.current &&
         likesToken.current[provider] === token &&
@@ -2100,37 +2108,49 @@ function useProviderBrowseState(connectionRevision = 0) {
     }
   }, [connections]);
 
+  /**
+   * Whether `loadMoreLikes(provider)` would send a request now: a next-page cursor, no
+   * page already in flight, and no first page loading (its cursor is not known yet).
+   */
+  const canLoadMoreLikes = useCallback(
+    (provider: Provider) =>
+      Boolean(likesNextRef.current[provider]) &&
+      !likesMoreInFlight.current.has(provider) &&
+      !likesRequestKey.current[provider],
+    [],
+  );
+
   /** Load the next page of `provider`'s liked songs with its own cursor (RF-132). */
-  const loadMoreLikes = useCallback(async (provider: Provider) => {
-    const cursor = likesNextRef.current[provider];
-    // No "Load more" while a first page is loading: its cursor is not known yet.
-    if (!cursor || likesMoreInFlight.current.has(provider) || likesRequestKey.current[provider]) {
-      return;
-    }
-    const token = likesToken.current[provider];
-    likesMoreInFlight.current.add(provider);
-    setLikesLoadingMore((prev) => ({ ...prev, [provider]: true }));
-    setLikesMoreError((prev) => ({ ...prev, [provider]: undefined }));
-    const current = () =>
-      likesToken.current[provider] === token && connectedProvidersRef.current.has(provider);
-    try {
-      const page = await listLikesPage(provider, { cursor });
-      if (!current()) return;
-      const next = page.nextCursor ?? null;
-      likesNextRef.current = { ...likesNextRef.current, [provider]: next };
-      setLikes((prev) => ({
-        ...prev,
-        [provider]: appendSongPage(prev[provider] ?? [], page.items),
-      }));
-      setLikesNext((prev) => ({ ...prev, [provider]: next }));
-    } catch (e) {
-      if (!current()) return;
-      setLikesMoreError((prev) => ({ ...prev, [provider]: shelfFailure(e).message }));
-    } finally {
-      likesMoreInFlight.current.delete(provider);
-      setLikesLoadingMore((prev) => ({ ...prev, [provider]: false }));
-    }
-  }, []);
+  const loadMoreLikes = useCallback(
+    async (provider: Provider) => {
+      const cursor = likesNextRef.current[provider];
+      if (!canLoadMoreLikes(provider) || !cursor) return;
+      const token = likesToken.current[provider];
+      likesMoreInFlight.current.add(provider);
+      setLikesLoadingMore((prev) => ({ ...prev, [provider]: true }));
+      setLikesMoreError((prev) => ({ ...prev, [provider]: undefined }));
+      const current = () =>
+        likesToken.current[provider] === token && connectedProvidersRef.current.has(provider);
+      try {
+        const page = await listLikesPage(provider, { cursor });
+        if (!current()) return;
+        const next = page.nextCursor ?? null;
+        likesNextRef.current = { ...likesNextRef.current, [provider]: next };
+        setLikes((prev) => ({
+          ...prev,
+          [provider]: appendSongPage(prev[provider] ?? [], page.items),
+        }));
+        setLikesNext((prev) => ({ ...prev, [provider]: next }));
+      } catch (e) {
+        if (!current()) return;
+        setLikesMoreError((prev) => ({ ...prev, [provider]: shelfFailure(e).message }));
+      } finally {
+        likesMoreInFlight.current.delete(provider);
+        setLikesLoadingMore((prev) => ({ ...prev, [provider]: false }));
+      }
+    },
+    [canLoadMoreLikes],
+  );
 
   return {
     connections,
@@ -2152,6 +2172,7 @@ function useProviderBrowseState(connectionRevision = 0) {
     likesLoadingMore,
     likesMoreError,
     loadMoreLikes,
+    canLoadMoreLikes,
   };
 }
 
@@ -2234,6 +2255,7 @@ function MusicWorkspace({
     likesLoadingMore,
     likesMoreError,
     loadMoreLikes,
+    canLoadMoreLikes,
   } = useProviderBrowseState(connectionRevision);
   const flow = useProviderConnect({
     onConnected: retryConnections,
@@ -2255,6 +2277,9 @@ function MusicWorkspace({
   // the state copy only re-renders the note.
   const songAutoLoadRef = useRef({ key: '', bound: SONG_SEARCH_AUTOLOAD_BOUND, requests: 0 });
   const [songAutoLoad, setSongAutoLoad] = useState(songAutoLoadRef.current);
+  // When each search autoload request went out, per service, across search sessions
+  // (RF-152), so clearing and retyping searches stays inside a per-minute budget.
+  const songAutoLoadSentAt = useRef<Partial<Record<Provider, number[]>>>({});
   const [librarySearch, setLibrarySearch] = useState<{
     provider: Provider;
     query: string;
@@ -2355,10 +2380,15 @@ function MusicWorkspace({
     Date.now(),
   );
   // Apple Music: search the whole library on the server as the instructor types.
+  // Keyed on the trimmed query (RF-152): a whitespace-only edit is not a new search.
+  const libraryQueryTrimmed = libraryQuery.trim();
   useEffect(() => {
-    const trimmed = libraryQuery.trim();
+    const trimmed = libraryQueryTrimmed;
     if (libraryKind !== 'songs' || songSearchMode(selectedProvider) !== 'server' || !trimmed) {
       librarySearchId.current += 1;
+      // RF-152: a cleared search forgets its result, so retyping the same query waits
+      // for a fresh answer instead of briefly showing the old result or failure.
+      if (!trimmed) setLibrarySearch(null);
       return;
     }
     if (searchConnectionState !== 'connected') return;
@@ -2376,14 +2406,14 @@ function MusicWorkspace({
         });
     }, 300);
     return () => window.clearTimeout(timeout);
-  }, [selectedProvider, libraryKind, libraryQuery, searchConnectionState]);
+  }, [selectedProvider, libraryKind, libraryQueryTrimmed, searchConnectionState]);
 
   // Other services: keep loading pages while a query is typed, debounced, within
   // one budget per search session (songs and requests), so typing more characters
   // neither resets the owner's 1,000-song / 5-request limit nor drops a "Keep
   // loading" grant. Clearing the query or switching service ends the session.
   const autoLoadLikedTracks = likes[selectedProvider];
-  const songAutoLoadKey = libraryQuery.trim() ? selectedProvider : '';
+  const songAutoLoadKey = libraryQueryTrimmed ? selectedProvider : '';
   const songAutoLoadNow =
     songAutoLoad.key === songAutoLoadKey
       ? songAutoLoad
@@ -2400,7 +2430,7 @@ function MusicWorkspace({
     const budget = songAutoLoadRef.current;
     if (
       !shouldAutoLoadForSearch({
-        query: libraryQuery,
+        query: libraryQueryTrimmed,
         hasMore: Boolean(likesNext[selectedProvider]),
         loading:
           Boolean(likesLoadingMore[selectedProvider]) || Boolean(likesLoading[selectedProvider]),
@@ -2413,20 +2443,33 @@ function MusicWorkspace({
       return;
     }
     const provider = selectedProvider;
+    const delay = songSearchAutoLoadDelay(songAutoLoadSentAt.current[provider] ?? [], Date.now());
     const timeout = window.setTimeout(() => {
       const current = songAutoLoadRef.current;
       const loadedCount = autoLoadLikedTracks?.length ?? 0;
       if (current.key !== provider || songSearchAutoLoadSpent({ ...current, loadedCount })) return;
+      // RF-152: only a request that actually goes out counts against the budgets.
+      if (!canLoadMoreLikes(provider)) return;
+      const now = Date.now();
+      if (songSearchAutoLoadDelay(songAutoLoadSentAt.current[provider] ?? [], now) > 300) {
+        // Still inside the per-minute budget's wait (a re-render shortened it): retry.
+        setSongAutoLoad({ ...current });
+        return;
+      }
+      songAutoLoadSentAt.current[provider] = [
+        ...(songAutoLoadSentAt.current[provider] ?? []).filter((at) => now - at < 60_000),
+        now,
+      ];
       const next = { ...current, requests: current.requests + 1 };
       songAutoLoadRef.current = next;
       setSongAutoLoad(next);
       void loadMoreLikes(provider);
-    }, 300);
+    }, delay);
     return () => window.clearTimeout(timeout);
   }, [
     libraryKind,
     selectedProvider,
-    libraryQuery,
+    libraryQueryTrimmed,
     likesNext,
     likesLoadingMore,
     likesLoading,
@@ -2435,6 +2478,7 @@ function MusicWorkspace({
     songAutoLoadKey,
     songAutoLoad,
     loadMoreLikes,
+    canLoadMoreLikes,
   ]);
 
   const selectedKeys = useMemo(
@@ -2842,17 +2886,26 @@ function MusicWorkspace({
                   loading: loadingMoreLikes,
                   error: loadMoreLikesError,
                   onLoadMore: () => {
+                    const sends = canLoadMoreLikes(selectedProvider);
                     if (songQuery && songSearch === 'loaded') {
-                      // Another round: 1,000 more songs or 5 more requests (this one counts).
-                      const next = {
-                        key: songAutoLoadKey,
-                        bound: (likedTracks?.length ?? 0) + SONG_SEARCH_AUTOLOAD_BOUND,
-                        requests: 1,
-                      };
+                      const loadedCount = likedTracks?.length ?? 0;
+                      const current = songAutoLoadRef.current;
+                      // RF-152: a round still running keeps its budget (a tap counts as one
+                      // of its requests); a spent one starts another round of 1,000 more
+                      // songs or 5 more requests. A tap that sends nothing counts nothing.
+                      const next =
+                        current.key === songAutoLoadKey &&
+                        !songSearchAutoLoadSpent({ ...current, loadedCount })
+                          ? { ...current, requests: current.requests + (sends ? 1 : 0) }
+                          : {
+                              key: songAutoLoadKey,
+                              bound: loadedCount + SONG_SEARCH_AUTOLOAD_BOUND,
+                              requests: sends ? 1 : 0,
+                            };
                       songAutoLoadRef.current = next;
                       setSongAutoLoad(next);
                     }
-                    void loadMoreLikes(selectedProvider);
+                    if (sends) void loadMoreLikes(selectedProvider);
                   },
                 }
               : null

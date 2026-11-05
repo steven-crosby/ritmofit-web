@@ -6,7 +6,9 @@ import {
   shouldAutoLoadForSearch,
   SONG_SEARCH_AUTOLOAD_BOUND,
   SONG_SEARCH_AUTOLOAD_REQUESTS,
+  songSearchAutoLoadDelay,
   songSearchAutoLoadSpent,
+  SONG_SEARCH_AUTOLOAD_PER_MINUTE,
   songSearchMode,
   songSearchScopeNote,
   defaultLibraryKind,
@@ -373,5 +375,25 @@ describe('Music view memory (RF-137)', () => {
     vi.stubGlobal('window', { localStorage: { getItem: throwing, setItem: throwing } });
     expect(() => rememberMusicView('me', { provider: 'spotify', kind: 'catalog' })).not.toThrow();
     expect(recallMusicView('me')).toBeNull();
+  });
+});
+
+describe('songSearchAutoLoadDelay (RF-152)', () => {
+  const now = 1_000_000;
+  it('waits only the typing debounce while the last minute has room', () => {
+    expect(songSearchAutoLoadDelay([], now)).toBe(300);
+    const nine = Array.from({ length: SONG_SEARCH_AUTOLOAD_PER_MINUTE - 1 }, (_, i) => now - i);
+    expect(songSearchAutoLoadDelay(nine, now)).toBe(300);
+  });
+  it('waits until the oldest request of a full minute leaves the window', () => {
+    const full = Array.from(
+      { length: SONG_SEARCH_AUTOLOAD_PER_MINUTE },
+      (_, i) => now - 50_000 + i * 1_000,
+    );
+    expect(songSearchAutoLoadDelay(full, now)).toBe(10_000);
+  });
+  it('ignores requests older than a minute', () => {
+    const old = Array.from({ length: SONG_SEARCH_AUTOLOAD_PER_MINUTE }, () => now - 60_000);
+    expect(songSearchAutoLoadDelay(old, now)).toBe(300);
   });
 });

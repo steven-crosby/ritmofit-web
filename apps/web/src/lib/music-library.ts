@@ -139,6 +139,31 @@ export const SONG_SEARCH_AUTOLOAD_BOUND = 1000;
  */
 export const SONG_SEARCH_AUTOLOAD_REQUESTS = 5;
 
+/**
+ * Search autoload page requests per service per rolling minute, across search sessions
+ * (RF-152). The server allows 20 liked-song reads a minute per user; autoload keeps
+ * to half, so clearing and retyping searches cannot use it up and leave Load more or a
+ * first page with "Couldn't load more songs".
+ */
+export const SONG_SEARCH_AUTOLOAD_PER_MINUTE = 10;
+const SONG_SEARCH_AUTOLOAD_WINDOW_MS = 60_000;
+
+/**
+ * How long the next search autoload request waits: the typing debounce, or longer
+ * while the last minute already holds `SONG_SEARCH_AUTOLOAD_PER_MINUTE` requests (until
+ * the oldest of them leaves the window).
+ */
+export function songSearchAutoLoadDelay(
+  sentAt: readonly number[],
+  now: number,
+  debounceMs = 300,
+): number {
+  const recent = sentAt.filter((at) => now - at < SONG_SEARCH_AUTOLOAD_WINDOW_MS);
+  if (recent.length < SONG_SEARCH_AUTOLOAD_PER_MINUTE) return debounceMs;
+  const oldest = Math.min(...recent);
+  return Math.max(debounceMs, oldest + SONG_SEARCH_AUTOLOAD_WINDOW_MS - now);
+}
+
 /** Which Songs search a service supports: Apple searches the library server-side. */
 export function songSearchMode(provider: Provider): 'server' | 'loaded' {
   return provider === 'apple_music' ? 'server' : 'loaded';
