@@ -3,7 +3,7 @@
   "id": "RF-129",
   "title": "The app has real URLs: a refresh returns to the same screen, and sign-in and sign-up have their own paths",
   "kind": "task",
-  "status": "backlog",
+  "status": "review",
   "priority": "P1",
   "parent": null,
   "dependsOn": [],
@@ -14,7 +14,7 @@
     "The service-worker navigation fallback still denies /api/ routes, and OAuth and reset-password callbacks still reach the Worker.",
     "One routing approach covers both refresh-restore and the sign-in/sign-up paths, so the app does not get two routing mechanisms."
   ],
-  "nextAction": "Plan: the app has no router (App.tsx switches on pathname; Dashboard keeps navigation in component state). Decide between URL paths/hash for class detail and Live, or restoring the last screen from session storage. Owner decision on approach first. Absorbs RF-139 (sign-in/sign-up URLs, P1, from the 2026-10-28 UX audit): files App.tsx, Login.tsx, MarketingPage.tsx and the SW navigation config; The SW navigation config (apps/web/vite.config.ts) is owner-gated in scripts/owner-gate.mjs; Login.tsx and App.tsx are not. Surface: web.",
+  "nextAction": "Owner device check on iPhone Safari against a deploy that includes PR #725: refresh on a class and on Live (Live reopens at its preflight with Start, never playing); an edge swipe Back during a running class stays in Live; sign-in and sign-up links open their own pages. Set Done once that passes. If /music, /account or /live need more than a path (for example Music's inner view in the URL), log a separate task.",
   "blocker": null,
   "evidence": [
     {
@@ -28,6 +28,12 @@
       "ref": "https://github.com/steven-crosby/ritmofit-web/pull/658#issuecomment-6507540146",
       "summary": "RF-139 folded in as planned once #657 put RF-129 on main (owner-approved plan, 2026-10-29). Priority raised to P1 to carry RF-139's audit priority.",
       "checkedOn": "2026-10-29"
+    },
+    {
+      "kind": "pr",
+      "ref": "https://github.com/steven-crosby/ritmofit-web/pull/725",
+      "summary": "Real paths with no router library (owner's choice in the Neo session, 2026-11-04, after an adversarial check): /sign-in, /sign-up, /classes/<id>, /classes/<id>/live, /music, /live, /account; old /?auth= links redirect. Dashboard writes the URL from state in one place and Back/Forward call the same open/close paths. Covered by lib/app-route.test.ts, App and Dashboard tests, and the e2e smoke's reload on a class. Real URLs without a router library. App routes on the path: signed-out visits to signed-in paths go to /sign-in and return afterwards; a signed-in visit to /sign-in goes on. Dashboard restores a class path by fetching the class (Class not found or Retry when it can't), opens Live at its preflight for a /live path, and never leaves Live on Back (Exit does). The service-worker config is unchanged: its fallback already denies /api/, so OAuth and reset-password callbacks still reach the Worker. Final review of 24ceeaf found one significant bug (a deep link remembered after an abandoned sign-in), fixed here: the signed-out landing page now clears it. Non-blocking findings: RF-195.",
+      "checkedOn": "2026-11-04"
     }
   ],
   "resolution": null,

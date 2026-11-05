@@ -20,6 +20,7 @@ import type {
 } from '@ritmofit/shared';
 import { Dashboard } from './Dashboard.js';
 import * as api from '../lib/api.js';
+import { resetAppRouteForTests } from '../lib/app-route.js';
 
 vi.mock('../lib/api.js');
 vi.mock('../lib/auth-client.js', () => ({ authClient: { signOut: vi.fn() } }));
@@ -195,8 +196,12 @@ beforeEach(() => {
   });
 });
 
-afterEach(() => {
+afterEach(async () => {
   cleanup();
+  // Let a Back that Dashboard queued (RF-129 `stepTo`) land, then start at the Classes home.
+  await new Promise((resolve) => setTimeout(resolve, 0));
+  resetAppRouteForTests();
+  window.history.replaceState(null, '', '/');
   vi.clearAllMocks();
   window.sessionStorage?.clear();
 });
