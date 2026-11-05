@@ -116,6 +116,18 @@
       "ref": "apps/web/src/components/LiveMode.test.tsx",
       "summary": "Added five round-5 tests: after a playback error, Next and Previous each resume music once; Skip track and Retry each resume once; strip taps, drags and arrow keys move only the clock. Run against d295b29, the Next and Previous tests fail (no resume). The Skip track, Retry and strip tests pass there too and guard behaviour already correct. Recorded test result, not device evidence.",
       "checkedOn": "2026-11-05"
+    },
+    {
+      "kind": "pr",
+      "ref": "https://github.com/steven-crosby/ritmofit-web/pull/720",
+      "summary": "Round 6 (owner-approved on #720 after https://github.com/steven-crosby/ritmofit-web/pull/720#issuecomment-6664534810): retryPlayback() now cancels the commit throttle before rebuilding the coordinator. A drag value still pending when playback failed can no longer fire seek() on the new coordinator after Retry, which was a second start. The inPlaybackError doc comment now matches round 5. Remaining review notes are logged as RF-204 (Backlog).",
+      "checkedOn": "2026-11-05"
+    },
+    {
+      "kind": "test",
+      "ref": "apps/web/src/components/LiveMode.test.tsx",
+      "summary": "Added \"a drag value pending when playback fails never fires after the recovery panel Retry\" and \"... after Play routed to Retry\" (round 6): exactly one resume, no later seek. Against 8f12fe9 both fail: expected 4 to be 3, a second adapter from the stale pending seek. Recorded test result, not device evidence.",
+      "checkedOn": "2026-11-05"
     }
   ],
   "resolution": null,

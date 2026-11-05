@@ -2683,6 +2683,31 @@ describe('LiveMode timeline scrubber', () => {
     expect(prepared).toEqual([0, 1]);
   }, 10_000);
 
+  it.each([
+    ['the recovery panel Retry', 'Retry playback'],
+    ['Play routed to Retry', 'Retry music'],
+  ])(
+    'a drag value pending when playback fails never fires after %s (round 6)',
+    async (_label: string, retryName: string) => {
+      // Build 1 (Start) plays; build 2, the drag's leading seek, fails.
+      const { slider, prepared, built } = await startTwoTracksWithFailures([2]);
+      await screen.findByRole('button', { name: 'Pause' });
+      fireEvent.pointerDown(slider, { clientX: 20_000, pointerId: 1 }); // fires 0:20
+      fireEvent.pointerMove(slider, { clientX: 60_000, buttons: 1, pointerId: 1 }); // 1:00 pending
+      const pendingAt = performance.now();
+      for (let i = 0; i < 20 && !screen.queryByRole('button', { name: retryName }); i++)
+        await act(async () => {});
+      expect(built()).toBe(2);
+      fireEvent.click(screen.getByRole('button', { name: retryName }));
+      expect(performance.now() - pendingAt).toBeLessThan(200); // Retry inside the window
+      await waitFor(() => expect(built()).toBe(3));
+      await wait(400); // past the throttle window
+      expect(built()).toBe(3); // exactly one resume; the pending 1:00 never reaches it
+      expect(prepared).toEqual([0, 0, 0]);
+    },
+    10_000,
+  );
+
   it('after a playback error, Retry still resumes music, once (round 5)', async () => {
     const { prepared, built } = await startTwoTracksWithFailures([1]);
     fireEvent.click(await screen.findByRole('button', { name: 'Retry music' }));

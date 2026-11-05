@@ -12,7 +12,7 @@ owner's queue: any agent may execute a Ready task. Publishing follows AGENTS.md 
 Evidence marked **recorded** is a carried-forward claim, not fresh verification.
 A checked PR proves its GitHub state, not product acceptance or production behavior.
 
-200 tasks. backlog: 65 · ready: 0 · in_progress: 0 · blocked: 3 · review: 15 · done: 115 · cancelled: 2.
+201 tasks. backlog: 66 · ready: 0 · in_progress: 0 · blocked: 3 · review: 15 · done: 115 · cancelled: 2.
 
 ## In progress
 
@@ -122,6 +122,7 @@ A checked PR proves its GitHub state, not product acceptance or production behav
 | [RF-200](tasks/RF-200.json) Music service chips: label-in-name follow-ups from the RF-173 review | P3 / task | — | Logged from the fresh-context review of the RF-173 PR (2026-11-05 unattended Neo session). Agent-created: Backlog until the owner sets Ready. | checked 2026-11-05 |
 | [RF-201](tasks/RF-201.json) Live queue readiness retry: race guard, announcements and one state source (RF-163 review follow-ups) | P3 / task | — | Logged from the fresh-context review of the RF-163 PR (2026-11-05 unattended Neo session). Agent-created: Backlog until the owner sets Ready. | checked 2026-11-05 |
 | [RF-202](tasks/RF-202.json) Music Songs search autoload: pacing, clock and test follow-ups from the RF-152 review | P3 / task | — | Logged from the fresh-context reviews of the RF-152 PR (2026-11-05 unattended Neo session). Agent-created: Backlog until the owner sets Ready. | checked 2026-11-05 |
+| [RF-204](tasks/RF-204.json) Live playback follow-ups from the #720 round-5 review | P3 / task | — | Pick these up after #720 merges and the owner's iPhone Safari run; the first item needs that device run (?playback-timing=1, a timeline re-cue within the same song). Agent-created: Backlog until the owner sets Ready. | checked 2026-11-05 |
 | [RF-74](tasks/RF-74.json) Spotify playlist dialog offers Try again where retry cannot help | untriaged / task | parent RF-92 | Review the error/action mapping. Spotify reopened by the owner on 2026-10-28; Apple work comes first until about 2026-11-27. Resume risk: the Spotify developer app rejects the connected account ("The user is not registered for this application"), so Web API calls return 403. | recorded; checked 2026-10-28; checked 2026-10-29 |
 
 ## Done

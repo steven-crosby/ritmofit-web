@@ -672,9 +672,10 @@ export function LiveMode({
   // the window survives across renders.
   const commitThrottleRef = useRef<ReturnType<typeof createTrailingThrottle<number>> | null>(null);
 
-  /** Whether music is stopped on a failure. Then a seek of any kind (timeline
-   * gesture, keyboard, Next, Previous) moves only the clock: only Retry
-   * resumes music (RF-185). */
+  /** Whether music is stopped on a failure. Then timeline strip input (taps,
+   * drags, arrow keys) moves only the clock and never reaches the provider,
+   * while a deliberate recovery resumes music: Next, Previous, Skip track and
+   * a Full List row jump (jumpTo), and Retry (RF-185). */
   const inPlaybackError = useCallback(
     () => coordinatorRef.current?.getStatus().kind === 'error',
     [],
@@ -828,6 +829,9 @@ export function LiveMode({
     setHasStarted(true);
     if (!playing) setPlaying(true);
     const held = clockStore.getSnapshot();
+    // A drag value still pending in the throttle window must not fire on the
+    // new coordinator after Retry: that would be a second start (RF-185).
+    commitThrottleRef.current?.cancel();
     coordinatorRef.current?.destroy();
     const coordinator = buildCoordinator();
     coordinatorRef.current = coordinator;
