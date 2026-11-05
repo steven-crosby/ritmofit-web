@@ -93,6 +93,12 @@
       "ref": "apps/web/src/components/LiveTimeline.test.tsx",
       "summary": "Round 3 (Neo local): ten new tests in LiveTimeline.test.tsx and LiveMode.test.tsx, all failing on a6b0acd: a window pointerup, pointercancel, blur or page hide ends a gesture the strip lost; the 10 s no-event watchdog releases only the host and a still finger lifted after it still seeks once; a move after it holds the host again; an unmoved cancel commits nothing and restores the clock; in prompter-only mode a lost release no longer freezes the class clock; the recovery reveal is held under the finger and runs once on release.",
       "checkedOn": "2026-11-05"
+    },
+    {
+      "kind": "pr",
+      "ref": "https://github.com/steven-crosby/ritmofit-web/pull/738",
+      "summary": "Fresh-context review of round 3 (d73e068): no clock jump after the watchdog (the scrub end banks the clock; a test pins 3000 ms after a 13 s press with the watchdog at 10 s). Its other points: a reveal deferred under the finger is now dropped when music recovers first (fixed with a test that fails on d73e068); the watchdog-in-a-gap double start and the prompter-only cancel time loss are owner-constraint trade-offs logged in RF-206 item 10.",
+      "checkedOn": "2026-11-05"
     }
   ],
   "resolution": null,

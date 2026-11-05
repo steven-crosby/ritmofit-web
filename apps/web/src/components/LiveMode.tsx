@@ -1055,6 +1055,9 @@ export function LiveMode({
   // Reveal entry and newly blocked playback, not every status update. Dialog
   // cleanup owns trigger restoration; only place focus if that trigger is gone.
   useEffect(() => {
+    // Any newer state supersedes a reveal a gesture deferred: if music
+    // recovered under the finger, release must not scroll or move focus.
+    deferredRevealRef.current = null;
     const dialogWasOpen = previousConnectionsOpen.current;
     const becameReady = previousMusicBlocked.current && !musicBlocked;
     previousMusicBlocked.current = musicBlocked;
@@ -1078,7 +1081,6 @@ export function LiveMode({
       deferredRevealRef.current = { viewChanged };
       return;
     }
-    deferredRevealRef.current = null;
     reveal(needsRecovery, viewChanged);
   }, [phase, musicBlocked, hasPlaybackFailure, connectionsOpen, view, showRecoveryPanel]);
   // The reveal a gesture deferred, run once on release against the state then.

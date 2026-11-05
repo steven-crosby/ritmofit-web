@@ -16,7 +16,8 @@
     "While a finger is held on the strip, the runtime transport sampling cannot auto-advance to the next track and then have the release seek enter again (Air final review finding 4; it already happened under the old throttle), or the record states why one extra entry at a track boundary is acceptable.",
     "The Live timeline callout and the Live header name the same track in a free-timeline gap: LiveTimeline blockAt and runtime segmentAt / LiveMode trackIndexAt share one rule (Air round-2 review finding 7).",
     "LiveMode passes no separate onSeekRelease when it equals onSeekCommit (seekRelease is a pure alias of seek), or the record states why the alias is kept (finding 8).",
-    "Scrub state does not re-render the whole Live tree twice per tap (for example a ref plus a small store read only by the rail and the recovery panel), or the record states why two renders per tap are acceptable (finding 9)."
+    "Scrub state does not re-render the whole Live tree twice per tap (for example a ref plus a small store read only by the rail and the recovery panel), or the record states why two renders per tap are acceptable (finding 9).",
+    "Owner decision recorded (RF-188 round 3 watchdog): after 10 s with no pointer event the host clock and position sync resume while the finger stays down, so in a silence gap the resumed clock can enter the pressed track and the later lift seeks it again (two starts after a 10 s still hold), and in music mode the clock and callout follow the audio until the lift. In prompter-only mode an unmoved press that is cancelled restores the clock to its pre-press time, losing the hold duration against real time. Keep, or change the watchdog."
   ],
   "nextAction": "Agent-created from the RF-188 reviews of #738: Backlog until the owner sets Ready. Item 2 was done in #738 round 3. Items 1, 3, 4 and 6-9 are web code or records; item 5 waits on the owner real-iPhone feel pass after the RF-188 deploy.",
   "blocker": null,

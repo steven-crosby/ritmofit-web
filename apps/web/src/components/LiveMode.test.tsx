@@ -1113,6 +1113,52 @@ describe('LiveMode waiting panel grace', () => {
     }
   });
 
+  it('drops a deferred reveal when music recovers under the finger (RF-188 round 3)', async () => {
+    const stalled = { current: false };
+    let transport: NonNullable<AdapterEvents['onTransportState']> = () => {};
+    await startTeaching((events) => {
+      transport = (state) => events.onTransportState?.(state);
+      return playingTransportAdapter(stalled);
+    });
+    const slider = screen.getByRole('slider', { name: 'Seek class timeline' });
+    vi.spyOn(slider, 'getBoundingClientRect').mockReturnValue({
+      width: 180_000,
+      left: 0,
+      right: 180_000,
+      top: 0,
+      bottom: 40,
+      height: 40,
+      x: 0,
+      y: 0,
+      toJSON: () => ({}),
+    } as DOMRect);
+    slider.focus();
+    const scrolled = vi.fn();
+    Element.prototype.scrollIntoView = scrolled;
+    try {
+      fireEvent.pointerDown(slider, { clientX: 60_000, pointerId: 1 });
+      stalled.current = true;
+      act(() => transport('buffering'));
+      await act(async () => {
+        await vi.advanceTimersByTimeAsync(2_100); // the panel is due, deferred
+      });
+      expect(screen.getByRole('heading', { name: 'Waiting for music' })).toBeTruthy();
+      stalled.current = false; // music recovers while the finger is still down
+      await act(async () => {
+        await vi.advanceTimersByTimeAsync(500);
+      });
+      expect(screen.queryByRole('heading', { name: 'Waiting for music' })).toBeNull();
+      fireEvent.pointerCancel(slider, { pointerId: 1 });
+      await act(async () => {
+        await vi.advanceTimersByTimeAsync(0);
+      });
+      expect(scrolled).not.toHaveBeenCalled();
+      expect(document.activeElement).toBe(slider);
+    } finally {
+      delete (Element.prototype as { scrollIntoView?: unknown }).scrollIntoView;
+    }
+  });
+
   it('keeps a sub-2s buffering gap off the recovery panel and leaves focus put', async () => {
     const stalled = { current: false };
     let transport: NonNullable<AdapterEvents['onTransportState']> = () => {};
@@ -2723,7 +2769,9 @@ describe('LiveMode timeline scrubber', () => {
       act(() => {
         vi.advanceTimersByTime(2_000);
       });
-      expect(Number(slider.getAttribute('aria-valuenow'))).toBeGreaterThan(1_000);
+      // The watchdog fired 10 s into the press; the clock runs on from where
+      // the finger held it (0:00) for the 3 s since, not 0:00 plus the hold.
+      expect(slider.getAttribute('aria-valuenow')).toBe('3000');
       // The finger was only resting: lifting it still commits the tap target.
       fireEvent.pointerUp(slider, { clientX: 90_000, pointerId: 1 });
       expect(slider.getAttribute('aria-valuenow')).toBe('0');
