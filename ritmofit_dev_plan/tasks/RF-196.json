@@ -1,0 +1,32 @@
+{
+  "schemaVersion": 1,
+  "id": "RF-196",
+  "title": "Phone text fields stay 16px in landscape, and the zoom check names the field (RF-189 review follow-ups)",
+  "kind": "task",
+  "status": "done",
+  "priority": "P3",
+  "parent": null,
+  "dependsOn": [],
+  "acceptance": [
+    "The 16px phone text-field rule also applies on a touch screen under 640px tall (a phone turned sideways, wider than sm), so a landscape iPhone does not zoom on focus; tablets and desktops keep their own sizes.",
+    "The e2e zoom check uses the same media query as index.css, checks the sign-up form at 844x390 on the touch phone project, and its failure message falls back from aria-label to id to name (`||`, since a missing id is \"\")."
+  ],
+  "nextAction": null,
+  "blocker": null,
+  "evidence": [
+    {
+      "kind": "observation",
+      "ref": "https://github.com/steven-crosby/ritmofit-web/issues/730",
+      "summary": "Owner pre-approved RF-196 (the reserved ID for the #726 final review follow-ups) for the 2026-11-05 unattended Neo session.",
+      "checkedOn": "2026-11-05"
+    },
+    {
+      "kind": "source",
+      "ref": "e2e/smoke.spec.ts",
+      "summary": "Neo local: the new landscape check failed on a build without the CSS change (sign-up (landscape): form fields under 16px), and the full smoke passed at 1440 and 390 (2 passed) with it; startup entry 179.37 kB gzip.",
+      "checkedOn": "2026-11-05"
+    }
+  ],
+  "resolution": "index.css applies the 16px text-field rule with (max-width: 639.98px), (pointer: coarse) and (max-height: 639.98px), so a sideways phone no longer zooms; the e2e check shares that query, re-checks sign-up at 844x390 on the touch project, and names the field with an aria-label || id || name fallback.",
+  "followUps": []
+}

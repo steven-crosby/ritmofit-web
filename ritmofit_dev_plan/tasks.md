@@ -12,7 +12,7 @@ owner's queue: any agent may execute a Ready task. Publishing follows AGENTS.md 
 Evidence marked **recorded** is a carried-forward claim, not fresh verification.
 A checked PR proves its GitHub state, not product acceptance or production behavior.
 
-193 tasks. backlog: 66 · ready: 0 · in_progress: 0 · blocked: 2 · review: 12 · done: 111 · cancelled: 2.
+194 tasks. backlog: 66 · ready: 0 · in_progress: 0 · blocked: 2 · review: 12 · done: 112 · cancelled: 2.
 
 ## In progress
 
@@ -159,6 +159,7 @@ A checked PR proves its GitHub state, not product acceptance or production behav
 | [RF-147](tasks/RF-147.json) Apple Music adapter diagnostics and FairPlay flag handling match the legacy path RF-124 restored | P3 / task | — | Criteria 0-2 shipped in #668; criterion 3 met by the owner's 2026-11-03 iPhone Safari run on af800c8 (Start, Next and auto-advance audible). FairPlay flag clearing is unchanged; once-per-load clear and late-settle checks remain RF-159. | checked 2026-10-29; checked 2026-10-30; checked 2026-11-03 |
 | [RF-156](tasks/RF-156.json) iOS web-contract snapshot picks up the RF-132 likes paging and search contract | P3 / task | follow-ups RF-162 | Met. iOS web-contract/ was re-copied from web main 0a77110 by the README refresh block (iOS #52, merged 2cc92e2); openapi.json and api.md now document likes ?cursor=, ?q=, X-RitmoFit-Next-Cursor and the 422. Cross-repository parity passed on the PR. No iOS wire model decodes the likes response, so none changed. Contract gaps found in review: RF-162. | checked 2026-10-30; checked 2026-10-31 |
 | [RF-166](tasks/RF-166.json) Classes list stops flagging missing BPM; the builder track panel keeps it | P3 / task | — | The Classes list no longer flags missing tempo (#682); the builder readiness panel and Live keep it per design system 10 §1a. | checked 2026-10-31 |
+| [RF-196](tasks/RF-196.json) Phone text fields stay 16px in landscape, and the zoom check names the field (RF-189 review follow-ups) | P3 / task | — | index.css applies the 16px text-field rule with (max-width: 639.98px), (pointer: coarse) and (max-height: 639.98px), so a sideways phone no longer zooms; the e2e check shares that query, re-checks sign-up at 844x390 on the touch project, and names the field with an aria-label &#124;&#124; id &#124;&#124; name fallback. | checked 2026-11-05 |
 | [RF-1](tasks/RF-1.json) Desktop hold, BPM, and effort recorded on the QA cycle song | untriaged / task | — | Recorded complete on the imported board; product behavior was not re-tested during task migration. | recorded |
 | [RF-2](tasks/RF-2.json) Teaching-screen deploy record on main | untriaged / documentation | — | Recorded complete on the imported board; product behavior was not re-tested during task migration. | recorded; checked 2026-10-27 |
 | [RF-3](tasks/RF-3.json) Teaching screen live | untriaged / task | — | Recorded complete on the imported board; product behavior was not re-tested during task migration. | recorded; checked 2026-10-27 |
