@@ -2057,6 +2057,8 @@ function useProviderBrowseState(connectionRevision = 0) {
         // so a reconnect as another account never shows them (RF-152).
         if (likesLoadedKey.current[provider] !== undefined) {
           setLikes((prev) => ({ ...prev, [provider]: undefined }));
+          likesNextRef.current = { ...likesNextRef.current, [provider]: null };
+          setLikesNext((prev) => ({ ...prev, [provider]: null }));
         }
         delete likesLoadedKey.current[provider];
         delete likesRequestKey.current[provider];
@@ -2292,6 +2294,8 @@ function MusicWorkspace({
   const [songAutoLoad, setSongAutoLoad] = useState(songAutoLoadRef.current);
   const [librarySearch, setLibrarySearch] = useState<{
     provider: Provider;
+    /** RF-152: the connection and account the result came from (`likesConnectionKey`). */
+    connectionKey: string;
     query: string;
     results: TrackSearchResult[] | null;
     failed: boolean;
@@ -2389,6 +2393,8 @@ function MusicWorkspace({
     connections.find((row) => row.provider === selectedProvider),
     Date.now(),
   );
+  const searchConnection = connections.find((row) => row.provider === selectedProvider);
+  const searchConnectionKey = searchConnection ? likesConnectionKey(searchConnection) : '';
   // Apple Music: search the whole library on the server as the instructor types.
   // Keyed on the trimmed query (RF-152): a whitespace-only edit is not a new search.
   const libraryQueryTrimmed = libraryQuery.trim();
@@ -2404,19 +2410,38 @@ function MusicWorkspace({
     if (searchConnectionState !== 'connected') return;
     const id = ++librarySearchId.current;
     const provider = selectedProvider;
+    const connectionKey = searchConnectionKey;
     const timeout = window.setTimeout(() => {
       void listLikesPage(provider, { q: trimmed })
         .then((page) => {
           if (id !== librarySearchId.current) return;
-          setLibrarySearch({ provider, query: trimmed, results: page.items, failed: false });
+          setLibrarySearch({
+            provider,
+            connectionKey,
+            query: trimmed,
+            results: page.items,
+            failed: false,
+          });
         })
         .catch(() => {
           if (id !== librarySearchId.current) return;
-          setLibrarySearch({ provider, query: trimmed, results: null, failed: true });
+          setLibrarySearch({
+            provider,
+            connectionKey,
+            query: trimmed,
+            results: null,
+            failed: true,
+          });
         });
     }, 300);
     return () => window.clearTimeout(timeout);
-  }, [selectedProvider, libraryKind, libraryQueryTrimmed, searchConnectionState]);
+  }, [
+    selectedProvider,
+    libraryKind,
+    libraryQueryTrimmed,
+    searchConnectionState,
+    searchConnectionKey,
+  ]);
 
   // Other services: keep loading pages while a query is typed, debounced, within
   // one budget per search session (songs and requests), so typing more characters
@@ -2604,7 +2629,9 @@ function MusicWorkspace({
     query: songQuery,
     connected: connectionState === 'connected',
     result:
-      librarySearch?.provider === selectedProvider
+      // RF-152: only a result from this account counts; another account's matches never show.
+      librarySearch?.provider === selectedProvider &&
+      librarySearch.connectionKey === searchConnectionKey
         ? { query: librarySearch.query, failed: librarySearch.failed }
         : null,
   });
