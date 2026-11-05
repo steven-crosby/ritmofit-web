@@ -3,7 +3,7 @@
   "id": "RF-152",
   "title": "Music Songs search and Load more behave cleanly at the edges (RF-132 review follow-ups)",
   "kind": "task",
-  "status": "blocked",
+  "status": "done",
   "priority": "P3",
   "parent": null,
   "dependsOn": [],
@@ -16,8 +16,8 @@
     "The owner decides whether the first search's 1,000-song bound counts songs already loaded (today it does, matching the 2026-10-29 ruling) or is relative.",
     "Each changed behavior has a Dashboard or music-library test."
   ],
-  "nextAction": "Owner: decide item 6 (keep the bound counting loaded songs, or make it relative); then an agent implements it if needed and sets Done.",
-  "blocker": "Item 6 is an owner decision: whether the first search's 1,000-song bound counts songs already loaded (today it does, matching the 2026-10-29 ruling) or is relative. Items 1-5 and 7 are done.",
+  "nextAction": null,
+  "blocker": null,
   "evidence": [
     {
       "kind": "observation",
@@ -48,9 +48,15 @@
       "ref": "https://github.com/steven-crosby/ritmofit-web/pull/735",
       "summary": "RF-152 items 1-5 and 7 PR, opened under unattended pre-approval issue #730 after four fresh-context /code-review high passes (significant findings fixed; follow-ups in RF-202).",
       "checkedOn": "2026-11-05"
+    },
+    {
+      "kind": "observation",
+      "ref": "apps/web/src/components/Dashboard.tsx",
+      "summary": "Owner decision on item 6 (live Neo session, 2026-11-05): the first search's 1,000-song bound keeps counting songs already loaded, as main does and as the 2026-10-29 ruling set; it is not made relative. No code change is needed.",
+      "checkedOn": "2026-11-05"
     }
   ],
-  "resolution": null,
+  "resolution": "Items 1-5 and 7 shipped in #735 (one client-side autoload budget of 10 a minute across services, trimmed-query compare, budget counts only sent requests, account-switch and disconnect clear old songs, Apple search result tied to its connection, tests). Item 6: the owner kept the 1,000-song bound counting songs already loaded, which is main's existing behavior. Follow-ups in RF-202.",
   "followUps": [
     "RF-202"
   ]

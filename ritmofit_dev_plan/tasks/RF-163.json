@@ -3,7 +3,7 @@
   "id": "RF-163",
   "title": "One copper primary holds in Classes' error state and through Live queue retries",
   "kind": "task",
-  "status": "blocked",
+  "status": "done",
   "priority": "P3",
   "parent": null,
   "dependsOn": [
@@ -14,8 +14,8 @@
     "A per-card readiness Retry in the Live queue does not drop or move the copper action while that card refetches.",
     "A decision is recorded on whether the Live queue's copper goes to the first runnable class (Preflight) when the leading card only offers a fix action."
   ],
-  "nextAction": "Owner: decide item 3 (copper to the first runnable class, or keep it on the leading card) as a GitHub comment on this record's PR or a direct ask; that decision is the hand-off for an agent to implement it in a child RF record and then set RF-163 Done.",
-  "blocker": "Item 3 is an owner decision: whether the Live queue copper goes to the first runnable class (Preflight) when the leading card only offers a fix action. Items 1 and 2 are done.",
+  "nextAction": null,
+  "blocker": null,
   "evidence": [
     {
       "kind": "pr",
@@ -40,9 +40,15 @@
       "ref": "https://github.com/steven-crosby/ritmofit-web/pull/734",
       "summary": "RF-163 items 1-2 PR, opened under unattended pre-approval issue #730 after two fresh-context /code-review high passes (the significant finding fixed; follow-ups in RF-201).",
       "checkedOn": "2026-11-05"
+    },
+    {
+      "kind": "observation",
+      "ref": "apps/web/src/components/Dashboard.tsx",
+      "summary": "Owner decision on item 3 (live Neo session, 2026-11-05): keep the Live queue copper on the leading card, including when that card only offers a fix; it does not move to the first runnable class. Main already does this (LiveQueue renders primary={allResolved && index === 0}), so no code change is needed.",
+      "checkedOn": "2026-11-05"
     }
   ],
-  "resolution": null,
+  "resolution": "Items 1-2 shipped in #734 (Classes library-error state holds one copper; a Live queue card Retry keeps the copper in place as a busy \"Checking…\"). Item 3: the owner decided the copper stays on the leading card even when it only offers a fix, which is main's existing behavior, so nothing further ships. Follow-ups in RF-201.",
   "followUps": [
     "RF-201"
   ]
