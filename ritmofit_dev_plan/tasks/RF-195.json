@@ -26,6 +26,12 @@
       "ref": "https://github.com/steven-crosby/ritmofit-web/pull/725",
       "summary": "Final review (/code-review medium) of 24ceeaf: one significant finding (stale return-to) fixed in #725; these six were logged as non-blocking.",
       "checkedOn": "2026-11-04"
+    },
+    {
+      "kind": "pr",
+      "ref": "https://github.com/steven-crosby/ritmofit-web/pull/728",
+      "summary": "Owner set RF-195 Ready for the Neo on 2026-11-04 (\"Yes approved\", quoted in this PR body); this draft PR is the Neo claim.",
+      "checkedOn": "2026-11-04"
     }
   ],
   "resolution": null,
