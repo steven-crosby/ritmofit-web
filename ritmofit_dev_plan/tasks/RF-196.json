@@ -3,7 +3,7 @@
   "id": "RF-196",
   "title": "Phone text fields stay 16px in landscape, and the zoom check names the field (RF-189 review follow-ups)",
   "kind": "task",
-  "status": "review",
+  "status": "done",
   "priority": "P3",
   "parent": null,
   "dependsOn": [],
@@ -11,7 +11,7 @@
     "The 16px phone text-field rule also applies to a phone turned sideways (a touch screen under 640px tall and under 960px wide; the widest landscape iPhone is 956px), so a landscape iPhone does not zoom on focus; tablets and desktops keep their own sizes, even when a keyboard shrinks a tablet viewport.",
     "The e2e zoom check uses the same media query as index.css, checks the sign-up form at 844x390 on the touch phone project, and its failure message falls back from aria-label to id to name (`||`, since a missing id is \"\")."
   ],
-  "nextAction": "Owner: with the RF-189 iPhone check against production (deployed 2026-11-05, main ddd4b70), also turn the iPhone sideways and tap the sign-in Email field and Music › Songs Search songs; the page must not zoom. Then set Done. CI proves this only in Chromium touch emulation.",
+  "nextAction": null,
   "blocker": null,
   "evidence": [
     {
@@ -43,8 +43,20 @@
       "ref": "https://github.com/steven-crosby/ritmofit-web/pull/729#issuecomment-6663990545",
       "summary": "Deployed to production on 2026-11-05 from the Air: main ddd4b70, Worker 4c906295-6506-4bc5-b886-8f568446c527, SPA assets/index-CzpTnNZB.js, rollback 229cf040-3b4e-48ac-80bd-10573d017810 (bd2b8fa). Smoke and security headers passed. The owner's landscape iPhone check (with RF-189's) is still owed.",
       "checkedOn": "2026-11-05"
+    },
+    {
+      "kind": "observation",
+      "ref": "https://github.com/steven-crosby/ritmofit-web/pull/739#issuecomment-6666424568",
+      "summary": "Owner assigned the RF-129, RF-189/RF-196 and RF-172 checks to the Neo in iOS Simulator Safari, with results counting toward Done; the owner iPhone keeps the final UX/feel pass after a deploy.",
+      "checkedOn": "2026-11-05"
+    },
+    {
+      "kind": "observation",
+      "ref": "https://ritmofit.studio/",
+      "summary": "iOS Simulator Safari (iPhone 17, iOS 27.2), production 840255c (Worker 40a83587), 2026-11-05 about 11:58-12:05 MST, signed in as the owner; Neo run per the owner check assignment: landscape (874x402): focusing the sign-in Email field and Music › Songs Search songs did not zoom the page.",
+      "checkedOn": "2026-11-05"
     }
   ],
-  "resolution": null,
+  "resolution": "The 16px phone text-field rule now covers a phone turned sideways (#731, deployed); production 840255c in iOS Simulator Safari landscape did not zoom on sign-in Email or Songs search. Follow-ups in RF-198.",
   "followUps": []
 }

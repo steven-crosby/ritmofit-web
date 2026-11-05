@@ -3,7 +3,7 @@
   "id": "RF-129",
   "title": "The app has real URLs: a refresh returns to the same screen, and sign-in and sign-up have their own paths",
   "kind": "task",
-  "status": "review",
+  "status": "done",
   "priority": "P1",
   "parent": null,
   "dependsOn": [],
@@ -14,7 +14,7 @@
     "The service-worker navigation fallback still denies /api/ routes, and OAuth and reset-password callbacks still reach the Worker.",
     "One routing approach covers both refresh-restore and the sign-in/sign-up paths, so the app does not get two routing mechanisms."
   ],
-  "nextAction": "Owner device check on iPhone Safari against production (bd2b8fa deployed 2026-11-04 and ddd4b70 deployed 2026-11-05 both include PR #725). Check that a refresh on a class and on Live reopens it (Live at its preflight with Start, never playing), that an edge swipe Back during a running class stays in Live, and that the sign-in and sign-up links open their own pages. Set Done once that passes. If /music, /account or /live need more than a path (for example Music's inner view in the URL), log a separate task.",
+  "nextAction": null,
   "blocker": null,
   "evidence": [
     {
@@ -40,8 +40,20 @@
       "ref": "https://github.com/steven-crosby/ritmofit-web/pull/725#issuecomment-6648404740",
       "summary": "Deployed to production on 2026-11-04 from the Air: main bd2b8fa, Worker 229cf040-3b4e-48ac-80bd-10573d017810, SPA assets/index-Cbp8jocW.js, rollback d05bb48f. Unauthenticated GETs of /sign-in, /sign-up, /classes/<id> and /classes/<id>/live each return 200 (SPA fallback). This proves only that the paths are served; the owner's iPhone Safari check is still owed.",
       "checkedOn": "2026-11-04"
+    },
+    {
+      "kind": "observation",
+      "ref": "https://github.com/steven-crosby/ritmofit-web/pull/739#issuecomment-6666424568",
+      "summary": "Owner assigned the RF-129, RF-189/RF-196 and RF-172 checks to the Neo in iOS Simulator Safari, with results counting toward Done; the owner iPhone keeps the final UX/feel pass after a deploy.",
+      "checkedOn": "2026-11-05"
+    },
+    {
+      "kind": "observation",
+      "ref": "https://ritmofit.studio/",
+      "summary": "iOS Simulator Safari (iPhone 17, iOS 27.2), production 840255c (Worker 40a83587), 2026-11-05 about 11:58-12:05 MST, signed in as the owner; Neo run per the owner check assignment: refresh on a class page (/classes/<id>) reopened that class; refresh on Live reopened its preflight with Start, and nothing played; during a running class (Run without music, clock moving) a left-edge swipe Back stayed in Live and the class kept running; in a Private tab, Sign in opened /sign-in and its Sign up link opened /sign-up, and Safari Back from /sign-in returned to the landing page. Note: switching between /sign-in and /sign-up replaces the history entry, so one Back from /sign-up also lands on the landing page. Item 4 (service-worker /api/ deny and callbacks) was not exercised here; it rests on the #725 evidence. /classes on its own is not a route and shows the app 404 by design (app-route.test.ts).",
+      "checkedOn": "2026-11-05"
     }
   ],
-  "resolution": null,
+  "resolution": "Real URLs shipped in #725 and are live since bd2b8fa. On production 840255c in iOS Simulator Safari (owner-assigned check): refresh restores a class and Live (at preflight, never playing), an edge swipe Back keeps a running class in Live, and /sign-in and /sign-up are their own pages with Back to the landing page. Follow-ups in RF-195.",
   "followUps": []
 }
