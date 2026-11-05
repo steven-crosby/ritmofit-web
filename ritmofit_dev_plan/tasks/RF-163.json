@@ -14,7 +14,7 @@
     "A per-card readiness Retry in the Live queue does not drop or move the copper action while that card refetches.",
     "A decision is recorded on whether the Live queue's copper goes to the first runnable class (Preflight) when the leading card only offers a fix action."
   ],
-  "nextAction": "Owner: decide item 3 (copper to the first runnable class, or keep it on the leading card); then an agent implements it if needed and sets Done.",
+  "nextAction": "Owner: decide item 3 (copper to the first runnable class, or keep it on the leading card) as a GitHub comment on this record's PR or a direct ask; that decision is the hand-off for an agent to implement it in a child RF record and then set RF-163 Done.",
   "blocker": "Item 3 is an owner decision: whether the Live queue copper goes to the first runnable class (Preflight) when the leading card only offers a fix action. Items 1 and 2 are done.",
   "evidence": [
     {
@@ -32,10 +32,12 @@
     {
       "kind": "test",
       "ref": "apps/web/src/components/Dashboard.test.tsx",
-      "summary": "Neo local: item 1 was already met on main 827ae64 (the library-error state renders only 'Try the library again' in copper; + Create lives in the library view); a new test pins it. Item 2: the new Live queue retry test failed on main (copper dropped to none while a card refetched) and passes with the fix; Dashboard.test.tsx all pass.",
+      "summary": "Neo local: item 1 was already met on main 827ae64 (the library-error state renders only 'Try the library again' in copper; + Create lives in the library view); a new test pins it. Item 2: the new Live queue retry test failed on main (copper dropped to none while a card refetched) and passes with the fix; Dashboard.test.tsx all pass. A fresh-context review found the leading card (one class, or every check failed) still lost its copper Retry while refetching; fixed by keeping the same button as a busy copper \"Checking…\" (it keeps keyboard focus). Its new test failed on the earlier commit and passes now; Dashboard.test.tsx 221 passed.",
       "checkedOn": "2026-11-05"
     }
   ],
   "resolution": null,
-  "followUps": []
+  "followUps": [
+    "RF-201"
+  ]
 }

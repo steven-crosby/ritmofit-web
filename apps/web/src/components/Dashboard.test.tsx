@@ -1452,6 +1452,43 @@ describe('Dashboard class library states', () => {
     expect(copper()).toHaveLength(1);
   });
 
+  it('keeps the copper on a leading card while its Retry refetches (RF-163)', async () => {
+    const only = {
+      ...makeClass('Solo ride', 'owner', 'me'),
+      trackCount: 1,
+      totalDurationMs: 60_000,
+    };
+    vi.mocked(api.listClasses).mockResolvedValue(page([only]));
+    const payload = liveRunPayload([{ classTrackId: 'ct-1', durationMs: 60_000 }]);
+    payload.sections = [];
+    const retry = deferred<RunPayload>();
+    vi.mocked(api.getRunPayload)
+      .mockRejectedValueOnce(new Error('readiness check failed'))
+      .mockImplementationOnce(() => retry.promise);
+    renderDashboard();
+
+    fireEvent.click(await screen.findByRole('button', { name: 'Live' }));
+    const button = await screen.findByRole('button', { name: 'Retry readiness — Solo ride' });
+    expect(button.className).toContain('rf-btn-primary');
+    button.focus();
+    fireEvent.click(button);
+
+    // The same button stays, busy and copper, and keeps focus.
+    const checking = await screen.findByRole('button', { name: 'Checking readiness — Solo ride' });
+    expect(checking).toBe(button);
+    expect(checking.getAttribute('aria-disabled')).toBe('true');
+    expect(checking.className).toContain('rf-btn-primary');
+    expect(document.activeElement).toBe(checking);
+    fireEvent.click(checking);
+    expect(api.getRunPayload).toHaveBeenCalledTimes(2);
+
+    await act(async () => {
+      retry.resolve(payload);
+      await retry.promise;
+    });
+    expect(await screen.findByRole('button', { name: 'Preflight Solo ride' })).toBeTruthy();
+  });
+
   it('shows one copper action when the class library fails to load (RF-163)', async () => {
     vi.mocked(api.listClasses).mockRejectedValue(new Error('library down'));
     renderDashboard();
