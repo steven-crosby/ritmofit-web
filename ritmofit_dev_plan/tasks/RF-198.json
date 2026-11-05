@@ -10,7 +10,9 @@
   "acceptance": [
     "A decision is recorded on targeting iOS WebKit directly (for example @supports (-webkit-touch-callout: none)) instead of viewport size and pointer type, weighing that Chromium e2e cannot exercise an iOS-only guard.",
     "The landscape zoom check covers Music › Songs search and the Create a class sheet, not only sign-up, or the record says why not.",
-    "The media query lives in one place that index.css and e2e/smoke.spec.ts both read, or a check fails when the two copies differ."
+    "The media query lives in one place that index.css and e2e/smoke.spec.ts both read, or a check fails when the two copies differ.",
+    "The index.css comment and RF-196 acceptance stop claiming every tablet is excluded: a touch window under 960x640 (iPadOS Stage Manager, a small Android tablet in landscape) still gets 16px fields, and the keyboard-shrink case only holds on browsers that resize the layout viewport.",
+    "The e2e landscape step checks the page is in portrait (or uses pointer: coarse from the page) before rotating, so a touch project configured in landscape cannot skip the landscape branch; the must-match assertion moves into expectNoZoomingFields."
   ],
   "nextAction": "Logged from the fresh-context review of the RF-196 PR (2026-11-05 unattended Neo session). Agent-created: Backlog until the owner sets Ready.",
   "blocker": null,
@@ -18,7 +20,7 @@
     {
       "kind": "observation",
       "ref": "https://github.com/steven-crosby/ritmofit-web/issues/730",
-      "summary": "Non-blocking findings from the RF-196 pre-PR review, not fixed in that PR.",
+      "summary": "Non-blocking findings from the two RF-196 pre-PR reviews, not fixed in that PR.",
       "checkedOn": "2026-11-05"
     }
   ],
