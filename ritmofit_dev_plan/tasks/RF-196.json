@@ -31,6 +31,12 @@
       "ref": "https://github.com/steven-crosby/ritmofit-web/issues/730",
       "summary": "Fresh-context /code-review high before the PR: fixed in the PR are the tablet over-match (width cap), the hard-coded restore viewport and project-name gate (now the project portrait size and hasTouch), the evidence kind, and the unnamed real-device check; an iOS-only @supports guard, landscape checks on other screens and the copied query are logged as RF-198.",
       "checkedOn": "2026-11-05"
+    },
+    {
+      "kind": "pr",
+      "ref": "https://github.com/steven-crosby/ritmofit-web/pull/731",
+      "summary": "RF-196 PR, opened under unattended pre-approval issue #730 after two fresh-context /code-review high passes (findings fixed or logged as RF-198).",
+      "checkedOn": "2026-11-05"
     }
   ],
   "resolution": null,
