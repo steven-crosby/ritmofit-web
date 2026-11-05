@@ -15,9 +15,10 @@
     "A failed Apple sign-in that returns to /sign-in?error=... shows a plain-words error on the sign-in form.",
     "Dashboard tests no longer rely on a setTimeout(0) wait for a queued jsdom history.back() between tests (stub it, or make the reset deterministic).",
     "Decide whether stepTo's 'a return goes Back' design (pendingBack/selfPop) is worth its complexity, or replace it with plain pushes plus a Live-specific rule.",
-    "The legacy /?auth= redirect runs outside a useState initializer."
+    "The legacy /?auth= redirect runs outside a useState initializer.",
+    "After a signed-out deep link, a sign-in that completes while signed in on / (not /sign-in) clears the remembered path, so a later /sign-in visit in that tab cannot jump to the old class (#725 final review at 2d358cd)."
   ],
-  "nextAction": "Non-blocking findings logged from the final review of #725 (24ceeaf). Pick up after the owner's iPhone check of RF-129. Surface: web.",
+  "nextAction": "Owner set this Ready for the Neo on 2026-11-04; the Neo claims it by its draft PR. It stays Backlog only because the tasks check refuses Ready while RF-129 is not Done; it starts once the owner's iPhone check moves RF-129 to Done.",
   "blocker": null,
   "evidence": [
     {
