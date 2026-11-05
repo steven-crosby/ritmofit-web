@@ -3380,24 +3380,43 @@ function LiveWorkspace({
     };
   }, []);
 
-  const fetchOne = useCallback((classId: string) => {
-    setPayloads((prev) => ({ ...prev, [classId]: { status: 'loading' } }));
-    void getRunPayload(classId)
-      .then((payload) => {
-        if (!mountedRef.current) return;
-        setPayloads((prev) => ({
-          ...prev,
-          [classId]: { status: 'ready', payload, readiness: classReadiness(payload) },
-        }));
-      })
-      .catch((err: unknown) => {
-        if (!mountedRef.current) return;
-        setPayloads((prev) => ({
-          ...prev,
-          [classId]: { status: 'error', error: errMessage(err) },
-        }));
-      });
+  // RF-163: a card's Retry keeps its last result in `payloads` while it refetches, so the
+  // queue stays resolved: the ranking and the one copper action do not drop or move under
+  // the instructor. Only that card shows the refetch, through `retrying`.
+  const [retrying, setRetrying] = useState<ReadonlySet<string>>(() => new Set());
+  const setRetryingFor = useCallback((classId: string, on: boolean) => {
+    setRetrying((prev) => {
+      if (prev.has(classId) === on) return prev;
+      const next = new Set(prev);
+      if (on) next.add(classId);
+      else next.delete(classId);
+      return next;
+    });
   }, []);
+  const fetchOne = useCallback(
+    (classId: string) => {
+      setRetryingFor(classId, true);
+      void getRunPayload(classId)
+        .then((payload) => {
+          if (!mountedRef.current) return;
+          setPayloads((prev) => ({
+            ...prev,
+            [classId]: { status: 'ready', payload, readiness: classReadiness(payload) },
+          }));
+        })
+        .catch((err: unknown) => {
+          if (!mountedRef.current) return;
+          setPayloads((prev) => ({
+            ...prev,
+            [classId]: { status: 'error', error: errMessage(err) },
+          }));
+        })
+        .finally(() => {
+          if (mountedRef.current) setRetryingFor(classId, false);
+        });
+    },
+    [setRetryingFor],
+  );
 
   // Fetch a run-payload per candidate whenever the candidate set changes. Concurrent
   // (N is small for a solo creator); each card resolves independently. Ready results
@@ -3540,7 +3559,7 @@ function LiveWorkspace({
             <LiveQueueCard
               key={cls.id}
               cls={cls}
-              state={payloads[cls.id]}
+              state={retrying.has(cls.id) ? { status: 'loading' } : payloads[cls.id]}
               primary={allResolved && index === 0}
               onRun={() => onRunClass(cls.id)}
               onEdit={() => void onOpenClass(cls)}
