@@ -15,7 +15,8 @@
     "A retry tap after a round stopped on a load error is decided: it counts as one of that round's requests (today) or starts a new round.",
     "A test proves search autoload resumes once the oldest request leaves the per-minute window, not only that it stays under the cap.",
     "A test covers an Apple library search result after an account switch on the same service while the query stays typed (RF-152 keys the result to likesConnectionKey; no component test reaches a connection refresh from the Songs view yet).",
-    "A failed Apple library search can be retried without clearing the query (a whitespace edit no longer re-sends it), and a result for the same query is not shown again after switching away and back."
+    "A failed Apple library search can be retried without clearing the query (a whitespace edit no longer re-sends it), and a result for the same query is not shown again after switching away and back.",
+    "Liked songs and the Apple search result are keyed to the provider account, not only the connection row: the API stores providerUserId as null and keeps the row id when a service is re-authorized without a disconnect (for example from iOS), so likesConnectionKey cannot tell two accounts apart."
   ],
   "nextAction": "Logged from the fresh-context reviews of the RF-152 PR (2026-11-05 unattended Neo session). Agent-created: Backlog until the owner sets Ready.",
   "blocker": null,
@@ -23,7 +24,7 @@
     {
       "kind": "observation",
       "ref": "https://github.com/steven-crosby/ritmofit-web/issues/730",
-      "summary": "Non-blocking findings from the three RF-152 pre-PR reviews, not fixed in that PR.",
+      "summary": "Non-blocking findings from the four RF-152 pre-PR reviews, not fixed in that PR.",
       "checkedOn": "2026-11-05"
     }
   ],
