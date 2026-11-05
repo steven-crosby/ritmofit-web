@@ -36,11 +36,15 @@ async function expectNoSidewaysOverflow(page: Page, where: string) {
   ).toBeLessThanOrEqual(clientWidth);
 }
 
-// RF-189: iOS Safari zooms the page when a text field under 16px gets focus. Below the sm
-// breakpoint (640px) every visible text-entry field must compute to 16px or more.
+// RF-189: iOS Safari zooms the page when a text field under 16px gets focus. On a phone
+// (the index.css query, copied here and kept in step by hand: under 640px wide, or a phone
+// turned sideways, RF-196) every visible text-entry field must compute to 16px or more.
+const PHONE_FIELDS_QUERY =
+  '(max-width: 639.98px), (pointer: coarse) and (max-height: 639.98px) and (max-width: 959.98px)';
+
 async function expectNoZoomingFields(page: Page, where: string) {
-  const small = await page.evaluate(() => {
-    if (window.innerWidth >= 640) return [];
+  const small = await page.evaluate((query) => {
+    if (!window.matchMedia(query).matches) return [];
     const skip = [
       'checkbox',
       'radio',
@@ -59,10 +63,11 @@ async function expectNoZoomingFields(page: Page, where: string) {
       .map((el) => ({ el, size: parseFloat(getComputedStyle(el).fontSize) }))
       .filter(({ size }) => size < 16)
       .map(({ el, size }) => {
-        const label = el.getAttribute('aria-label') ?? el.id ?? el.getAttribute('name');
+        // `||`: a missing id is "", so `??` would never reach the name (RF-196).
+        const label = el.getAttribute('aria-label') || el.id || el.getAttribute('name') || '';
         return `${el.tagName.toLowerCase()} "${label}" ${size}px`;
       });
-  });
+  }, PHONE_FIELDS_QUERY);
   expect(small, `${where}: form fields under 16px zoom iOS Safari`).toEqual([]);
 }
 
@@ -110,6 +115,17 @@ async function signUp(page: Page, email: string) {
   await page.getByLabel('Email').fill(email);
   await page.locator('#login-password').fill('e2e-pass-1234');
   await expectNoZoomingFields(page, 'sign-up');
+  const portrait = page.viewportSize();
+  if (test.info().project.use.hasTouch && portrait) {
+    // RF-196: the same phone turned sideways is wider than sm but still zooms.
+    await page.setViewportSize({ width: portrait.height, height: portrait.width });
+    expect(
+      await page.evaluate((query) => window.matchMedia(query).matches, PHONE_FIELDS_QUERY),
+      'sign-up (landscape): the phone query matches a sideways touch screen',
+    ).toBe(true);
+    await expectNoZoomingFields(page, 'sign-up (landscape)');
+    await page.setViewportSize(portrait);
+  }
   await page.getByRole('button', { name: 'Create account' }).click();
   const tutorial = page.getByRole('dialog', { name: 'New instructor four-count tutorial' });
   await tutorial.waitFor();
