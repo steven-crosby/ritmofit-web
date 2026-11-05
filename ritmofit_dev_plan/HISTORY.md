@@ -12,6 +12,39 @@ detail). Current focus and `main` vs production live in the "Now" block of
 ---
 
 ## Deploy and session log (newest first)
+> **Deploy 2026-11-05: Music preview, phone field zoom and Live/Music fixes on main `ddd4b70`**. Deployed from the Air
+> with `scripts/deploy.sh`. The owner's approval is recorded on
+> [#729](https://github.com/steven-crosby/ritmofit-web/pull/729#issuecomment-6663990545).
+>
+> - **What changed:** since `bd2b8fa` the runtime changes are web SPA only: #726 (RF-189), #727 (RF-172), #731 (RF-196),
+>   #732 (RF-197, tests only), #733 (RF-173), #734 (RF-163) and #735 (RF-152). Everything else is records and docs
+>   (#736, #737). There are no Worker config changes, and no remote D1 migrations to apply.
+> - **Worker:** new `4c906295-6506-4bc5-b886-8f568446c527`; rollback `229cf040-3b4e-48ac-80bd-10573d017810` (`bd2b8fa`).
+> - **SPA:** `assets/index-CzpTnNZB.js` (was `assets/index-Cbp8jocW.js`).
+> - **Checks:** gates passed and propagation was 3/3. The status smoke and all six security headers passed.
+>   `/sign-in`, `/sign-up` and `/classes/<id>/live` each return 200 (SPA fallback).
+> - **Tail:** a 5-minute `wrangler tail` captured both Worker test requests (health 200, classes 401), 0 exceptions.
+>   The four page requests are served as static assets and do not reach the Worker.
+> - **Not done:** the owner's iPhone checks of RF-129, RF-189 with RF-196 (portrait and landscape), and RF-172.
+> - **Not in this deploy:** [#720](https://github.com/steven-crosby/ritmofit-web/pull/720) (not merged; playback,
+>   gets its own deploy).
+
+> **Deploy 2026-11-04: RF-129 real URLs on main `bd2b8fa`**. Deployed from the Air with `scripts/deploy.sh`.
+> The owner's request is recorded on
+> [#725](https://github.com/steven-crosby/ritmofit-web/pull/725#issuecomment-6648404740).
+>
+> - **What changed:** since `af800c8` the only runtime change is
+>   [#725](https://github.com/steven-crosby/ritmofit-web/pull/725) (`867f7ba`, web SPA only). Everything else is records and docs
+>   (#713 to #724). There are no Worker config changes, and no remote D1 migrations to apply.
+> - **Worker:** new `229cf040-3b4e-48ac-80bd-10573d017810`; rollback `d05bb48f-5f85-49c9-b08e-f0f4448d29d6` (`af800c8`).
+> - **SPA:** `assets/index-Cbp8jocW.js` (was `assets/index-ChxMwIpX.js`).
+> - **Checks:** gates passed and propagation was 3/3. The status smoke and all six security headers passed.
+>   `/sign-in`, `/sign-up`, `/classes/<id>` and `/classes/<id>/live` each return 200 (SPA fallback).
+> - **Tail:** a 5-minute `wrangler tail` captured no events. A second tail confirmed capture: 6/6
+>   test requests (health 200, classes 401), 0 exceptions.
+> - **Not done:** the owner's iPhone Safari check of RF-129.
+> - **Not in this deploy:** [#720](https://github.com/steven-crosby/ritmofit-web/pull/720) (not merged).
+
 > **Deploy 2026-11-02 — RF-183: standalone auth deploy of RF-177 and RF-178 on main `af800c8`**
 > (from the Air, owner "Yes", recorded on
 > [#712](https://github.com/steven-crosby/ritmofit-web/pull/712#issuecomment-6594161676)). Runtime
