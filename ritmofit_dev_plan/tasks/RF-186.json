@@ -12,7 +12,7 @@
     "The clock keeps running (or holds only while a start is pending, labelled as such) and audio returns without a tap.",
     "A test covers the state sequence that produced Paused."
   ],
-  "nextAction": "After a deploy of #720, the owner re-runs Live on iPhone Safari with ?playback-timing=1 on an Apple Music class: tap timeline tracks in quick succession until Live shows Paused (or 10 rounds without it), and save the console from the first tap to the resume. The lines needed: [ritmo live] status <kind> (every coordinator status Live receives), [ritmo live] toggle-pause / toggle-play <how> (any activation of the Pause/Play button, with pointer type, trusted flag and x/y), [ritmo live-timeline] pointer-* lines and the Apple #N lines. A toggle-pause line during the taps means the primary button received an activation the owner did not intend (then the fix is layout/hit-target work, likely with RF-188); no toggle line but a status paused means a runtime path this analysis missed.",
+  "nextAction": "Against production (#720 deployed 2026-11-05, main 840255c), the owner re-runs Live on iPhone Safari with ?playback-timing=1 on an Apple Music class: tap timeline tracks in quick succession until Live shows Paused (or 10 rounds without it), and save the console from the first tap to the resume. The lines needed: [ritmo live] status <kind> (every coordinator status Live receives), [ritmo live] toggle-pause / toggle-play <how> (any activation of the Pause/Play button, with pointer type, trusted flag and x/y), [ritmo live-timeline] pointer-* lines and the Apple #N lines. A toggle-pause line during the taps means the primary button received an activation the owner did not intend (then the fix is layout/hit-target work, likely with RF-188); no toggle line but a status paused means a runtime path this analysis missed.",
   "blocker": "Device evidence: the owner's next iPhone Safari run with ?playback-timing=1 (after a deploy of #720) must capture the [ritmo live] lines around a Paused. Source and tests give no credible cause, so no fix was guessed.",
   "evidence": [
     {
@@ -67,6 +67,12 @@
       "kind": "pr",
       "ref": "https://github.com/steven-crosby/ritmofit-web/pull/720",
       "summary": "Round 5 of #720: Next, Previous and Skip track resume music after a playback error again (an explicit press each). Timeline strip input stays clock-only, so no strip gesture can start music by itself. The blocker and the device lines needed are unchanged.",
+      "checkedOn": "2026-11-05"
+    },
+    {
+      "kind": "observation",
+      "ref": "https://github.com/steven-crosby/ritmofit-web/pull/720#issuecomment-6665293356",
+      "summary": "Deployed to production on 2026-11-05 from the Air: main 840255c, Worker 40a83587-aae4-4f36-a7a5-a70f06354f3f, SPA assets/index-B3dB3J89.js, rollback 4c906295-6506-4bc5-b886-8f568446c527 (ddd4b70). Smoke, headers and a 5-minute tail (0 exceptions) passed. This proves only that the deploy is up; the owner's iPhone Safari playback run is still owed.",
       "checkedOn": "2026-11-05"
     }
   ],

@@ -12,7 +12,7 @@
     "Any play() rejection on a superseded or re-cued start is caught and recorded in the timing log, not surfaced as unhandled.",
     "An adapter test covers the re-cue path (set-queue-start (again)) rejecting."
   ],
-  "nextAction": "After a deploy of #720, the owner re-runs Live on iPhone Safari with ?playback-timing=1 on an Apple Music class: do one timeline drag across several tracks and a few mid-track taps. The console should show no \"Unhandled Promise Rejection: The play() method was called without a previous stop() or pause() call.\"; any such rejection appears instead as [ritmo apple-music] timing musickit-play-rejection or [ritmo apple-music #N] timing play-rejected-already-playing (handled, this queue playing | waiting for playing), the track plays, and no Retry banner appears while audio plays. If acceptance holds, set Done with that observation.",
+  "nextAction": "Against production (#720 deployed 2026-11-05, main 840255c), the owner re-runs Live on iPhone Safari with ?playback-timing=1 on an Apple Music class: do one timeline drag across several tracks and a few mid-track taps. The console should show no \"Unhandled Promise Rejection: The play() method was called without a previous stop() or pause() call.\"; any such rejection appears instead as [ritmo apple-music] timing musickit-play-rejection or [ritmo apple-music #N] timing play-rejected-already-playing (handled, this queue playing | waiting for playing), the track plays, and no Retry banner appears while audio plays. If acceptance holds, set Done with that observation.",
   "blocker": null,
   "evidence": [
     {
@@ -97,6 +97,12 @@
       "kind": "pr",
       "ref": "https://github.com/steven-crosby/ritmofit-web/pull/720",
       "summary": "Round 5 of #720 changes only Live's error-state navigation (RF-185). The Apple adapter is unchanged since round 4.",
+      "checkedOn": "2026-11-05"
+    },
+    {
+      "kind": "observation",
+      "ref": "https://github.com/steven-crosby/ritmofit-web/pull/720#issuecomment-6665293356",
+      "summary": "Deployed to production on 2026-11-05 from the Air: main 840255c, Worker 40a83587-aae4-4f36-a7a5-a70f06354f3f, SPA assets/index-B3dB3J89.js, rollback 4c906295-6506-4bc5-b886-8f568446c527 (ddd4b70). Smoke, headers and a 5-minute tail (0 exceptions) passed. This proves only that the deploy is up; the owner's iPhone Safari playback run is still owed.",
       "checkedOn": "2026-11-05"
     }
   ],
