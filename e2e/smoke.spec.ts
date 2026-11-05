@@ -77,8 +77,6 @@ const KNOWN_AXE: Record<string, string[]> = {
   // WCAG 2.5.3 Label in Name: the class row, Jump back in card, and template tile buttons set an
   // aria-label that leaves out part of their visible text. axe 4.14 enables this rule by default.
   Classes: ['label-content-name-mismatch'],
-  // The Music service chips ("SoundCloud, Connected") have the same mismatch (RF-173).
-  'Music songs': ['label-content-name-mismatch'],
 };
 
 async function expectNoAxeViolations(page: Page, where: string) {

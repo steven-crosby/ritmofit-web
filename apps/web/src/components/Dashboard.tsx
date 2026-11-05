@@ -2733,6 +2733,9 @@ function MusicWorkspace({
               className={`${shell} justify-between px-3 rf-focus-ring`}
             >
               <span className="truncate font-ui text-sm text-text-primary">{name}</span>
+              {/* RF-173: a flex container doesn't render this space, but it keeps the visible
+                  text "SoundCloud Catalog only" two words, so the aria-label contains it (WCAG
+                  2.5.3 Label in Name; axe joins child text without spaces). */}{' '}
               <ConnectionStateMark
                 kind={chip.kind}
                 label={chip.label}
