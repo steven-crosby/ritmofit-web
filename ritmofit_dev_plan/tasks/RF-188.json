@@ -13,7 +13,7 @@
     "While a finger is dragging the timeline, Live does not show the \"Waiting for music\" banner and its actions; it shows at most a quiet seeking state, and the banner appears only if playback still has not progressed after release.",
     "The design follows ritmofit_design_system; the owner reviews the design before build."
   ],
-  "nextAction": "Owner: after #738 merges and the Air deploys it, on a real iPhone in Live with Apple Music playing, check that a tap on a timeline track jumps to that track start first time, the hint and callout read clearly, and dragging shows Seeking… with no Waiting for music banner until release (and the banner only if music still has not started). Then set Done; anything that feels wrong becomes a new task. CI and the simulator cannot prove real provider playback.",
+  "nextAction": "Owner: #738 is deployed (main 75f09a1, 2026-11-06), on a real iPhone in Live with Apple Music playing, check that a tap on a timeline track jumps to that track start first time, the hint and callout read clearly, and dragging shows Seeking… with no Waiting for music banner until release (and the banner only if music still has not started). Then set Done; anything that feels wrong becomes a new task. CI and the simulator cannot prove real provider playback.",
   "blocker": null,
   "evidence": [
     {
@@ -117,6 +117,12 @@
       "ref": "https://github.com/steven-crosby/ritmofit-web/pull/738",
       "summary": "Fresh-context review of round 4 (023ef66): a still press past the watchdog in a silence gap still let the frame loop tick the coordinator into the pressed track, so the lift started a second adapter. Fixed by ticking the coordinator only when no finger is down (the clock hold still gates the clock tick and sync); a new test holds a gap tap for 11 s and fails on 023ef66 (3 adapters, not 2). Its minor points are in RF-206 items 10 and 13.",
       "checkedOn": "2026-11-05"
+    },
+    {
+      "kind": "observation",
+      "ref": "https://github.com/steven-crosby/ritmofit-web/pull/738#issuecomment-6673855804",
+      "summary": "Deployed to production on 2026-11-06 from the Air: main 75f09a1 (#738 alone on top of 840255c plus records #742), Worker ce487041-27d5-4edf-90e2-a6676522574e, SPA assets/index-CySmXOV6.js, rollback 40a83587-aae4-4f36-a7a5-a70f06354f3f (840255c). No migrations. Smoke, headers and a 5-minute tail (0 exceptions) passed. This proves only that the deploy is up; the owner iPhone check is still owed.",
+      "checkedOn": "2026-11-06"
     }
   ],
   "resolution": null,

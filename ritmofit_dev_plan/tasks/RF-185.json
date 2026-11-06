@@ -12,7 +12,7 @@
     "A LiveTimeline or trailing-throttle test reproduces pointerdown, then a pointermove at the same clientX inside the 200 ms window, then pointerup, and fails before the fix (one tap must send the provider exactly one seek).",
     "Next, Previous, auto-advance and a drag that rests past the throttle window keep their current behaviour."
   ],
-  "nextAction": "Against production once #738 (RF-188) is deployed (840255c, deployed 2026-11-05, still logs release-skipped), the owner re-runs Live on iPhone Safari with ?playback-timing=1 on an Apple Music class: (1) tap one timeline track with a still finger three times, a few seconds apart: each tap shows one [ritmo live-timeline] pointer-down and pointer-up ... tap, one [ritmo live] seek-sent (the release sends the one seek; RF-188 removed the release-skipped path) and one Apple #N prepare with no #N cancelled about 60-115 ms later; any pointer-move lines between them confirm or refute the still-finger move premise. (2) quick taps on 2-3 tracks; (3) one drag across several tracks, rest, release: no extra start after the release; (4) a small deliberate nudge lands where released. Next, Previous and auto-advance behave as before. If acceptance holds, set Done with that observation; otherwise attach the console lines.",
+  "nextAction": "Against production (main 75f09a1, deployed 2026-11-06 with #738; release-skipped is gone), the owner re-runs Live on iPhone Safari with ?playback-timing=1 on an Apple Music class: (1) tap one timeline track with a still finger three times, a few seconds apart: each tap shows one [ritmo live-timeline] pointer-down and pointer-up ... tap, one [ritmo live] seek-sent (the release sends the one seek; RF-188 removed the release-skipped path) and one Apple #N prepare with no #N cancelled about 60-115 ms later; any pointer-move lines between them confirm or refute the still-finger move premise. (2) quick taps on 2-3 tracks; (3) one drag across several tracks, rest, release: no extra start after the release; (4) a small deliberate nudge lands where released. Next, Previous and auto-advance behave as before. If acceptance holds, set Done with that observation; otherwise attach the console lines.",
   "blocker": null,
   "evidence": [
     {
@@ -134,6 +134,12 @@
       "ref": "https://github.com/steven-crosby/ritmofit-web/pull/720#issuecomment-6666063619",
       "summary": "Deployed to production on 2026-11-05 from the Air: main 840255c, Worker 40a83587-aae4-4f36-a7a5-a70f06354f3f, SPA assets/index-B3dB3J89.js, rollback 4c906295-6506-4bc5-b886-8f568446c527 (ddd4b70). Smoke, headers and a 5-minute tail (0 exceptions) passed. This proves only that the deploy is up; the owner's iPhone Safari playback run is still owed.",
       "checkedOn": "2026-11-05"
+    },
+    {
+      "kind": "observation",
+      "ref": "https://github.com/steven-crosby/ritmofit-web/pull/738#issuecomment-6673855804",
+      "summary": "Deployed to production on 2026-11-06 from the Air: main 75f09a1 (#738 alone on top of 840255c plus records #742), Worker ce487041-27d5-4edf-90e2-a6676522574e, SPA assets/index-CySmXOV6.js, rollback 40a83587-aae4-4f36-a7a5-a70f06354f3f (840255c). No migrations. Smoke, headers and a 5-minute tail (0 exceptions) passed. This proves only that the deploy is up; the owner iPhone check is still owed.",
+      "checkedOn": "2026-11-06"
     }
   ],
   "resolution": null,

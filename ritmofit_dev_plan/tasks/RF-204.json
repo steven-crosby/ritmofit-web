@@ -13,11 +13,11 @@
     "Live: Next, Previous, Skip track or a Full List row (jumpTo) after a playback error and Retry recover the same way (resume in place or rebuild the coordinator), or the record states why they differ.",
     "Apple adapter: the starting hold kept after destroy() is removed if it has no effect (the runtime builds a new adapter per job), or its purpose is documented.",
     "resetMusicKitRejectionGuardForTests cannot drive guardHolders negative (test-only).",
-    "Live timeline: the strip ignores non-primary mouse buttons (a right-click or middle-click does not start a gesture or seek), with a test. This already happened before #720.",
-    "Live: togglePlay cancels the commit throttle before resume or pause, consistent with Retry, jumpTo and Continue without music, or the record states why it need not.",
-    "Live: seekRelease reuses seek() for its error and send paths instead of duplicating them."
+    "Done in #738 (RF-188): Live timeline: the strip ignores non-primary mouse buttons (a right-click or middle-click does not start a gesture or seek), with a test. This already happened before #720.",
+    "Moot after #738 (RF-188): the commit throttle is gone, so togglePlay has nothing to cancel. Was: Live: togglePlay cancels the commit throttle before resume or pause, consistent with Retry, jumpTo and Continue without music, or the record states why it need not.",
+    "Done in #738 (RF-188): seekRelease is now seek itself. Was: Live: seekRelease reuses seek() for its error and send paths instead of duplicating them."
   ],
-  "nextAction": "Pick these up after the owner's iPhone Safari run (#720 is merged and deployed in 840255c); the first item needs that device run (?playback-timing=1, a timeline re-cue within the same song). Agent-created: Backlog until the owner sets Ready.",
+  "nextAction": "Items 6-8 were settled by #738 (RF-188, deployed in 75f09a1). Items 1-5 remain; pick them up after the owner's iPhone Safari run on production, and the first item needs that device run (?playback-timing=1, a timeline re-cue within the same song). Agent-created: Backlog until the owner sets Ready.",
   "blocker": null,
   "evidence": [
     {
@@ -31,6 +31,12 @@
       "ref": "https://github.com/steven-crosby/ritmofit-web/pull/720#issuecomment-6665131783",
       "summary": "Final review of #720 at 0f1ea0a (merged as 840255c) found no significant issues. It added three not-significant notes: the strip accepts non-primary mouse buttons (already in production before #720), togglePlay does not cancel the throttle (not reachable as a double start, since every release flushes or cancels), and seekRelease duplicates seek(). The Air conductor checked them against the code.",
       "checkedOn": "2026-11-05"
+    },
+    {
+      "kind": "pr",
+      "ref": "https://github.com/steven-crosby/ritmofit-web/pull/738",
+      "summary": "#738 (RF-188, merged as 75f09a1) ignores non-primary mouse buttons on the strip with a test (item 6), removes the commit throttle so togglePlay has nothing to cancel (item 7), and makes seekRelease the same function as seek (item 8). Checked by the Air conductor against the merged diff.",
+      "checkedOn": "2026-11-06"
     }
   ],
   "resolution": null,
