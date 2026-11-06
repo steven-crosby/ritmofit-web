@@ -2745,38 +2745,32 @@ function MusicWorkspace({
           });
           const selected = selectedProvider === provider;
           const name = providerLabel(provider);
-          const shell = `flex min-h-11 w-full items-center gap-2 rounded-pill border sm:w-auto sm:min-w-[9.5rem] sm:flex-1 ${
+          // One pill for every chip; the reconnect chip puts its width on a wrapper.
+          const pill = `flex min-h-11 w-full items-center gap-2 rounded-pill border ${
             selected
               ? 'border-border-strong bg-bg-overlay font-semibold'
               : 'border-border-subtle bg-bg-base font-medium'
           }`;
+          const width = 'sm:w-auto sm:min-w-[9.5rem] sm:flex-1';
           if (musicChipOffersReconnect(chip.kind)) {
             const own = flow.operation?.provider === provider ? flow.operation : null;
             const busy = !!own && !own.error && own.stage !== 'ready';
             return (
-              <div
-                key={provider}
-                className="flex w-full min-w-0 flex-col gap-1 sm:w-auto sm:min-w-[9.5rem] sm:flex-1"
-              >
-                <div
-                  className={`flex min-h-11 w-full items-center gap-2 rounded-pill border ${
-                    selected
-                      ? 'border-border-strong bg-bg-overlay font-semibold'
-                      : 'border-border-subtle bg-bg-base font-medium'
-                  }`}
-                >
+              <div key={provider} className={`flex w-full min-w-0 flex-col gap-1 ${width}`}>
+                <div className={pill}>
                   <button
                     type="button"
                     aria-pressed={selected}
-                    aria-label={name}
                     onClick={() => chooseProvider(provider)}
                     className="flex min-h-11 min-w-0 flex-1 items-center px-3 text-left font-ui text-sm text-text-primary rf-focus-ring"
                   >
                     <span className="truncate">{name}</span>
                   </button>
+                  {/* The name starts with the visible "Reconnect" or "Reconnecting…"
+                      (WCAG 2.5.3 Label in Name, RF-200). */}
                   <button
                     type="button"
-                    aria-label={`Reconnect ${name}`}
+                    aria-label={`${busy ? 'Reconnecting…' : 'Reconnect'} ${name}`}
                     disabled={busy}
                     onClick={() => {
                       chooseProvider(provider);
@@ -2806,12 +2800,12 @@ function MusicWorkspace({
               aria-pressed={selected}
               aria-label={`${name}, ${chip.label}`}
               onClick={() => chooseProvider(provider)}
-              className={`${shell} justify-between px-3 rf-focus-ring`}
+              className={`${pill} ${width} justify-between px-3 rf-focus-ring`}
             >
-              <span className="truncate font-ui text-sm text-text-primary">{name}</span>
-              {/* RF-173: a flex container doesn't render this space, but it keeps the visible
-                  text "SoundCloud Catalog only" two words, so the aria-label contains it (WCAG
-                  2.5.3 Label in Name; axe joins child text without spaces). */}{' '}
+              {/* The trailing space is part of the name's own text, so the visible text
+                  reads "SoundCloud Catalog only", two words inside the aria-label (WCAG 2.5.3
+                  Label in Name; axe joins child text without spaces). RF-173, RF-200. */}
+              <span className="truncate font-ui text-sm text-text-primary">{`${name} `}</span>
               <ConnectionStateMark
                 kind={chip.kind}
                 label={chip.label}
