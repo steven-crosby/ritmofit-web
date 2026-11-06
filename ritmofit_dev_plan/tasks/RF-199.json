@@ -3,7 +3,7 @@
   "id": "RF-199",
   "title": "Music › Songs row player: harden the lazy/loaded swap and its test (RF-197 review follow-ups)",
   "kind": "task",
-  "status": "in_progress",
+  "status": "done",
   "priority": "P3",
   "parent": null,
   "dependsOn": [],
@@ -12,7 +12,7 @@
     "The RF-197 test catches a preload that lands well after the lazy player mounts (not only within its settle window), and its single-use import gate cannot hang collection or leak into a second test in the file.",
     "A failed preload of the row player chunk is retried, so one transient failure does not leave every later ▶ tap on the lazy path (which plays after the tap, outside the gesture)."
   ],
-  "nextAction": "Neo session 2026-11-06 on fix/rf-199-row-player. Owner approved this session (#728 comment 6690051361). Restart: finish the three row-player items in Dashboard.tsx and the RF-197 test, then set the final state in this PR.",
+  "nextAction": null,
   "blocker": null,
   "evidence": [
     {
@@ -26,8 +26,20 @@
       "ref": "https://github.com/steven-crosby/ritmofit-web/pull/728#issuecomment-6690051361",
       "summary": "Owner, 2026-11-06 in the Neo session: \"Approve with defaults\" for RF-200, RF-199 and RF-201 this session.",
       "checkedOn": "2026-11-06"
+    },
+    {
+      "kind": "pr",
+      "ref": "https://github.com/steven-crosby/ritmofit-web/pull/745",
+      "summary": "RF-199 fix; draft PR is the claim.",
+      "checkedOn": "2026-11-06"
+    },
+    {
+      "kind": "test",
+      "ref": "apps/web/src/components/Dashboard.song-preview-load.test.tsx",
+      "summary": "Late preload: the lazy player starts once, and the preload released afterwards starts nothing (prepare stays 1, no destroy); the next tap uses the loaded player at once. Retry: a failed first preload is tried again, and a later tap shows no Starting preview…. Both failed against the old Dashboard logic (prepare 2; one load call).",
+      "checkedOn": "2026-11-06"
     }
   ],
-  "resolution": null,
+  "resolution": "All three items met on #745 (Neo, 2026-11-06). (1) The open Songs preview stores the player it opened with (the loaded component, or null for the lazy one) beside its row key, and renders that player until the preview closes. A preload landing later changes only the player the next tap uses, so it cannot remount an open player. (2) The chunk loader moved to components/song-row-preview-load.ts, so the RF-197 test mocks it per call: Dashboard’s preload and the lazy player’s load are held and released separately. The test releases the preload well after the lazy player started and checks that it still started once. Every held load is released in afterEach, and the old module-load gate on lib/song-preview.js is gone, so nothing can hang collection or carry into the next test. (3) A failed preload is tried again after 2 s, up to 3 tries in all, while the Songs view is open.",
   "followUps": []
 }

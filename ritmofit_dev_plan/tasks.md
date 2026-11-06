@@ -12,13 +12,13 @@ owner's queue: any agent may execute a Ready task. Publishing follows AGENTS.md 
 Evidence marked **recorded** is a carried-forward claim, not fresh verification.
 A checked PR proves its GitHub state, not product acceptance or production behavior.
 
-203 tasks. backlog: 66 · ready: 0 · in_progress: 1 · blocked: 3 · review: 13 · done: 118 · cancelled: 2.
+203 tasks. backlog: 66 · ready: 0 · in_progress: 0 · blocked: 3 · review: 13 · done: 119 · cancelled: 2.
 
 ## In progress
 
 | Task | Priority / kind | Relationships | Next action / resolution | Evidence |
 | --- | --- | --- | --- | --- |
-| [RF-199](tasks/RF-199.json) Music › Songs row player: harden the lazy/loaded swap and its test (RF-197 review follow-ups) | P3 / task | — | Neo session 2026-11-06 on fix/rf-199-row-player. Owner approved this session (#728 comment 6690051361). Restart: finish the three row-player items in Dashboard.tsx and the RF-197 test, then set the final state in this PR. | checked 2026-11-05; checked 2026-11-06 |
+| — | — | — | — | — |
 
 ## Blocked / waiting
 
@@ -168,6 +168,7 @@ A checked PR proves its GitHub state, not product acceptance or production behav
 | [RF-189](tasks/RF-189.json) iOS Safari zooms the page when a 14px text box is focused | P3 / task | — | Phone text fields render at 16px below sm (shipped and deployed), so iOS Safari no longer zooms on focus; checked on production 840255c in iOS Simulator Safari portrait on Songs search, sign-in Email and Create a class title, with RF-196 covering landscape. | checked 2026-11-03; checked 2026-11-04; checked 2026-11-05 |
 | [RF-196](tasks/RF-196.json) Phone text fields stay 16px in landscape, and the zoom check names the field (RF-189 review follow-ups) | P3 / task | — | The 16px phone text-field rule now covers a phone turned sideways (#731, deployed); production 840255c in iOS Simulator Safari landscape did not zoom on sign-in Email or Songs search. Follow-ups in RF-198. | checked 2026-11-05 |
 | [RF-197](tasks/RF-197.json) Music › Songs: a ▶ tapped before the row player chunk loads starts the song once (RF-172 follow-up) | P3 / task | follow-ups RF-199 | Not reproducible in today's code: the lazy player and Dashboard's preload wait on the same module load, so React commits the loaded player in the same render that resolves the lazy one, and the song starts once. No code change; the new test pins one start and fails if a later refactor lets the preload land after the lazy player mounts. | checked 2026-11-05 |
+| [RF-199](tasks/RF-199.json) Music › Songs row player: harden the lazy/loaded swap and its test (RF-197 review follow-ups) | P3 / task | — | All three items met on #745 (Neo, 2026-11-06). (1) The open Songs preview stores the player it opened with (the loaded component, or null for the lazy one) beside its row key, and renders that player until the preview closes. A preload landing later changes only the player the next tap uses, so it cannot remount an open player. (2) The chunk loader moved to components/song-row-preview-load.ts, so the RF-197 test mocks it per call: Dashboard’s preload and the lazy player’s load are held and released separately. The test releases the preload well after the lazy player started and checks that it still started once. Every held load is released in afterEach, and the old module-load gate on lib/song-preview.js is gone, so nothing can hang collection or carry into the next test. (3) A failed preload is tried again after 2 s, up to 3 tries in all, while the Songs view is open. | checked 2026-11-05; checked 2026-11-06 |
 | [RF-1](tasks/RF-1.json) Desktop hold, BPM, and effort recorded on the QA cycle song | untriaged / task | — | Recorded complete on the imported board; product behavior was not re-tested during task migration. | recorded |
 | [RF-2](tasks/RF-2.json) Teaching-screen deploy record on main | untriaged / documentation | — | Recorded complete on the imported board; product behavior was not re-tested during task migration. | recorded; checked 2026-10-27 |
 | [RF-3](tasks/RF-3.json) Teaching screen live | untriaged / task | — | Recorded complete on the imported board; product behavior was not re-tested during task migration. | recorded; checked 2026-10-27 |
