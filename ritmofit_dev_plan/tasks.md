@@ -12,13 +12,13 @@ owner's queue: any agent may execute a Ready task. Publishing follows AGENTS.md 
 Evidence marked **recorded** is a carried-forward claim, not fresh verification.
 A checked PR proves its GitHub state, not product acceptance or production behavior.
 
-203 tasks. backlog: 66 · ready: 0 · in_progress: 1 · blocked: 3 · review: 13 · done: 118 · cancelled: 2.
+203 tasks. backlog: 66 · ready: 0 · in_progress: 0 · blocked: 3 · review: 13 · done: 119 · cancelled: 2.
 
 ## In progress
 
 | Task | Priority / kind | Relationships | Next action / resolution | Evidence |
 | --- | --- | --- | --- | --- |
-| [RF-201](tasks/RF-201.json) Live queue readiness retry: race guard, announcements and one state source (RF-163 review follow-ups) | P3 / task | — | Neo session 2026-11-06 on fix/rf-201-queue-retry. Owner approved this session with the default for item 4 (#728 comment 6690051361). Restart: finish the five queue-retry items in Dashboard.tsx LiveWorkspace, then set the final state in this PR. | checked 2026-11-05; checked 2026-11-06 |
+| — | — | — | — | — |
 
 ## Blocked / waiting
 
@@ -168,6 +168,7 @@ A checked PR proves its GitHub state, not product acceptance or production behav
 | [RF-189](tasks/RF-189.json) iOS Safari zooms the page when a 14px text box is focused | P3 / task | — | Phone text fields render at 16px below sm (shipped and deployed), so iOS Safari no longer zooms on focus; checked on production 840255c in iOS Simulator Safari portrait on Songs search, sign-in Email and Create a class title, with RF-196 covering landscape. | checked 2026-11-03; checked 2026-11-04; checked 2026-11-05 |
 | [RF-196](tasks/RF-196.json) Phone text fields stay 16px in landscape, and the zoom check names the field (RF-189 review follow-ups) | P3 / task | — | The 16px phone text-field rule now covers a phone turned sideways (#731, deployed); production 840255c in iOS Simulator Safari landscape did not zoom on sign-in Email or Songs search. Follow-ups in RF-198. | checked 2026-11-05 |
 | [RF-197](tasks/RF-197.json) Music › Songs: a ▶ tapped before the row player chunk loads starts the song once (RF-172 follow-up) | P3 / task | follow-ups RF-199 | Not reproducible in today's code: the lazy player and Dashboard's preload wait on the same module load, so React commits the loaded player in the same render that resolves the lazy one, and the song starts once. No code change; the new test pins one start and fails if a later refactor lets the preload land after the lazy player mounts. | checked 2026-11-05 |
+| [RF-201](tasks/RF-201.json) Live queue readiness retry: race guard, announcements and one state source (RF-163 review follow-ups) | P3 / task | — | All five items met on #746 (Neo, 2026-11-06). (1) Every run-payload read of a queue class, from the candidate effect or a Retry, takes that class’s next token; only its newest read may land, and only while the class is still in the queue. A Retry overtaken by a candidate change is dropped, and a class removed during its Retry leaves no orphan result to show when it is added back. (2) A hidden status line announces “Checking readiness for &lt;class&gt;…” when a Retry starts and its outcome when it lands (can run live / checked: not ready to run yet / still couldn’t check). (3) The retry flag is LivePayloadState’s error variant with refreshing: true; the separate retrying set is gone, and the effect and the Retry share one read helper (readLivePayload). (4) Owner default (2026-11-06): the queue holds its order until the instructor acts. A retried card ranks by the result it had before its Retry, so it keeps its place and the copper does not move; a candidate change or a new ordering ranks from the latest results. The ranking comment says so. (5) The busy Checking… button is dimmed (opacity-60) with a spinning mark (motion-safe), besides cursor-progress and aria-disabled. | checked 2026-11-05; checked 2026-11-06 |
 | [RF-1](tasks/RF-1.json) Desktop hold, BPM, and effort recorded on the QA cycle song | untriaged / task | — | Recorded complete on the imported board; product behavior was not re-tested during task migration. | recorded |
 | [RF-2](tasks/RF-2.json) Teaching-screen deploy record on main | untriaged / documentation | — | Recorded complete on the imported board; product behavior was not re-tested during task migration. | recorded; checked 2026-10-27 |
 | [RF-3](tasks/RF-3.json) Teaching screen live | untriaged / task | — | Recorded complete on the imported board; product behavior was not re-tested during task migration. | recorded; checked 2026-10-27 |

@@ -10,7 +10,7 @@ import type {
   Provider,
   RunPayload,
 } from '@ritmofit/shared';
-import { Dashboard } from './Dashboard.js';
+import { Dashboard, LiveWorkspace } from './Dashboard.js';
 import { UpdatePrompt } from './UpdatePrompt.js';
 import * as api from '../lib/api.js';
 import { rememberConnectionReturn } from '../lib/connection-return.js';
@@ -1435,6 +1435,8 @@ describe('Dashboard class library states', () => {
     expect(copper()).toEqual(['Preflight Alpha ride']);
 
     fireEvent.click(retryButton);
+    const checkingButton = () =>
+      screen.getByRole('button', { name: 'Checking readiness — Beta ride' });
     // While Beta refetches: only its card shows the check; the order and copper hold.
     const betaCard = screen
       .getAllByRole('article')
@@ -1442,14 +1444,21 @@ describe('Dashboard class library states', () => {
     await waitFor(() => expect(betaCard.getAttribute('aria-busy')).toBe('true'));
     expect(order()).toEqual(before);
     expect(copper()).toEqual(['Preflight Alpha ride']);
-    expect(screen.queryByText(/Checking readiness for/)).toBeNull();
+    // The queue does not go back to checking every class; the retry is announced (RF-201).
+    expect(screen.queryByText(/Checking readiness for \d+ class/)).toBeNull();
+    expect(screen.getByText('Checking readiness for Beta ride…')).toBeTruthy();
+    expect(checkingButton().className).toContain('opacity-60');
 
     await act(async () => {
       retry.resolve(payload);
       await retry.promise;
     });
     await screen.findByRole('button', { name: 'Preflight Beta ride' });
-    expect(copper()).toHaveLength(1);
+    expect(screen.getByText('Beta ride can run live.')).toBeTruthy();
+    // The queue holds its order until the instructor acts: Beta keeps its place, and the
+    // copper stays on Alpha (RF-201, owner default 2026-11-06).
+    expect(order()).toEqual(before);
+    expect(copper()).toEqual(['Preflight Alpha ride']);
   });
 
   it('keeps the copper on a leading card while its Retry refetches (RF-163)', async () => {
@@ -5981,5 +5990,89 @@ describe('Dashboard URLs (RF-129)', () => {
       (await screen.findByRole('button', { name: 'Account' })).getAttribute('aria-current'),
     ).toBe('page');
     expect(window.location.pathname).toBe('/account');
+  });
+});
+
+describe('Live queue readiness Retry races (RF-201)', () => {
+  const make = (title: string) => ({
+    ...makeClass(title, 'owner', 'me'),
+    trackCount: 1,
+    totalDurationMs: 60_000,
+  });
+  const payload = () => {
+    const p = liveRunPayload([{ classTrackId: 'ct-1', durationMs: 60_000 }]);
+    p.sections = [];
+    return p;
+  };
+  function queue(classes: ClassListItem[]) {
+    return (
+      <LiveWorkspace
+        classes={classes}
+        status="ready"
+        onRetry={vi.fn()}
+        onRunClass={vi.fn()}
+        onOpenClass={vi.fn(async () => {})}
+      />
+    );
+  }
+  /** Beta fails its first read, then each later read waits on the next deferred. */
+  function betaReads(beta: ClassListItem) {
+    const reads: Array<ReturnType<typeof deferred<RunPayload>>> = [];
+    let calls = 0;
+    vi.mocked(api.getRunPayload).mockImplementation(async (id: string) => {
+      if (id !== beta.id) return payload();
+      calls += 1;
+      if (calls === 1) throw new Error('readiness check failed');
+      const read = deferred<RunPayload>();
+      reads.push(read);
+      return read.promise;
+    });
+    return reads;
+  }
+
+  it('drops a Retry result that an effect read for the same class overtook', async () => {
+    const alpha = make('Alpha ride');
+    const beta = make('Beta ride');
+    const gamma = make('Gamma ride');
+    const reads = betaReads(beta);
+    const view = render(queue([alpha, beta]));
+    fireEvent.click(await screen.findByRole('button', { name: 'Retry readiness — Beta ride' }));
+    // A candidate change while the Retry is in flight reads Beta again.
+    view.rerender(queue([alpha, beta, gamma]));
+    await waitFor(() => expect(reads).toHaveLength(2));
+
+    // The newer read fails; the older Retry then lands ready. The older one is dropped.
+    await act(async () => {
+      reads[1]!.reject(new Error('still failing'));
+      await reads[1]!.promise.catch(() => {});
+    });
+    await act(async () => {
+      reads[0]!.resolve(payload());
+      await reads[0]!.promise;
+    });
+    expect(await screen.findByRole('button', { name: 'Retry readiness — Beta ride' })).toBeTruthy();
+    expect(screen.queryByRole('button', { name: 'Preflight Beta ride' })).toBeNull();
+  });
+
+  it('leaves no orphan result for a class removed during its Retry and added back', async () => {
+    const alpha = make('Alpha ride');
+    const beta = make('Beta ride');
+    const reads = betaReads(beta);
+    const view = render(queue([alpha, beta]));
+    fireEvent.click(await screen.findByRole('button', { name: 'Retry readiness — Beta ride' }));
+    view.rerender(queue([alpha]));
+    await act(async () => {
+      reads[0]!.resolve(payload());
+      await reads[0]!.promise;
+    });
+
+    // Added back, Beta is read again instead of showing the removed Retry's result.
+    view.rerender(queue([alpha, beta]));
+    await waitFor(() => expect(reads).toHaveLength(2));
+    const betaCard = screen
+      .getAllByRole('article')
+      .find((card) => card.textContent?.includes('Beta ride'))!;
+    expect(betaCard.getAttribute('aria-busy')).toBe('true');
+    expect(screen.queryByRole('button', { name: 'Preflight Beta ride' })).toBeNull();
   });
 });

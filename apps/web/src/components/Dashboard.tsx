@@ -3432,12 +3432,22 @@ function SongShelf({
 type LivePayloadState =
   | { status: 'loading' }
   | { status: 'ready'; payload: RunPayload; readiness: ClassReadiness }
-  | { status: 'error'; error: string };
+  // RF-163, RF-201: `refreshing` is a card's own Retry in flight. The failed result
+  // stays, so the queue stays resolved and the card keeps its action as "Checking…".
+  | { status: 'error'; error: string; refreshing?: boolean };
+
+/** One class's run-payload read, as the Live queue shows it. */
+const readLivePayload = (classId: string): Promise<LivePayloadState> =>
+  getRunPayload(classId).then(
+    (payload) => ({ status: 'ready', payload, readiness: classReadiness(payload) }),
+    (err: unknown) => ({ status: 'error', error: errMessage(err) }),
+  );
 
 /** Stable no-op for readiness chips that are disabled in the Live queue. */
 const noop = (): void => {};
 
-function LiveWorkspace({
+/** Exported for its tests (RF-201); Dashboard is its only screen. */
+export function LiveWorkspace({
   classes,
   status,
   onRetry,
@@ -3468,50 +3478,45 @@ function LiveWorkspace({
     };
   }, []);
 
-  // RF-163: a card's Retry keeps its last result in `payloads` while it refetches, so the
-  // queue stays resolved: the ranking and the one copper action do not drop or move under
-  // the instructor. Only that card shows the refetch, through `retrying`.
-  const [retrying, setRetrying] = useState<ReadonlySet<string>>(() => new Set());
-  const setRetryingFor = useCallback((classId: string, on: boolean) => {
-    setRetrying((prev) => {
-      if (prev.has(classId) === on) return prev;
-      const next = new Set(prev);
-      if (on) next.add(classId);
-      else next.delete(classId);
-      return next;
+  // RF-201: each read of a class takes the next token, and only the class's newest read
+  // may land, and only while the class is still in the queue. A Retry racing a candidate
+  // change, or a class removed and added back, never leaves a stale or orphan result.
+  const readTokens = useRef<Record<string, number>>({});
+  // The ranking holds until the instructor acts (RF-201, owner default 2026-11-06): a
+  // retried card ranks by the result it had before its Retry, so it keeps its place and
+  // the copper does not move. A candidate change or a new ordering ranks from the latest.
+  const [heldRank, setHeldRank] = useState<Record<string, LivePayloadState>>({});
+  const [retryNote, setRetryNote] = useState('');
+  const read = useCallback((classId: string, retry?: string) => {
+    const token = (readTokens.current[classId] ?? 0) + 1;
+    readTokens.current[classId] = token;
+    return readLivePayload(classId).then((state) => {
+      if (!mountedRef.current || readTokens.current[classId] !== token) return;
+      setPayloads((prev) => (classId in prev ? { ...prev, [classId]: state } : prev));
+      if (retry !== undefined)
+        setRetryNote(
+          state.status !== 'ready'
+            ? `Still couldn’t check ${retry}.`
+            : state.readiness.runnable
+              ? `${retry} can run live.`
+              : `${retry} checked: not ready to run yet.`,
+        );
     });
   }, []);
-  const fetchOne = useCallback(
-    (classId: string) => {
-      setRetryingFor(classId, true);
-      void getRunPayload(classId)
-        .then((payload) => {
-          if (!mountedRef.current) return;
-          setPayloads((prev) => ({
-            ...prev,
-            [classId]: { status: 'ready', payload, readiness: classReadiness(payload) },
-          }));
-        })
-        .catch((err: unknown) => {
-          if (!mountedRef.current) return;
-          setPayloads((prev) => ({
-            ...prev,
-            [classId]: { status: 'error', error: errMessage(err) },
-          }));
-        })
-        .finally(() => {
-          if (mountedRef.current) setRetryingFor(classId, false);
-        });
-    },
-    [setRetryingFor],
-  );
+  const retryOne = (cls: ClassListItem) => {
+    const current = payloads[cls.id];
+    if (current?.status !== 'error') return;
+    setHeldRank((prev) => (cls.id in prev ? prev : { ...prev, [cls.id]: current }));
+    setPayloads((prev) => ({ ...prev, [cls.id]: { ...current, refreshing: true } }));
+    setRetryNote(`Checking readiness for ${cls.title}…`);
+    void read(cls.id, cls.title);
+  };
 
   // Fetch a run-payload per candidate whenever the candidate set changes. Concurrent
   // (N is small for a solo creator); each card resolves independently. Ready results
   // are preserved across re-runs so a list refresh doesn't re-flash loaded cards.
   const candidateKey = candidates.map((cls) => cls.id).join(',');
   useEffect(() => {
-    let alive = true;
     setPayloads((prev) => {
       const next: Record<string, LivePayloadState> = {};
       for (const cls of candidates) {
@@ -3520,29 +3525,9 @@ function LiveWorkspace({
       }
       return next;
     });
-    void Promise.allSettled(
-      candidates
-        .filter((cls) => payloadsRef.current[cls.id]?.status !== 'ready')
-        .map(async (cls) => {
-          try {
-            const payload = await getRunPayload(cls.id);
-            if (!alive || !mountedRef.current) return;
-            setPayloads((prev) => ({
-              ...prev,
-              [cls.id]: { status: 'ready', payload, readiness: classReadiness(payload) },
-            }));
-          } catch (err) {
-            if (!alive || !mountedRef.current) return;
-            setPayloads((prev) => ({
-              ...prev,
-              [cls.id]: { status: 'error', error: errMessage(err) },
-            }));
-          }
-        }),
-    );
-    return () => {
-      alive = false;
-    };
+    setHeldRank({});
+    for (const cls of candidates)
+      if (payloadsRef.current[cls.id]?.status !== 'ready') void read(cls.id);
     // Keyed on candidateKey — the candidate id set — so the fetch re-runs only when
     // classes are added/removed, not as each in-flight payload resolves.
   }, [candidateKey]);
@@ -3564,7 +3549,9 @@ function LiveWorkspace({
   // setting shared across both surfaces. Ranking waits for every payload so cards
   // do not reshuffle under the instructor as each fetch lands.
   const ordered = allResolved
-    ? orderClassesBy(ordering, candidates, (cls) => classNextStep(payloads[cls.id]))
+    ? orderClassesBy(ordering, candidates, (cls) =>
+        classNextStep(heldRank[cls.id] ?? payloads[cls.id]),
+      )
     : candidates;
 
   const liveStatus =
@@ -3601,6 +3588,7 @@ function LiveWorkspace({
                 onClick={() => {
                   setOrdering(option.value);
                   storeOrdering(option.value);
+                  setHeldRank({});
                 }}
                 className={`min-h-11 rounded-control border px-4 font-ui text-sm font-semibold rf-focus-ring sm:rounded-pill ${
                   active
@@ -3616,6 +3604,10 @@ function LiveWorkspace({
       </div>
       <p className="sr-only" aria-live="polite" aria-atomic="true">
         {liveStatus}
+      </p>
+      {/* A card's Retry: its start and its outcome (RF-201), not only aria-busy. */}
+      <p className="sr-only" role="status">
+        {retryNote}
       </p>
 
       {/* Short rows, two columns from lg. The shape is a sparkline on the row,
@@ -3648,11 +3640,10 @@ function LiveWorkspace({
               key={cls.id}
               cls={cls}
               state={payloads[cls.id]}
-              retrying={retrying.has(cls.id)}
               primary={allResolved && index === 0}
               onRun={() => onRunClass(cls.id)}
               onEdit={() => void onOpenClass(cls)}
-              onRetry={() => fetchOne(cls.id)}
+              onRetry={() => retryOne(cls)}
             />
           ))
         )}
@@ -3680,7 +3671,6 @@ function LiveQueueCard({
   cls,
   state,
   primary,
-  retrying = false,
   onRun,
   onEdit,
   onRetry,
@@ -3688,13 +3678,12 @@ function LiveQueueCard({
   cls: ClassListItem;
   state: LivePayloadState | undefined;
   primary: boolean;
-  /** RF-163: the card's readiness Retry is refetching; its last result stays in `state`. */
-  retrying?: boolean;
   onRun: () => void;
   onEdit: () => void;
   onRetry: () => void;
 }) {
   const canRun = state?.status === 'ready' && state.readiness.runnable;
+  const retrying = state?.status === 'error' && !!state.refreshing;
   const checking = state === undefined || state.status === 'loading' || retrying;
   const reasonId = `live-blocked-${cls.id}`;
   const blockReason =
@@ -3778,8 +3767,16 @@ function LiveQueueCard({
             aria-label={
               retrying ? `Checking readiness — ${cls.title}` : `Retry readiness — ${cls.title}`
             }
-            className={retrying ? `${actionClass} cursor-progress` : actionClass}
+            // RF-201: busy reads busy (dimmed, with a spinning mark), not as an enabled
+            // action that does nothing.
+            className={retrying ? `${actionClass} cursor-progress opacity-60` : actionClass}
           >
+            {retrying && (
+              <span
+                aria-hidden
+                className="mr-1.5 inline-block h-3 w-3 rounded-full border-2 border-current border-t-transparent align-[-1px] motion-safe:animate-spin"
+              />
+            )}
             {retrying ? 'Checking…' : 'Retry'}
           </button>
         ) : null}
