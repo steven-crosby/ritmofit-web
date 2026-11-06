@@ -2,6 +2,7 @@
 import { afterEach, describe, expect, it, vi } from 'vitest';
 import { act, cleanup, fireEvent, render, screen } from '@testing-library/react';
 import { App } from './App.js';
+import { redirectLegacyAuthIntent } from './lib/app-route.js';
 import { resetSessionGuardForTests, setLiveActive, signOutByUser } from './lib/session-guard.js';
 
 // Signed-out session so the root path resolves to MarketingPage (D15), not Dashboard.
@@ -113,6 +114,8 @@ describe('App acquisition intent', () => {
 
   it('redirects an old "/?auth=signin" link to /sign-in', () => {
     window.history.pushState({}, '', '/?auth=signin');
+    // main.tsx runs this once before the first render (RF-195).
+    redirectLegacyAuthIntent();
     render(<App />);
 
     expect(window.location.pathname).toBe('/sign-in');
@@ -159,6 +162,48 @@ describe('App deep links', () => {
     sessionState.data = signedIn;
     view.rerender(<App />);
     expect(window.location.pathname).toBe('/');
+  });
+
+  it('forgets the deep link once sign-in completes away from /sign-in (RF-195)', () => {
+    window.history.pushState({}, '', classPath);
+    const view = render(<App />);
+    expect(window.location.pathname).toBe('/sign-in');
+
+    // The sign-in completes while this tab shows the Classes home.
+    window.history.pushState({}, '', '/');
+    sessionState.data = signedIn;
+    view.rerender(<App />);
+    expect(window.location.pathname).toBe('/');
+
+    // A later /sign-in visit in this tab goes to the Classes home, not the old class.
+    window.history.pushState({}, '', '/sign-in');
+    view.rerender(<App />);
+    expect(window.location.pathname).toBe('/');
+  });
+
+  it('says in plain words that Sign in with Apple did not finish, then drops the code (RF-195)', () => {
+    window.history.pushState({}, '', '/sign-in?error=invalid_code');
+    render(<App />);
+    expect(
+      screen.getByText('Apple sign-in didn’t finish. Try again, or use your email.'),
+    ).toBeTruthy();
+    expect(window.location.pathname).toBe('/sign-in');
+    expect(window.location.search).toBe('');
+  });
+
+  it('keeps the Apple error until the session check settles, then shows it (RF-195)', () => {
+    // A failed Apple sign-in is a fresh page load, so the session check starts pending.
+    sessionState.isPending = true;
+    window.history.pushState({}, '', '/sign-in?error=invalid_code');
+    const view = render(<App />);
+    expect(window.location.search).toBe('?error=invalid_code');
+
+    sessionState.isPending = false;
+    view.rerender(<App />);
+    expect(
+      screen.getByText('Apple sign-in didn’t finish. Try again, or use your email.'),
+    ).toBeTruthy();
+    expect(window.location.search).toBe('');
   });
 
   it('waits for the session check before deciding where a deep link goes', () => {

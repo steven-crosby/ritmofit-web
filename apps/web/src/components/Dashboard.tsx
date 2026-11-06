@@ -475,6 +475,10 @@ export function Dashboard({
   // until 'success' replaces it, so an in-place refresh (e.g. after a keyboard
   // reorder) never unmounts the workspace — preserving grip focus and the reorder
   // announcement. Only use it to refresh the class already open, never to switch.
+  //
+  // Resolves to the run payload this read published (null when it could not be
+  // read), or undefined when the read was dropped as stale, so a caller that
+  // needs the payload next (a refreshed /live path) does not fetch it twice.
   const loadDetail = useCallback(
     async (
       classId: string,
@@ -483,7 +487,7 @@ export function Dashboard({
         owner?: DetailWorkspaceOwner | null;
         origin?: DetailRefreshOrigin;
       },
-    ) => {
+    ): Promise<RunPayload | null | undefined> => {
       const requestedOwner = opts?.silent ? opts.owner : detailWorkspace.current;
       const owner = detailWorkspace.current;
       // A successful mutation from the session suspended by Live may complete
@@ -556,6 +560,7 @@ export function Dashboard({
         ? cardSummaryFromPayload(payload)
         : { trackCount: tracksResult.value.length };
       setClasses((prev) => prev.map((c) => (c.id === classId ? { ...c, ...summary } : c)));
+      return payload;
     },
     [],
   );
@@ -624,7 +629,7 @@ export function Dashboard({
       detailWorkspace.current = { classId: cls.id, session: {} };
       setRefreshWarning(null);
       setSelected(cls);
-      await loadDetail(cls.id);
+      return loadDetail(cls.id);
     },
     [loadDetail, noteClassOpened],
   );
@@ -777,13 +782,15 @@ export function Dashboard({
           return;
         }
         if (stale()) return;
-        await openClass(cls);
+        const loaded = await openClass(cls);
         if (stale() || !toLive) return;
         const requestId = ++liveRequestId.current;
         pendingLiveRequest.current = { classId, requestId };
         const owner = detailWorkspace.current;
         try {
-          const payload = await getRunPayload(classId);
+          // The detail read already fetched the run payload; fetch again only when
+          // it could not (its error is the one to show).
+          const payload = loaded ?? (await getRunPayload(classId));
           if (stale() || requestId !== liveRequestId.current || owner !== detailWorkspace.current)
             return;
           const blocked = runBlockedMessage(payload);
@@ -867,15 +874,39 @@ export function Dashboard({
       return;
     }
     if (route.kind === 'class' || route.kind === 'class-live') {
-      const shown = route.kind === 'class' && destination === 'classes' && !routeProblem;
-      if (shown && selectedId === route.classId) return;
+      const { classId } = route;
+      if (route.kind === 'class' && !routeProblem && selectedId === classId) {
+        if (destination === 'classes') return;
+        // Back/Forward to the class still selected and loaded (from Music or
+        // Account, say): show it again as it is, with no refetch (RF-195). A newer
+        // Live or restore request is dropped, as a nav click would drop it.
+        if (detail.classId === classId && detail.status === 'ready') {
+          restoreRequest.current += 1;
+          restoringRoute.current = false;
+          liveRequestId.current += 1;
+          if (detailWorkspace.current?.classId !== classId)
+            detailWorkspace.current = { classId, session: {} };
+          setDestination('classes');
+          return;
+        }
+      }
       void restoreClass(route.classId, route.kind === 'class-live');
       return;
     }
     const target = destinationForRoute(route);
     if (target === destination && !routeProblem && (target !== 'classes' || !selectedId)) return;
     goDestination(target);
-  }, [pathname, liveClassId, selectedId, destination, routeProblem, restoreClass, goDestination]);
+  }, [
+    pathname,
+    liveClassId,
+    selectedId,
+    destination,
+    routeProblem,
+    detail.classId,
+    detail.status,
+    restoreClass,
+    goDestination,
+  ]);
 
   // Merge an updated class into the list + the open detail pane (preserving the
   // caller's access level, which PATCH responses don't carry).

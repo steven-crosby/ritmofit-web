@@ -1,7 +1,8 @@
 /**
  * Root: gate on the Better Auth session, routed by the URL (RF-129, `lib/app-route.ts`).
  * - Signed out at "/" → MarketingPage (public front door, D15). Its CTAs go to
- *   "/sign-in" and "/sign-up", which have their own paths; old "/?auth=" links redirect.
+ *   "/sign-in" and "/sign-up", which have their own paths; old "/?auth=" links are
+ *   redirected in `main.tsx` before the first render (`redirectLegacyAuthIntent`).
  * - Signed out on a signed-in path ("/classes/<id>", "/music", …) → "/sign-in",
  *   then back to that path once signed in.
  * - Signed in → Dashboard, which restores the screen the path names.
@@ -10,7 +11,7 @@
  * - "/reset-password" → ResetPassword (works while signed out).
  * - Unknown path → NotFound.
  */
-import { useLayoutEffect, useReducer, useRef, useState } from 'react';
+import { useLayoutEffect, useReducer, useRef } from 'react';
 import { authClient } from './lib/auth-client.js';
 import { clearExplicitSignOut, useLiveActive, wasExplicitSignOut } from './lib/session-guard.js';
 import {
@@ -32,21 +33,11 @@ import { PrivacyPage } from './components/PrivacyPage.js';
 import { WorkspaceLoadingState } from './components/SharedState.js';
 import { markOnboardingVideoPending } from './lib/onboarding-video.js';
 
-/** Old marketing links ("/?auth=signin|signup") now have their own paths. */
-function redirectLegacyAuthIntent() {
-  if (window.location.pathname !== '/') return;
-  const intent = new URLSearchParams(window.location.search).get('auth');
-  if (intent === 'signin') window.history.replaceState(null, '', '/sign-in');
-  else if (intent === 'signup') window.history.replaceState(null, '', '/sign-up');
-}
-
 /** A redirect App makes before it paints the screen it lands on. */
 type Redirect = 'after-sign-in' | 'to-sign-in' | 'to-root';
 
 export function App() {
   const { data: session, isPending } = authClient.useSession();
-  // Runs once, before the first path read below.
-  useState(redirectLegacyAuthIntent);
   const pathname = usePathname();
   const route = parseRoute(pathname);
   const liveActive = useLiveActive();
@@ -78,6 +69,20 @@ export function App() {
       navigate('/sign-in', { replace: true });
     } else if (redirect === 'to-root') navigate('/', { replace: true });
   }, [redirect]);
+
+  // Signed in anywhere but Sign in or Sign up (on "/", say), a remembered deep link
+  // is moot: drop it, so a later /sign-in visit in this tab cannot jump to it.
+  // A failed Sign in with Apple returns to "/sign-in?error=<code>". Login shows it
+  // once; drop the code so a refresh does not show it again, but only once the
+  // session check settles: until then Login is not on screen to read it.
+  const signedInAway = !!retained && !authRoute;
+  const appleError =
+    route.kind === 'sign-in' ? new URLSearchParams(window.location.search).get('error') : null;
+  useLayoutEffect(() => {
+    if (signedInAway) clearReturnTo();
+    if (appleError && !isPending)
+      window.history.replaceState(window.history.state, '', window.location.pathname);
+  }, [signedInAway, appleError, isPending]);
 
   // The signed-out landing page drops a remembered deep link: a visitor who left
   // sign-in for the front door has abandoned it, so a later sign-in lands on Classes.
@@ -153,6 +158,7 @@ export function App() {
             navigate(mode === 'signup' ? '/sign-up' : '/sign-in', { replace: true })
           }
           onSignedUp={markOnboardingVideoPending}
+          appleError={appleError}
         />
       </>
     );
