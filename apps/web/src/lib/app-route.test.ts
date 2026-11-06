@@ -5,9 +5,11 @@ import {
   isDashboardRoute,
   navigate,
   parseRoute,
+  redirectLegacyAuthIntent,
   rememberReturnTo,
   resetAppRouteForTests,
   routePath,
+  settleAppRouteForTests,
   stepTo,
 } from './app-route.js';
 
@@ -92,6 +94,18 @@ describe('navigate and stepTo', () => {
     expect(back).toHaveBeenCalledTimes(1);
   });
 
+  it('settles a queued Back before the next test, so the next step is not swallowed (RF-195)', async () => {
+    navigate(`/classes/${ID}`);
+    stepTo('/');
+    await settleAppRouteForTests();
+    expect(window.location.pathname).toBe('/');
+    // No Back is still pending: a new step pushes at once.
+    stepTo('/music');
+    expect(window.location.pathname).toBe('/music');
+    // With nothing queued it resolves at once.
+    await settleAppRouteForTests();
+  });
+
   it('pushes when the target is not where this entry came from', () => {
     const back = vi.spyOn(window.history, 'back');
     navigate(`/classes/${ID}`);
@@ -99,6 +113,17 @@ describe('navigate and stepTo', () => {
     expect(back).not.toHaveBeenCalled();
     expect(window.location.pathname).toBe('/music');
     expect(window.history.state).toEqual({ from: `/classes/${ID}` });
+  });
+});
+
+describe('redirectLegacyAuthIntent', () => {
+  it('sends old /?auth= links to their own paths, and leaves other paths alone', () => {
+    window.history.replaceState(null, '', '/?auth=signup');
+    redirectLegacyAuthIntent();
+    expect(window.location.pathname).toBe('/sign-up');
+    window.history.replaceState(null, '', '/music?auth=signin');
+    redirectLegacyAuthIntent();
+    expect(window.location.pathname).toBe('/music');
   });
 });
 

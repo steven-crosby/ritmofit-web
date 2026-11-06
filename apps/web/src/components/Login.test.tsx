@@ -1,7 +1,7 @@
 // @vitest-environment jsdom
 import { describe, it, expect, vi, afterEach, beforeEach } from 'vitest';
 import { render, screen, fireEvent, cleanup, waitFor } from '@testing-library/react';
-import { Login } from './Login.js';
+import { appleSignInErrorMessage, Login } from './Login.js';
 import * as api from '../lib/api.js';
 
 const authMocks = vi.hoisted(() => ({
@@ -240,5 +240,17 @@ describe('Login accessible labels', () => {
       ),
     ).toBeTruthy();
     expect(screen.queryByRole('button', { name: 'Continue with Apple' })).toBeNull();
+  });
+});
+
+describe('appleSignInErrorMessage (RF-195)', () => {
+  it('says a cancelled Apple sign-in was cancelled, and anything else did not finish', () => {
+    expect(appleSignInErrorMessage('user_cancelled_authorize')).toBe(
+      'Apple sign-in was cancelled. Try again, or sign in with your email.',
+    );
+    expect(appleSignInErrorMessage('access_denied')).toMatch(/cancelled/);
+    expect(appleSignInErrorMessage('state_mismatch')).toBe(
+      'Apple sign-in didn’t finish. Try again, or sign in with your email.',
+    );
   });
 });

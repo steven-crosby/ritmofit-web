@@ -174,10 +174,35 @@ export function resetAppRouteForTests() {
   listeners.clear();
 }
 
+/**
+ * Wait for a Back that `stepTo` queued (jsdom delivers `history.back()` as a
+ * later popstate), then reset, so it cannot land in the next test. Resolves at
+ * once when no Back is in flight.
+ */
+export async function settleAppRouteForTests() {
+  if (pendingBack) {
+    await new Promise<void>((resolve) =>
+      window.addEventListener('popstate', () => resolve(), { once: true }),
+    );
+  }
+  resetAppRouteForTests();
+}
+
 function keptSearch(replace: boolean): string {
   if (replace) return window.location.search;
   const timing = new URLSearchParams(window.location.search).get('playback-timing');
   return timing === null ? '' : `?playback-timing=${encodeURIComponent(timing)}`;
+}
+
+/**
+ * Old marketing links ("/?auth=signin|signup") now have their own paths. Called
+ * once from `main.tsx` before the first render, so no render reads the old URL.
+ */
+export function redirectLegacyAuthIntent() {
+  if (window.location.pathname !== '/') return;
+  const intent = new URLSearchParams(window.location.search).get('auth');
+  if (intent === 'signin') window.history.replaceState(null, '', '/sign-in');
+  else if (intent === 'signup') window.history.replaceState(null, '', '/sign-up');
 }
 
 // --- Return-to after sign-in -------------------------------------------------

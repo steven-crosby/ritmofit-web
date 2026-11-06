@@ -15,7 +15,7 @@ import { UpdatePrompt } from './UpdatePrompt.js';
 import * as api from '../lib/api.js';
 import { rememberConnectionReturn } from '../lib/connection-return.js';
 import { isLiveActive } from '../lib/session-guard.js';
-import { resetAppRouteForTests } from '../lib/app-route.js';
+import { settleAppRouteForTests } from '../lib/app-route.js';
 import type { ClassListPage } from '../lib/api.js';
 import { DEFAULT_SCAFFOLD_DURATION, scaffoldRecipeId } from '../lib/class-scaffold.js';
 import {
@@ -293,8 +293,8 @@ beforeEach(() => {
 
 afterEach(async () => {
   cleanup();
-  // Let a Back that Dashboard queued (RF-129 `stepTo`) land before the next test.
-  await new Promise((resolve) => setTimeout(resolve, 0));
+  // A Back that Dashboard queued (RF-129 `stepTo`) lands before the next test.
+  await settleAppRouteForTests();
   crash.planBlocks = false;
   vi.clearAllMocks();
   window.localStorage?.clear();
@@ -303,7 +303,6 @@ afterEach(async () => {
   // default.
   window.sessionStorage?.clear();
   // Dashboard writes the URL (RF-129); start every test at the Classes home.
-  resetAppRouteForTests();
   window.history.replaceState(null, '', '/');
 });
 
