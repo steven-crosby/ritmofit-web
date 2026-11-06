@@ -141,6 +141,8 @@ import {
   serverSongSearchState,
   shouldAutoLoadForSearch,
   SONG_SEARCH_AUTOLOAD_BOUND,
+  SONG_SEARCH_AUTOLOAD_WINDOW_MS,
+  songSearchAutoLoadDelay,
   songSearchAutoLoadSpent,
   songSearchMode,
   songSearchScopeNote,
@@ -175,8 +177,7 @@ import { TrackSearch, providerTrackKeysFromRun } from './TrackSearch.js';
 import { CreateClassDialog, type CreateClassMode } from './CreateClassDialog.js';
 import { ClassPlanBlocks, planBlockOptionLabel, type PlanBlockTarget } from './ClassPlanBlocks.js';
 import { SourceList, sourceCandidateKey } from './SourceList.js';
-import { SongPickBar, SongPickCreateDialog, SongPickList } from './SongPicks.js';
-import { orderPicks, songPickScope, useSongPicks } from '../lib/song-picks.js';
+import { orderPicks, songPickKey, songPickScope, useSongPicks } from '../lib/song-picks.js';
 import {
   consumeOnboardingVideoPending,
   markOnboardingVideoDismissed,
@@ -214,6 +215,25 @@ const MovesSection = lazyWithReload(() =>
 // builder paint) and loads when a track is selected.
 const TrackPreview = lazyWithReload(() =>
   import('./TrackPreview.js').then((m) => ({ default: m.TrackPreview })),
+);
+// Music › Songs inline row player (RF-172). Same playback chunks as TrackPreview.
+// MusicWorkspace loads it with the Songs view and renders the loaded component
+// directly, so a ▶ tap mounts it (and calls play()) inside the tap. A lazy
+// component would suspend on its first render even with the chunk cached, and
+// play after the tap. The lazy one covers only a tap before the chunk arrives.
+const loadSongRowPreview = () =>
+  import('./SongRowPreview.js').then((m) => ({ default: m.SongRowPreview }));
+const SongRowPreviewLazy = lazyWithReload(loadSongRowPreview);
+type SongRowPreviewComponent = Awaited<ReturnType<typeof loadSongRowPreview>>['default'];
+// Music › Songs pick mode (RF-151) loads with the Songs view, not the startup
+// bundle: its rows, bar and sheet share one chunk.
+const loadSongPicks = () => import('./SongPicks.js');
+const SongPickList = lazyWithReload(() =>
+  loadSongPicks().then((m) => ({ default: m.SongPickList })),
+);
+const SongPickBar = lazyWithReload(() => loadSongPicks().then((m) => ({ default: m.SongPickBar })));
+const SongPickCreateDialog = lazyWithReload(() =>
+  loadSongPicks().then((m) => ({ default: m.SongPickCreateDialog })),
 );
 
 type DashboardDestination = 'classes' | 'music' | 'live' | 'account';
@@ -283,6 +303,10 @@ export function Dashboard({
   // Music reopens where the viewer left it (RF-137). State here outlives the
   // MusicWorkspace mount, so this works even when storage is unavailable.
   const [musicView, setMusicView] = useState<MusicView | null>(() => recallMusicView(userId));
+  // RF-152: when each Songs search autoload request went out, across search sessions and
+  // services. Held here, not in MusicWorkspace, so leaving Music and coming back within
+  // the minute keeps the budget (the server's likes limit is per user).
+  const songAutoLoadSentAt = useRef<number[]>([]);
   const rememberView = useCallback(
     (view: MusicView) => {
       setMusicView(view);
@@ -1433,6 +1457,7 @@ export function Dashboard({
           ) : destination === 'music' ? (
             <MusicWorkspace
               userId={userId}
+              autoLoadSentAt={songAutoLoadSentAt}
               connectionRevision={connectionRevision}
               rememberedView={musicView}
               onViewChange={rememberView}
@@ -2028,7 +2053,13 @@ function useProviderBrowseState(connectionRevision = 0) {
       const connection = connections.find((row) => row.provider === provider);
       const state = providerConnectionState(provider, connection, Date.now());
       if (state !== 'connected' || !connection) {
-        // Disconnected: forget its pages so a reconnect starts from page 1.
+        // Disconnected: forget its pages so a reconnect starts from page 1, and its songs,
+        // so a reconnect as another account never shows them (RF-152).
+        if (likesLoadedKey.current[provider] !== undefined) {
+          setLikes((prev) => ({ ...prev, [provider]: undefined }));
+          likesNextRef.current = { ...likesNextRef.current, [provider]: null };
+          setLikesNext((prev) => ({ ...prev, [provider]: null }));
+        }
         delete likesLoadedKey.current[provider];
         delete likesRequestKey.current[provider];
         likesToken.current[provider] = (likesToken.current[provider] ?? 0) + 1;
@@ -2048,6 +2079,13 @@ function useProviderBrowseState(connectionRevision = 0) {
       // "Load more" cannot append the previous library's next page (#665 review).
       likesNextRef.current = { ...likesNextRef.current, [provider]: null };
       setLikesNext((prev) => ({ ...prev, [provider]: null }));
+      // RF-152: another account's (or connection's) songs leave at once, rather than
+      // staying on screen as this library until its first page arrives.
+      if (likesLoadedKey.current[provider] !== undefined) {
+        delete likesLoadedKey.current[provider];
+        setLikes((prev) => ({ ...prev, [provider]: undefined }));
+        setLikesMoreError((prev) => ({ ...prev, [provider]: undefined }));
+      }
       const current = () =>
         likesMounted.current &&
         likesToken.current[provider] === token &&
@@ -2082,37 +2120,49 @@ function useProviderBrowseState(connectionRevision = 0) {
     }
   }, [connections]);
 
+  /**
+   * Whether `loadMoreLikes(provider)` would send a request now: a next-page cursor, no
+   * page already in flight, and no first page loading (its cursor is not known yet).
+   */
+  const canLoadMoreLikes = useCallback(
+    (provider: Provider) =>
+      Boolean(likesNextRef.current[provider]) &&
+      !likesMoreInFlight.current.has(provider) &&
+      !likesRequestKey.current[provider],
+    [],
+  );
+
   /** Load the next page of `provider`'s liked songs with its own cursor (RF-132). */
-  const loadMoreLikes = useCallback(async (provider: Provider) => {
-    const cursor = likesNextRef.current[provider];
-    // No "Load more" while a first page is loading: its cursor is not known yet.
-    if (!cursor || likesMoreInFlight.current.has(provider) || likesRequestKey.current[provider]) {
-      return;
-    }
-    const token = likesToken.current[provider];
-    likesMoreInFlight.current.add(provider);
-    setLikesLoadingMore((prev) => ({ ...prev, [provider]: true }));
-    setLikesMoreError((prev) => ({ ...prev, [provider]: undefined }));
-    const current = () =>
-      likesToken.current[provider] === token && connectedProvidersRef.current.has(provider);
-    try {
-      const page = await listLikesPage(provider, { cursor });
-      if (!current()) return;
-      const next = page.nextCursor ?? null;
-      likesNextRef.current = { ...likesNextRef.current, [provider]: next };
-      setLikes((prev) => ({
-        ...prev,
-        [provider]: appendSongPage(prev[provider] ?? [], page.items),
-      }));
-      setLikesNext((prev) => ({ ...prev, [provider]: next }));
-    } catch (e) {
-      if (!current()) return;
-      setLikesMoreError((prev) => ({ ...prev, [provider]: shelfFailure(e).message }));
-    } finally {
-      likesMoreInFlight.current.delete(provider);
-      setLikesLoadingMore((prev) => ({ ...prev, [provider]: false }));
-    }
-  }, []);
+  const loadMoreLikes = useCallback(
+    async (provider: Provider) => {
+      const cursor = likesNextRef.current[provider];
+      if (!canLoadMoreLikes(provider) || !cursor) return;
+      const token = likesToken.current[provider];
+      likesMoreInFlight.current.add(provider);
+      setLikesLoadingMore((prev) => ({ ...prev, [provider]: true }));
+      setLikesMoreError((prev) => ({ ...prev, [provider]: undefined }));
+      const current = () =>
+        likesToken.current[provider] === token && connectedProvidersRef.current.has(provider);
+      try {
+        const page = await listLikesPage(provider, { cursor });
+        if (!current()) return;
+        const next = page.nextCursor ?? null;
+        likesNextRef.current = { ...likesNextRef.current, [provider]: next };
+        setLikes((prev) => ({
+          ...prev,
+          [provider]: appendSongPage(prev[provider] ?? [], page.items),
+        }));
+        setLikesNext((prev) => ({ ...prev, [provider]: next }));
+      } catch (e) {
+        if (!current()) return;
+        setLikesMoreError((prev) => ({ ...prev, [provider]: shelfFailure(e).message }));
+      } finally {
+        likesMoreInFlight.current.delete(provider);
+        setLikesLoadingMore((prev) => ({ ...prev, [provider]: false }));
+      }
+    },
+    [canLoadMoreLikes],
+  );
 
   return {
     connections,
@@ -2134,6 +2184,7 @@ function useProviderBrowseState(connectionRevision = 0) {
     likesLoadingMore,
     likesMoreError,
     loadMoreLikes,
+    canLoadMoreLikes,
   };
 }
 
@@ -2178,6 +2229,7 @@ function ProviderConnectionsLoadState({
 
 function MusicWorkspace({
   userId,
+  autoLoadSentAt: songAutoLoadSentAt,
   connectionRevision,
   rememberedView,
   onViewChange,
@@ -2186,6 +2238,8 @@ function MusicWorkspace({
   onCreateClass,
 }: {
   userId: string;
+  /** RF-152: search autoload send times, owned by Dashboard (see there). */
+  autoLoadSentAt: { current: number[] };
   connectionRevision: number;
   rememberedView: MusicView | null;
   onViewChange: (view: MusicView) => void;
@@ -2216,6 +2270,7 @@ function MusicWorkspace({
     likesLoadingMore,
     likesMoreError,
     loadMoreLikes,
+    canLoadMoreLikes,
   } = useProviderBrowseState(connectionRevision);
   const flow = useProviderConnect({
     onConnected: retryConnections,
@@ -2239,6 +2294,8 @@ function MusicWorkspace({
   const [songAutoLoad, setSongAutoLoad] = useState(songAutoLoadRef.current);
   const [librarySearch, setLibrarySearch] = useState<{
     provider: Provider;
+    /** RF-152: the connection and account the result came from (`likesConnectionKey`). */
+    connectionKey: string;
     query: string;
     results: TrackSearchResult[] | null;
     failed: boolean;
@@ -2336,36 +2393,62 @@ function MusicWorkspace({
     connections.find((row) => row.provider === selectedProvider),
     Date.now(),
   );
+  const searchConnection = connections.find((row) => row.provider === selectedProvider);
+  const searchConnectionKey = searchConnection ? likesConnectionKey(searchConnection) : '';
   // Apple Music: search the whole library on the server as the instructor types.
+  // Keyed on the trimmed query (RF-152): a whitespace-only edit is not a new search.
+  const libraryQueryTrimmed = libraryQuery.trim();
   useEffect(() => {
-    const trimmed = libraryQuery.trim();
+    const trimmed = libraryQueryTrimmed;
     if (libraryKind !== 'songs' || songSearchMode(selectedProvider) !== 'server' || !trimmed) {
       librarySearchId.current += 1;
+      // RF-152: a cleared search forgets its result, so retyping the same query waits
+      // for a fresh answer instead of briefly showing the old result or failure.
+      if (!trimmed) setLibrarySearch(null);
       return;
     }
     if (searchConnectionState !== 'connected') return;
     const id = ++librarySearchId.current;
     const provider = selectedProvider;
+    const connectionKey = searchConnectionKey;
     const timeout = window.setTimeout(() => {
       void listLikesPage(provider, { q: trimmed })
         .then((page) => {
           if (id !== librarySearchId.current) return;
-          setLibrarySearch({ provider, query: trimmed, results: page.items, failed: false });
+          setLibrarySearch({
+            provider,
+            connectionKey,
+            query: trimmed,
+            results: page.items,
+            failed: false,
+          });
         })
         .catch(() => {
           if (id !== librarySearchId.current) return;
-          setLibrarySearch({ provider, query: trimmed, results: null, failed: true });
+          setLibrarySearch({
+            provider,
+            connectionKey,
+            query: trimmed,
+            results: null,
+            failed: true,
+          });
         });
     }, 300);
     return () => window.clearTimeout(timeout);
-  }, [selectedProvider, libraryKind, libraryQuery, searchConnectionState]);
+  }, [
+    selectedProvider,
+    libraryKind,
+    libraryQueryTrimmed,
+    searchConnectionState,
+    searchConnectionKey,
+  ]);
 
   // Other services: keep loading pages while a query is typed, debounced, within
   // one budget per search session (songs and requests), so typing more characters
   // neither resets the owner's 1,000-song / 5-request limit nor drops a "Keep
   // loading" grant. Clearing the query or switching service ends the session.
   const autoLoadLikedTracks = likes[selectedProvider];
-  const songAutoLoadKey = libraryQuery.trim() ? selectedProvider : '';
+  const songAutoLoadKey = libraryQueryTrimmed ? selectedProvider : '';
   const songAutoLoadNow =
     songAutoLoad.key === songAutoLoadKey
       ? songAutoLoad
@@ -2382,7 +2465,7 @@ function MusicWorkspace({
     const budget = songAutoLoadRef.current;
     if (
       !shouldAutoLoadForSearch({
-        query: libraryQuery,
+        query: libraryQueryTrimmed,
         hasMore: Boolean(likesNext[selectedProvider]),
         loading:
           Boolean(likesLoadingMore[selectedProvider]) || Boolean(likesLoading[selectedProvider]),
@@ -2395,20 +2478,28 @@ function MusicWorkspace({
       return;
     }
     const provider = selectedProvider;
+    const delay = songSearchAutoLoadDelay(songAutoLoadSentAt.current, Date.now());
     const timeout = window.setTimeout(() => {
       const current = songAutoLoadRef.current;
       const loadedCount = autoLoadLikedTracks?.length ?? 0;
       if (current.key !== provider || songSearchAutoLoadSpent({ ...current, loadedCount })) return;
+      // RF-152: only a request that actually goes out counts against the budgets.
+      if (!canLoadMoreLikes(provider)) return;
+      const now = Date.now();
+      songAutoLoadSentAt.current = [
+        ...songAutoLoadSentAt.current.filter((at) => now - at < SONG_SEARCH_AUTOLOAD_WINDOW_MS),
+        now,
+      ];
       const next = { ...current, requests: current.requests + 1 };
       songAutoLoadRef.current = next;
       setSongAutoLoad(next);
       void loadMoreLikes(provider);
-    }, 300);
+    }, delay);
     return () => window.clearTimeout(timeout);
   }, [
     libraryKind,
     selectedProvider,
-    libraryQuery,
+    libraryQueryTrimmed,
     likesNext,
     likesLoadingMore,
     likesLoading,
@@ -2417,6 +2508,7 @@ function MusicWorkspace({
     songAutoLoadKey,
     songAutoLoad,
     loadMoreLikes,
+    canLoadMoreLikes,
   ]);
 
   const selectedKeys = useMemo(
@@ -2455,6 +2547,24 @@ function MusicWorkspace({
     songPickScope(selectedProvider, connectionState === 'connected', connection),
   );
   const [songPickCreateOpen, setSongPickCreateOpen] = useState(false);
+  // RF-172: the one Songs row whose inline player is open. Changing provider or
+  // leaving Songs closes it, which unmounts the player and releases the SDK.
+  const [songPreviewKey, setSongPreviewKey] = useState<string | null>(null);
+  useEffect(() => setSongPreviewKey(null), [selectedProvider, libraryKind]);
+  const [SongRowPreview, setSongRowPreview] = useState<SongRowPreviewComponent | null>(null);
+  const songsView = libraryKind === 'songs';
+  useEffect(() => {
+    if (!songsView || SongRowPreview) return;
+    let cancelled = false;
+    loadSongRowPreview()
+      .then((m) => {
+        if (!cancelled) setSongRowPreview(() => m.default);
+      })
+      .catch(() => {});
+    return () => {
+      cancelled = true;
+    };
+  }, [songsView, SongRowPreview]);
   const statusMark = musicConnectionMark(connectionsStatus, connectionState);
   const truth = providerCapabilityTruth(selectedProvider, connection, Date.now());
   const connectBusy = !!flow.operation && !flow.operation.error && flow.operation.stage !== 'ready';
@@ -2511,7 +2621,7 @@ function MusicWorkspace({
   const likesHasMore = Boolean(likesNext[selectedProvider]);
   const loadingMoreLikes = Boolean(likesLoadingMore[selectedProvider]);
   const loadMoreLikesError = likesMoreError[selectedProvider] ?? null;
-  const songQuery = libraryQuery.trim();
+  const songQuery = libraryQueryTrimmed;
   const songSearch = songSearchMode(selectedProvider);
   const serverSearchState = serverSongSearchState({
     onSongs: libraryKind === 'songs',
@@ -2519,7 +2629,9 @@ function MusicWorkspace({
     query: songQuery,
     connected: connectionState === 'connected',
     result:
-      librarySearch?.provider === selectedProvider
+      // RF-152: only a result from this account counts; another account's matches never show.
+      librarySearch?.provider === selectedProvider &&
+      librarySearch.connectionKey === searchConnectionKey
         ? { query: librarySearch.query, failed: librarySearch.failed }
         : null,
   });
@@ -2697,6 +2809,9 @@ function MusicWorkspace({
               className={`${shell} justify-between px-3 rf-focus-ring`}
             >
               <span className="truncate font-ui text-sm text-text-primary">{name}</span>
+              {/* RF-173: a flex container doesn't render this space, but it keeps the visible
+                  text "SoundCloud Catalog only" two words, so the aria-label contains it (WCAG
+                  2.5.3 Label in Name; axe joins child text without spaces). */}{' '}
               <ConnectionStateMark
                 kind={chip.kind}
                 label={chip.label}
@@ -2806,17 +2921,26 @@ function MusicWorkspace({
                   loading: loadingMoreLikes,
                   error: loadMoreLikesError,
                   onLoadMore: () => {
+                    const sends = canLoadMoreLikes(selectedProvider);
                     if (songQuery && songSearch === 'loaded') {
-                      // Another round: 1,000 more songs or 5 more requests (this one counts).
-                      const next = {
-                        key: songAutoLoadKey,
-                        bound: (likedTracks?.length ?? 0) + SONG_SEARCH_AUTOLOAD_BOUND,
-                        requests: 1,
-                      };
+                      const loadedCount = likedTracks?.length ?? 0;
+                      const current = songAutoLoadRef.current;
+                      // RF-152: a round still running keeps its budget (a tap counts as one
+                      // of its requests); a spent one starts another round of 1,000 more
+                      // songs or 5 more requests. A tap that sends nothing counts nothing.
+                      const next =
+                        current.key === songAutoLoadKey &&
+                        !songSearchAutoLoadSpent({ ...current, loadedCount })
+                          ? { ...current, requests: current.requests + (sends ? 1 : 0) }
+                          : {
+                              key: songAutoLoadKey,
+                              bound: loadedCount + SONG_SEARCH_AUTOLOAD_BOUND,
+                              requests: sends ? 1 : 0,
+                            };
                       songAutoLoadRef.current = next;
                       setSongAutoLoad(next);
                     }
-                    void loadMoreLikes(selectedProvider);
+                    if (sends) void loadMoreLikes(selectedProvider);
                   },
                 }
               : null
@@ -2829,6 +2953,36 @@ function MusicWorkspace({
             onToggle: songPicks.toggle,
             onClear: songPicks.clear,
             onCreate: () => setSongPickCreateOpen(true),
+          }}
+          preview={{
+            key: songPreviewKey,
+            onPreview: (track) => {
+              const key = songPickKey(track);
+              setSongPreviewKey((open) => (open === key ? null : key));
+            },
+            onClose: () => setSongPreviewKey(null),
+            render: (track) =>
+              SongRowPreview ? (
+                <SongRowPreview
+                  track={track}
+                  connections={connections}
+                  onStop={() => setSongPreviewKey(null)}
+                />
+              ) : (
+                <Suspense
+                  fallback={
+                    <p role="status" className="ml-14 mt-1 font-data text-xs text-text-secondary">
+                      Starting preview…
+                    </p>
+                  }
+                >
+                  <SongRowPreviewLazy
+                    track={track}
+                    connections={connections}
+                    onStop={() => setSongPreviewKey(null)}
+                  />
+                </Suspense>
+              ),
           }}
         />
       ) : (
@@ -2940,23 +3094,25 @@ function MusicWorkspace({
         </section>
       )}
       {songPickCreateOpen && songPicks.tracks.length > 0 && (
-        <SongPickCreateDialog
-          count={songPicks.tracks.length}
-          defaultTitle={`${label} likes`}
-          onClose={() => setSongPickCreateOpen(false)}
-          onCreate={(title, chosenTemplate) =>
-            onCreateClass(
-              // The class follows the list order the instructor sees.
-              orderPicks(
-                songPicks.tracks,
-                orderLibrary(likedTracks ?? [], sort, (row) => row.title),
-              ),
-              title,
-              chosenTemplate,
-              true,
-            )
-          }
-        />
+        <Suspense fallback={null}>
+          <SongPickCreateDialog
+            count={songPicks.tracks.length}
+            defaultTitle={`${label} likes`}
+            onClose={() => setSongPickCreateOpen(false)}
+            onCreate={(title, chosenTemplate) =>
+              onCreateClass(
+                // The class follows the list order the instructor sees.
+                orderPicks(
+                  songPicks.tracks,
+                  orderLibrary(likedTracks ?? [], sort, (row) => row.title),
+                ),
+                title,
+                chosenTemplate,
+                true,
+              )
+            }
+          />
+        </Suspense>
       )}
     </section>
   );
@@ -3118,6 +3274,7 @@ function SongShelf({
   note = null,
   loadMore = null,
   picks,
+  preview = null,
 }: {
   label: string;
   loading: boolean;
@@ -3148,16 +3305,33 @@ function SongShelf({
     onClear: () => void;
     onCreate: () => void;
   };
+  /** The ▶ artwork preview (RF-172): the open row, its toggle, and its player. */
+  preview?: {
+    key: string | null;
+    onPreview: (track: TrackSearchResult) => void;
+    onClose: () => void;
+    render: (track: TrackSearchResult) => ReactNode;
+  } | null;
 }) {
+  // A preview whose row leaves the list (a search hides it) closes, so the row
+  // coming back never restarts the song without a tap.
+  const openPreview = preview?.key ?? null;
+  const openRowShown = openPreview != null && rows.some((row) => songPickKey(row) === openPreview);
+  const closePreview = preview?.onClose;
+  useEffect(() => {
+    if (openPreview != null && !openRowShown) closePreview?.();
+  }, [openPreview, openRowShown, closePreview]);
   // The bar outlives an empty search so the selection stays reachable.
   const bar =
     rows.length > 0 || picks.count > 0 ? (
-      <SongPickBar
-        count={picks.count}
-        cap={picks.cap}
-        onClear={picks.onClear}
-        onCreate={picks.onCreate}
-      />
+      <Suspense fallback={null}>
+        <SongPickBar
+          count={picks.count}
+          cap={picks.cap}
+          onClear={picks.onClear}
+          onCreate={picks.onCreate}
+        />
+      </Suspense>
     ) : null;
   const footer =
     note || loadMore ? (
@@ -3232,12 +3406,17 @@ function SongShelf({
   }
   return (
     <div className="flex flex-col gap-2">
-      <SongPickList
-        rows={rows}
-        selectedKeys={picks.selectedKeys}
-        full={picks.full}
-        onToggle={picks.onToggle}
-      />
+      <Suspense fallback={null}>
+        <SongPickList
+          rows={rows}
+          selectedKeys={picks.selectedKeys}
+          full={picks.full}
+          onToggle={picks.onToggle}
+          previewKey={preview?.key ?? null}
+          onPreview={preview?.onPreview}
+          renderPreview={preview?.render}
+        />
+      </Suspense>
       {footer}
       {bar}
     </div>
@@ -3289,24 +3468,43 @@ function LiveWorkspace({
     };
   }, []);
 
-  const fetchOne = useCallback((classId: string) => {
-    setPayloads((prev) => ({ ...prev, [classId]: { status: 'loading' } }));
-    void getRunPayload(classId)
-      .then((payload) => {
-        if (!mountedRef.current) return;
-        setPayloads((prev) => ({
-          ...prev,
-          [classId]: { status: 'ready', payload, readiness: classReadiness(payload) },
-        }));
-      })
-      .catch((err: unknown) => {
-        if (!mountedRef.current) return;
-        setPayloads((prev) => ({
-          ...prev,
-          [classId]: { status: 'error', error: errMessage(err) },
-        }));
-      });
+  // RF-163: a card's Retry keeps its last result in `payloads` while it refetches, so the
+  // queue stays resolved: the ranking and the one copper action do not drop or move under
+  // the instructor. Only that card shows the refetch, through `retrying`.
+  const [retrying, setRetrying] = useState<ReadonlySet<string>>(() => new Set());
+  const setRetryingFor = useCallback((classId: string, on: boolean) => {
+    setRetrying((prev) => {
+      if (prev.has(classId) === on) return prev;
+      const next = new Set(prev);
+      if (on) next.add(classId);
+      else next.delete(classId);
+      return next;
+    });
   }, []);
+  const fetchOne = useCallback(
+    (classId: string) => {
+      setRetryingFor(classId, true);
+      void getRunPayload(classId)
+        .then((payload) => {
+          if (!mountedRef.current) return;
+          setPayloads((prev) => ({
+            ...prev,
+            [classId]: { status: 'ready', payload, readiness: classReadiness(payload) },
+          }));
+        })
+        .catch((err: unknown) => {
+          if (!mountedRef.current) return;
+          setPayloads((prev) => ({
+            ...prev,
+            [classId]: { status: 'error', error: errMessage(err) },
+          }));
+        })
+        .finally(() => {
+          if (mountedRef.current) setRetryingFor(classId, false);
+        });
+    },
+    [setRetryingFor],
+  );
 
   // Fetch a run-payload per candidate whenever the candidate set changes. Concurrent
   // (N is small for a solo creator); each card resolves independently. Ready results
@@ -3450,6 +3648,7 @@ function LiveWorkspace({
               key={cls.id}
               cls={cls}
               state={payloads[cls.id]}
+              retrying={retrying.has(cls.id)}
               primary={allResolved && index === 0}
               onRun={() => onRunClass(cls.id)}
               onEdit={() => void onOpenClass(cls)}
@@ -3481,6 +3680,7 @@ function LiveQueueCard({
   cls,
   state,
   primary,
+  retrying = false,
   onRun,
   onEdit,
   onRetry,
@@ -3488,11 +3688,14 @@ function LiveQueueCard({
   cls: ClassListItem;
   state: LivePayloadState | undefined;
   primary: boolean;
+  /** RF-163: the card's readiness Retry is refetching; its last result stays in `state`. */
+  retrying?: boolean;
   onRun: () => void;
   onEdit: () => void;
   onRetry: () => void;
 }) {
   const canRun = state?.status === 'ready' && state.readiness.runnable;
+  const checking = state === undefined || state.status === 'loading' || retrying;
   const reasonId = `live-blocked-${cls.id}`;
   const blockReason =
     state?.status === 'error'
@@ -3513,7 +3716,7 @@ function LiveQueueCard({
   return (
     <article
       className="min-w-0 rounded-card border border-border-subtle bg-bg-raised p-3"
-      aria-busy={state === undefined || state.status === 'loading'}
+      aria-busy={checking}
     >
       <div className="flex items-center gap-3">
         <div className="min-w-0 flex-1">
@@ -3524,7 +3727,7 @@ function LiveQueueCard({
             {formatTemplateLabel(cls.template) ?? 'Class'} · {cls.trackCount}{' '}
             {cls.trackCount === 1 ? 'track' : 'tracks'} · {formatDuration(cls.totalDurationMs)}
           </p>
-          {(state === undefined || state.status === 'loading') && (
+          {checking && (
             <span
               aria-hidden="true"
               className="mt-1.5 block h-2 w-24 rounded-pill bg-bg-sunken motion-safe:animate-pulse"
@@ -3566,13 +3769,18 @@ function LiveQueueCard({
             {step.action}
           </button>
         ) : state?.status === 'error' ? (
+          // RF-163: during a retry the same button stays (with its copper and keyboard
+          // focus) as a busy "Checking…", instead of leaving the queue without its action.
           <button
             type="button"
-            onClick={onRetry}
-            aria-label={`Retry readiness — ${cls.title}`}
-            className={actionClass}
+            aria-disabled={retrying ? 'true' : undefined}
+            onClick={retrying ? noop : onRetry}
+            aria-label={
+              retrying ? `Checking readiness — ${cls.title}` : `Retry readiness — ${cls.title}`
+            }
+            className={retrying ? `${actionClass} cursor-progress` : actionClass}
           >
-            Retry
+            {retrying ? 'Checking…' : 'Retry'}
           </button>
         ) : null}
         {state?.status === 'ready' && (
@@ -3598,7 +3806,7 @@ function LiveQueueCard({
         )}
       </div>
 
-      {state?.status === 'error' && (
+      {state?.status === 'error' && !retrying && (
         <p id={reasonId} role="alert" className="mt-1 font-ui text-xs text-state-caution">
           <span aria-hidden className="font-data">
             !{' '}

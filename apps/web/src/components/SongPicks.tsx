@@ -3,7 +3,7 @@
  * bar, and the sheet that names the new class. Selection state lives in
  * `lib/song-picks.ts`; the caller owns loading and class creation.
  */
-import { useState } from 'react';
+import { useState, type ReactNode } from 'react';
 import type { ClassTemplate, TrackSearchResult } from '@ritmofit/shared';
 import { CREATE_TEMPLATE_OPTIONS } from '../lib/class-summary.js';
 import { songMetaLine } from '../lib/music-library.js';
@@ -15,22 +15,32 @@ import { TrackArt } from './TrackArt.js';
 const CAP_NOTE_ID = 'song-pick-cap-note';
 
 /**
- * One row per song. The checkbox, artwork and song text share one <label>, so a
- * tap anywhere on them toggles exactly once and the row holds no second control.
- * The <li> carries the Build a class slot; whatever mounts there later (and the
- * RF-172 ▶ preview) sits beside the label, never inside it.
+ * One row per song. The checkbox and the song text are two <label>s for the same
+ * checkbox, so a tap on either toggles exactly once. The artwork between them is
+ * the RF-172 ▶ preview button: it sits beside the labels, never inside one, so a
+ * preview tap never selects and a selection tap never plays. ▶ stays live on rows
+ * the 15-song cap disables, since previewing adds nothing. `renderPreview` mounts
+ * the inline player under the row being previewed.
  */
 export function SongPickList({
   rows,
   selectedKeys,
   full,
   onToggle,
+  previewKey = null,
+  onPreview,
+  renderPreview,
 }: {
   rows: readonly TrackSearchResult[];
   selectedKeys: ReadonlySet<string>;
   /** The cap is reached: unticked rows are disabled, ticked rows can still untick. */
   full: boolean;
   onToggle: (track: TrackSearchResult) => void;
+  /** The song whose inline player is open (`songPickKey`), if any. */
+  previewKey?: string | null;
+  /** ▶ on a row's artwork: open (or, on the open row, close) its preview. */
+  onPreview?: (track: TrackSearchResult) => void;
+  renderPreview?: (track: TrackSearchResult) => ReactNode;
 }) {
   return (
     <ul aria-label="Liked songs" className="flex flex-col gap-1">
@@ -38,38 +48,77 @@ export function SongPickList({
         const key = songPickKey(track);
         const selected = selectedKeys.has(key);
         const disabled = full && !selected;
+        const previewing = previewKey === key;
+        const checkboxId = `song-pick-${key}`;
+        const labelTone = disabled ? 'cursor-not-allowed' : 'cursor-pointer';
         return (
-          <li key={key} data-build-class-slot="song" className="flex min-w-0 items-center">
-            <label
-              className={`flex min-h-11 min-w-0 flex-1 items-center gap-3 rounded-control border px-1 py-1 rf-focus-ring ${
-                selected
-                  ? 'border-border-strong bg-bg-raised'
-                  : 'border-transparent hover:bg-interactive/5'
-              } ${disabled ? 'cursor-not-allowed opacity-60' : 'cursor-pointer'}`}
-            >
-              <input
-                type="checkbox"
-                checked={selected}
-                disabled={disabled}
-                onChange={() => onToggle(track)}
-                aria-describedby={disabled ? CAP_NOTE_ID : undefined}
-                className="ml-2 h-5 w-5 shrink-0 accent-interactive focus-visible:outline-none"
-              />
-              <TrackArt
-                url={track.albumArtUrl}
-                identity={`${track.title}:${track.artist}`}
-                size={44}
-                className="max-h-11 max-w-11"
-              />
-              <span className="min-w-0">
+          <li
+            key={key}
+            data-build-class-slot="song"
+            className={`flex min-w-0 flex-col rounded-control border px-1 py-1 ${
+              selected
+                ? 'border-border-strong bg-bg-raised'
+                : 'border-transparent hover:bg-interactive/5'
+            }`}
+          >
+            <div className="flex min-w-0 items-center gap-3">
+              <label
+                className={`flex min-h-11 shrink-0 items-center ${labelTone} ${disabled ? 'opacity-60' : ''}`}
+              >
+                <input
+                  id={checkboxId}
+                  type="checkbox"
+                  checked={selected}
+                  disabled={disabled}
+                  onChange={() => onToggle(track)}
+                  aria-describedby={disabled ? CAP_NOTE_ID : undefined}
+                  className="ml-2 h-5 w-5 shrink-0 accent-interactive rf-focus-ring"
+                />
+              </label>
+              {onPreview ? (
+                <button
+                  type="button"
+                  onClick={() => onPreview(track)}
+                  aria-label={
+                    previewing ? `Stop preview of ${track.title}` : `Preview ${track.title}`
+                  }
+                  aria-expanded={previewing}
+                  className="relative flex h-11 w-11 shrink-0 items-center justify-center overflow-hidden rounded-control rf-focus-ring"
+                >
+                  <TrackArt
+                    url={track.albumArtUrl}
+                    identity={`${track.title}:${track.artist}`}
+                    size={44}
+                    className="max-h-11 max-w-11"
+                  />
+                  <span
+                    aria-hidden
+                    className="absolute inset-0 flex items-center justify-center bg-black/35 font-ui text-base text-white"
+                  >
+                    {previewing ? '■' : '▶'}
+                  </span>
+                </button>
+              ) : (
+                <TrackArt
+                  url={track.albumArtUrl}
+                  identity={`${track.title}:${track.artist}`}
+                  size={44}
+                  className="max-h-11 max-w-11"
+                />
+              )}
+              <label
+                htmlFor={checkboxId}
+                className={`flex min-h-11 min-w-0 flex-1 flex-col justify-center ${labelTone} ${disabled ? 'opacity-60' : ''}`}
+              >
                 <span className="block truncate font-ui text-sm font-semibold text-text-primary">
                   {track.title}
                 </span>
                 <span className="block truncate font-ui text-xs text-text-secondary">
                   {songMetaLine(track.artist, track.durationMs)}
                 </span>
-              </span>
-            </label>
+              </label>
+            </div>
+            {previewing && renderPreview?.(track)}
           </li>
         );
       })}

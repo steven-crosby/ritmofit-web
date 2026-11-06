@@ -236,6 +236,35 @@ describe('RuntimePlaybackCoordinator', () => {
     expect(created).toHaveLength(0);
   });
 
+  it('changes its run generation when the run reaches the class end (round 3 item 3)', async () => {
+    const payload = makePayload([makeEntry({ classTrackId: 'ct-1', durationMs: 180_000 })]);
+    const { coordinator } = makeHarness(payload, connections('soundcloud'));
+    await coordinator.start(0);
+    const running = coordinator.getRunGeneration();
+    await coordinator.seek(payload.class.totalDurationMs);
+    expect(coordinator.getStatus()).toEqual({ kind: 'ended' });
+    expect(coordinator.getRunGeneration()).not.toBe(running);
+  });
+
+  it('keeps its run generation across seeks and changes it on pause, resume and destroy (RF-185)', async () => {
+    const payload = makePayload([makeEntry({ classTrackId: 'ct-1', durationMs: 180_000 })]);
+    const { coordinator } = makeHarness(payload, connections('soundcloud'));
+    const other = makeHarness(payload, connections('soundcloud')).coordinator;
+    expect(other.getRunGeneration()).not.toBe(coordinator.getRunGeneration());
+    await coordinator.start(0);
+    const started = coordinator.getRunGeneration();
+    await coordinator.seek(60_000);
+    expect(coordinator.getRunGeneration()).toBe(started);
+    await coordinator.pause();
+    const paused = coordinator.getRunGeneration();
+    expect(paused).not.toBe(started);
+    await coordinator.resume(60_000);
+    expect(coordinator.getRunGeneration()).not.toBe(paused);
+    const resumed = coordinator.getRunGeneration();
+    coordinator.destroy();
+    expect(coordinator.getRunGeneration()).not.toBe(resumed);
+  });
+
   it('starts the first track cued at its clip window and plays it', async () => {
     const payload = makePayload([
       makeEntry({ classTrackId: 'ct-1', clipStartMs: 15_000, durationMs: 180_000 }),

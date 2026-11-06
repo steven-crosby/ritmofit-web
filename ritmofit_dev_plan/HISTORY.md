@@ -12,6 +12,72 @@ detail). Current focus and `main` vs production live in the "Now" block of
 ---
 
 ## Deploy and session log (newest first)
+> **Deploy 2026-11-06: Live timeline tap design (#738) on main `75f09a1`**. A standalone playback deploy from the Air
+> with `scripts/deploy.sh`. The owner's approval ("Let's deploy") is recorded on
+> [#738](https://github.com/steven-crosby/ritmofit-web/pull/738#issuecomment-6673855804).
+>
+> - **What changed:** since `840255c` the only runtime change is [#738](https://github.com/steven-crosby/ritmofit-web/pull/738)
+>   (RF-188; web SPA playback only: a tap jumps to the track start, a drag sends one seek on release, and the commit
+>   throttle is removed). The rest is records (#739, #740, #741, #742). There are no Worker config changes, and no
+>   remote D1 migrations to apply.
+> - **Worker:** new `ce487041-27d5-4edf-90e2-a6676522574e`; rollback `40a83587-aae4-4f36-a7a5-a70f06354f3f` (`840255c`).
+> - **SPA:** `assets/index-CySmXOV6.js` (was `assets/index-B3dB3J89.js`).
+> - **Checks:** gates passed and propagation was confirmed (after 6 tries, one probe timed out). The status smoke and
+>   all six security headers passed.
+> - **Tail:** a 5-minute `wrangler tail` captured the Worker test requests (health 200, classes 401), 0 exceptions.
+> - **Not done:** the owner's iPhone checks for RF-188 (feel) and RF-185 (one `seek-sent` per tap, `?playback-timing=1`).
+>   CI uses mock providers and cannot prove real playback.
+> - **Plan:** the DEVELOPMENT_PLAN Next step was rewritten. It had listed RF-185, RF-186 and RF-187 for the owner's
+>   iPhone pass after `840255c`, RF-172 ▶ on Apple Music and SoundCloud, and "the Neo builds RF-188" (since merged).
+
+> **Deploy 2026-11-05: Live timeline and playback fixes (#720) on main `840255c`**. A standalone playback deploy from the Air
+> with `scripts/deploy.sh`. The owner's approval is recorded on
+> [#720](https://github.com/steven-crosby/ritmofit-web/pull/720#issuecomment-6665293356).
+>
+> - **What changed:** since `ddd4b70` the only runtime change is [#720](https://github.com/steven-crosby/ritmofit-web/pull/720)
+>   (RF-185, RF-186, RF-187; web SPA playback only). The rest is records (#729). There are no Worker config changes,
+>   and no remote D1 migrations to apply.
+> - **Worker:** new `40a83587-aae4-4f36-a7a5-a70f06354f3f`; rollback `4c906295-6506-4bc5-b886-8f568446c527` (`ddd4b70`).
+> - **SPA:** `assets/index-B3dB3J89.js` (was `assets/index-CzpTnNZB.js`).
+> - **Checks:** gates passed and propagation was confirmed (after 6 tries). The status smoke and all six security
+>   headers passed. `/classes/<id>/live` returns 200 (SPA fallback).
+> - **Tail:** a 5-minute `wrangler tail` captured both Worker test requests (health 200, classes 401), 0 exceptions.
+> - **Not done:** the owner's iPhone Safari playback runs for RF-185, RF-186 and RF-187 (`?playback-timing=1`). CI uses
+>   mock providers and cannot prove real playback.
+
+> **Deploy 2026-11-05: Music preview, phone field zoom and Live/Music fixes on main `ddd4b70`**. Deployed from the Air
+> with `scripts/deploy.sh`. The owner's approval is recorded on
+> [#729](https://github.com/steven-crosby/ritmofit-web/pull/729#issuecomment-6663990545).
+>
+> - **What changed:** since `bd2b8fa` the runtime changes are web SPA only: #726 (RF-189), #727 (RF-172), #731 (RF-196),
+>   #732 (RF-197, tests only), #733 (RF-173), #734 (RF-163) and #735 (RF-152). Everything else is records and docs
+>   (#736, #737). There are no Worker config changes, and no remote D1 migrations to apply.
+> - **Worker:** new `4c906295-6506-4bc5-b886-8f568446c527`; rollback `229cf040-3b4e-48ac-80bd-10573d017810` (`bd2b8fa`).
+> - **SPA:** `assets/index-CzpTnNZB.js` (was `assets/index-Cbp8jocW.js`).
+> - **Checks:** gates passed and propagation was 3/3. The status smoke and all six security headers passed.
+>   `/sign-in`, `/sign-up` and `/classes/<id>/live` each return 200 (SPA fallback).
+> - **Tail:** a 5-minute `wrangler tail` captured both Worker test requests (health 200, classes 401), 0 exceptions.
+>   The four page requests are served as static assets and do not reach the Worker.
+> - **Not done:** the owner's iPhone checks of RF-129, RF-189 with RF-196 (portrait and landscape), and RF-172.
+> - **Not in this deploy:** [#720](https://github.com/steven-crosby/ritmofit-web/pull/720) (not merged; playback,
+>   gets its own deploy).
+
+> **Deploy 2026-11-04: RF-129 real URLs on main `bd2b8fa`**. Deployed from the Air with `scripts/deploy.sh`.
+> The owner's request is recorded on
+> [#725](https://github.com/steven-crosby/ritmofit-web/pull/725#issuecomment-6648404740).
+>
+> - **What changed:** since `af800c8` the only runtime change is
+>   [#725](https://github.com/steven-crosby/ritmofit-web/pull/725) (`867f7ba`, web SPA only). Everything else is records and docs
+>   (#713 to #724, except #720, which was still open). There are no Worker config changes, and no remote D1 migrations to apply.
+> - **Worker:** new `229cf040-3b4e-48ac-80bd-10573d017810`; rollback `d05bb48f-5f85-49c9-b08e-f0f4448d29d6` (`af800c8`).
+> - **SPA:** `assets/index-Cbp8jocW.js` (was `assets/index-ChxMwIpX.js`).
+> - **Checks:** gates passed and propagation was 3/3. The status smoke and all six security headers passed.
+>   `/sign-in`, `/sign-up`, `/classes/<id>` and `/classes/<id>/live` each return 200 (SPA fallback).
+> - **Tail:** a 5-minute `wrangler tail` captured no events. A second tail confirmed capture: 6/6
+>   test requests (health 200, classes 401), 0 exceptions.
+> - **Not done:** the owner's iPhone Safari check of RF-129.
+> - **Not in this deploy:** [#720](https://github.com/steven-crosby/ritmofit-web/pull/720) (not merged).
+
 > **Deploy 2026-11-02 — RF-183: standalone auth deploy of RF-177 and RF-178 on main `af800c8`**
 > (from the Air, owner "Yes", recorded on
 > [#712](https://github.com/steven-crosby/ritmofit-web/pull/712#issuecomment-6594161676)). Runtime

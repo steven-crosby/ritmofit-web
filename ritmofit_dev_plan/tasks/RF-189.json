@@ -3,7 +3,7 @@
   "id": "RF-189",
   "title": "iOS Safari zooms the page when a 14px text box is focused",
   "kind": "task",
-  "status": "backlog",
+  "status": "done",
   "priority": "P3",
   "parent": null,
   "dependsOn": [],
@@ -12,7 +12,7 @@
     "The viewport meta keeps user zoom enabled (no maximum-scale or user-scalable=no).",
     "A check (lint rule, test or grep in CI) flags a new form field below 16px on mobile."
   ],
-  "nextAction": "There is no shared input class: each field sets text-sm inline (about 20 components; ChoreographyEditor has its own fieldClass). Fix every text input, search, select and textarea, starting with the two the owner hit: the Create a class name field (apps/web/src/components/SongPicks.tsx, id song-pick-class-title) and Search songs (Dashboard.tsx), using text-base sm:text-sm; consider one shared field class while doing it; then add the check. Agent-created: Backlog until the owner sets Ready.",
+  "nextAction": null,
   "blocker": null,
   "evidence": [
     {
@@ -38,8 +38,44 @@
       "ref": "https://github.com/steven-crosby/ritmofit-web/pull/717",
       "summary": "#717 final review finding 6: no shared input class; the zoomed field is in SongPicks.tsx; corrected here.",
       "checkedOn": "2026-11-03"
+    },
+    {
+      "kind": "pr",
+      "ref": "https://github.com/steven-crosby/ritmofit-web/pull/726",
+      "summary": "Owner set RF-189 Ready for the Neo on 2026-11-04 (\"Yes approved\", quoted in this PR body); this draft PR is the Neo claim.",
+      "checkedOn": "2026-11-04"
+    },
+    {
+      "kind": "source",
+      "ref": "apps/web/src/index.css",
+      "summary": "Substitution flagged: one phone-only rule (below 640px) sets every text-entry input, select and textarea to 16px !important, instead of editing about 80 fields to text-base sm:text-sm. It covers fields added later too; desktop sizes are unchanged. The viewport meta in apps/web/index.html is unchanged (no maximum-scale, no user-scalable=no).",
+      "checkedOn": "2026-11-04"
+    },
+    {
+      "kind": "test",
+      "ref": "e2e/smoke.spec.ts",
+      "summary": "expectNoZoomingFields fails the phone-390 smoke for any visible text field under 16px (sign-up form, Music search, Create a class sheet, and every checkPage destination). Without the CSS rule it fails on login-name and login-email at 14px; with it both projects pass.",
+      "checkedOn": "2026-11-04"
+    },
+    {
+      "kind": "observation",
+      "ref": "https://github.com/steven-crosby/ritmofit-web/pull/729#issuecomment-6663990545",
+      "summary": "Deployed to production on 2026-11-05 from the Air: main ddd4b70, Worker 4c906295-6506-4bc5-b886-8f568446c527, SPA assets/index-CzpTnNZB.js, rollback 229cf040-3b4e-48ac-80bd-10573d017810 (bd2b8fa). Smoke and security headers passed. The owner's iPhone Safari check is still owed.",
+      "checkedOn": "2026-11-05"
+    },
+    {
+      "kind": "observation",
+      "ref": "https://github.com/steven-crosby/ritmofit-web/pull/739#issuecomment-6666424568",
+      "summary": "Owner assigned the RF-129, RF-189/RF-196 and RF-172 checks to the Neo in iOS Simulator Safari, with results counting toward Done; the owner iPhone keeps the final UX/feel pass after a deploy.",
+      "checkedOn": "2026-11-05"
+    },
+    {
+      "kind": "observation",
+      "ref": "https://ritmofit.studio/",
+      "summary": "iOS Simulator Safari (iPhone 17, iOS 27.2), production 840255c (Worker 40a83587), 2026-11-05 about 11:58-12:05 MST, signed in as the owner; Neo run per the owner check assignment: portrait: focusing Music › Songs Search songs, the sign-in Email field and the New class dialog Class title field did not zoom the page (scale unchanged, the page only scrolled the field into view).",
+      "checkedOn": "2026-11-05"
     }
   ],
-  "resolution": null,
+  "resolution": "Phone text fields render at 16px below sm (shipped and deployed), so iOS Safari no longer zooms on focus; checked on production 840255c in iOS Simulator Safari portrait on Songs search, sign-in Email and Create a class title, with RF-196 covering landscape.",
   "followUps": []
 }

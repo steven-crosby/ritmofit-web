@@ -1,0 +1,29 @@
+{
+  "schemaVersion": 1,
+  "id": "RF-205",
+  "title": "Music Songs: Spotify ▶ preview plays real audio on desktop",
+  "kind": "verification",
+  "status": "backlog",
+  "priority": "P2",
+  "parent": null,
+  "dependsOn": [
+    "RF-92"
+  ],
+  "acceptance": [
+    "Against production, on desktop Chrome or Safari, ▶ on a liked Spotify song in Music › Songs plays real audio from the start in the inline row player, without ticking the row, and a second ▶ stops the first.",
+    "Preconditions are recorded with the run: a Spotify Premium account, and Spotify reconnected with playback scope (a plain library reconnect shows \"Reconnect Spotify for playback\").",
+    "Spotify ▶ on iPhone Safari is out of scope by the owner's split of RF-172 (2026-11-05): the check here is desktop only. Whether Spotify has a supported mobile-browser path is still open research in RF-126."
+  ],
+  "nextAction": "After RF-92's Spotify expiry and playback triage, the owner runs the desktop ▶ check against production and records the result here. Created at the owner's request (split from RF-172); Backlog until the owner sets Ready. Follow-up of RF-172, with no parent, so it does not hold RF-138 open behind RF-92.",
+  "blocker": null,
+  "evidence": [
+    {
+      "kind": "observation",
+      "ref": "https://github.com/steven-crosby/ritmofit-web/pull/741#issuecomment-6668006472",
+      "summary": "Split from RF-172 by the owner on 2026-11-05, so that RF-172's Apple Music half can close inside the Apple Music testing window (ends around 2026-11-27). The owner reconnected Spotify on the test account the same day; playback scope and Premium were not confirmed.",
+      "checkedOn": "2026-11-05"
+    }
+  ],
+  "resolution": null,
+  "followUps": []
+}

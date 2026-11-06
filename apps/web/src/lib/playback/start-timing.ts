@@ -74,6 +74,23 @@ export function resetPlaybackTimingForTests(): void {
   cachedEnabled = null;
 }
 
+/**
+ * One standalone line, `<prefix> timing <step> @<ms>ms [detail]`, where the
+ * time is the page clock (performance.now), so lines from Live, the timeline
+ * and the adapters can be put in order. A no-op when timing is off (RF-185,
+ * RF-186).
+ */
+export function timingLine(
+  prefix: string,
+  step: string,
+  detail?: string,
+  now: () => number = timingNow,
+): void {
+  if (!playbackTimingEnabled()) return;
+  const suffix = detail ? ` ${detail}` : '';
+  console.info(`${prefix} timing ${step} @${Math.round(now())}ms${suffix}`);
+}
+
 /** A timer that logs each step's offset from now, or a no-op when timing is off. */
 export function startTimer(prefix: string, now: () => number = timingNow): StartTimer {
   if (!playbackTimingEnabled()) return NO_START_TIMER;

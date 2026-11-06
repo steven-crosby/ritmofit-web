@@ -3,7 +3,7 @@
   "id": "RF-172",
   "title": "Music Songs: ▶ preview on the song artwork",
   "kind": "task",
-  "status": "backlog",
+  "status": "review",
   "priority": "P1",
   "parent": "RF-138",
   "dependsOn": [
@@ -13,9 +13,10 @@
     "On Music › Songs each row's artwork becomes a ▶ preview button. This moves the artwork out of the row's selection <label> (RF-151 keeps it inside and toggling until this ships) so the button sits beside the label, not inside it; RF-151's artwork-toggle tests are updated to match. Tapping ▶ previews the song; tapping the rest of the row still selects and never plays. On rows disabled by the 15-song cap, ▶ still previews, since previewing adds nothing.",
     "Preview plays a not-yet-imported provider song (TrackSearchResult) through the same official provider SDK or widget path the builder TrackPreview uses, via an adapter or a shared preview entry type, with no import or other side effect; nothing is cached.",
     "The button is keyboard reachable, labeled with the song name, at least 44px, and axe WCAG 2.2 AA clean at 1440 and 390 wide with no nested interactive controls.",
-    "Component tests cover that ▶ starts preview without toggling selection; the PR names the real-browser preview check CI cannot prove."
+    "Component tests cover that ▶ starts preview without toggling selection; the PR names the real-browser preview check CI cannot prove.",
+    "Owner check before Done (owner, 2026-11-05): against production, ▶ plays real audio from the start for Apple Music (desktop and iPhone Safari, in a browser signed in to Apple Music) and for SoundCloud (desktop and iPhone Safari). Spotify ▶ is checked separately in RF-205."
   ],
-  "nextAction": "Owner, 2026-10-31: preview is a ▶ on the artwork, never the row tap. RF-151 is Done (2026-11-03; the owner kept the checkboxes, #717 issuecomment-6616300402), so this can start once the owner sets it Ready. Files: apps/web/src/components/SongPicks.tsx (SongPickList rows), apps/web/src/components/Dashboard.tsx (renders SongPickList and lazy-loads TrackPreview), TrackPreview.tsx; lib/song-picks.ts (selection) should not need changes; playback code under apps/web/src/lib/playback/ is owner-gated. Agent-created: Backlog until the owner sets Ready. P1 to match its parent RF-138, which cannot close until this does.",
+  "nextAction": "Owner: against production on Music › Songs, tap ▶ on a liked Apple Music song on desktop and on iPhone Safari, each in a browser already signed in to Apple Music (the simulator run stalled at the Apple Music sign-in), and on a liked SoundCloud song on desktop and iPhone Safari. Confirm audio plays from the start each time. Then set Done. The row UI already passed in the simulator (inline player with Stop, row not ticked, a second ▶ stops the first). Spotify ▶ is RF-205. CI cannot prove real provider audio.",
   "blocker": null,
   "evidence": [
     {
@@ -35,8 +36,82 @@
       "ref": "https://github.com/steven-crosby/ritmofit-web/pull/687",
       "summary": "Final review of #687 (merged e4d27f2): TrackPreview takes a RunPayloadTrackEntry, not a TrackSearchResult; Dashboard.tsx belongs in Files; ▶ on cap-disabled rows was undefined. Folded into this record.",
       "checkedOn": "2026-10-31"
+    },
+    {
+      "kind": "pr",
+      "ref": "https://github.com/steven-crosby/ritmofit-web/pull/727",
+      "summary": "Owner set RF-172 Ready for the Neo on 2026-11-04 (\"Yes approved\", quoted in this PR body); this draft PR is the Neo claim.",
+      "checkedOn": "2026-11-04"
+    },
+    {
+      "kind": "observation",
+      "ref": "https://github.com/steven-crosby/ritmofit-web/pull/727",
+      "summary": "Owner chose the inline row player (the row grows to show Stop and elapsed time; one song at a time) over a bottom preview bar, in the Neo session on 2026-11-04.",
+      "checkedOn": "2026-11-04"
+    },
+    {
+      "kind": "source",
+      "ref": "apps/web/src/components/SongPicks.tsx",
+      "summary": "The artwork is a ▶ button between two labels for the checkbox (never inside one), labeled Preview <title> / Stop preview of <title> with aria-expanded, 44px, and live on rows the 15-song cap disables.",
+      "checkedOn": "2026-11-04"
+    },
+    {
+      "kind": "source",
+      "ref": "apps/web/src/components/SongRowPreview.tsx",
+      "summary": "Lazy inline player: plays songPreviewEntry (lib/song-preview.ts, the whole song through its own provider ref) via PreviewPlaybackController and the official adapters; no API call, import, attach or cache. Playback code under lib/playback/ is unchanged.",
+      "checkedOn": "2026-11-04"
+    },
+    {
+      "kind": "source",
+      "ref": "apps/web/src/components/Dashboard.tsx",
+      "summary": "SongPicks (rows, bar, sheet) now loads with the Songs view, and the player chunk preloads once songs are listed, so play() runs inside the ▶ tap. Startup entry 179.26 kB gzip (was 179.94; it reached 180.41 before the split).",
+      "checkedOn": "2026-11-04"
+    },
+    {
+      "kind": "test",
+      "ref": "apps/web/src/components/SongRowPreview.test.tsx",
+      "summary": "▶ previews without toggling, stops from the same button, moves between rows, stays live on capped rows (SongPicks.test.tsx); the player plays on mount with no API call, Stop and unmount release the adapter, unplayable names the fix, a failure offers Play again; song-preview.test.ts covers the adapter. Web suite 1,665 passed; e2e both viewports pass with axe WCAG 2.2 AA on Music songs.",
+      "checkedOn": "2026-11-04"
+    },
+    {
+      "kind": "pr",
+      "ref": "https://github.com/steven-crosby/ritmofit-web/pull/727",
+      "summary": "Final review (/code-review medium) of d8d8e99 found two significant correctness bugs, so it was not merged and owner-approved was removed: (1) the lazy row player suspended on its first render, so the first ▶ tap called play() up to ~300 ms after the tap; (2) a preview hidden by a search restarted with no tap when the row came back. Both fixed (the Songs view renders the loaded player directly; a preview closes when its row leaves the list), with a Dashboard regression test that fails on d8d8e99 for each. Web suite 1,666 passed; e2e both viewports; entry 179.37 kB.",
+      "checkedOn": "2026-11-04"
+    },
+    {
+      "kind": "observation",
+      "ref": "https://github.com/steven-crosby/ritmofit-web/pull/729#issuecomment-6663990545",
+      "summary": "Deployed to production on 2026-11-05 from the Air: main ddd4b70, Worker 4c906295-6506-4bc5-b886-8f568446c527, SPA assets/index-CzpTnNZB.js, rollback 229cf040-3b4e-48ac-80bd-10573d017810 (bd2b8fa). Smoke and security headers passed. The owner's desktop and iPhone ▶ check is still owed.",
+      "checkedOn": "2026-11-05"
+    },
+    {
+      "kind": "observation",
+      "ref": "https://github.com/steven-crosby/ritmofit-web/pull/739#issuecomment-6666424568",
+      "summary": "Owner assigned the RF-129, RF-189/RF-196 and RF-172 checks to the Neo in iOS Simulator Safari, with results counting toward Done; the owner iPhone keeps the final UX/feel pass after a deploy.",
+      "checkedOn": "2026-11-05"
+    },
+    {
+      "kind": "observation",
+      "ref": "https://ritmofit.studio/",
+      "summary": "iOS Simulator Safari (iPhone 17, iOS 27.2), production 840255c (Worker 40a83587), 2026-11-05 about 11:58-12:05 MST, signed in as the owner; Neo run per the owner check assignment: Music › Songs with only Apple Music connected (SoundCloud and Spotify showed Reconnect): tapping ▶ on A.F.U. opened the inline row player (\"Starting on Apple Music…\" with Stop) without ticking the row; a second ▶ on A.I. moved the player to that row and returned the first to ▶; Stop closed it; no row was ticked. Audio not confirmed: the player then showed \"Waiting for Apple Music sign-in…\" and Apple opened its Apple Account sign-in page, which the agent closed without entering anything. Desktop not checked.",
+      "checkedOn": "2026-11-05"
+    },
+    {
+      "kind": "pr",
+      "ref": "https://github.com/steven-crosby/ritmofit-web/pull/740#issuecomment-6666854194",
+      "summary": "Owner, 2026-11-05: \"make Spotify and SoundCloud ▶ checks required for RF-172\". Done now needs real ▶ audio for Apple Music, Spotify and SoundCloud, not Apple Music alone.",
+      "checkedOn": "2026-11-05"
+    },
+    {
+      "kind": "observation",
+      "ref": "https://github.com/steven-crosby/ritmofit-web/pull/741#issuecomment-6668006472",
+      "summary": "Owner, 2026-11-05: split RF-172. It closes on Apple Music and SoundCloud ▶ audio; Spotify ▶ (desktop) moves to RF-205, which depends on RF-92. The owner also reconnected Spotify and SoundCloud on the test account the same day.",
+      "checkedOn": "2026-11-05"
     }
   ],
   "resolution": null,
-  "followUps": []
+  "followUps": [
+    "RF-205"
+  ]
 }

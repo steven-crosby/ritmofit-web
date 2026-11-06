@@ -3,7 +3,7 @@
   "id": "RF-152",
   "title": "Music Songs search and Load more behave cleanly at the edges (RF-132 review follow-ups)",
   "kind": "task",
-  "status": "backlog",
+  "status": "done",
   "priority": "P3",
   "parent": null,
   "dependsOn": [],
@@ -16,7 +16,7 @@
     "The owner decides whether the first search's 1,000-song bound counts songs already loaded (today it does, matching the 2026-10-29 ruling) or is relative.",
     "Each changed behavior has a Dashboard or music-library test."
   ],
-  "nextAction": "Logged items from the #665 (RF-132) final reviews: round 4 items 1, 2, 4, 5 and 6, and round 3 items 4 and 5. Code: apps/web/src/components/Dashboard.tsx (Music Songs likes state and autoload) and apps/web/src/lib/music-library.ts. Not owner-gated unless it touches provider code. Agent-created: Backlog until the owner sets Ready.",
+  "nextAction": null,
   "blocker": null,
   "evidence": [
     {
@@ -30,8 +30,34 @@
       "ref": "https://github.com/steven-crosby/ritmofit-web/pull/665#issuecomment-6516001951",
       "summary": "Final review of #665 on 0a66217: logged items 4 (re-search on whitespace-only edits) and 5 (Keep loading counts a request that never fires and can reset during a round).",
       "checkedOn": "2026-10-30"
+    },
+    {
+      "kind": "observation",
+      "ref": "https://github.com/steven-crosby/ritmofit-web/issues/730",
+      "summary": "Owner pre-approved RF-152 items 1-5 and 7 for the 2026-11-05 unattended Neo session, item 1 client-side only; item 6 stays an owner decision.",
+      "checkedOn": "2026-11-05"
+    },
+    {
+      "kind": "test",
+      "ref": "apps/web/src/components/Dashboard.test.tsx",
+      "summary": "Neo local: four new RF-152 tests and the extended previous-account test all failed with the Dashboard change reverted (15 autoload requests against at most 10 per minute; 2 Apple searches for a whitespace edit; stale Apple result shown; 6 requests after Keep loading taps in a running round; old account songs visible) and pass with it. music-library songSearchAutoLoadDelay tests added. Dashboard.test.tsx and music-library.test.ts: 247 passed before the new tests. A fresh-context review found the per-minute budget was per service while the server limit is per user; it is now one budget across services, and a new cross-service test failed on the earlier commit (15 requests against at most 10) and passes now. A third review found the budget reset when leaving Music (now held by Dashboard; a new test failed with 15 requests and passes) and that a disconnect then reconnect as another account could keep the old songs (the disconnect path now clears them). A fourth review found the Apple library search result was not tied to the account (another account's matches could stay after a switch while the query was typed): the result now carries likesConnectionKey and only a result for the current connection shows (a re-authorization that keeps the same connection row is not detected; RF-202); the disconnect clear also drops the cursor. That account-switch path has no component test yet (RF-202).",
+      "checkedOn": "2026-11-05"
+    },
+    {
+      "kind": "pr",
+      "ref": "https://github.com/steven-crosby/ritmofit-web/pull/735",
+      "summary": "RF-152 items 1-5 and 7 PR, opened under unattended pre-approval issue #730 after four fresh-context /code-review high passes (significant findings fixed; follow-ups in RF-202).",
+      "checkedOn": "2026-11-05"
+    },
+    {
+      "kind": "observation",
+      "ref": "apps/web/src/components/Dashboard.tsx",
+      "summary": "Owner decision on item 6 (live Neo session, 2026-11-05): the first search's 1,000-song bound keeps counting songs already loaded, as main does and as the 2026-10-29 ruling set; it is not made relative. No code change is needed.",
+      "checkedOn": "2026-11-05"
     }
   ],
-  "resolution": null,
-  "followUps": []
+  "resolution": "Items 1-5 and 7 shipped in #735 (one client-side autoload budget of 10 a minute across services, trimmed-query compare, budget counts only sent requests, account-switch and disconnect clear old songs, Apple search result tied to its connection, tests). Item 6: the owner kept the 1,000-song bound counting songs already loaded, which is main's existing behavior. Follow-ups in RF-202.",
+  "followUps": [
+    "RF-202"
+  ]
 }

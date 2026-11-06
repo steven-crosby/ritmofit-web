@@ -3,7 +3,7 @@
   "id": "RF-186",
   "title": "A quick Live timeline tap can leave the class paused, then it resumes by itself",
   "kind": "task",
-  "status": "backlog",
+  "status": "blocked",
   "priority": "P2",
   "parent": null,
   "dependsOn": [],
@@ -12,14 +12,68 @@
     "The clock keeps running (or holds only while a start is pending, labelled as such) and audio returns without a tap.",
     "A test covers the state sequence that produced Paused."
   ],
-  "nextAction": "Reproduce with three quick timeline taps on iPhone Safari and read the state transitions; check whether a cancelled start reports stopped/paused to Live. Likely related to RF-185. Agent-created: Backlog until the owner sets Ready.",
-  "blocker": null,
+  "nextAction": "Against production (main 75f09a1 since 2026-11-06, which includes #720 and #738). This is an instrumented run, not a feel check: Safari Web Inspector open, console saved, the owner re-runs Live on iPhone Safari with ?playback-timing=1 on an Apple Music class: tap timeline tracks in quick succession until Live shows Paused (or 10 rounds without it), and save the console from the first tap to the resume. The lines needed: [ritmo live] status <kind> (every coordinator status Live receives), [ritmo live] toggle-pause / toggle-play <how> (any activation of the Pause/Play button, with pointer type, trusted flag and x/y), [ritmo live-timeline] pointer-* lines and the Apple #N lines. A toggle-pause line during the taps means the primary button received an activation the owner did not intend (then the fix is layout/hit-target work, likely with RF-188); no toggle line but a status paused means a runtime path this analysis missed.",
+  "blocker": "Device evidence: the owner's instrumented iPhone Safari run (see nextAction) must capture the [ritmo live] lines around a Paused. Source and tests give no credible cause, so no fix was guessed.",
   "evidence": [
     {
       "kind": "observation",
       "ref": "https://ritmofit.studio/",
       "summary": "Owner's iPhone Safari run on production af800c8 (Worker d05bb48f, SPA assets/index-ChxMwIpX.js), 2026-11-03 about 13:28-13:58 MST, ?playback-timing=1, class [QA] Audit Experienced Cycle (24 Apple Music tracks); console read by the Air conductor through Safari Web Inspector, plus the owner's screen recordings. Owner tapped only timeline numbers (confirmed in chat, never Pause or Play). After the taps on 14 and 15 the UI showed Paused with the Play button and the clock frozen at 52:54 for about 5 s, then Preparing Apple Music, then Waiting for Apple Music playback, and track 15 played at about 16 s. The console had scrolled past those lines, so the adapter sequence is not captured.",
       "checkedOn": "2026-11-03"
+    },
+    {
+      "kind": "observation",
+      "ref": "https://github.com/steven-crosby/ritmofit-web/pull/718#issuecomment-6616802366",
+      "summary": "Owner decision (2026-11-03, Air session), verbatim: \"Yes, move RF-185–187 to Ready and start the lane.\" Moved Ready → In progress by the RF-185 lane (branch fix/rf-185-live-timeline-seek).",
+      "checkedOn": "2026-11-03"
+    },
+    {
+      "kind": "source",
+      "ref": "apps/web/src/components/LiveMode.tsx",
+      "summary": "Ruled out from source (not device-verified): Paused with the Play button and a held clock needs playing=false with a status outside idle/preparing/awaiting_authorization/buffering/error. setPlaying(false) runs only from togglePlay, an error status (that shows \"Teaching paused · waiting for music\" and \"Retry music\", not Paused/Play), an ended status (\"Last song done\"), the rAF class end, and Reset (shows Ready at 0:00). The runtime (runtime.ts) sets paused only in pause(), which only togglePlay calls; superseded starts are epoch-guarded and never report paused or ended, and after pause() nothing restarts without resume(), so the self-start after about 5 s also needs a Play activation or a path not found here. Unproven hypothesis for the device run: a timeline tap delivered as a click to the primary button. The Live transport stays pinned to the viewport bottom in the default layout, so no layout shift explains it from code.",
+      "checkedOn": "2026-11-03"
+    },
+    {
+      "kind": "pr",
+      "ref": "https://github.com/steven-crosby/ritmofit-web/pull/720",
+      "summary": "#720 adds the diagnostic lines above to ?playback-timing=1 (no behaviour change) and the regression test \"quick timeline taps over slow starts never show Paused or the Play button\" (cancelled in-flight starts) plus a timing-line test. The regression test also passes before #720: it pins the ruled-out paths, it does not reproduce the defect.",
+      "checkedOn": "2026-11-03"
+    },
+    {
+      "kind": "pr",
+      "ref": "https://github.com/steven-crosby/ritmofit-web/pull/720",
+      "summary": "Diagnostics from the #720 review pass: toggle lines log a missing pointerType as unknown, not mouse, and Live builds its timing strings only when ?playback-timing=1 is on. The blocker and the device lines needed are unchanged.",
+      "checkedOn": "2026-11-03"
+    },
+    {
+      "kind": "pr",
+      "ref": "https://github.com/steven-crosby/ritmofit-web/pull/720",
+      "summary": "Round 3 of #720: no change to the RF-186 diagnosis, blocker or device lines needed. A timeline gesture during a playback error now logs [ritmo live] release-held and no longer resumes by itself, which removes one candidate path to an unasked-for start.",
+      "checkedOn": "2026-11-04"
+    },
+    {
+      "kind": "pr",
+      "ref": "https://github.com/steven-crosby/ritmofit-web/pull/720",
+      "summary": "Round 4 of #720: in a playback error, a keyboard seek, Next or Previous now moves only the clock, like a timeline gesture since round 3. Only Retry or Skip track resumes, which removes one more candidate path to an unasked-for start. The blocker and the device lines needed are unchanged.",
+      "checkedOn": "2026-11-04"
+    },
+    {
+      "kind": "observation",
+      "ref": "https://github.com/steven-crosby/ritmofit-web/pull/720#issuecomment-6664016585",
+      "summary": "Owner approved round 5 of #720 (record at the linked PR comment): restore Next, Previous and Skip track resuming after a playback error, and keep the timeline strip clock-only in an error.",
+      "checkedOn": "2026-11-05"
+    },
+    {
+      "kind": "pr",
+      "ref": "https://github.com/steven-crosby/ritmofit-web/pull/720",
+      "summary": "Round 5 of #720: Next, Previous and Skip track resume music after a playback error again (an explicit press each). Timeline strip input stays clock-only, so no strip gesture can start music by itself. The blocker and the device lines needed are unchanged.",
+      "checkedOn": "2026-11-05"
+    },
+    {
+      "kind": "observation",
+      "ref": "https://github.com/steven-crosby/ritmofit-web/pull/720#issuecomment-6666063619",
+      "summary": "Deployed to production on 2026-11-05 from the Air: main 840255c, Worker 40a83587-aae4-4f36-a7a5-a70f06354f3f, SPA assets/index-B3dB3J89.js, rollback 4c906295-6506-4bc5-b886-8f568446c527 (ddd4b70). Smoke, headers and a 5-minute tail (0 exceptions) passed. This proves only that the deploy is up; the owner's iPhone Safari playback run is still owed.",
+      "checkedOn": "2026-11-05"
     }
   ],
   "resolution": null,
