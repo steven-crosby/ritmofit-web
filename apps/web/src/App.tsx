@@ -73,14 +73,16 @@ export function App() {
   // Signed in anywhere but Sign in or Sign up (on "/", say), a remembered deep link
   // is moot: drop it, so a later /sign-in visit in this tab cannot jump to it.
   // A failed Sign in with Apple returns to "/sign-in?error=<code>". Login shows it
-  // once; drop the code so a refresh does not show it again.
+  // once; drop the code so a refresh does not show it again, but only once the
+  // session check settles: until then Login is not on screen to read it.
   const signedInAway = !!retained && !authRoute;
   const appleError =
     route.kind === 'sign-in' ? new URLSearchParams(window.location.search).get('error') : null;
   useLayoutEffect(() => {
     if (signedInAway) clearReturnTo();
-    if (appleError) window.history.replaceState(window.history.state, '', window.location.pathname);
-  }, [signedInAway, appleError]);
+    if (appleError && !isPending)
+      window.history.replaceState(window.history.state, '', window.location.pathname);
+  }, [signedInAway, appleError, isPending]);
 
   // The signed-out landing page drops a remembered deep link: a visitor who left
   // sign-in for the front door has abandoned it, so a later sign-in lands on Classes.

@@ -11,7 +11,9 @@ import {
   routePath,
   settleAppRouteForTests,
   stepTo,
+  usePathname,
 } from './app-route.js';
+import { renderHook } from '@testing-library/react';
 
 const ID = '3f2b8c1e-5d4a-4b7f-9a1c-0e2d3c4b5a69';
 
@@ -95,10 +97,13 @@ describe('navigate and stepTo', () => {
   });
 
   it('settles a queued Back before the next test, so the next step is not swallowed (RF-195)', async () => {
+    // Dashboard reads the path, so the popstate listener is attached.
+    const reader = renderHook(() => usePathname());
     navigate(`/classes/${ID}`);
     stepTo('/');
     await settleAppRouteForTests();
     expect(window.location.pathname).toBe('/');
+    reader.unmount();
     // No Back is still pending: a new step pushes at once.
     stepTo('/music');
     expect(window.location.pathname).toBe('/music');

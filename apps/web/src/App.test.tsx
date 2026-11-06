@@ -191,6 +191,21 @@ describe('App deep links', () => {
     expect(window.location.search).toBe('');
   });
 
+  it('keeps the Apple error until the session check settles, then shows it (RF-195)', () => {
+    // A failed Apple sign-in is a fresh page load, so the session check starts pending.
+    sessionState.isPending = true;
+    window.history.pushState({}, '', '/sign-in?error=invalid_code');
+    const view = render(<App />);
+    expect(window.location.search).toBe('?error=invalid_code');
+
+    sessionState.isPending = false;
+    view.rerender(<App />);
+    expect(
+      screen.getByText('Apple sign-in didn’t finish. Try again, or use your email.'),
+    ).toBeTruthy();
+    expect(window.location.search).toBe('');
+  });
+
   it('waits for the session check before deciding where a deep link goes', () => {
     sessionState.isPending = true;
     window.history.pushState({}, '', '/music');

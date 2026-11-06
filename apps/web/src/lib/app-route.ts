@@ -180,7 +180,8 @@ export function resetAppRouteForTests() {
  * once when no Back is in flight.
  */
 export async function settleAppRouteForTests() {
-  if (pendingBack) {
+  // Without the popstate listener nothing clears `pendingBack`; the reset does.
+  if (pendingBack && listening) {
     await new Promise<void>((resolve) =>
       window.addEventListener('popstate', () => resolve(), { once: true }),
     );
