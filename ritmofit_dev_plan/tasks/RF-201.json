@@ -3,7 +3,7 @@
   "id": "RF-201",
   "title": "Live queue readiness retry: race guard, announcements and one state source (RF-163 review follow-ups)",
   "kind": "task",
-  "status": "backlog",
+  "status": "in_progress",
   "priority": "P3",
   "parent": null,
   "dependsOn": [],
@@ -14,7 +14,7 @@
     "A card whose retry lands runnable is re-ranked deliberately: either it may take the copper at once (documented), or the queue holds its order until the instructor acts, and the ranking comment says which.",
     "The busy \"Checking…\" copper button looks busy (not just cursor-progress), so it does not read as an enabled action that does nothing."
   ],
-  "nextAction": "Logged from the fresh-context review of the RF-163 PR (2026-11-05 unattended Neo session). Agent-created: Backlog until the owner sets Ready.",
+  "nextAction": "Neo session 2026-11-06 on fix/rf-201-queue-retry. Owner approved this session with the default for item 4 (#728 comment 6690051361). Restart: finish the five queue-retry items in Dashboard.tsx LiveWorkspace, then set the final state in this PR.",
   "blocker": null,
   "evidence": [
     {
@@ -22,6 +22,12 @@
       "ref": "https://github.com/steven-crosby/ritmofit-web/issues/730",
       "summary": "Non-blocking findings from the two RF-163 pre-PR reviews, not fixed in that PR (a candidate change during a retry still resets the card to loading; see item 1).",
       "checkedOn": "2026-11-05"
+    },
+    {
+      "kind": "observation",
+      "ref": "https://github.com/steven-crosby/ritmofit-web/pull/728#issuecomment-6690051361",
+      "summary": "Owner, 2026-11-06 in the Neo session: \"Approve with defaults\" for RF-200, RF-199 and RF-201; RF-201 item 4 default: the queue holds its order until the instructor acts.",
+      "checkedOn": "2026-11-06"
     }
   ],
   "resolution": null,
