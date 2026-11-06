@@ -12,13 +12,13 @@ owner's queue: any agent may execute a Ready task. Publishing follows AGENTS.md 
 Evidence marked **recorded** is a carried-forward claim, not fresh verification.
 A checked PR proves its GitHub state, not product acceptance or production behavior.
 
-203 tasks. backlog: 67 · ready: 0 · in_progress: 0 · blocked: 3 · review: 13 · done: 118 · cancelled: 2.
+203 tasks. backlog: 66 · ready: 0 · in_progress: 1 · blocked: 3 · review: 13 · done: 118 · cancelled: 2.
 
 ## In progress
 
 | Task | Priority / kind | Relationships | Next action / resolution | Evidence |
 | --- | --- | --- | --- | --- |
-| — | — | — | — | — |
+| [RF-199](tasks/RF-199.json) Music › Songs row player: harden the lazy/loaded swap and its test (RF-197 review follow-ups) | P3 / task | — | Neo session 2026-11-06 on fix/rf-199-row-player. Owner approved this session (#728 comment 6690051361). Restart: finish the three row-player items in Dashboard.tsx and the RF-197 test, then set the final state in this PR. | checked 2026-11-05; checked 2026-11-06 |
 
 ## Blocked / waiting
 
@@ -116,7 +116,6 @@ A checked PR proves its GitHub state, not product acceptance or production behav
 | [RF-194](tasks/RF-194.json) Tighten unattended-night mechanics left from RF-193's final review | P3 / documentation | — | Plan first; it changes agent rules (owner-gated). Logged from the RF-193 final review, not blocking. | checked 2026-11-04 |
 | [RF-195](tasks/RF-195.json) RF-129 routing follow-ups from the #725 final review | P3 / task | needs RF-129 | Non-blocking findings logged from the final review of #725 (24ceeaf). Pick up after the owner's iPhone check of RF-129. Surface: web. | checked 2026-11-04 |
 | [RF-198](tasks/RF-198.json) Phone text-field zoom rule: follow-ups from the RF-196 review | P3 / task | — | Logged from the fresh-context review of the RF-196 PR (2026-11-05 unattended Neo session). Agent-created: Backlog until the owner sets Ready. | checked 2026-11-05 |
-| [RF-199](tasks/RF-199.json) Music › Songs row player: harden the lazy/loaded swap and its test (RF-197 review follow-ups) | P3 / task | — | Logged from the fresh-context review of the RF-197 PR (2026-11-05 unattended Neo session). Agent-created: Backlog until the owner sets Ready. | checked 2026-11-05 |
 | [RF-200](tasks/RF-200.json) Music service chips: label-in-name follow-ups from the RF-173 review | P3 / task | — | Logged from the fresh-context review of the RF-173 PR (2026-11-05 unattended Neo session). Agent-created: Backlog until the owner sets Ready. | checked 2026-11-05 |
 | [RF-201](tasks/RF-201.json) Live queue readiness retry: race guard, announcements and one state source (RF-163 review follow-ups) | P3 / task | — | Logged from the fresh-context review of the RF-163 PR (2026-11-05 unattended Neo session). Agent-created: Backlog until the owner sets Ready. | checked 2026-11-05 |
 | [RF-202](tasks/RF-202.json) Music Songs search autoload: pacing, clock and test follow-ups from the RF-152 review | P3 / task | — | Logged from the fresh-context reviews of the RF-152 PR (2026-11-05 unattended Neo session). Agent-created: Backlog until the owner sets Ready. | checked 2026-11-05 |
