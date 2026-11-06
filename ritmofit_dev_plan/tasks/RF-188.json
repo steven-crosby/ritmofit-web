@@ -3,7 +3,7 @@
   "id": "RF-188",
   "title": "Live timeline: make tapping a track obvious, easy to hit, and quiet while dragging",
   "kind": "task",
-  "status": "backlog",
+  "status": "review",
   "priority": "P2",
   "parent": null,
   "dependsOn": [],
@@ -13,7 +13,7 @@
     "While a finger is dragging the timeline, Live does not show the \"Waiting for music\" banner and its actions; it shows at most a quiet seeking state, and the banner appears only if playback still has not progressed after release.",
     "The design follows ritmofit_design_system; the owner reviews the design before build."
   ],
-  "nextAction": "Propose two or three design options for the timeline strip (affordance, target size, tap feedback, drag state) for the owner to choose; then build the chosen one. Agent-created: Backlog until the owner sets Ready.",
+  "nextAction": "Owner: after #738 merges and the Air deploys it, on a real iPhone in Live with Apple Music playing, check that a tap on a timeline track jumps to that track start first time, the hint and callout read clearly, and dragging shows Seeking… with no Waiting for music banner until release (and the banner only if music still has not started). Then set Done; anything that feels wrong becomes a new task. CI and the simulator cannot prove real provider playback.",
   "blocker": null,
   "evidence": [
     {
@@ -33,8 +33,94 @@
       "ref": "https://github.com/steven-crosby/ritmofit-web/pull/717",
       "summary": "#717 final review finding 2: wrong component named; corrected here.",
       "checkedOn": "2026-11-03"
+    },
+    {
+      "kind": "observation",
+      "ref": "https://github.com/steven-crosby/ritmofit-web/pull/720#issuecomment-6651157962",
+      "summary": "Owner set RF-188 Ready in the Neo session on 2026-11-04 (\"Yes, both Ready\"), recorded per two-machine-rules §3.",
+      "checkedOn": "2026-11-05"
+    },
+    {
+      "kind": "observation",
+      "ref": "https://github.com/steven-crosby/ritmofit-web/pull/720#issuecomment-6664043963",
+      "summary": "Owner work split for 2026-11-05: RF-188 moves from the Air to the Neo and starts after #720 merges (merged as 840255c at 17:49:52Z).",
+      "checkedOn": "2026-11-05"
+    },
+    {
+      "kind": "pr",
+      "ref": "https://github.com/steven-crosby/ritmofit-web/pull/738",
+      "summary": "RF-188 claim and build PR (draft), opened on the Neo after #720 merged.",
+      "checkedOn": "2026-11-05"
+    },
+    {
+      "kind": "observation",
+      "ref": "https://github.com/steven-crosby/ritmofit-web/pull/738#issuecomment-6668147437",
+      "summary": "Owner chose R1 for RF-188 (recorded by the Air conductor): hint, Track N callout, tap jumps to the track start, All tracks opens Full List, provider seek only on release, Waiting for music quiet during a drag while real failures still show.",
+      "checkedOn": "2026-11-05"
+    },
+    {
+      "kind": "test",
+      "ref": "apps/web/src/components/LiveMode.test.tsx",
+      "summary": "Neo local on 535b53e: LiveTimeline.test.tsx and LiveMode.test.tsx cover tap-to-track-start, the callout, scrub start/end pairing (incl. unmount), right/middle-click ignored, seek keys ignored mid-gesture, no provider call until release (held tap, rested drag, silence gap), clock not pulled back by provider reports, Waiting for music held and Seeking… shown while pressed, a failure still shown mid-drag, one resume after Retry. The waiting-panel and silence-gap tests fail with their fixes reverted. The RF-185 one-seek-per-tap tests still pass. Full local gate green (1737 web, 655 api unit, 265 integration, e2e 2 passed).",
+      "checkedOn": "2026-11-05"
+    },
+    {
+      "kind": "pr",
+      "ref": "https://github.com/steven-crosby/ritmofit-web/pull/738",
+      "summary": "RF-188 R1 build. Fresh-context review of 3a55402 found one significant bug (a held tap in a silence gap let the frame loop enter the track, so release started a second adapter), fixed in 535b53e with a test; a re-review of 535b53e found nothing significant; its one minor point (host time not restarted after a gesture that ends without a seek) is fixed in the next commit; other minor findings in RF-206. Picks up RF-204 items 6, 7 (moot: no throttle left) and 8.",
+      "checkedOn": "2026-11-05"
+    },
+    {
+      "kind": "observation",
+      "ref": "https://github.com/steven-crosby/ritmofit-web/pull/738#issuecomment-6670900994",
+      "summary": "Owner, in the Air session: the Neo runs round 2 on #738 to fix the Air final review significant findings 1-2 with a regression test; findings 3-8 optional or to RF-206.",
+      "checkedOn": "2026-11-05"
+    },
+    {
+      "kind": "test",
+      "ref": "apps/web/src/components/LiveMode.test.tsx",
+      "summary": "Round 2 (Neo local): the recovery panel stays mounted and only turns invisible under the finger, and Transport and the reveal effect see the raw musicBlocked. A new test (music blocked, More reopened, tap and drag the strip) asserts the same panel stays connected, nothing calls scrollIntoView, focus does not move and More stays open; it fails on 4d70bc1 (the panel unmounts). The gesture end banks the clock position before restarting host time (finding 3). Seeking… shows only with a music run that can seek, with a test (finding 6). onKeyDown calls preventDefault once (finding 8).",
+      "checkedOn": "2026-11-05"
+    },
+    {
+      "kind": "observation",
+      "ref": "https://github.com/steven-crosby/ritmofit-web/pull/738#issuecomment-6671867898",
+      "summary": "Owner, in the Air session: the Neo runs round 3 on #738 (lost-gesture clock freeze, deferred reveal, unmoved cancel), with the 10 s watchdog ending only the host scrub state so a still finger lifted later still commits its one seek.",
+      "checkedOn": "2026-11-05"
+    },
+    {
+      "kind": "test",
+      "ref": "apps/web/src/components/LiveTimeline.test.tsx",
+      "summary": "Round 3 (Neo local): ten new tests in LiveTimeline.test.tsx and LiveMode.test.tsx, all failing on a6b0acd: a window pointerup, pointercancel, blur or page hide ends a gesture the strip lost; the 10 s no-event watchdog releases only the host and a still finger lifted after it still seeks once; a move after it holds the host again; an unmoved cancel commits nothing and restores the clock; in prompter-only mode a lost release no longer freezes the class clock; the recovery reveal is held under the finger and runs once on release.",
+      "checkedOn": "2026-11-05"
+    },
+    {
+      "kind": "pr",
+      "ref": "https://github.com/steven-crosby/ritmofit-web/pull/738",
+      "summary": "Fresh-context review of round 3 (d73e068): no clock jump after the watchdog (the scrub end banks the clock; a test pins 3000 ms after a 13 s press with the watchdog at 10 s). Its other points: a reveal deferred under the finger is now dropped when music recovers first (fixed with a test that fails on d73e068); the watchdog-in-a-gap double start and the prompter-only cancel time loss are owner-constraint trade-offs logged in RF-206 item 10.",
+      "checkedOn": "2026-11-05"
+    },
+    {
+      "kind": "observation",
+      "ref": "https://github.com/steven-crosby/ritmofit-web/pull/738#issuecomment-6672258720",
+      "summary": "Owner, in the Air session: the Neo runs round 4 on #738 (restore before ending an unmoved cancel; split the watchdog-releasable clock hold from finger-down; retarget RF-185 to one seek-sent per tap).",
+      "checkedOn": "2026-11-05"
+    },
+    {
+      "kind": "test",
+      "ref": "apps/web/src/components/LiveTimeline.test.tsx",
+      "summary": "Round 4 (Neo local): LiveTimeline reports finger-down (onScrubChange, until the real end) and the clock hold (onClockHoldChange, which the watchdog can release) separately; LiveMode holds the frame loop and position sync on the hold and the quiet panel, rail and reveal deferral on the finger. Five new or rewritten tests fail on c3f637b: the watchdog releases only the hold, a move restores it, an unmoved cancel restores the clock before the hold ends, a paused cancel shows the pre-press time in the header, and a blocked press held past 10 s keeps the panel quiet with no scroll or focus until the lift, then reveals once.",
+      "checkedOn": "2026-11-05"
+    },
+    {
+      "kind": "pr",
+      "ref": "https://github.com/steven-crosby/ritmofit-web/pull/738",
+      "summary": "Fresh-context review of round 4 (023ef66): a still press past the watchdog in a silence gap still let the frame loop tick the coordinator into the pressed track, so the lift started a second adapter. Fixed by ticking the coordinator only when no finger is down (the clock hold still gates the clock tick and sync); a new test holds a gap tap for 11 s and fails on 023ef66 (3 adapters, not 2). Its minor points are in RF-206 items 10 and 13.",
+      "checkedOn": "2026-11-05"
     }
   ],
   "resolution": null,
-  "followUps": []
+  "followUps": [
+    "RF-206"
+  ]
 }

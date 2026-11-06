@@ -51,7 +51,6 @@ import { PROVIDER_ORDER, providerHandoffHref, providerLabel } from '../lib/provi
 import { useWakeLock, type WakeLockStatus } from '../lib/use-wake-lock.js';
 import { useOnline } from '../lib/use-online.js';
 import { useVirtualClock, type ClockStore } from '../lib/use-virtual-clock.js';
-import { createTrailingThrottle } from '../lib/trailing-throttle.js';
 import { playbackTimingEnabled, timingLine } from '../lib/playback/start-timing.js';
 import { ConnectionsDialog } from './ConnectionsDialog.js';
 import { ClassPulse } from './ClassPulse.js';
@@ -558,7 +557,6 @@ export function LiveMode({
   // Release the provider SDK/widget when the instructor exits Live Mode.
   useEffect(
     () => () => {
-      commitThrottleRef.current?.cancel();
       coordinatorRef.current?.destroy();
     },
     [],
@@ -626,12 +624,23 @@ export function LiveMode({
     clockStartSegment();
     let raf = 0;
     const loop = () => {
+      // A finger on the timeline holds the clock (RF-188): no host-time tick,
+      // which would clamp the preview to the gap's end or run it on under a
+      // held tap. The strip's watchdog can end the hold early (round 4).
+      if (clockHeldRef.current) {
+        raf = requestAnimationFrame(loop);
+        return;
+      }
       const capped = clockTick(
         playback.kind === 'silence' ? playback.untilMs : payload.class.totalDurationMs,
       );
       // Only intentional gaps use host time in music mode. Cap at the next
       // song's boundary so asynchronous preparation cannot advance teaching.
-      void coordinatorRef.current?.tick(capped);
+      // While a finger is down (even after the watchdog let the clock run),
+      // the coordinator is not ticked: entering the track under the finger
+      // would start the provider, and the release seek would start it again.
+      // The release is the one provider entry (RF-188 round 4 review).
+      if (!scrubbingRef.current) void coordinatorRef.current?.tick(capped);
       if (capped >= payload.class.totalDurationMs) {
         setPlaying(false);
         return;
@@ -662,16 +671,6 @@ export function LiveMode({
     hasStarted && (playing || (!!coordinatorRef.current && playback.kind === 'error')),
   );
 
-  // The provider seek call is a real network/SDK round trip — never fire it on
-  // every pointer-move of a drag (SPC-16). `commitThrottle` coalesces a burst
-  // of preview positions into the trailing one, at most once per window; `seek`
-  // always flushes it immediately, so a discrete jump (keyboard, tap, release)
-  // never waits behind a pending drag commit. A timeline release skips a position
-  // the throttle already sent (see seekRelease), so one tap starts one
-  // provider adapter (RF-108). Built once per mount (a ref, not state) so
-  // the window survives across renders.
-  const commitThrottleRef = useRef<ReturnType<typeof createTrailingThrottle<number>> | null>(null);
-
   /** Whether music is stopped on a failure. Then timeline strip input (taps,
    * drags, arrow keys) moves only the clock and never reaches the provider,
    * while a deliberate recovery resumes music: Next, Previous, Skip track and
@@ -681,80 +680,69 @@ export function LiveMode({
     [],
   );
 
-  commitThrottleRef.current ??= createTrailingThrottle(
-    (ms) => {
-      // Re-cue provider playback at the new position (no-op while paused — the
-      // next resume enters at the clock position anyway). Never from a
-      // playback error: a value still pending when the failure arrived only
-      // moved the clock, and Retry resumes from there.
-      if (inPlaybackError()) return;
-      void coordinatorRef.current?.seek(ms);
+  // RF-188: a finger on the timeline strip is two signals (round 4).
+  // - Finger down (`scrubbing`), until the gesture really ends: the quiet
+  //   "Seeking…" rail, the waiting panel kept quiet, and its reveal deferred.
+  // - Clock held (`clockHeldRef`): the frame loop does not tick and provider
+  //   position reports do not pull the clock back under the finger. The
+  //   strip's no-event watchdog can end this early, so a lost release cannot
+  //   stop the class clock.
+  // The provider itself is left alone either way: one seek on release.
+  const scrubbingRef = useRef(false);
+  const [scrubbing, setScrubbing] = useState(false);
+  const onScrubChange = useCallback((active: boolean) => {
+    scrubbingRef.current = active;
+    setScrubbing(active);
+  }, []);
+  const clockHeldRef = useRef(false);
+  const onClockHoldChange = useCallback(
+    (held: boolean) => {
+      clockHeldRef.current = held;
+      // The frame loop skipped its ticks while held. Bank the position the
+      // hold left (as a pause does) and restart host time from now, so the
+      // clock neither jumps ahead nor rewinds when it runs again.
+      if (!held) {
+        clockEndSegment();
+        clockStartSegment();
+      }
     },
-    200,
-    undefined,
-    // "Already sent" holds only within one playback run: a new coordinator,
-    // Play, Pause, Retry, a stop or a failure starts a new one (RF-185).
-    () => coordinatorRef.current?.getRunGeneration() ?? null,
+    [clockEndSegment, clockStartSegment],
+  );
+  const syncPositionUnlessHeld = useCallback(
+    (ms: number) => {
+      if (!clockHeldRef.current) clockSyncPosition(ms);
+    },
+    [clockSyncPosition],
   );
 
-  /** Discrete, immediate seek from the timeline strip (arrow keys) and the base
-   * of jumpTo. Rebases the clock (both tiers) and commits the provider position
-   * right away. In a playback error it moves the clock only (RF-185). */
+  /** The one provider seek: arrow keys, a timeline release and the base of
+   * jumpTo. Rebases the clock (both tiers) and re-cues provider playback at
+   * the new position (a no-op while paused: the next resume enters at the
+   * clock position anyway). In a playback error it moves the clock only, and
+   * Retry resumes from there (RF-185). */
   const seek = useCallback(
     (ms: number) => {
       const clamped = clockSeek(ms);
       if (inPlaybackError()) {
-        commitThrottleRef.current!.cancel();
+        liveTimingLog('seek-held', () => `ms=${clamped} (playback error)`);
         return;
       }
-      commitThrottleRef.current!.flush(clamped);
+      liveTimingLog('seek-sent', () => `ms=${clamped}`);
+      void coordinatorRef.current?.seek(clamped);
     },
     [clockSeek, inPlaybackError],
   );
 
-  /** Continuous drag preview: cheap, high-frequency position update (writes
-   * only the raw clock tier — no LiveMode re-render), with the provider commit
-   * coalesced to a trailing throttle so a fast drag doesn't flood it. */
-  const seekPreview = useCallback(
-    (ms: number) => {
-      const clamped = clockPreviewSeek(ms);
-      if (inPlaybackError()) return;
-      commitThrottleRef.current!.call(clamped);
-    },
-    [clockPreviewSeek, inPlaybackError],
-  );
+  /** Drag preview: moves only the raw clock tier (no LiveMode re-render) and
+   * never the provider. Music keeps playing where it was until release, so a
+   * drag cannot restart the provider adapter or raise "Waiting for music"
+   * while the finger moves (RF-188; it used to send a throttled seek every
+   * 200 ms, SPC-16). */
+  const seekPreview = useCallback((ms: number) => void clockPreviewSeek(ms), [clockPreviewSeek]);
 
-  /** Timeline pointer release/cancel at the gesture's last previewed position.
-   * When the value the throttle actually fired last is exactly that position
-   * (a tap, or a drag that rested past the window), drop anything still
-   * pending, send nothing, and settle the clock where it already is (it has
-   * followed the provider since, so the two keep agreeing; this only refreshes
-   * the display tier). A pending, unfired value never counts as sent. One tap
-   * starts one adapter, not two (RF-108, RF-185). Otherwise it is a normal
-   * discrete seek. */
-  const seekRelease = useCallback(
-    (ms: number) => {
-      const target = Math.max(0, Math.min(ms, payload.class.totalDurationMs));
-      const throttle = commitThrottleRef.current!;
-      if (inPlaybackError()) {
-        // A failure during the gesture: the release moves the clock only,
-        // never an automatic resume. Retry resumes from this position.
-        throttle.cancel();
-        liveTimingLog('release-held', () => `ms=${target} (playback error)`);
-        clockSeek(target);
-        return;
-      }
-      if (throttle.firedLast(target)) {
-        throttle.cancel();
-        liveTimingLog('release-skipped', () => `ms=${target} (already sent)`);
-        clockSeek(clockStore.getSnapshot());
-        return;
-      }
-      liveTimingLog('release-sent', () => `ms=${target}`);
-      throttle.flush(clockSeek(target));
-    },
-    [clockSeek, clockStore, inPlaybackError, payload.class.totalDurationMs],
-  );
+  /** Timeline pointer release or cancel at the gesture's final position: one
+   * seek per gesture, so one tap starts one provider adapter (RF-108, RF-185). */
+  const seekRelease = seek;
 
   /** Start hands-free: build the coordinator and begin playback at 0 (a user gesture). */
   const buildCoordinator = () => {
@@ -769,7 +757,7 @@ export function LiveMode({
       adapters: LIVE_PLAYBACK_ADAPTERS,
       availableProviders: PLAYBACK_ADAPTER_PROVIDERS,
       liveness,
-      onPosition: clockSyncPosition,
+      onPosition: syncPositionUnlessHeld,
       onStatus: (next) => {
         // Debug timing only (RF-186): the status sequence Live reacts to.
         liveTimingLog('status', () => next.kind);
@@ -829,9 +817,6 @@ export function LiveMode({
     setHasStarted(true);
     if (!playing) setPlaying(true);
     const held = clockStore.getSnapshot();
-    // A drag value still pending in the throttle window must not fire on the
-    // new coordinator after Retry: that would be a second start (RF-185).
-    commitThrottleRef.current?.cancel();
     coordinatorRef.current?.destroy();
     const coordinator = buildCoordinator();
     coordinatorRef.current = coordinator;
@@ -841,9 +826,8 @@ export function LiveMode({
 
   /** A deliberate jump to a track: Next, Previous, Skip track and a Full List
    * row. In a playback error it is an explicit recovery like Retry, so it
-   * resumes music at the new position: one resume, with any pending
-   * throttled seek dropped first so none fires afterwards. Otherwise it is
-   * one discrete seek. Only the timeline strip (taps, drags, arrow keys)
+   * resumes music at the new position: one resume. Otherwise it is one
+   * discrete seek. Only the timeline strip (taps, drags, arrow keys)
    * moves the clock alone in an error (RF-185). */
   const jumpTo = (ms: number) => {
     const coordinator = coordinatorRef.current;
@@ -852,14 +836,12 @@ export function LiveMode({
       return;
     }
     const clamped = clockSeek(ms);
-    commitThrottleRef.current?.cancel();
     setPlaying(true);
     void coordinator.resume(clamped);
   };
 
   /** Abandon playback but keep the class running (prompter + timers stay live). */
   const continueWithoutMusic = () => {
-    commitThrottleRef.current?.cancel();
     coordinatorRef.current?.destroy();
     coordinatorRef.current = null;
     setPlayback({ kind: 'idle' });
@@ -1042,6 +1024,12 @@ export function LiveMode({
     waitingPanelDeadlineRef.current != null &&
     (waitingPanelNow == null || waitingPanelNow < waitingPanelDeadlineRef.current);
   const showRecoveryPanel = (musicBlocked || hasPlaybackFailure) && !waitingPanelHeld;
+  // A finger on the timeline quiets "Waiting for music": the drag sends nothing
+  // to the provider, and the release decides. The panel stays mounted and keeps
+  // its space, so nothing reflows under the finger and the reveal effect (which
+  // scrolls and focuses on a newly shown panel) never sees a gesture. A real
+  // failure still shows (RF-188).
+  const recoveryQuiet = scrubbing && !hasPlaybackFailure;
   // Account for actual chrome height, including wrapped status and section text.
   // Scroll-to/focus and the recovery scrollport then share the same visible bounds.
   useLayoutEffect(() => {
@@ -1061,9 +1049,26 @@ export function LiveMode({
     return () => observer.disconnect();
   }, [phase]);
 
+  /** Scroll the recovery panel (or the teaching card) into view and focus it. */
+  const reveal = (needsRecovery: boolean, viewChanged: boolean) => {
+    const target = needsRecovery ? recoveryRef.current : teachingRef.current;
+    target?.scrollIntoView?.({ block: 'start' });
+    // Switching views reveals their content while the selected tab retains focus.
+    if (viewChanged) return;
+    if (needsRecovery) {
+      recoveryRef.current?.focus({ preventScroll: true });
+    } else {
+      primaryButtonRef.current?.focus({ preventScroll: true });
+    }
+  };
+  /** A reveal held back while a finger was on the timeline (RF-188 round 3). */
+  const deferredRevealRef = useRef<{ viewChanged: boolean } | null>(null);
   // Reveal entry and newly blocked playback, not every status update. Dialog
   // cleanup owns trigger restoration; only place focus if that trigger is gone.
   useEffect(() => {
+    // Any newer state supersedes a reveal a gesture deferred: if music
+    // recovered under the finger, release must not scroll or move focus.
+    deferredRevealRef.current = null;
     const dialogWasOpen = previousConnectionsOpen.current;
     const becameReady = previousMusicBlocked.current && !musicBlocked;
     previousMusicBlocked.current = musicBlocked;
@@ -1081,16 +1086,23 @@ export function LiveMode({
     ) {
       return;
     }
-    const target = needsRecovery ? recoveryRef.current : teachingRef.current;
-    target?.scrollIntoView?.({ block: 'start' });
-    // Switching views reveals their content while the selected tab retains focus.
-    if (viewChanged) return;
-    if (needsRecovery) {
-      recoveryRef.current?.focus({ preventScroll: true });
-    } else {
-      primaryButtonRef.current?.focus({ preventScroll: true });
+    // Never scroll or move focus under a finger on the timeline: the release
+    // runs the reveal once instead (RF-188 round 3).
+    if (scrubbingRef.current) {
+      deferredRevealRef.current = { viewChanged };
+      return;
     }
+    reveal(needsRecovery, viewChanged);
   }, [phase, musicBlocked, hasPlaybackFailure, connectionsOpen, view, showRecoveryPanel]);
+  // The reveal a gesture deferred, run once on release against the state then.
+  useEffect(() => {
+    const deferred = deferredRevealRef.current;
+    if (scrubbing || !deferred) return;
+    deferredRevealRef.current = null;
+    if (phase !== 'live' || connectionsOpen) return;
+    if (musicBlocked && !showRecoveryPanel) return;
+    reveal(showRecoveryPanel, deferred.viewChanged);
+  }, [scrubbing, phase, connectionsOpen, musicBlocked, showRecoveryPanel]);
   const runState = ended
     ? 'Class complete'
     : musicBlocked
@@ -1272,7 +1284,8 @@ export function LiveMode({
             tabIndex={-1}
             aria-label="Playback recovery"
             role={playbackFailure ? 'alert' : 'status'}
-            className="shrink-0 border-t border-state-caution/30 bg-bg-raised px-4 py-3 rf-focus-ring sm:px-6 [@media(max-height:480px)]:max-h-[calc(100dvh-var(--live-top-height,0px)-var(--live-bottom-height,0px))] [@media(max-height:480px)]:overflow-y-auto [@media(max-height:480px)]:px-2 [@media(max-height:480px)]:py-2"
+            data-quiet={recoveryQuiet || undefined}
+            className={`${recoveryQuiet ? 'invisible ' : ''}shrink-0 border-t border-state-caution/30 bg-bg-raised px-4 py-3 rf-focus-ring sm:px-6 [@media(max-height:480px)]:max-h-[calc(100dvh-var(--live-top-height,0px)-var(--live-bottom-height,0px))] [@media(max-height:480px)]:overflow-y-auto [@media(max-height:480px)]:px-2 [@media(max-height:480px)]:py-2`}
           >
             <h2 className="font-ui text-sm font-semibold text-text-primary">
               {playbackFailure ? 'Playback stopped' : 'Waiting for music'}
@@ -1377,7 +1390,6 @@ export function LiveMode({
             if (coordinatorRef.current) coordinatorRef.current = buildCoordinator();
             setPlayback({ kind: 'paused' });
             setPlaybackFailure(null);
-            commitThrottleRef.current?.cancel();
             clockSeek(0);
           }}
           liveIndex={liveIndex}
@@ -1394,6 +1406,16 @@ export function LiveMode({
           onSeekPreview={seekPreview}
           onSeekCommit={seek}
           onSeekRelease={seekRelease}
+          scrubbing={
+            scrubbing &&
+            playback.kind !== 'idle' &&
+            playback.kind !== 'paused' &&
+            playback.kind !== 'ended' &&
+            coordinatorRef.current != null
+          }
+          onScrubChange={onScrubChange}
+          onClockHoldChange={onClockHoldChange}
+          onShowAllTracks={() => setView('list')}
           playback={coordinatorRef.current ? playback : null}
           wakeStatus={wakeStatus}
           primaryButtonRef={primaryButtonRef}
@@ -1420,9 +1442,19 @@ export function LiveMode({
  * mode, which is itself stated — silence must be legible as a choice, not a
  * mystery, to an instructor mid-class.
  */
-function PlaybackRail({ status }: { status: CoordinatorStatus | null }) {
+function PlaybackRail({
+  status,
+  seeking = false,
+}: {
+  status: CoordinatorStatus | null;
+  /** A finger is on the timeline strip: one quiet state until release (RF-188). */
+  seeking?: boolean;
+}) {
   let text: string;
-  if (status == null) {
+  // A failure keeps its own wording even under a finger.
+  if (seeking && status?.kind !== 'error') {
+    text = 'Seeking…';
+  } else if (status == null) {
     text = 'Music off';
   } else {
     switch (status.kind) {
@@ -1455,7 +1487,7 @@ function PlaybackRail({ status }: { status: CoordinatorStatus | null }) {
     }
   }
   const isError = status?.kind === 'error';
-  const isWaiting = status?.kind === 'awaiting_authorization';
+  const isWaiting = !seeking && status?.kind === 'awaiting_authorization';
   return (
     <p
       className={`flex min-w-0 items-center gap-1.5 font-data text-xs ${
@@ -2326,6 +2358,10 @@ function Transport({
   onSeekPreview,
   onSeekCommit,
   onSeekRelease,
+  scrubbing,
+  onScrubChange,
+  onClockHoldChange,
+  onShowAllTracks,
   playback,
   wakeStatus,
   primaryButtonRef,
@@ -2348,6 +2384,13 @@ function Transport({
   onSeekPreview: (ms: number) => void;
   onSeekCommit: (ms: number) => void;
   onSeekRelease: (ms: number) => void;
+  /** A finger is on the timeline strip (RF-188): the rail reads "Seeking…". */
+  scrubbing: boolean;
+  onScrubChange: (active: boolean) => void;
+  /** The strip holds or releases the clock (the watchdog can release it early). */
+  onClockHoldChange: (held: boolean) => void;
+  /** Opens the Full List view, where every track is a full-size jump target. */
+  onShowAllTracks: () => void;
   /** Coordinator status while music runs; null in prompter-only mode. */
   playback: CoordinatorStatus | null;
   /** Whether the screen wake lock is holding — surfaced beside the player rail. */
@@ -2417,7 +2460,7 @@ function Transport({
         </button>
       </div>
       <div className="mt-1 flex min-w-0 flex-wrap items-center gap-x-3 gap-y-1">
-        <PlaybackRail status={playback} />
+        <PlaybackRail status={playback} seeking={scrubbing} />
         <WakeRail status={wakeStatus} />
         <OfflineRail />
       </div>
@@ -2438,6 +2481,9 @@ function Transport({
             onSeekPreview={onSeekPreview}
             onSeekCommit={onSeekCommit}
             onSeekRelease={onSeekRelease}
+            onScrubChange={onScrubChange}
+            onClockHoldChange={onClockHoldChange}
+            onShowAllTracks={onShowAllTracks}
           />
         </div>
       </div>

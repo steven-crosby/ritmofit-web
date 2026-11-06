@@ -3,7 +3,16 @@ import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import { cleanup, fireEvent, render, screen } from '@testing-library/react';
 import type { RunPayload, RunPayloadTrackEntry } from '@ritmofit/shared';
 import type { ClockStore } from '../lib/use-virtual-clock.js';
-import { LiveTimeline, TAP_SLOP_PX, fractionToMs, keyboardSeekMs } from './LiveTimeline.js';
+import {
+  LiveTimeline,
+  SCRUB_WATCHDOG_MS,
+  TAP_SLOP_PX,
+  blockAt,
+  fractionToMs,
+  keyboardSeekMs,
+  tapTargetMs,
+} from './LiveTimeline.js';
+import { computeTimeline } from './TimelineStrip.js';
 import { PLAYBACK_TIMING_KEY, resetPlaybackTimingForTests } from '../lib/playback/start-timing.js';
 
 afterEach(() => {
@@ -69,7 +78,8 @@ function entry(position: number, durationMs: number | null, cues: Cue[] = [], mo
     displayRpm: null,
     holdCount: null,
     intensity: 'mod',
-    startOffsetMs: null,
+    // Sequential: each 120 s track starts where the previous one ends.
+    startOffsetMs: position * 120000,
     clipStartMs: 0,
     beatAnchorMs: 0,
     notes: null,
@@ -163,7 +173,7 @@ describe('LiveTimeline', () => {
     expect(slider.getAttribute('aria-valuemin')).toBe('0');
     expect(slider.getAttribute('aria-valuemax')).toBe('240000');
     expect(slider.getAttribute('aria-valuenow')).toBe('60000');
-    expect(slider.getAttribute('aria-valuetext')).toBe('1:00 of 4:00');
+    expect(slider.getAttribute('aria-valuetext')).toBe('1:00 of 4:00, Track 1');
     expect(slider.className).toContain('h-11');
     expect(slider.className).toContain('w-full');
     expect(slider.className).toContain('min-w-0');
@@ -217,13 +227,14 @@ describe('LiveTimeline', () => {
     );
     const slider = screen.getByRole('slider');
     fireEvent.pointerDown(slider, { clientX: 60, pointerId: 1 });
-    expect(onSeekPreview).toHaveBeenCalledWith(60000); // 25% of 240000
+    // Pointerdown previews the tap target: the start of track 1 (RF-188).
+    expect(onSeekPreview).toHaveBeenCalledWith(0);
     fireEvent.pointerMove(slider, { clientX: 120, buttons: 1, pointerId: 1 });
     fireEvent.pointerMove(slider, { clientX: 180, buttons: 1, pointerId: 1 });
     expect(onSeekPreview).toHaveBeenCalledTimes(3);
     expect(onSeekPreview).toHaveBeenLastCalledWith(180000); // 75%
-    // The provider seek path is never called by the timeline itself during a
-    // drag — coalescing/throttling that call is the host's job (SPC-16).
+    // Nothing is committed while the finger moves: the host seeks the
+    // provider once, on release (RF-188).
     expect(onSeekCommit).not.toHaveBeenCalled();
   });
 
@@ -245,7 +256,7 @@ describe('LiveTimeline', () => {
     expect(onSeekPreview).not.toHaveBeenCalled();
     fireEvent.pointerDown(slider, { clientX: 30, pointerId: 1 });
     fireEvent.pointerMove(slider, { clientX: 60, buttons: 0, pointerId: 1 });
-    expect(onSeekPreview.mock.calls).toEqual([[30000]]);
+    expect(onSeekPreview.mock.calls).toEqual([[0]]);
     fireEvent.pointerMove(slider, { clientX: 60, buttons: 1, pointerId: 1 });
     expect(onSeekPreview).toHaveBeenLastCalledWith(60000); // 25% of 240000
   });
@@ -357,7 +368,7 @@ describe('LiveTimeline taps (RF-185)', () => {
     fireEvent.pointerMove(slider, { clientX: 60, buttons: 1, pointerId: 1 });
     fireEvent.pointerUp(slider, { clientX: 60, pointerId: 1 });
     expect(onSeekPreview).toHaveBeenCalledTimes(1);
-    expect(onSeekRelease.mock.calls).toEqual([[60000]]);
+    expect(onSeekRelease.mock.calls).toEqual([[0]]);
   });
 
   it('sub-pixel and small jitter inside the tap slop does not move the tap', () => {
@@ -366,8 +377,8 @@ describe('LiveTimeline taps (RF-185)', () => {
     fireEvent.pointerMove(slider, { clientX: 60.4, buttons: 1, pointerId: 1 }); // a different ms
     fireEvent.pointerMove(slider, { clientX: 60 + TAP_SLOP_PX - 1, buttons: 1, pointerId: 1 });
     fireEvent.pointerUp(slider, { clientX: 60 + TAP_SLOP_PX - 1, pointerId: 1 });
-    expect(onSeekPreview.mock.calls).toEqual([[60000]]);
-    expect(onSeekRelease.mock.calls).toEqual([[60000]]);
+    expect(onSeekPreview.mock.calls).toEqual([[0]]);
+    expect(onSeekRelease.mock.calls).toEqual([[0]]);
   });
 
   it('a move past the slop is a drag from then on, even back inside it', () => {
@@ -376,7 +387,7 @@ describe('LiveTimeline taps (RF-185)', () => {
     fireEvent.pointerMove(slider, { clientX: 60 + TAP_SLOP_PX, buttons: 1, pointerId: 1 }); // just past the slop
     fireEvent.pointerMove(slider, { clientX: 61, buttons: 1, pointerId: 1 });
     fireEvent.pointerUp(slider, { clientX: 61, pointerId: 1 });
-    expect(onSeekPreview.mock.calls).toEqual([[60000], [(60 + TAP_SLOP_PX) * 1000], [61000]]);
+    expect(onSeekPreview.mock.calls).toEqual([[0], [(60 + TAP_SLOP_PX) * 1000], [61000]]);
     expect(onSeekRelease.mock.calls).toEqual([[61000]]);
   });
 
@@ -402,7 +413,7 @@ describe('LiveTimeline taps (RF-185)', () => {
     fireEvent.pointerDown(slider, { clientX: 60, pointerId: 1 });
     fireEvent.pointerMove(slider, { clientX: 120, buttons: 1, pointerId: 1 });
     fireEvent.pointerUp(slider, { clientX: 120.6, pointerId: 1 }); // maps to 120600
-    expect(onSeekPreview.mock.calls).toEqual([[60000], [120000]]);
+    expect(onSeekPreview.mock.calls).toEqual([[0], [120000]]);
     expect(onSeekRelease.mock.calls).toEqual([[120000]]);
   });
 
@@ -423,10 +434,10 @@ describe('LiveTimeline taps (RF-185)', () => {
     fireEvent.pointerMove(slider, { clientX: 210, buttons: 1, pointerId: 2 });
     fireEvent.pointerUp(slider, { clientX: 210, pointerId: 2 });
     fireEvent.pointerCancel(slider, { pointerId: 2 });
-    expect(onSeekPreview.mock.calls).toEqual([[60000]]);
+    expect(onSeekPreview.mock.calls).toEqual([[0]]);
     expect(onSeekRelease).not.toHaveBeenCalled();
     fireEvent.pointerUp(slider, { clientX: 60, pointerId: 1 });
-    expect(onSeekRelease.mock.calls).toEqual([[60000]]);
+    expect(onSeekRelease.mock.calls).toEqual([[0]]);
   });
 
   it('a lost pointer capture ends the gesture, so the next pointer is not ignored', () => {
@@ -436,7 +447,8 @@ describe('LiveTimeline taps (RF-185)', () => {
     fireEvent.lostPointerCapture(slider, { pointerId: 1 }); // the tail of that end: nothing
     fireEvent.pointerDown(slider, { clientX: 120, pointerId: 2 });
     fireEvent.pointerUp(slider, { clientX: 120, pointerId: 2 });
-    expect(onSeekRelease.mock.calls).toEqual([[60000], [120000]]);
+    // The unmoved press commits nothing (RF-188 round 3); the next pointer works.
+    expect(onSeekRelease.mock.calls).toEqual([[120000]]);
   });
 
   describe('debug timing', () => {
@@ -465,13 +477,304 @@ describe('LiveTimeline taps (RF-185)', () => {
       const lines = info.mock.calls.map((call: unknown[]) => String(call[0]));
       expect(lines).toHaveLength(4);
       expect(lines[0]).toMatch(
-        /^\[ritmo live-timeline\] timing pointer-down @\d+ms x=60\.0 ms=60000 id=1 type=touch$/,
+        /^\[ritmo live-timeline\] timing pointer-down @\d+ms x=60\.0 ms=0 id=1 type=touch$/,
       );
       expect(lines[1]).toMatch(
         /pointer-move @\d+ms x=60\.4 ms=60400 id=1 type=touch \(tap slop\)$/,
       );
-      expect(lines[2]).toMatch(/pointer-up @\d+ms x=60\.4 ms=60000 id=1 type=touch tap$/);
+      expect(lines[2]).toMatch(/pointer-up @\d+ms x=60\.4 ms=0 id=1 type=touch tap$/);
       expect(lines[3]).toMatch(/pointer-cancel @\d+ms x=60\.4 ms=n\/a .*\(no gesture, ignored\)$/);
     });
+  });
+});
+
+describe('LiveTimeline tap to jump (RF-188)', () => {
+  function renderStrip(extra: { onShowAllTracks?: () => void } = {}) {
+    const clock = makeTestClock(0);
+    const onSeekPreview = vi.fn((ms: number) => clock.setValue(ms));
+    const onSeekRelease = vi.fn();
+    const onScrubChange = vi.fn();
+    stubRect(240);
+    const view = render(
+      <LiveTimeline
+        payload={makePayload()}
+        clock={clock.store}
+        onSeekPreview={onSeekPreview}
+        onSeekCommit={() => {}}
+        onSeekRelease={onSeekRelease}
+        onScrubChange={onScrubChange}
+        {...extra}
+      />,
+    );
+    return {
+      slider: screen.getByRole('slider'),
+      onSeekPreview,
+      onSeekRelease,
+      onScrubChange,
+      unmount: view.unmount,
+    };
+  }
+
+  it('finds the track under a time, and keeps a gap or the final instant sensible', () => {
+    const payload = makePayload();
+    const { blocks } = computeTimeline(payload.tracks, payload.class.totalDurationMs);
+    expect(blockAt(blocks, 0)?.position).toBe(0);
+    expect(blockAt(blocks, 119_999)?.position).toBe(0);
+    expect(blockAt(blocks, 120_000)?.position).toBe(1);
+    expect(blockAt(blocks, 240_000)?.position).toBe(1); // the class end is still track 2
+    expect(tapTargetMs(blocks, 180_000)).toBe(120_000);
+    // Free mode: a gap between tracks keeps the exact time.
+    const gapped = computeTimeline(
+      [entry(0, 60_000), { ...entry(1, 60_000), startOffsetMs: 120_000 }],
+      180_000,
+    ).blocks;
+    expect(blockAt(gapped, 90_000)).toBeNull();
+    expect(tapTargetMs(gapped, 90_000)).toBe(90_000);
+  });
+
+  it("a tap in the middle of a track jumps to that track's start, once", () => {
+    const { slider, onSeekPreview, onSeekRelease } = renderStrip();
+    fireEvent.pointerDown(slider, { clientX: 180, pointerId: 1 }); // 3:00, inside track 2
+    fireEvent.pointerUp(slider, { clientX: 180, pointerId: 1 });
+    expect(onSeekPreview.mock.calls).toEqual([[120000]]);
+    expect(onSeekRelease.mock.calls).toEqual([[120000]]);
+  });
+
+  it('a drag still lands on the exact released time, not a track start', () => {
+    const { slider, onSeekRelease } = renderStrip();
+    fireEvent.pointerDown(slider, { clientX: 60, pointerId: 1 });
+    fireEvent.pointerMove(slider, { clientX: 150, buttons: 1, pointerId: 1 });
+    fireEvent.pointerUp(slider, { clientX: 150, pointerId: 1 });
+    expect(onSeekRelease.mock.calls).toEqual([[150000]]);
+  });
+
+  it('shows "Track N · time" while pressed, and only then', () => {
+    const { slider } = renderStrip();
+    expect(screen.queryByTestId('live-timeline-callout')).toBeNull();
+    fireEvent.pointerDown(slider, { clientX: 180, pointerId: 1 });
+    expect(screen.getByTestId('live-timeline-callout').textContent).toBe('Track 2 · 2:00');
+    fireEvent.pointerMove(slider, { clientX: 200, buttons: 1, pointerId: 1 });
+    expect(screen.getByTestId('live-timeline-callout').textContent).toBe('Track 2 · 3:20');
+    fireEvent.pointerUp(slider, { clientX: 200, pointerId: 1 });
+    expect(screen.queryByTestId('live-timeline-callout')).toBeNull();
+  });
+
+  it('tells the host when a finger is on the strip, for every way a gesture ends', () => {
+    const { slider, onScrubChange } = renderStrip();
+    fireEvent.pointerDown(slider, { clientX: 60, pointerId: 1 });
+    fireEvent.pointerDown(slider, { clientX: 200, pointerId: 2 }); // a second finger
+    expect(onScrubChange.mock.calls).toEqual([[true]]);
+    fireEvent.pointerUp(slider, { clientX: 60, pointerId: 1 });
+    fireEvent.lostPointerCapture(slider, { pointerId: 1 }); // the tail of that release
+    expect(onScrubChange.mock.calls).toEqual([[true], [false]]);
+    fireEvent.pointerDown(slider, { clientX: 60, pointerId: 3 });
+    fireEvent.pointerCancel(slider, { pointerId: 3 });
+    fireEvent.pointerDown(slider, { clientX: 60, pointerId: 4 });
+    fireEvent.lostPointerCapture(slider, { pointerId: 4 });
+    expect(onScrubChange.mock.calls).toEqual([[true], [false], [true], [false], [true], [false]]);
+  });
+
+  it('releases the host if the strip unmounts mid-gesture', () => {
+    const { slider, onScrubChange, unmount } = renderStrip();
+    fireEvent.pointerDown(slider, { clientX: 60, pointerId: 1 });
+    unmount();
+    expect(onScrubChange.mock.calls).toEqual([[true], [false]]);
+  });
+
+  it('ignores a right- or middle-click (RF-204 item 6)', () => {
+    const { slider, onSeekPreview, onSeekRelease, onScrubChange } = renderStrip();
+    for (const button of [1, 2]) {
+      fireEvent.pointerDown(slider, { clientX: 180, pointerId: 1, pointerType: 'mouse', button });
+      fireEvent.pointerUp(slider, { clientX: 180, pointerId: 1, pointerType: 'mouse', button });
+    }
+    expect(onSeekPreview).not.toHaveBeenCalled();
+    expect(onSeekRelease).not.toHaveBeenCalled();
+    expect(onScrubChange).not.toHaveBeenCalled();
+    fireEvent.pointerDown(slider, { clientX: 180, pointerId: 1, pointerType: 'mouse', button: 0 });
+    fireEvent.pointerUp(slider, { clientX: 180, pointerId: 1, pointerType: 'mouse', button: 0 });
+    expect(onSeekRelease.mock.calls).toEqual([[120000]]);
+  });
+
+  it('ignores seek keys while a finger is on the strip, so the release is the one seek', () => {
+    const clock = makeTestClock(0);
+    const onSeekCommit = vi.fn();
+    const onSeekRelease = vi.fn();
+    stubRect(240);
+    render(
+      <LiveTimeline
+        payload={makePayload()}
+        clock={clock.store}
+        onSeekPreview={(ms) => clock.setValue(ms)}
+        onSeekCommit={onSeekCommit}
+        onSeekRelease={onSeekRelease}
+      />,
+    );
+    const slider = screen.getByRole('slider');
+    fireEvent.pointerDown(slider, { clientX: 60, pointerId: 1 });
+    fireEvent.keyDown(slider, { key: 'ArrowRight' });
+    expect(onSeekCommit).not.toHaveBeenCalled();
+    fireEvent.pointerUp(slider, { clientX: 60, pointerId: 1 });
+    fireEvent.keyDown(slider, { key: 'ArrowRight' });
+    expect(onSeekRelease.mock.calls).toEqual([[0]]);
+    expect(onSeekCommit.mock.calls).toEqual([[5000]]);
+  });
+
+  it('says what a tap does, and offers All tracks when the host has a list', () => {
+    const onShowAllTracks = vi.fn();
+    const { slider } = renderStrip({ onShowAllTracks });
+    const hint = screen.getByText('Drag to move · tap to jump');
+    expect(slider.getAttribute('aria-describedby')).toBe(hint.id);
+    fireEvent.click(screen.getByRole('button', { name: 'All tracks' }));
+    expect(onShowAllTracks).toHaveBeenCalledTimes(1);
+  });
+
+  it('has no All tracks button without a list to open', () => {
+    renderStrip();
+    expect(screen.queryByRole('button', { name: 'All tracks' })).toBeNull();
+  });
+});
+
+describe('LiveTimeline lost releases (RF-188 round 3)', () => {
+  function renderStrip(initialMs = 30_000) {
+    const clock = makeTestClock(initialMs);
+    const onSeekPreview = vi.fn((ms: number) => clock.setValue(ms));
+    const onSeekRelease = vi.fn();
+    const onScrubChange = vi.fn();
+    const onClockHoldChange = vi.fn();
+    stubRect(240);
+    render(
+      <LiveTimeline
+        payload={makePayload()}
+        clock={clock.store}
+        onSeekPreview={onSeekPreview}
+        onSeekCommit={() => {}}
+        onSeekRelease={onSeekRelease}
+        onScrubChange={onScrubChange}
+        onClockHoldChange={onClockHoldChange}
+      />,
+    );
+    return {
+      slider: screen.getByRole('slider'),
+      clock,
+      onSeekPreview,
+      onSeekRelease,
+      onScrubChange,
+      onClockHoldChange,
+    };
+  }
+
+  it('a cancelled press that never moved commits nothing and puts the clock back', () => {
+    const { slider, clock, onSeekRelease } = renderStrip(30_000);
+    fireEvent.pointerDown(slider, { clientX: 180, pointerId: 1 }); // previews track 2's start
+    expect(clock.store.getSnapshot()).toBe(120_000);
+    fireEvent.pointerCancel(slider, { pointerId: 1 });
+    expect(onSeekRelease).not.toHaveBeenCalled();
+    expect(clock.store.getSnapshot()).toBe(30_000);
+  });
+
+  it('a window pointerup the strip missed ends the gesture; a drag commits its last position', () => {
+    const { slider, onSeekRelease, onScrubChange } = renderStrip();
+    fireEvent.pointerDown(slider, { clientX: 60, pointerId: 1 });
+    fireEvent.pointerMove(slider, { clientX: 150, buttons: 1, pointerId: 1 });
+    fireEvent.pointerUp(window, { pointerId: 2 }); // another pointer: ignored
+    expect(onScrubChange.mock.calls).toEqual([[true]]);
+    fireEvent.pointerUp(window, { pointerId: 1 });
+    expect(onScrubChange.mock.calls).toEqual([[true], [false]]);
+    expect(onSeekRelease.mock.calls).toEqual([[150000]]);
+    fireEvent.pointerUp(slider, { clientX: 150, pointerId: 1 }); // late: nothing more
+    expect(onSeekRelease).toHaveBeenCalledTimes(1);
+  });
+
+  it.each([
+    ['the window loses focus', () => fireEvent.blur(window)],
+    [
+      'the page is hidden',
+      () => {
+        Object.defineProperty(document, 'visibilityState', { value: 'hidden', configurable: true });
+        fireEvent(document, new Event('visibilitychange'));
+        delete (document as { visibilityState?: unknown }).visibilityState;
+      },
+    ],
+    ['the window sees a pointercancel', () => fireEvent.pointerCancel(window, { pointerId: 1 })],
+  ])(
+    'ends the scrub when %s, without a seek for an unmoved press',
+    (_label: string, end: () => unknown) => {
+      const { slider, onSeekRelease, onScrubChange } = renderStrip();
+      fireEvent.pointerDown(slider, { clientX: 60, pointerId: 1 });
+      end();
+      expect(onScrubChange.mock.calls).toEqual([[true], [false]]);
+      expect(onSeekRelease).not.toHaveBeenCalled();
+    },
+  );
+
+  it('the watchdog releases only the clock hold: the finger stays down, and a still lift seeks once', () => {
+    vi.useFakeTimers();
+    try {
+      const { slider, onSeekRelease, onScrubChange, onClockHoldChange } = renderStrip();
+      fireEvent.pointerDown(slider, { clientX: 180, pointerId: 1 });
+      vi.advanceTimersByTime(SCRUB_WATCHDOG_MS - 1);
+      expect(onClockHoldChange.mock.calls).toEqual([[true]]);
+      vi.advanceTimersByTime(1);
+      expect(onClockHoldChange.mock.calls).toEqual([[true], [false]]);
+      // Finger down (panel quiet, reveal deferred) lasts until the real end (round 4).
+      expect(onScrubChange.mock.calls).toEqual([[true]]);
+      expect(screen.getByTestId('live-timeline-callout')).toBeTruthy(); // the gesture is kept
+      fireEvent.pointerUp(slider, { clientX: 180, pointerId: 1 });
+      expect(onSeekRelease.mock.calls).toEqual([[120000]]);
+      expect(onClockHoldChange.mock.calls).toEqual([[true], [false]]); // no second false
+      expect(onScrubChange.mock.calls).toEqual([[true], [false]]);
+    } finally {
+      vi.useRealTimers();
+    }
+  });
+
+  it('a move after the watchdog holds the clock again and restarts the timer', () => {
+    vi.useFakeTimers();
+    try {
+      const { slider, onScrubChange, onClockHoldChange } = renderStrip();
+      fireEvent.pointerDown(slider, { clientX: 60, pointerId: 1 });
+      vi.advanceTimersByTime(SCRUB_WATCHDOG_MS);
+      fireEvent.pointerMove(slider, { clientX: 100, buttons: 1, pointerId: 1 });
+      expect(onClockHoldChange.mock.calls).toEqual([[true], [false], [true]]);
+      vi.advanceTimersByTime(SCRUB_WATCHDOG_MS - 1);
+      fireEvent.pointerMove(slider, { clientX: 110, buttons: 1, pointerId: 1 });
+      vi.advanceTimersByTime(SCRUB_WATCHDOG_MS - 1);
+      expect(onClockHoldChange.mock.calls).toEqual([[true], [false], [true]]);
+      fireEvent.pointerUp(slider, { clientX: 110, pointerId: 1 });
+      expect(onClockHoldChange.mock.calls).toEqual([[true], [false], [true], [false]]);
+      expect(onScrubChange.mock.calls).toEqual([[true], [false]]);
+    } finally {
+      vi.useRealTimers();
+    }
+  });
+
+  it('a cancelled unmoved press restores the clock before it lets the host go (round 4)', () => {
+    const order: string[] = [];
+    const clock = makeTestClock(30_000);
+    stubRect(240);
+    render(
+      <LiveTimeline
+        payload={makePayload()}
+        clock={clock.store}
+        onSeekPreview={(ms) => {
+          order.push(`preview ${ms}`);
+          clock.setValue(ms);
+        }}
+        onSeekCommit={() => {}}
+        onScrubChange={(active) => order.push(`finger ${active}`)}
+        onClockHoldChange={(held) => order.push(`hold ${held}`)}
+      />,
+    );
+    const slider = screen.getByRole('slider');
+    fireEvent.pointerDown(slider, { clientX: 180, pointerId: 1 });
+    fireEvent.pointerCancel(slider, { pointerId: 1 });
+    expect(order).toEqual([
+      'finger true',
+      'hold true',
+      'preview 120000',
+      'preview 30000',
+      'hold false',
+      'finger false',
+    ]);
   });
 });
