@@ -20,9 +20,16 @@
     "Owner decision recorded (RF-188 round 3-4 watchdog): after 10 s with no pointer event the host clock and position sync resume while the finger stays down, but the coordinator is not ticked until the finger lifts (round 4), so a still hold in a silence gap no longer starts the provider twice; instead the resumed clock stops at the gap end until the lift. In music mode the clock and callout follow the audio until the lift, and the watchdog moment can briefly show the uncommitted tap target. In prompter-only mode an unmoved press that is cancelled restores the clock to its pre-press time, losing the hold duration, and unmounting the strip mid-press keeps the previewed time. Keep, or change the watchdog.",
     "A new press that drops a stale gesture reads its pre-press clock from the last committed position, not the stale gesture uncommitted preview, so an unmoved cancel of the new press restores a real position (Air round-3 review finding 4).",
     "The All tracks button is hidden or does nothing confusing while the Full List view is already showing (finding 8).",
-    "If no end event ever reaches the strip or the window, \"Seeking…\" and the quiet waiting panel last until the next touch on the strip (finger-down has no cap since round 4; a real failure still shows); decide whether to end such a gesture as a lost release after a longer timeout (for example twice the watchdog), against the owner rule that the watchdog must not drop the gesture."
+    "If no end event ever reaches the strip or the window, \"Seeking…\" and the quiet waiting panel last until the next touch on the strip (finger-down has no cap since round 4; a real failure still shows); decide whether to end such a gesture as a lost release after a longer timeout (for example twice the watchdog), against the owner rule that the watchdog must not drop the gesture.",
+    "Arrow-key seeks are not dropped while a stale gesture (a lost release) is still open on the strip (Air final review of d6cd310, finding 2).",
+    "An unmoved cancel after the watchdog released the clock hold does not rewind past the time the clock ran, and the display tier (cue card, countdown) is re-banked with the playhead (finding 3; reportHold(false) is deduped there).",
+    "Unmounting the strip mid-drag either commits the previewed position as a release or restores the pre-press clock, so the clock and provider do not diverge (finding 4).",
+    "While the recovery panel is quiet under a finger, focus is not left on a visibility:hidden element and assistive tech keeps the waiting/failure status (finding 5).",
+    "After the watchdog releases a still tap in music mode, the callout keeps showing what the release will commit, not the drifting provider position (finding 6).",
+    "Altitude: the finger-hold guards (clock-hold early return, syncPositionUnlessHeld, the coordinator-tick gate and manual endSegment/startSegment banking) move into one hold(on) in useVirtualClock (finding 7).",
+    "computeTimeline and blockAt are memoized rather than recomputed every frame in LiveTimeline, and the unmount cleanup reuses the report helpers (finding 9)."
   ],
-  "nextAction": "Agent-created from the RF-188 reviews of #738: Backlog until the owner sets Ready. Item 2 was done in #738 round 3. Items 1, 3, 4 and 6-9 are web code or records; item 5 waits on the owner real-iPhone feel pass after the RF-188 deploy.",
+  "nextAction": "Agent-created from the RF-188 reviews of #738: Backlog until the owner sets Ready. Item 2 was done in #738 round 3. Items 1, 3, 4 and 6-9 are web code or records; items 5, 10 and 13 wait on the owner real-iPhone feel pass on production (RF-188 deployed in 75f09a1, 2026-11-06). Items 14-20 come from the final review of d6cd310.",
   "blocker": null,
   "evidence": [
     {
@@ -48,6 +55,12 @@
       "ref": "https://github.com/steven-crosby/ritmofit-web/pull/738#issuecomment-6672222105",
       "summary": "Air final review of #738 on c3f637b: findings 1-2 fixed in round 4; records item 3 retargeted on RF-185; non-blocking 4 and 8 added as items 11-12; 5 and 6 are item 10, 7 is item 4, 9 is item 8.",
       "checkedOn": "2026-11-05"
+    },
+    {
+      "kind": "pr",
+      "ref": "https://github.com/steven-crosby/ritmofit-web/pull/738#issuecomment-6673468392",
+      "summary": "Air final review of #738 on d6cd310 (merged as 75f09a1): no blocking finding under the round-4 bar (crash, frozen clock, data loss). Finding 1 (a lost release stalls a silence gap until the strip is touched) is item 13, put to the owner before approval. Findings 2-7 and 9 added as items 14-20; finding 8 (alias, dead throttle) is items 4 and 8. Recorded from the review, not device-verified.",
+      "checkedOn": "2026-11-06"
     }
   ],
   "resolution": null,
