@@ -15,7 +15,7 @@ import { UpdatePrompt } from './UpdatePrompt.js';
 import * as api from '../lib/api.js';
 import { rememberConnectionReturn } from '../lib/connection-return.js';
 import { isLiveActive } from '../lib/session-guard.js';
-import { resetAppRouteForTests } from '../lib/app-route.js';
+import { settleAppRouteForTests } from '../lib/app-route.js';
 import type { ClassListPage } from '../lib/api.js';
 import { DEFAULT_SCAFFOLD_DURATION, scaffoldRecipeId } from '../lib/class-scaffold.js';
 import {
@@ -293,8 +293,8 @@ beforeEach(() => {
 
 afterEach(async () => {
   cleanup();
-  // Let a Back that Dashboard queued (RF-129 `stepTo`) land before the next test.
-  await new Promise((resolve) => setTimeout(resolve, 0));
+  // A Back that Dashboard queued (RF-129 `stepTo`) lands before the next test.
+  await settleAppRouteForTests();
   crash.planBlocks = false;
   vi.clearAllMocks();
   window.localStorage?.clear();
@@ -303,7 +303,6 @@ afterEach(async () => {
   // default.
   window.sessionStorage?.clear();
   // Dashboard writes the URL (RF-129); start every test at the Classes home.
-  resetAppRouteForTests();
   window.history.replaceState(null, '', '/');
 });
 
@@ -5899,6 +5898,8 @@ describe('Dashboard URLs (RF-129)', () => {
     const exit = await screen.findByRole('button', { name: 'Exit' });
     expect(isLiveActive()).toBe(true);
     expect(window.location.pathname).toBe(`/classes/${ride.id}/live`);
+    // The class detail read already holds the run payload; Live reuses it (RF-195).
+    expect(api.getRunPayload).toHaveBeenCalledTimes(1);
 
     fireEvent.click(exit);
     expect(await screen.findByRole('heading', { name: 'Sunset climb' })).toBeTruthy();
@@ -5976,6 +5977,34 @@ describe('Dashboard URLs (RF-129)', () => {
     );
     expect(screen.queryByRole('heading', { name: 'Sunset climb' })).toBeNull();
     expect(window.location.pathname).toBe('/');
+  });
+
+  it('shows the open class again on Back from Account, without refetching it (RF-195)', async () => {
+    const ride = makeClass('Sunset climb');
+    stubClass(ride);
+    vi.mocked(api.getRunPayload).mockRejectedValue(new Error('no payload'));
+    renderDashboard();
+    fireEvent.click(await screen.findByRole('button', { name: /^Sunset climb$/ }));
+    await screen.findByRole('heading', { name: 'Sunset climb' });
+    await waitFor(() => expect(api.listClassTracks).toHaveBeenCalledTimes(1));
+    fireEvent.click(screen.getByRole('button', { name: 'Account' }));
+    expect(window.location.pathname).toBe('/account');
+    const reads = {
+      getClass: vi.mocked(api.getClass).mock.calls.length,
+      tracks: vi.mocked(api.listClassTracks).mock.calls.length,
+      payload: vi.mocked(api.getRunPayload).mock.calls.length,
+    };
+
+    browserGoesTo(`/classes/${ride.id}`);
+
+    expect(await screen.findByRole('heading', { name: 'Sunset climb' })).toBeTruthy();
+    expect(screen.getByRole('button', { name: 'Classes' }).getAttribute('aria-current')).toBe(
+      'page',
+    );
+    expect(window.location.pathname).toBe(`/classes/${ride.id}`);
+    expect(vi.mocked(api.getClass).mock.calls.length).toBe(reads.getClass);
+    expect(vi.mocked(api.listClassTracks).mock.calls.length).toBe(reads.tracks);
+    expect(vi.mocked(api.getRunPayload).mock.calls.length).toBe(reads.payload);
   });
 
   it('opens the destination a refreshed path names', async () => {
