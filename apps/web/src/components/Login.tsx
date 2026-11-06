@@ -23,12 +23,8 @@ interface LoginProps {
   appleError?: string | null;
 }
 
-/** Plain words for the code Better Auth returns after a failed Apple sign-in (RF-195). */
-export function appleSignInErrorMessage(code: string): string {
-  return /cancel|denied/i.test(code)
-    ? 'Apple sign-in was cancelled. Try again, or sign in with your email.'
-    : 'Apple sign-in didn’t finish. Try again, or sign in with your email.';
-}
+/** Plain words for a failed Apple sign-in, whatever code it returned with (RF-195). */
+export const APPLE_SIGN_IN_FAILED = 'Apple sign-in didn’t finish. Try again, or use your email.';
 
 type LoginMode = 'signin' | 'signup' | 'forgot';
 type AppleAvailability = 'checking' | 'available' | 'unavailable' | 'unverified';
@@ -45,9 +41,7 @@ export function Login({
   const [name, setName] = useState('');
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
-  const [error, setError] = useState<string | null>(() =>
-    appleError ? appleSignInErrorMessage(appleError) : null,
-  );
+  const [error, setError] = useState<string | null>(appleError ? APPLE_SIGN_IN_FAILED : null);
   const [notice, setNotice] = useState<string | null>(null);
   const [busy, setBusy] = useState(false);
   const [socialBusy, setSocialBusy] = useState(false);

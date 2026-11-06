@@ -185,7 +185,7 @@ describe('App deep links', () => {
     window.history.pushState({}, '', '/sign-in?error=invalid_code');
     render(<App />);
     expect(
-      screen.getByText('Apple sign-in didn’t finish. Try again, or sign in with your email.'),
+      screen.getByText('Apple sign-in didn’t finish. Try again, or use your email.'),
     ).toBeTruthy();
     expect(window.location.pathname).toBe('/sign-in');
     expect(window.location.search).toBe('');

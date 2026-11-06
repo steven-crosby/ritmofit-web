@@ -3,7 +3,7 @@
   "id": "RF-195",
   "title": "RF-129 routing follow-ups from the #725 final review",
   "kind": "task",
-  "status": "in_progress",
+  "status": "done",
   "priority": "P3",
   "parent": null,
   "dependsOn": [
@@ -18,7 +18,7 @@
     "The legacy /?auth= redirect runs outside a useState initializer.",
     "After a signed-out deep link, a sign-in that completes while signed in on / (not /sign-in) clears the remembered path, so a later /sign-in visit in that tab cannot jump to the old class (#725 final review at 2d358cd)."
   ],
-  "nextAction": "Neo session 2026-11-06 on fix/rf-195-routing-followups (#728): RF-129 is Done (#740), so work starts. Restart: implement acceptance items 1-7 in Dashboard.tsx and its tests, one commit per item, then set the final state in this PR.",
+  "nextAction": null,
   "blocker": null,
   "evidence": [
     {
@@ -38,8 +38,32 @@
       "ref": "https://github.com/steven-crosby/ritmofit-web/pull/740",
       "summary": "RF-129 set Done on a simulator check of production 840255c, which unblocks this task.",
       "checkedOn": "2026-11-06"
+    },
+    {
+      "kind": "test",
+      "ref": "apps/web/src/components/Dashboard.test.tsx",
+      "summary": "Dashboard URLs (RF-129): a refreshed /live path calls getRunPayload once; Back from Account to the open class makes no getClass, listClassTracks or getRunPayload call. Both failed before the fix.",
+      "checkedOn": "2026-11-06"
+    },
+    {
+      "kind": "test",
+      "ref": "apps/web/src/App.test.tsx",
+      "summary": "Deep link forgotten once sign-in completes on /; /sign-in?error=invalid_code shows the plain-words Apple error and drops the code. Both failed before the fix. The /?auth= test calls redirectLegacyAuthIntent as main.tsx does.",
+      "checkedOn": "2026-11-06"
+    },
+    {
+      "kind": "test",
+      "ref": "apps/web/src/lib/app-route.test.ts",
+      "summary": "settleAppRouteForTests waits for a queued stepTo Back, after which a new step pushes at once; redirectLegacyAuthIntent maps /?auth=signup and leaves other paths alone.",
+      "checkedOn": "2026-11-06"
+    },
+    {
+      "kind": "test",
+      "ref": "apps/web/src/components/Login.test.tsx",
+      "summary": "Login shows the Apple failure message when App passes the error code.",
+      "checkedOn": "2026-11-06"
     }
   ],
-  "resolution": null,
+  "resolution": "All seven items met on #728 (Neo, 2026-11-06). (1) A refreshed /classes/<id>/live reuses the run payload the class detail read fetched: loadDetail returns it and restoreClass uses it, fetching again only when that read failed. (2) Back/Forward from another destination to the class still selected and loaded shows the class again, re-owning the detail workspace, with no getClass, track or payload read. (3) /sign-in?error=<code> shows one plain-words Apple sign-in error on the form (“Apple sign-in didn’t finish. Try again, or use your email.”, whatever the code), then drops the code from the URL. One message, not a cancelled/failed split, kept the entry bundle under its 180 kB budget (179.98 kB). (4) Dashboard tests wait for a queued stepTo Back with settleAppRouteForTests, which resolves on that popstate, not on a setTimeout(0). (5) Decision (owner approved the default, 2026-11-06): keep stepTo’s return-goes-Back design. It is what keeps the browser Back and Forward a true record of the visit (an exit or close returns to the entry it came from instead of stacking a duplicate), its state is two flags in app-route.ts, and plain pushes would make Back after every close re-open the screen just left. (6) The legacy /?auth= redirect is redirectLegacyAuthIntent in app-route.ts, called once in main.tsx before the first render. (7) Signed in on any path but Sign in or Sign up clears the remembered return-to.",
   "followUps": []
 }

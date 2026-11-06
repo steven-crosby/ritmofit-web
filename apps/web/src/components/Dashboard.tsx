@@ -543,7 +543,6 @@ export function Dashboard({
       if (document.activeElement === refreshRetryRef.current) restoreRefreshFocus.current = true;
       setRefreshWarning((current) => (current?.owner === owner ? null : current));
       const payload = payloadResult.status === 'fulfilled' ? payloadResult.value : null;
-      let published: RunPayload | null | undefined;
       dispatchDetail({
         type: 'success',
         classId,
@@ -551,7 +550,6 @@ export function Dashboard({
         tracks: tracksResult.value,
         payload,
       });
-      published = payload;
 
       // Keep this class's Library card in sync with its freshly loaded detail, so a
       // track add/remove/edit updates the rail's count/runtime/collage immediately
@@ -562,7 +560,7 @@ export function Dashboard({
         ? cardSummaryFromPayload(payload)
         : { trackCount: tracksResult.value.length };
       setClasses((prev) => prev.map((c) => (c.id === classId ? { ...c, ...summary } : c)));
-      return published;
+      return payload;
     },
     [],
   );
@@ -836,18 +834,6 @@ export function Dashboard({
     }
   }, []);
 
-  // Back/Forward to the class still selected and loaded (from Music or Account,
-  // say): show it again as it is. Its detail is current, so nothing is refetched.
-  // A newer Live or restore request is dropped, as a nav click would drop it.
-  const reshowClass = useCallback((classId: string) => {
-    restoreRequest.current += 1;
-    restoringRoute.current = false;
-    liveRequestId.current += 1;
-    if (detailWorkspace.current?.classId !== classId)
-      detailWorkspace.current = { classId, session: {} };
-    setDestination('classes');
-  }, []);
-
   // Restore the screen a refresh or a link names, once (empty deps: on mount only).
   useEffect(() => {
     if (initialRoute.kind === 'class' || initialRoute.kind === 'class-live')
@@ -888,17 +874,21 @@ export function Dashboard({
       return;
     }
     if (route.kind === 'class' || route.kind === 'class-live') {
-      const shown = route.kind === 'class' && destination === 'classes' && !routeProblem;
-      if (shown && selectedId === route.classId) return;
-      const loaded =
-        route.kind === 'class' &&
-        !routeProblem &&
-        selectedId === route.classId &&
-        detail.classId === route.classId &&
-        detail.status === 'ready';
-      if (loaded) {
-        reshowClass(route.classId);
-        return;
+      const { classId } = route;
+      if (route.kind === 'class' && !routeProblem && selectedId === classId) {
+        if (destination === 'classes') return;
+        // Back/Forward to the class still selected and loaded (from Music or
+        // Account, say): show it again as it is, with no refetch (RF-195). A newer
+        // Live or restore request is dropped, as a nav click would drop it.
+        if (detail.classId === classId && detail.status === 'ready') {
+          restoreRequest.current += 1;
+          restoringRoute.current = false;
+          liveRequestId.current += 1;
+          if (detailWorkspace.current?.classId !== classId)
+            detailWorkspace.current = { classId, session: {} };
+          setDestination('classes');
+          return;
+        }
       }
       void restoreClass(route.classId, route.kind === 'class-live');
       return;
@@ -915,7 +905,6 @@ export function Dashboard({
     detail.classId,
     detail.status,
     restoreClass,
-    reshowClass,
     goDestination,
   ]);
 
