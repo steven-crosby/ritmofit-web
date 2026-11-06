@@ -5892,6 +5892,8 @@ describe('Dashboard URLs (RF-129)', () => {
     const exit = await screen.findByRole('button', { name: 'Exit' });
     expect(isLiveActive()).toBe(true);
     expect(window.location.pathname).toBe(`/classes/${ride.id}/live`);
+    // The class detail read already holds the run payload; Live reuses it (RF-195).
+    expect(api.getRunPayload).toHaveBeenCalledTimes(1);
 
     fireEvent.click(exit);
     expect(await screen.findByRole('heading', { name: 'Sunset climb' })).toBeTruthy();
@@ -5969,6 +5971,34 @@ describe('Dashboard URLs (RF-129)', () => {
     );
     expect(screen.queryByRole('heading', { name: 'Sunset climb' })).toBeNull();
     expect(window.location.pathname).toBe('/');
+  });
+
+  it('shows the open class again on Back from Account, without refetching it (RF-195)', async () => {
+    const ride = makeClass('Sunset climb');
+    stubClass(ride);
+    vi.mocked(api.getRunPayload).mockRejectedValue(new Error('no payload'));
+    renderDashboard();
+    fireEvent.click(await screen.findByRole('button', { name: /^Sunset climb$/ }));
+    await screen.findByRole('heading', { name: 'Sunset climb' });
+    await waitFor(() => expect(api.listClassTracks).toHaveBeenCalledTimes(1));
+    fireEvent.click(screen.getByRole('button', { name: 'Account' }));
+    expect(window.location.pathname).toBe('/account');
+    const reads = {
+      getClass: vi.mocked(api.getClass).mock.calls.length,
+      tracks: vi.mocked(api.listClassTracks).mock.calls.length,
+      payload: vi.mocked(api.getRunPayload).mock.calls.length,
+    };
+
+    browserGoesTo(`/classes/${ride.id}`);
+
+    expect(await screen.findByRole('heading', { name: 'Sunset climb' })).toBeTruthy();
+    expect(screen.getByRole('button', { name: 'Classes' }).getAttribute('aria-current')).toBe(
+      'page',
+    );
+    expect(window.location.pathname).toBe(`/classes/${ride.id}`);
+    expect(vi.mocked(api.getClass).mock.calls.length).toBe(reads.getClass);
+    expect(vi.mocked(api.listClassTracks).mock.calls.length).toBe(reads.tracks);
+    expect(vi.mocked(api.getRunPayload).mock.calls.length).toBe(reads.payload);
   });
 
   it('opens the destination a refreshed path names', async () => {
