@@ -1,0 +1,28 @@
+{
+  "schemaVersion": 1,
+  "id": "RF-213",
+  "title": "Docs that still say web-first agree with D26",
+  "kind": "task",
+  "status": "backlog",
+  "priority": "P3",
+  "parent": null,
+  "dependsOn": [],
+  "acceptance": [
+    "DEVELOPMENT_PLAN.md's 'Web-first product definition' principle, README.md's 'solo-first and web-first (D20)' intro, conventions.md's web-first milestone line and glossary.md's 'iOS follows later' line agree with D26 (native-first iOS and macOS; this repo stays the source of truth for backend, contract, tokens and decisions).",
+    "web-ios-parity.md stays historical, with at most a pointer to D26.",
+    "D26's 'extended quota is not available to this project' is either backed by Spotify's own quota page (linked, with the check date) or reworded as the 2026-11-07 reading of secondary sources.",
+    "The ritmofit-ios web-contract snapshot of conventions.md is refreshed in a separate iOS PR afterwards."
+  ],
+  "nextAction": "Logged from the /code-review high of #750 (Neo, 2026-11-07): non-blocking findings. Agent-created: Backlog until the owner sets Ready.",
+  "blocker": null,
+  "evidence": [
+    {
+      "kind": "observation",
+      "ref": "https://github.com/steven-crosby/ritmofit-web/pull/750",
+      "summary": "Final review of #750 at ff68202: README.md:5, DEVELOPMENT_PLAN.md:105, conventions.md:62 and glossary.md:75 still describe the web-first model D26 supersedes; D26's extended-quota line rests on secondary sources. None block the merge (docs consistency, not correctness or permission).",
+      "checkedOn": "2026-11-07"
+    }
+  ],
+  "resolution": null,
+  "followUps": []
+}
