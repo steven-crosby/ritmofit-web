@@ -1303,6 +1303,9 @@ describe('Dashboard class library states', () => {
     expect(await screen.findByRole('heading', { name: 'Your library' })).toBeTruthy();
     expect(screen.getByRole('button', { name: 'Music' }).getAttribute('aria-current')).toBe('page');
     const soundcloud = screen.getByRole('button', { name: 'SoundCloud, Catalog only' });
+    // The visible text keeps the service and its state two words, so the name contains
+    // it (RF-200, Label in Name): it fails if they ever run together.
+    expect(soundcloud.textContent).toMatch(/^SoundCloud\s+Catalog only$/);
     expect(soundcloud.getAttribute('aria-pressed')).toBe('true');
     expect(soundcloud.className).toContain('border-border-strong');
     expect(soundcloud.className).toContain('bg-bg-overlay');
@@ -2417,6 +2420,10 @@ describe('Music tab library', () => {
     await waitFor(() =>
       expect(api.connectProvider).toHaveBeenCalledWith('soundcloud', expect.any(AbortSignal)),
     );
+    // While busy, the name still starts with the visible text (RF-200, Label in Name).
+    const busy = screen.getByRole('button', { name: 'Reconnecting… SoundCloud' });
+    expect(busy.hasAttribute('disabled')).toBe(true);
+    expect(busy.textContent).toContain('Reconnecting…');
   });
 
   it('shows a SoundCloud reconnect failure next to the button', async () => {
