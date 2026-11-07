@@ -1,0 +1,39 @@
+{
+  "schemaVersion": 1,
+  "id": "RF-208",
+  "title": "Live queue in its own chunk, so the startup bundle fits RF-201 and RF-199",
+  "kind": "task",
+  "status": "done",
+  "priority": "P3",
+  "parent": null,
+  "dependsOn": [],
+  "acceptance": [
+    "LiveWorkspace (the Live destination's queue) lives in its own file and Dashboard loads it with lazyWithReload behind a Suspense boundary, the first time Live opens.",
+    "With RF-201 on main, the startup entry is under the 180 kB gzip budget with room for RF-199, without changing the budget.",
+    "The Live queue tests and the rest of the web suite pass unchanged apart from where LiveWorkspace is imported."
+  ],
+  "nextAction": null,
+  "blocker": null,
+  "evidence": [
+    {
+      "kind": "observation",
+      "ref": "https://github.com/steven-crosby/ritmofit-web/pull/746#issuecomment-6708187654",
+      "summary": "On main 94fc49d the entry was 179.97 kB; #746 alone made it 180.05 kB and #745 alone 180.12 kB. Owner, 2026-11-07 in the Neo session: \"Yes, your plan is approved\" for splitting LiveWorkspace on #746 instead of raising the budget.",
+      "checkedOn": "2026-11-07"
+    },
+    {
+      "kind": "pr",
+      "ref": "https://github.com/steven-crosby/ritmofit-web/pull/746",
+      "summary": "LiveWorkspace split into its own lazy chunk, alongside RF-201.",
+      "checkedOn": "2026-11-07"
+    },
+    {
+      "kind": "test",
+      "ref": "apps/web/scripts/check-bundle-budget.mjs",
+      "summary": "pnpm --filter @ritmofit/web build on #746 merged with main: entry 178.17 kB gzip (was 180.05 kB); LiveWorkspace chunk 2.86 kB gzip. Web unit suite: 1762 tests passed.",
+      "checkedOn": "2026-11-07"
+    }
+  ],
+  "resolution": "Done on #746 (Neo, 2026-11-07). LiveWorkspace and its private helpers (the per-class payload state, its read and the queue card) moved from Dashboard.tsx to LiveWorkspace.tsx, loaded with lazyWithReload behind a Suspense boundary that shows a three-row loading skeleton. The shared Retry button class moved to SharedState.tsx so both files use one copy. The entry dropped from 180.05 to 178.17 kB gzip, leaving room for RF-199 (#745). The chunk is precached by the service worker like the other lazy chunks, so Live still opens offline; the cost is one short loading state the first time Live opens in a session.",
+  "followUps": []
+}

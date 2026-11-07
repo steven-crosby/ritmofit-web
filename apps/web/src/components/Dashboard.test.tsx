@@ -11,11 +11,12 @@ import type {
   RunPayload,
 } from '@ritmofit/shared';
 import { Dashboard } from './Dashboard.js';
+import { LiveWorkspace } from './LiveWorkspace.js';
 import { UpdatePrompt } from './UpdatePrompt.js';
 import * as api from '../lib/api.js';
 import { rememberConnectionReturn } from '../lib/connection-return.js';
 import { isLiveActive } from '../lib/session-guard.js';
-import { resetAppRouteForTests } from '../lib/app-route.js';
+import { settleAppRouteForTests } from '../lib/app-route.js';
 import type { ClassListPage } from '../lib/api.js';
 import { DEFAULT_SCAFFOLD_DURATION, scaffoldRecipeId } from '../lib/class-scaffold.js';
 import {
@@ -293,8 +294,8 @@ beforeEach(() => {
 
 afterEach(async () => {
   cleanup();
-  // Let a Back that Dashboard queued (RF-129 `stepTo`) land before the next test.
-  await new Promise((resolve) => setTimeout(resolve, 0));
+  // A Back that Dashboard queued (RF-129 `stepTo`) lands before the next test.
+  await settleAppRouteForTests();
   crash.planBlocks = false;
   vi.clearAllMocks();
   window.localStorage?.clear();
@@ -303,7 +304,6 @@ afterEach(async () => {
   // default.
   window.sessionStorage?.clear();
   // Dashboard writes the URL (RF-129); start every test at the Classes home.
-  resetAppRouteForTests();
   window.history.replaceState(null, '', '/');
 });
 
@@ -1304,6 +1304,9 @@ describe('Dashboard class library states', () => {
     expect(await screen.findByRole('heading', { name: 'Your library' })).toBeTruthy();
     expect(screen.getByRole('button', { name: 'Music' }).getAttribute('aria-current')).toBe('page');
     const soundcloud = screen.getByRole('button', { name: 'SoundCloud, Catalog only' });
+    // The visible text keeps the service and its state two words, so the name contains
+    // it (RF-200, Label in Name): it fails if they ever run together.
+    expect(soundcloud.textContent).toMatch(/^SoundCloud\s+Catalog only$/);
     expect(soundcloud.getAttribute('aria-pressed')).toBe('true');
     expect(soundcloud.className).toContain('border-border-strong');
     expect(soundcloud.className).toContain('bg-bg-overlay');
@@ -1435,6 +1438,8 @@ describe('Dashboard class library states', () => {
     expect(copper()).toEqual(['Preflight Alpha ride']);
 
     fireEvent.click(retryButton);
+    const checkingButton = () =>
+      screen.getByRole('button', { name: 'Checking readiness — Beta ride' });
     // While Beta refetches: only its card shows the check; the order and copper hold.
     const betaCard = screen
       .getAllByRole('article')
@@ -1442,14 +1447,21 @@ describe('Dashboard class library states', () => {
     await waitFor(() => expect(betaCard.getAttribute('aria-busy')).toBe('true'));
     expect(order()).toEqual(before);
     expect(copper()).toEqual(['Preflight Alpha ride']);
-    expect(screen.queryByText(/Checking readiness for/)).toBeNull();
+    // The queue does not go back to checking every class; the retry is announced (RF-201).
+    expect(screen.queryByText(/Checking readiness for \d+ class/)).toBeNull();
+    expect(screen.getByText('Checking readiness for Beta ride…')).toBeTruthy();
+    expect(checkingButton().className).toContain('opacity-60');
 
     await act(async () => {
       retry.resolve(payload);
       await retry.promise;
     });
     await screen.findByRole('button', { name: 'Preflight Beta ride' });
-    expect(copper()).toHaveLength(1);
+    expect(screen.getByText('Beta ride can run live.')).toBeTruthy();
+    // The queue holds its order until the instructor acts: Beta keeps its place, and the
+    // copper stays on Alpha (RF-201, owner default 2026-11-06).
+    expect(order()).toEqual(before);
+    expect(copper()).toEqual(['Preflight Alpha ride']);
   });
 
   it('keeps the copper on a leading card while its Retry refetches (RF-163)', async () => {
@@ -2418,6 +2430,10 @@ describe('Music tab library', () => {
     await waitFor(() =>
       expect(api.connectProvider).toHaveBeenCalledWith('soundcloud', expect.any(AbortSignal)),
     );
+    // While busy, the name still starts with the visible text (RF-200, Label in Name).
+    const busy = screen.getByRole('button', { name: 'Reconnecting… SoundCloud' });
+    expect(busy.hasAttribute('disabled')).toBe(true);
+    expect(busy.textContent).toContain('Reconnecting…');
   });
 
   it('shows a SoundCloud reconnect failure next to the button', async () => {
@@ -5892,6 +5908,8 @@ describe('Dashboard URLs (RF-129)', () => {
     const exit = await screen.findByRole('button', { name: 'Exit' });
     expect(isLiveActive()).toBe(true);
     expect(window.location.pathname).toBe(`/classes/${ride.id}/live`);
+    // The class detail read already holds the run payload; Live reuses it (RF-195).
+    expect(api.getRunPayload).toHaveBeenCalledTimes(1);
 
     fireEvent.click(exit);
     expect(await screen.findByRole('heading', { name: 'Sunset climb' })).toBeTruthy();
@@ -5971,6 +5989,34 @@ describe('Dashboard URLs (RF-129)', () => {
     expect(window.location.pathname).toBe('/');
   });
 
+  it('shows the open class again on Back from Account, without refetching it (RF-195)', async () => {
+    const ride = makeClass('Sunset climb');
+    stubClass(ride);
+    vi.mocked(api.getRunPayload).mockRejectedValue(new Error('no payload'));
+    renderDashboard();
+    fireEvent.click(await screen.findByRole('button', { name: /^Sunset climb$/ }));
+    await screen.findByRole('heading', { name: 'Sunset climb' });
+    await waitFor(() => expect(api.listClassTracks).toHaveBeenCalledTimes(1));
+    fireEvent.click(screen.getByRole('button', { name: 'Account' }));
+    expect(window.location.pathname).toBe('/account');
+    const reads = {
+      getClass: vi.mocked(api.getClass).mock.calls.length,
+      tracks: vi.mocked(api.listClassTracks).mock.calls.length,
+      payload: vi.mocked(api.getRunPayload).mock.calls.length,
+    };
+
+    browserGoesTo(`/classes/${ride.id}`);
+
+    expect(await screen.findByRole('heading', { name: 'Sunset climb' })).toBeTruthy();
+    expect(screen.getByRole('button', { name: 'Classes' }).getAttribute('aria-current')).toBe(
+      'page',
+    );
+    expect(window.location.pathname).toBe(`/classes/${ride.id}`);
+    expect(vi.mocked(api.getClass).mock.calls.length).toBe(reads.getClass);
+    expect(vi.mocked(api.listClassTracks).mock.calls.length).toBe(reads.tracks);
+    expect(vi.mocked(api.getRunPayload).mock.calls.length).toBe(reads.payload);
+  });
+
   it('opens the destination a refreshed path names', async () => {
     vi.mocked(api.listClasses).mockResolvedValue(page([]));
     vi.mocked(api.listConnections).mockResolvedValue([]);
@@ -5981,5 +6027,89 @@ describe('Dashboard URLs (RF-129)', () => {
       (await screen.findByRole('button', { name: 'Account' })).getAttribute('aria-current'),
     ).toBe('page');
     expect(window.location.pathname).toBe('/account');
+  });
+});
+
+describe('Live queue readiness Retry races (RF-201)', () => {
+  const make = (title: string) => ({
+    ...makeClass(title, 'owner', 'me'),
+    trackCount: 1,
+    totalDurationMs: 60_000,
+  });
+  const payload = () => {
+    const p = liveRunPayload([{ classTrackId: 'ct-1', durationMs: 60_000 }]);
+    p.sections = [];
+    return p;
+  };
+  function queue(classes: ClassListItem[]) {
+    return (
+      <LiveWorkspace
+        classes={classes}
+        status="ready"
+        onRetry={vi.fn()}
+        onRunClass={vi.fn()}
+        onOpenClass={vi.fn(async () => {})}
+      />
+    );
+  }
+  /** Beta fails its first read, then each later read waits on the next deferred. */
+  function betaReads(beta: ClassListItem) {
+    const reads: Array<ReturnType<typeof deferred<RunPayload>>> = [];
+    let calls = 0;
+    vi.mocked(api.getRunPayload).mockImplementation(async (id: string) => {
+      if (id !== beta.id) return payload();
+      calls += 1;
+      if (calls === 1) throw new Error('readiness check failed');
+      const read = deferred<RunPayload>();
+      reads.push(read);
+      return read.promise;
+    });
+    return reads;
+  }
+
+  it('drops a Retry result that an effect read for the same class overtook', async () => {
+    const alpha = make('Alpha ride');
+    const beta = make('Beta ride');
+    const gamma = make('Gamma ride');
+    const reads = betaReads(beta);
+    const view = render(queue([alpha, beta]));
+    fireEvent.click(await screen.findByRole('button', { name: 'Retry readiness — Beta ride' }));
+    // A candidate change while the Retry is in flight reads Beta again.
+    view.rerender(queue([alpha, beta, gamma]));
+    await waitFor(() => expect(reads).toHaveLength(2));
+
+    // The newer read fails; the older Retry then lands ready. The older one is dropped.
+    await act(async () => {
+      reads[1]!.reject(new Error('still failing'));
+      await reads[1]!.promise.catch(() => {});
+    });
+    await act(async () => {
+      reads[0]!.resolve(payload());
+      await reads[0]!.promise;
+    });
+    expect(await screen.findByRole('button', { name: 'Retry readiness — Beta ride' })).toBeTruthy();
+    expect(screen.queryByRole('button', { name: 'Preflight Beta ride' })).toBeNull();
+  });
+
+  it('leaves no orphan result for a class removed during its Retry and added back', async () => {
+    const alpha = make('Alpha ride');
+    const beta = make('Beta ride');
+    const reads = betaReads(beta);
+    const view = render(queue([alpha, beta]));
+    fireEvent.click(await screen.findByRole('button', { name: 'Retry readiness — Beta ride' }));
+    view.rerender(queue([alpha]));
+    await act(async () => {
+      reads[0]!.resolve(payload());
+      await reads[0]!.promise;
+    });
+
+    // Added back, Beta is read again instead of showing the removed Retry's result.
+    view.rerender(queue([alpha, beta]));
+    await waitFor(() => expect(reads).toHaveLength(2));
+    const betaCard = screen
+      .getAllByRole('article')
+      .find((card) => card.textContent?.includes('Beta ride'))!;
+    expect(betaCard.getAttribute('aria-busy')).toBe('true');
+    expect(screen.queryByRole('button', { name: 'Preflight Beta ride' })).toBeNull();
   });
 });

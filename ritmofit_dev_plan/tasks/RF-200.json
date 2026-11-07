@@ -3,7 +3,7 @@
   "id": "RF-200",
   "title": "Music service chips: label-in-name follow-ups from the RF-173 review",
   "kind": "task",
-  "status": "backlog",
+  "status": "done",
   "priority": "P3",
   "parent": null,
   "dependsOn": [],
@@ -12,7 +12,7 @@
     "The reconnect chip's busy state ('Reconnecting…') keeps its visible text inside its accessible name, or the record says why the disabled state is exempt.",
     "The expired-chip branch reuses the shared chip shell classes instead of copying them, and drops the aria-label that only repeats its visible text."
   ],
-  "nextAction": "Logged from the fresh-context review of the RF-173 PR (2026-11-05 unattended Neo session). Agent-created: Backlog until the owner sets Ready.",
+  "nextAction": null,
   "blocker": null,
   "evidence": [
     {
@@ -20,8 +20,26 @@
       "ref": "https://github.com/steven-crosby/ritmofit-web/issues/730",
       "summary": "Non-blocking findings from the RF-173 pre-PR review, not fixed in that PR.",
       "checkedOn": "2026-11-05"
+    },
+    {
+      "kind": "observation",
+      "ref": "https://github.com/steven-crosby/ritmofit-web/pull/728#issuecomment-6690051361",
+      "summary": "Owner, 2026-11-06 in the Neo session: \"Approve with defaults\" for RF-200, RF-199 and RF-201 this session.",
+      "checkedOn": "2026-11-06"
+    },
+    {
+      "kind": "pr",
+      "ref": "https://github.com/steven-crosby/ritmofit-web/pull/744",
+      "summary": "RF-200 fix; draft PR is the claim.",
+      "checkedOn": "2026-11-06"
+    },
+    {
+      "kind": "test",
+      "ref": "apps/web/src/components/Dashboard.test.tsx",
+      "summary": "Music: the SoundCloud chip’s textContent is \"SoundCloud Catalog only\" with a space (regression guard). Reconnect: while busy the button is named \"Reconnecting… SoundCloud\" and disabled; failed before the fix (name stayed \"Reconnect SoundCloud\"). The reconnect chip’s select button is found by its visible name /^SoundCloud$/.",
+      "checkedOn": "2026-11-06"
     }
   ],
-  "resolution": null,
+  "resolution": "All three items met on #744 (Neo, 2026-11-06). (1) The space between a chip’s service name and its state is now the trailing character of the name span’s own text (`${name} `), not a lone JSX space node, and the aria-label stays the exact name (\"SoundCloud, Catalog only\"). Dropping the aria-label was tried first, but a hidden separator in its own element is trimmed by the name computation (\"SoundCloud,Catalog only\"), so the exact aria-label stays. A unit test fails if the visible text runs the two together. (2) The reconnect button’s name starts with its visible text in both states: \"Reconnect SoundCloud\" and, while busy, \"Reconnecting… SoundCloud\". (3) The reconnect chip uses the shared pill classes (one `pill` plus a `width` string on its wrapper) instead of a copy, and its select button has no aria-label that only repeated its visible name.",
   "followUps": []
 }

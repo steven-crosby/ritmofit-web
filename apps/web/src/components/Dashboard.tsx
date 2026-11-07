@@ -103,16 +103,7 @@ import {
   parseDurationInput,
   runBlockedMessage,
 } from '../lib/duration.js';
-import { classReadiness, type ClassReadiness } from '../lib/readiness.js';
-import {
-  CLASS_ORDERING_OPTIONS,
-  classNextStep,
-  orderClassesBy,
-  readStoredOrdering,
-  storeOrdering,
-  type ClassOrdering,
-} from '../lib/class-ordering.js';
-import { summarizeQueue } from '../lib/live-readiness.js';
+import { classReadiness } from '../lib/readiness.js';
 import { nextEmptyPlanBlock, type ScaffoldDiscipline } from '../lib/class-scaffold.js';
 import { deleteClassConfirmMessage } from '../lib/class-delete.js';
 import { errMessage } from '../lib/errors.js';
@@ -190,7 +181,7 @@ import {
 import { OnboardingVideoDialog } from './OnboardingVideoDialog.js';
 import { ClassesHome } from './ClassesHome.js';
 import { LibraryOrganizeControls, TagFilter } from './LibraryOrganize.js';
-import { LoadingSkeleton, RecoveryState, StatusLabel } from './SharedState.js';
+import { LoadingSkeleton, RecoveryState, RETRY_BUTTON_CLASS, StatusLabel } from './SharedState.js';
 import { ProviderCapabilityLedger } from './ProviderCapabilityLedger.js';
 import { ClassCoverArt, TrackArt } from './TrackArt.js';
 
@@ -199,6 +190,11 @@ import { ClassCoverArt, TrackArt } from './TrackArt.js';
 // modal dialogs. Each loads on first use behind a <Suspense> boundary below.
 const LiveMode = lazyWithReload(() =>
   import('./LiveMode.js').then((m) => ({ default: m.LiveMode })),
+);
+// The Live queue (RF-208): loaded the first time Live opens, which keeps the
+// startup bundle under its budget.
+const LiveWorkspace = lazyWithReload(() =>
+  import('./LiveWorkspace.js').then((m) => ({ default: m.LiveWorkspace })),
 );
 const ConnectionsDialog = lazyWithReload(() =>
   import('./ConnectionsDialog.js').then((m) => ({ default: m.ConnectionsDialog })),
@@ -478,6 +474,10 @@ export function Dashboard({
   // until 'success' replaces it, so an in-place refresh (e.g. after a keyboard
   // reorder) never unmounts the workspace — preserving grip focus and the reorder
   // announcement. Only use it to refresh the class already open, never to switch.
+  //
+  // Resolves to the run payload this read published (null when it could not be
+  // read), or undefined when the read was dropped as stale, so a caller that
+  // needs the payload next (a refreshed /live path) does not fetch it twice.
   const loadDetail = useCallback(
     async (
       classId: string,
@@ -486,7 +486,7 @@ export function Dashboard({
         owner?: DetailWorkspaceOwner | null;
         origin?: DetailRefreshOrigin;
       },
-    ) => {
+    ): Promise<RunPayload | null | undefined> => {
       const requestedOwner = opts?.silent ? opts.owner : detailWorkspace.current;
       const owner = detailWorkspace.current;
       // A successful mutation from the session suspended by Live may complete
@@ -559,6 +559,7 @@ export function Dashboard({
         ? cardSummaryFromPayload(payload)
         : { trackCount: tracksResult.value.length };
       setClasses((prev) => prev.map((c) => (c.id === classId ? { ...c, ...summary } : c)));
+      return payload;
     },
     [],
   );
@@ -627,7 +628,7 @@ export function Dashboard({
       detailWorkspace.current = { classId: cls.id, session: {} };
       setRefreshWarning(null);
       setSelected(cls);
-      await loadDetail(cls.id);
+      return loadDetail(cls.id);
     },
     [loadDetail, noteClassOpened],
   );
@@ -780,13 +781,15 @@ export function Dashboard({
           return;
         }
         if (stale()) return;
-        await openClass(cls);
+        const loaded = await openClass(cls);
         if (stale() || !toLive) return;
         const requestId = ++liveRequestId.current;
         pendingLiveRequest.current = { classId, requestId };
         const owner = detailWorkspace.current;
         try {
-          const payload = await getRunPayload(classId);
+          // The detail read already fetched the run payload; fetch again only when
+          // it could not (its error is the one to show).
+          const payload = loaded ?? (await getRunPayload(classId));
           if (stale() || requestId !== liveRequestId.current || owner !== detailWorkspace.current)
             return;
           const blocked = runBlockedMessage(payload);
@@ -870,15 +873,39 @@ export function Dashboard({
       return;
     }
     if (route.kind === 'class' || route.kind === 'class-live') {
-      const shown = route.kind === 'class' && destination === 'classes' && !routeProblem;
-      if (shown && selectedId === route.classId) return;
+      const { classId } = route;
+      if (route.kind === 'class' && !routeProblem && selectedId === classId) {
+        if (destination === 'classes') return;
+        // Back/Forward to the class still selected and loaded (from Music or
+        // Account, say): show it again as it is, with no refetch (RF-195). A newer
+        // Live or restore request is dropped, as a nav click would drop it.
+        if (detail.classId === classId && detail.status === 'ready') {
+          restoreRequest.current += 1;
+          restoringRoute.current = false;
+          liveRequestId.current += 1;
+          if (detailWorkspace.current?.classId !== classId)
+            detailWorkspace.current = { classId, session: {} };
+          setDestination('classes');
+          return;
+        }
+      }
       void restoreClass(route.classId, route.kind === 'class-live');
       return;
     }
     const target = destinationForRoute(route);
     if (target === destination && !routeProblem && (target !== 'classes' || !selectedId)) return;
     goDestination(target);
-  }, [pathname, liveClassId, selectedId, destination, routeProblem, restoreClass, goDestination]);
+  }, [
+    pathname,
+    liveClassId,
+    selectedId,
+    destination,
+    routeProblem,
+    detail.classId,
+    detail.status,
+    restoreClass,
+    goDestination,
+  ]);
 
   // Merge an updated class into the list + the open detail pane (preserving the
   // caller's access level, which PATCH responses don't carry).
@@ -1471,19 +1498,21 @@ export function Dashboard({
               onCreateClass={handleCreateClassFromLikes}
             />
           ) : destination === 'live' ? (
-            <LiveWorkspace
-              classes={classes}
-              status={listStatus}
-              onRetry={() => {
-                setListStatus('loading');
-                void refreshClasses();
-              }}
-              onRunClass={runClass}
-              onOpenClass={async (cls) => {
-                setDestination('classes');
-                await openClass(cls);
-              }}
-            />
+            <Suspense fallback={<LoadingSkeleton label="Loading Live" rows={3} />}>
+              <LiveWorkspace
+                classes={classes}
+                status={listStatus}
+                onRetry={() => {
+                  setListStatus('loading');
+                  void refreshClasses();
+                }}
+                onRunClass={runClass}
+                onOpenClass={async (cls) => {
+                  setDestination('classes');
+                  await openClass(cls);
+                }}
+              />
+            </Suspense>
           ) : (
             <AccountWorkspace
               profileName={profileName}
@@ -2191,9 +2220,6 @@ function useProviderBrowseState(connectionRevision = 0) {
   };
 }
 
-const RETRY_BUTTON_CLASS =
-  'min-h-11 rounded-control rf-btn-primary px-4 font-ui text-sm font-semibold text-text-on-accent sm:rounded-pill';
-
 function ProviderConnectionsLoadState({
   status,
   hasKnownConnections,
@@ -2763,38 +2789,32 @@ function MusicWorkspace({
           });
           const selected = selectedProvider === provider;
           const name = providerLabel(provider);
-          const shell = `flex min-h-11 w-full items-center gap-2 rounded-pill border sm:w-auto sm:min-w-[9.5rem] sm:flex-1 ${
+          // One pill for every chip; the reconnect chip puts its width on a wrapper.
+          const pill = `flex min-h-11 w-full items-center gap-2 rounded-pill border ${
             selected
               ? 'border-border-strong bg-bg-overlay font-semibold'
               : 'border-border-subtle bg-bg-base font-medium'
           }`;
+          const width = 'sm:w-auto sm:min-w-[9.5rem] sm:flex-1';
           if (musicChipOffersReconnect(chip.kind)) {
             const own = flow.operation?.provider === provider ? flow.operation : null;
             const busy = !!own && !own.error && own.stage !== 'ready';
             return (
-              <div
-                key={provider}
-                className="flex w-full min-w-0 flex-col gap-1 sm:w-auto sm:min-w-[9.5rem] sm:flex-1"
-              >
-                <div
-                  className={`flex min-h-11 w-full items-center gap-2 rounded-pill border ${
-                    selected
-                      ? 'border-border-strong bg-bg-overlay font-semibold'
-                      : 'border-border-subtle bg-bg-base font-medium'
-                  }`}
-                >
+              <div key={provider} className={`flex w-full min-w-0 flex-col gap-1 ${width}`}>
+                <div className={pill}>
                   <button
                     type="button"
                     aria-pressed={selected}
-                    aria-label={name}
                     onClick={() => chooseProvider(provider)}
                     className="flex min-h-11 min-w-0 flex-1 items-center px-3 text-left font-ui text-sm text-text-primary rf-focus-ring"
                   >
                     <span className="truncate">{name}</span>
                   </button>
+                  {/* The name starts with the visible "Reconnect" or "Reconnecting…"
+                      (WCAG 2.5.3 Label in Name, RF-200). */}
                   <button
                     type="button"
-                    aria-label={`Reconnect ${name}`}
+                    aria-label={`${busy ? 'Reconnecting…' : 'Reconnect'} ${name}`}
                     disabled={busy}
                     onClick={() => {
                       chooseProvider(provider);
@@ -2824,12 +2844,12 @@ function MusicWorkspace({
               aria-pressed={selected}
               aria-label={`${name}, ${chip.label}`}
               onClick={() => chooseProvider(provider)}
-              className={`${shell} justify-between px-3 rf-focus-ring`}
+              className={`${pill} ${width} justify-between px-3 rf-focus-ring`}
             >
-              <span className="truncate font-ui text-sm text-text-primary">{name}</span>
-              {/* RF-173: a flex container doesn't render this space, but it keeps the visible
-                  text "SoundCloud Catalog only" two words, so the aria-label contains it (WCAG
-                  2.5.3 Label in Name; axe joins child text without spaces). */}{' '}
+              {/* The trailing space is part of the name's own text, so the visible text
+                  reads "SoundCloud Catalog only", two words inside the aria-label (WCAG 2.5.3
+                  Label in Name; axe joins child text without spaces). RF-173, RF-200. */}
+              <span className="truncate font-ui text-sm text-text-primary">{`${name} `}</span>
               <ConnectionStateMark
                 kind={chip.kind}
                 label={chip.label}
@@ -3438,409 +3458,6 @@ function SongShelf({
       {footer}
       {bar}
     </div>
-  );
-}
-
-/**
- * Per-class run-payload fetch state for the Live queue. A class is only ever
- * treated as runnable once its payload has actually loaded and `classReadiness`
- * confirms the duration gate — loading/errored classes stay non-runnable so the
- * queue never shows a false "Run live" that Live Mode would then block.
- */
-type LivePayloadState =
-  | { status: 'loading' }
-  | { status: 'ready'; payload: RunPayload; readiness: ClassReadiness }
-  | { status: 'error'; error: string };
-
-/** Stable no-op for readiness chips that are disabled in the Live queue. */
-const noop = (): void => {};
-
-function LiveWorkspace({
-  classes,
-  status,
-  onRetry,
-  onRunClass,
-  onOpenClass,
-}: {
-  classes: ClassListItem[];
-  status: ListStatus;
-  onRetry: () => void;
-  onRunClass: (classId: string) => void;
-  onOpenClass: (cls: ClassListItem) => Promise<void>;
-}) {
-  // Any class with tracks belongs in the Live queue — even a duration-blocked one,
-  // so the instructor sees exactly what's incomplete instead of it vanishing.
-  // Empty classes have nothing to preflight and stay in Classes.
-  const candidates = useMemo(() => classes.filter((cls) => cls.trackCount > 0), [classes]);
-  const [payloads, setPayloads] = useState<Record<string, LivePayloadState>>({});
-  const [ordering, setOrdering] = useState<ClassOrdering>(readStoredOrdering);
-  // Latest payload map, readable inside the fetch effect without making it a
-  // dependency (which would re-run the effect as each card resolves).
-  const payloadsRef = useRef(payloads);
-  payloadsRef.current = payloads;
-  const mountedRef = useRef(true);
-  useEffect(() => {
-    mountedRef.current = true;
-    return () => {
-      mountedRef.current = false;
-    };
-  }, []);
-
-  // RF-163: a card's Retry keeps its last result in `payloads` while it refetches, so the
-  // queue stays resolved: the ranking and the one copper action do not drop or move under
-  // the instructor. Only that card shows the refetch, through `retrying`.
-  const [retrying, setRetrying] = useState<ReadonlySet<string>>(() => new Set());
-  const setRetryingFor = useCallback((classId: string, on: boolean) => {
-    setRetrying((prev) => {
-      if (prev.has(classId) === on) return prev;
-      const next = new Set(prev);
-      if (on) next.add(classId);
-      else next.delete(classId);
-      return next;
-    });
-  }, []);
-  const fetchOne = useCallback(
-    (classId: string) => {
-      setRetryingFor(classId, true);
-      void getRunPayload(classId)
-        .then((payload) => {
-          if (!mountedRef.current) return;
-          setPayloads((prev) => ({
-            ...prev,
-            [classId]: { status: 'ready', payload, readiness: classReadiness(payload) },
-          }));
-        })
-        .catch((err: unknown) => {
-          if (!mountedRef.current) return;
-          setPayloads((prev) => ({
-            ...prev,
-            [classId]: { status: 'error', error: errMessage(err) },
-          }));
-        })
-        .finally(() => {
-          if (mountedRef.current) setRetryingFor(classId, false);
-        });
-    },
-    [setRetryingFor],
-  );
-
-  // Fetch a run-payload per candidate whenever the candidate set changes. Concurrent
-  // (N is small for a solo creator); each card resolves independently. Ready results
-  // are preserved across re-runs so a list refresh doesn't re-flash loaded cards.
-  const candidateKey = candidates.map((cls) => cls.id).join(',');
-  useEffect(() => {
-    let alive = true;
-    setPayloads((prev) => {
-      const next: Record<string, LivePayloadState> = {};
-      for (const cls of candidates) {
-        const existing = prev[cls.id];
-        next[cls.id] = existing?.status === 'ready' ? existing : { status: 'loading' };
-      }
-      return next;
-    });
-    void Promise.allSettled(
-      candidates
-        .filter((cls) => payloadsRef.current[cls.id]?.status !== 'ready')
-        .map(async (cls) => {
-          try {
-            const payload = await getRunPayload(cls.id);
-            if (!alive || !mountedRef.current) return;
-            setPayloads((prev) => ({
-              ...prev,
-              [cls.id]: { status: 'ready', payload, readiness: classReadiness(payload) },
-            }));
-          } catch (err) {
-            if (!alive || !mountedRef.current) return;
-            setPayloads((prev) => ({
-              ...prev,
-              [cls.id]: { status: 'error', error: errMessage(err) },
-            }));
-          }
-        }),
-    );
-    return () => {
-      alive = false;
-    };
-    // Keyed on candidateKey — the candidate id set — so the fetch re-runs only when
-    // classes are added/removed, not as each in-flight payload resolves.
-  }, [candidateKey]);
-
-  const readyReadinesses = candidates
-    .map((cls) => payloads[cls.id])
-    .filter((s): s is Extract<LivePayloadState, { status: 'ready' }> => s?.status === 'ready')
-    .map((s) => s.readiness);
-  const allResolved =
-    candidates.length > 0 &&
-    candidates.every((cls) => {
-      const s = payloads[cls.id]?.status;
-      return s === 'ready' || s === 'error';
-    });
-  const summary = summarizeQueue(readyReadinesses);
-
-  // The queue ranks by the same rule Classes does, from the same module: a class
-  // that leads the Classes shelf leads here too, and the choice is one session
-  // setting shared across both surfaces. Ranking waits for every payload so cards
-  // do not reshuffle under the instructor as each fetch lands.
-  const ordered = allResolved
-    ? orderClassesBy(ordering, candidates, (cls) => classNextStep(payloads[cls.id]))
-    : candidates;
-
-  const liveStatus =
-    status !== 'ready'
-      ? ''
-      : candidates.length === 0
-        ? 'No classes with tracks yet.'
-        : !allResolved
-          ? `Checking readiness for ${candidates.length} ${candidates.length === 1 ? 'class' : 'classes'}…`
-          : // Counts what it checked (RF-134): every track has a length, so the class can run.
-            `${summary.runnable} of ${candidates.length} ${candidates.length === 1 ? 'class' : 'classes'} can run live: every track has a length.`;
-
-  return (
-    <section className="min-w-0">
-      <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
-        <div className="min-w-0">
-          <h2 className="font-display text-2xl font-semibold tracking-[-0.02em] text-text-primary">
-            Teach a class
-          </h2>
-          <p className="mt-1 font-ui text-sm text-text-secondary">
-            Press Preflight on the one you want.
-          </p>
-        </div>
-        {/* Same two orderings, same session setting, same words as Classes — the
-            queue must not invent a second ranking vocabulary. */}
-        <div role="group" aria-label="Order the queue by" className="flex shrink-0 flex-wrap gap-2">
-          {CLASS_ORDERING_OPTIONS.map((option) => {
-            const active = option.value === ordering;
-            return (
-              <button
-                key={option.value}
-                type="button"
-                aria-pressed={active}
-                onClick={() => {
-                  setOrdering(option.value);
-                  storeOrdering(option.value);
-                }}
-                className={`min-h-11 rounded-control border px-4 font-ui text-sm font-semibold rf-focus-ring sm:rounded-pill ${
-                  active
-                    ? 'border-interactive bg-interactive/15 text-text-primary'
-                    : 'border-border-subtle text-text-secondary hover:border-interactive/45 hover:text-text-primary'
-                }`}
-              >
-                {option.label}
-              </button>
-            );
-          })}
-        </div>
-      </div>
-      <p className="sr-only" aria-live="polite" aria-atomic="true">
-        {liveStatus}
-      </p>
-
-      {/* Short rows, two columns from lg. The shape is a sparkline on the row,
-          so a phone shows several classes instead of one tall card. */}
-      <div className="mt-4 grid gap-2 lg:grid-cols-2">
-        {status === 'loading' ? (
-          <LoadingSkeleton label="Loading classes" rows={3} className="lg:col-span-2" />
-        ) : status === 'error' ? (
-          <RecoveryState
-            kind="unavailable"
-            compact
-            role="alert"
-            title="Your classes didn't load."
-            event="Ritmo could not read the class list. This is not an empty account."
-            safety="No class was removed."
-            className="lg:col-span-2"
-            primaryAction={
-              <button type="button" className={RETRY_BUTTON_CLASS} onClick={onRetry}>
-                Retry
-              </button>
-            }
-          />
-        ) : candidates.length === 0 ? (
-          <p className="font-ui text-sm text-text-tertiary">
-            No classes with tracks yet. Add tracks in Classes, then come back here.
-          </p>
-        ) : (
-          ordered.map((cls, index) => (
-            <LiveQueueCard
-              key={cls.id}
-              cls={cls}
-              state={payloads[cls.id]}
-              retrying={retrying.has(cls.id)}
-              primary={allResolved && index === 0}
-              onRun={() => onRunClass(cls.id)}
-              onEdit={() => void onOpenClass(cls)}
-              onRetry={() => fetchOne(cls.id)}
-            />
-          ))
-        )}
-      </div>
-    </section>
-  );
-}
-
-const LIVE_QUEUE_PRIMARY_CLASS =
-  'min-h-11 rounded-control rf-btn-primary px-4 font-ui text-sm font-semibold text-text-on-accent rf-focus-ring';
-const LIVE_QUEUE_SECONDARY_CLASS =
-  'min-h-11 rounded-control border border-interactive/35 px-4 font-ui text-sm font-semibold text-interactive hover:bg-interactive/10 rf-focus-ring';
-
-/**
- * One class in the Live queue. A short row: name, shape, and the next action.
- * Full readiness stays one disclosure away. "Run live" uses the same duration
- * gate as Live Mode — a blocked class names the fix, and `aria-describedby`
- * points at `runBlockedMessage`.
- *
- * Copper marks one primary per surface (design system §9.1, RF-135): only the
- * card that leads the ranked queue, the class she is most likely to teach next,
- * once every card has resolved so the copper never hops. The rest are secondary.
- */
-function LiveQueueCard({
-  cls,
-  state,
-  primary,
-  retrying = false,
-  onRun,
-  onEdit,
-  onRetry,
-}: {
-  cls: ClassListItem;
-  state: LivePayloadState | undefined;
-  primary: boolean;
-  /** RF-163: the card's readiness Retry is refetching; its last result stays in `state`. */
-  retrying?: boolean;
-  onRun: () => void;
-  onEdit: () => void;
-  onRetry: () => void;
-}) {
-  const canRun = state?.status === 'ready' && state.readiness.runnable;
-  const checking = state === undefined || state.status === 'loading' || retrying;
-  const reasonId = `live-blocked-${cls.id}`;
-  const blockReason =
-    state?.status === 'error'
-      ? 'Couldn’t check readiness — retry before running this class.'
-      : state?.status === 'ready' && !state.readiness.runnable
-        ? (runBlockedMessage(state.payload) ?? undefined)
-        : undefined;
-  // The same next-step derivation Classes uses. A duration-blocked class gets the
-  // verb that fixes it rather than a disabled "Preflight" it can never satisfy —
-  // the gate is unchanged, the dead-end control is what goes.
-  const step = classNextStep(state);
-  const gapCount = state?.status === 'ready' ? state.readiness.attentionCount : 0;
-
-  const actionClass = primary ? LIVE_QUEUE_PRIMARY_CLASS : LIVE_QUEUE_SECONDARY_CLASS;
-  const gapsLabel =
-    gapCount === 0 ? 'Details' : `${gapCount} ${gapCount === 1 ? 'thing' : 'things'} left`;
-
-  return (
-    <article
-      className="min-w-0 rounded-card border border-border-subtle bg-bg-raised p-3"
-      aria-busy={checking}
-    >
-      <div className="flex items-center gap-3">
-        <div className="min-w-0 flex-1">
-          <h3 className="truncate font-display text-base font-semibold text-text-primary">
-            {cls.title}
-          </h3>
-          <p className="truncate font-data text-xs text-text-tertiary">
-            {formatTemplateLabel(cls.template) ?? 'Class'} · {cls.trackCount}{' '}
-            {cls.trackCount === 1 ? 'track' : 'tracks'} · {formatDuration(cls.totalDurationMs)}
-          </p>
-          {checking && (
-            <span
-              aria-hidden="true"
-              className="mt-1.5 block h-2 w-24 rounded-pill bg-bg-sunken motion-safe:animate-pulse"
-            />
-          )}
-        </div>
-        {state?.status === 'ready' && (
-          <ClassPulse payload={state.payload} variant="sparkline" className="shrink-0" />
-        )}
-      </div>
-
-      <div className="mt-2 flex flex-wrap items-center gap-2">
-        <button
-          type="button"
-          onClick={onEdit}
-          aria-label={`Edit ${cls.title}`}
-          className="min-h-11 rounded-control border border-interactive/35 px-3 font-ui text-sm text-text-secondary hover:text-text-primary rf-focus-ring"
-        >
-          Edit
-        </button>
-        {canRun ? (
-          <button
-            type="button"
-            onClick={onRun}
-            aria-label={`Preflight ${cls.title}`}
-            title="Run this class live"
-            className={actionClass}
-          >
-            Preflight
-          </button>
-        ) : state?.status === 'ready' ? (
-          <button
-            type="button"
-            onClick={onEdit}
-            aria-label={`${step.action} — ${cls.title}`}
-            aria-describedby={blockReason ? reasonId : undefined}
-            className={actionClass}
-          >
-            {step.action}
-          </button>
-        ) : state?.status === 'error' ? (
-          // RF-163: during a retry the same button stays (with its copper and keyboard
-          // focus) as a busy "Checking…", instead of leaving the queue without its action.
-          <button
-            type="button"
-            aria-disabled={retrying ? 'true' : undefined}
-            onClick={retrying ? noop : onRetry}
-            aria-label={
-              retrying ? `Checking readiness — ${cls.title}` : `Retry readiness — ${cls.title}`
-            }
-            className={retrying ? `${actionClass} cursor-progress` : actionClass}
-          >
-            {retrying ? 'Checking…' : 'Retry'}
-          </button>
-        ) : null}
-        {state?.status === 'ready' && (
-          <details className="ml-auto open:basis-full">
-            <summary
-              className="inline-flex min-h-11 min-w-11 cursor-pointer list-none items-center px-2 font-ui text-sm font-semibold text-interactive rf-focus-ring"
-              aria-label={
-                gapCount === 0 ? `Readiness details, ${cls.title}` : `${gapsLabel}, ${cls.title}`
-              }
-            >
-              {gapsLabel}
-            </summary>
-            <div className="mt-2">
-              {/* The queue cannot jump the inspector, so fix-chips stay off. */}
-              <ClassReadinessSummary
-                readiness={state.readiness}
-                canEdit={false}
-                compact
-                onSelectTrack={noop}
-              />
-            </div>
-          </details>
-        )}
-      </div>
-
-      {state?.status === 'error' && !retrying && (
-        <p id={reasonId} role="alert" className="mt-1 font-ui text-xs text-state-caution">
-          <span aria-hidden className="font-data">
-            !{' '}
-          </span>
-          {blockReason}
-        </p>
-      )}
-      {state?.status === 'ready' && blockReason && (
-        <p id={reasonId} className="mt-1 font-ui text-xs text-state-caution">
-          <span aria-hidden className="font-data">
-            !{' '}
-          </span>
-          {blockReason}
-        </p>
-      )}
-    </article>
   );
 }
 

@@ -3,7 +3,7 @@
   "id": "RF-201",
   "title": "Live queue readiness retry: race guard, announcements and one state source (RF-163 review follow-ups)",
   "kind": "task",
-  "status": "backlog",
+  "status": "done",
   "priority": "P3",
   "parent": null,
   "dependsOn": [],
@@ -14,7 +14,7 @@
     "A card whose retry lands runnable is re-ranked deliberately: either it may take the copper at once (documented), or the queue holds its order until the instructor acts, and the ranking comment says which.",
     "The busy \"Checking…\" copper button looks busy (not just cursor-progress), so it does not read as an enabled action that does nothing."
   ],
-  "nextAction": "Logged from the fresh-context review of the RF-163 PR (2026-11-05 unattended Neo session). Agent-created: Backlog until the owner sets Ready.",
+  "nextAction": null,
   "blocker": null,
   "evidence": [
     {
@@ -22,8 +22,26 @@
       "ref": "https://github.com/steven-crosby/ritmofit-web/issues/730",
       "summary": "Non-blocking findings from the two RF-163 pre-PR reviews, not fixed in that PR (a candidate change during a retry still resets the card to loading; see item 1).",
       "checkedOn": "2026-11-05"
+    },
+    {
+      "kind": "observation",
+      "ref": "https://github.com/steven-crosby/ritmofit-web/pull/728#issuecomment-6690051361",
+      "summary": "Owner, 2026-11-06 in the Neo session: \"Approve with defaults\" for RF-200, RF-199 and RF-201; RF-201 item 4 default: the queue holds its order until the instructor acts.",
+      "checkedOn": "2026-11-06"
+    },
+    {
+      "kind": "pr",
+      "ref": "https://github.com/steven-crosby/ritmofit-web/pull/746",
+      "summary": "RF-201 fix; draft PR is the claim.",
+      "checkedOn": "2026-11-06"
+    },
+    {
+      "kind": "test",
+      "ref": "apps/web/src/components/Dashboard.test.tsx",
+      "summary": "Live queue readiness Retry races (RF-201): an overtaken Retry result is dropped; a class removed during its Retry is read again when added back. The RF-163 queue test now also checks the start and outcome announcements, the busy styling, and that order and copper hold after the Retry lands runnable. All failed on the code before (the held order checked separately by ranking on the latest result: Beta moved ahead of Alpha).",
+      "checkedOn": "2026-11-06"
     }
   ],
-  "resolution": null,
+  "resolution": "All five items met on #746 (Neo, 2026-11-06). (1) Every run-payload read of a queue class, from the candidate effect or a Retry, takes that class’s next token; only its newest read may land, and only while the class is still in the queue. A Retry overtaken by a candidate change is dropped, and a class removed during its Retry leaves no orphan result to show when it is added back. (2) A hidden status line announces “Checking readiness for <class>…” when a Retry starts and its outcome when it lands (can run live / checked: not ready to run yet / still couldn’t check). (3) The retry flag is LivePayloadState’s error variant with refreshing: true; the separate retrying set is gone, and the effect and the Retry share one read helper (readLivePayload). (4) Owner default (2026-11-06): the queue holds its order until the instructor acts. A retried card ranks by the result it had before its Retry, so it keeps its place and the copper does not move; a candidate change or a new ordering ranks from the latest results. The ranking comment says so. (5) The busy Checking… button is dimmed (opacity-60) with a spinning mark (motion-safe), besides cursor-progress and aria-disabled.",
   "followUps": []
 }
