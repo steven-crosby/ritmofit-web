@@ -17,7 +17,7 @@
   "evidence": [
     {
       "kind": "observation",
-      "ref": "https://github.com/steven-crosby/ritmofit-web/pull/748#issuecomment-6710435828",
+      "ref": "https://github.com/steven-crosby/ritmofit-web/pull/749",
       "summary": "Owner's iPhone Safari screen recording (12:37, production f55b449a, Apple Music, class Limp Bizkit Essentials), kept by the owner, not in the repo: Full List scrolled to tracks 12-15, the owner tapped row 13; the clock jumped to 50:44 and about 2 s later Waiting for music appeared and the list was back at the top (Track 13 of 15, rows 1-2 showing). Music started about 2 s after that. Earlier row jumps to 6 and 9, which showed no banner, kept the scroll position.",
       "checkedOn": "2026-11-07"
     }
