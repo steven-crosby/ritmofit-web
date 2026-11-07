@@ -1,7 +1,7 @@
 // @vitest-environment jsdom
 import { describe, it, expect, vi, afterEach, beforeEach } from 'vitest';
 import { render, screen, fireEvent, cleanup, waitFor } from '@testing-library/react';
-import { Login } from './Login.js';
+import { APPLE_SIGN_IN_FAILED, Login } from './Login.js';
 import * as api from '../lib/api.js';
 
 const authMocks = vi.hoisted(() => ({
@@ -240,5 +240,12 @@ describe('Login accessible labels', () => {
       ),
     ).toBeTruthy();
     expect(screen.queryByRole('button', { name: 'Continue with Apple' })).toBeNull();
+  });
+});
+
+describe('Sign in with Apple failure (RF-195)', () => {
+  it('shows the plain-words failure on the form when Apple returned an error code', () => {
+    render(<Login appleError="user_cancelled_authorize" />);
+    expect(screen.getByText(APPLE_SIGN_IN_FAILED)).toBeTruthy();
   });
 });

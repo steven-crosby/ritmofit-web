@@ -16,7 +16,15 @@ interface LoginProps {
   statusNotice?: string;
   /** Sign in and Sign up have their own paths (RF-129); App keeps the URL on the shown mode. */
   onModeChange?: (mode: 'signin' | 'signup') => void;
+  /**
+   * The `error` code a failed Sign in with Apple returns with (`/sign-in?error=…`).
+   * Shown once, in plain words, on the form.
+   */
+  appleError?: string | null;
 }
+
+/** Plain words for a failed Apple sign-in, whatever code it returned with (RF-195). */
+export const APPLE_SIGN_IN_FAILED = 'Apple sign-in didn’t finish. Try again, or use your email.';
 
 type LoginMode = 'signin' | 'signup' | 'forgot';
 type AppleAvailability = 'checking' | 'available' | 'unavailable' | 'unverified';
@@ -27,12 +35,13 @@ export function Login({
   onSignedUp,
   statusNotice,
   onModeChange,
+  appleError,
 }: LoginProps = {}) {
   const [mode, setMode] = useState<LoginMode>(initialMode);
   const [name, setName] = useState('');
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
-  const [error, setError] = useState<string | null>(null);
+  const [error, setError] = useState<string | null>(appleError ? APPLE_SIGN_IN_FAILED : null);
   const [notice, setNotice] = useState<string | null>(null);
   const [busy, setBusy] = useState(false);
   const [socialBusy, setSocialBusy] = useState(false);
