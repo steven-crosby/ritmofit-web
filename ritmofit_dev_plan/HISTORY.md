@@ -12,9 +12,31 @@ detail). Current focus and `main` vs production live in the "Now" block of
 ---
 
 ## Deploy and session log (newest first)
+> **Deploy 2026-11-07: web follow-ups (#728, #744, #746, #745) on main `f55b449a`**. A standalone web deploy from the Air
+> with `scripts/deploy.sh`, after a deploy-only start-session. The owner's approval ("we need to then deploy our latest
+> changes") was recorded before the deploy on
+> [#746](https://github.com/steven-crosby/ritmofit-web/pull/746#issuecomment-6710041751); the result is
+> [a separate comment](https://github.com/steven-crosby/ritmofit-web/pull/746#issuecomment-6710181201).
+>
+> - **What changed:** web SPA only, since `75f09a1`. [#728](https://github.com/steven-crosby/ritmofit-web/pull/728)
+>   (RF-195, routing follow-ups), [#744](https://github.com/steven-crosby/ritmofit-web/pull/744) (RF-200, Music chip
+>   names), [#746](https://github.com/steven-crosby/ritmofit-web/pull/746) (RF-201 Live queue Retry race guard and
+>   announcements; RF-208 Live in its own chunk) and [#745](https://github.com/steven-crosby/ritmofit-web/pull/745)
+>   (RF-199, Songs row player preload retry). Records: #743, #747. No API, shared-package or Worker config changes, and
+>   no remote D1 migrations to apply.
+> - **Worker:** new `1d95a679-c9c3-4eb4-8371-980147c53a37`; rollback `ce487041-27d5-4edf-90e2-a6676522574e` (`75f09a1`).
+> - **SPA:** `assets/index-BVZTM4Zz.js` (was `assets/index-CySmXOV6.js`), seen on 3 of 3 cache-busted fetches.
+> - **Checks:** gates passed and propagation was confirmed after 3 tries. The status smoke (`/` 200, health 200,
+>   classes/explore/teams 401) and the security headers passed.
+> - **Tail:** a 5-minute `wrangler tail` captured the Worker test requests (6 Ok), 0 exceptions.
+> - **Not done:** the owner's device checks are still owed and now run on this build: RF-188 (feel), RF-185, RF-186 and
+>   RF-187 (instrumented, `?playback-timing=1`), RF-172 (▶ on Apple Music and SoundCloud). RF-186 stays Blocked until a
+>   Paused is captured (owner, 2026-11-06). CI uses mock providers and cannot prove real playback.
+
 > **Deploy 2026-11-06: Live timeline tap design (#738) on main `75f09a1`**. A standalone playback deploy from the Air
-> with `scripts/deploy.sh`. The owner's approval ("Let's deploy") is recorded on
-> [#738](https://github.com/steven-crosby/ritmofit-web/pull/738#issuecomment-6673855804).
+> with `scripts/deploy.sh`. The owner's approval ("Let's deploy") is quoted in the post-deploy report on
+> [#738](https://github.com/steven-crosby/ritmofit-web/pull/738#issuecomment-6673855804); no approval comment was posted
+> before the deploy (corrected in #743's review; later deploys record the approval first).
 >
 > - **What changed:** since `840255c` the only runtime change is [#738](https://github.com/steven-crosby/ritmofit-web/pull/738)
 >   (RF-188; web SPA playback only: a tap jumps to the track start, a drag sends one seek on release, and the commit
@@ -25,8 +47,9 @@ detail). Current focus and `main` vs production live in the "Now" block of
 > - **Checks:** gates passed and propagation was confirmed (after 6 tries, one probe timed out). The status smoke and
 >   all six security headers passed.
 > - **Tail:** a 5-minute `wrangler tail` captured the Worker test requests (health 200, classes 401), 0 exceptions.
-> - **Not done:** the owner's iPhone checks for RF-188 (feel) and RF-185 (one `seek-sent` per tap, `?playback-timing=1`).
->   CI uses mock providers and cannot prove real playback.
+> - **Not done:** the owner's iPhone checks for RF-188 (feel), RF-185 (one `seek-sent` per tap, `?playback-timing=1`),
+>   RF-186 (console around any Paused), RF-187 (no unhandled `play()` rejection) and RF-172 (▶ on Apple Music and
+>   SoundCloud). CI uses mock providers and cannot prove real playback.
 > - **Plan:** the DEVELOPMENT_PLAN Next step was rewritten. It had listed RF-185, RF-186 and RF-187 for the owner's
 >   iPhone pass after `840255c`, RF-172 ▶ on Apple Music and SoundCloud, and "the Neo builds RF-188" (since merged).
 

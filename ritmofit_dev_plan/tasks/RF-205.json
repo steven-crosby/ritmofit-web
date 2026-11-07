@@ -22,6 +22,12 @@
       "ref": "https://github.com/steven-crosby/ritmofit-web/pull/741#issuecomment-6668006472",
       "summary": "Split from RF-172 by the owner on 2026-11-05, so that RF-172's Apple Music half can close inside the Apple Music testing window (ends around 2026-11-27). The owner reconnected Spotify on the test account the same day; playback scope and Premium were not confirmed.",
       "checkedOn": "2026-11-05"
+    },
+    {
+      "kind": "pr",
+      "ref": "https://github.com/steven-crosby/ritmofit-web/pull/743",
+      "summary": "#743 set parent to null so RF-205 does not hold RF-138 open behind RF-92, as the #742 final review asked (https://github.com/steven-crosby/ritmofit-web/pull/742#issuecomment-6670580749, note 3).",
+      "checkedOn": "2026-11-06"
     }
   ],
   "resolution": null,

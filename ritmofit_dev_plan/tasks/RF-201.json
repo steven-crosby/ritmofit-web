@@ -40,6 +40,12 @@
       "ref": "apps/web/src/components/Dashboard.test.tsx",
       "summary": "Live queue readiness Retry races (RF-201): an overtaken Retry result is dropped; a class removed during its Retry is read again when added back. The RF-163 queue test now also checks the start and outcome announcements, the busy styling, and that order and copper hold after the Retry lands runnable. All failed on the code before (the held order checked separately by ranking on the latest result: Beta moved ahead of Alpha).",
       "checkedOn": "2026-11-06"
+    },
+    {
+      "kind": "observation",
+      "ref": "https://github.com/steven-crosby/ritmofit-web/pull/746#issuecomment-6710181201",
+      "summary": "Deployed to production on 2026-11-07 from the Air: main f55b449a (#728, #744, #746, #745; records #743, #747), Worker 1d95a679-c9c3-4eb4-8371-980147c53a37, SPA assets/index-BVZTM4Zz.js, rollback ce487041-27d5-4edf-90e2-a6676522574e (75f09a1). No migrations. Smoke, headers and a 5-minute tail (0 exceptions) passed. Owner approval recorded before the deploy: https://github.com/steven-crosby/ritmofit-web/pull/746#issuecomment-6710041751. #746 for RF-201 is in that build. CI uses mock providers; this proves the deploy, not device behaviour.",
+      "checkedOn": "2026-11-07"
     }
   ],
   "resolution": "All five items met on #746 (Neo, 2026-11-06). (1) Every run-payload read of a queue class, from the candidate effect or a Retry, takes that class’s next token; only its newest read may land, and only while the class is still in the queue. A Retry overtaken by a candidate change is dropped, and a class removed during its Retry leaves no orphan result to show when it is added back. (2) A hidden status line announces “Checking readiness for <class>…” when a Retry starts and its outcome when it lands (can run live / checked: not ready to run yet / still couldn’t check). (3) The retry flag is LivePayloadState’s error variant with refreshing: true; the separate retrying set is gone, and the effect and the Retry share one read helper (readLivePayload). (4) Owner default (2026-11-06): the queue holds its order until the instructor acts. A retried card ranks by the result it had before its Retry, so it keeps its place and the copper does not move; a candidate change or a new ordering ranks from the latest results. The ranking comment says so. (5) The busy Checking… button is dimmed (opacity-60) with a spinning mark (motion-safe), besides cursor-progress and aria-disabled.",

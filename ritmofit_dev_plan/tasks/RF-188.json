@@ -13,7 +13,7 @@
     "While a finger is dragging the timeline, Live does not show the \"Waiting for music\" banner and its actions; it shows at most a quiet seeking state, and the banner appears only if playback still has not progressed after release.",
     "The design follows ritmofit_design_system; the owner reviews the design before build."
   ],
-  "nextAction": "Owner: #738 is deployed (main 75f09a1, 2026-11-06), on a real iPhone in Live with Apple Music playing, check that a tap on a timeline track jumps to that track start first time, the hint and callout read clearly, and dragging shows Seeking… with no Waiting for music banner until release (and the banner only if music still has not started). Then set Done; anything that feels wrong becomes a new task. CI and the simulator cannot prove real provider playback.",
+  "nextAction": "Owner, against production (main f55b449a since 2026-11-07; Live changed only in #746's queue Retry and its own chunk, not the timeline): on a real iPhone in Live with Apple Music playing, check three things. A tap on a timeline track jumps to that track's start on the first try. The hint and the callout read clearly. A drag shows Seeking… with no Waiting for music banner until release, and the banner appears only if music still has not started. Then set Done. Anything that feels wrong becomes a new task. CI and the simulator cannot prove real provider playback.",
   "blocker": null,
   "evidence": [
     {
@@ -121,8 +121,14 @@
     {
       "kind": "observation",
       "ref": "https://github.com/steven-crosby/ritmofit-web/pull/738#issuecomment-6673855804",
-      "summary": "Deployed to production on 2026-11-06 from the Air: main 75f09a1 (#738 alone on top of 840255c plus records #742), Worker ce487041-27d5-4edf-90e2-a6676522574e, SPA assets/index-CySmXOV6.js, rollback 40a83587-aae4-4f36-a7a5-a70f06354f3f (840255c). No migrations. Smoke, headers and a 5-minute tail (0 exceptions) passed. This proves only that the deploy is up; the owner iPhone check is still owed.",
+      "summary": "Deployed to production on 2026-11-06 from the Air: main 75f09a1 (#738 alone on top of 840255c, plus records #739, #740, #741 and #742), Worker ce487041-27d5-4edf-90e2-a6676522574e, SPA assets/index-CySmXOV6.js, rollback 40a83587-aae4-4f36-a7a5-a70f06354f3f (840255c). No migrations. Smoke, headers and a 5-minute tail (0 exceptions) passed. This proves only that the deploy is up; the owner iPhone check is still owed.",
       "checkedOn": "2026-11-06"
+    },
+    {
+      "kind": "observation",
+      "ref": "https://github.com/steven-crosby/ritmofit-web/pull/746#issuecomment-6710181201",
+      "summary": "Deployed to production on 2026-11-07 from the Air: main f55b449a (#728, #744, #746, #745; records #743, #747), Worker 1d95a679-c9c3-4eb4-8371-980147c53a37, SPA assets/index-BVZTM4Zz.js, rollback ce487041-27d5-4edf-90e2-a6676522574e (75f09a1). No migrations. Smoke, headers and a 5-minute tail (0 exceptions) passed. Owner approval recorded before the deploy: https://github.com/steven-crosby/ritmofit-web/pull/746#issuecomment-6710041751. The timeline code is unchanged since 75f09a1, so the owner check runs on this build.",
+      "checkedOn": "2026-11-07"
     }
   ],
   "resolution": null,

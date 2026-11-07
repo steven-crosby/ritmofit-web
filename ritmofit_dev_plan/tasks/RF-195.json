@@ -62,6 +62,12 @@
       "ref": "apps/web/src/components/Login.test.tsx",
       "summary": "Login shows the Apple failure message when App passes the error code.",
       "checkedOn": "2026-11-06"
+    },
+    {
+      "kind": "observation",
+      "ref": "https://github.com/steven-crosby/ritmofit-web/pull/746#issuecomment-6710181201",
+      "summary": "Deployed to production on 2026-11-07 from the Air: main f55b449a (#728, #744, #746, #745; records #743, #747), Worker 1d95a679-c9c3-4eb4-8371-980147c53a37, SPA assets/index-BVZTM4Zz.js, rollback ce487041-27d5-4edf-90e2-a6676522574e (75f09a1). No migrations. Smoke, headers and a 5-minute tail (0 exceptions) passed. Owner approval recorded before the deploy: https://github.com/steven-crosby/ritmofit-web/pull/746#issuecomment-6710041751. #728 for RF-195 is in that build. CI uses mock providers; this proves the deploy, not device behaviour.",
+      "checkedOn": "2026-11-07"
     }
   ],
   "resolution": "All seven items met on #728 (Neo, 2026-11-06). (1) A refreshed /classes/<id>/live reuses the run payload the class detail read fetched: loadDetail returns it and restoreClass uses it, fetching again only when that read failed. (2) Back/Forward from another destination to the class still selected and loaded shows the class again, re-owning the detail workspace, with no getClass, track or payload read. (3) /sign-in?error=<code> shows one plain-words Apple sign-in error on the form (“Apple sign-in didn’t finish. Try again, or use your email.”, whatever the code), then drops the code from the URL once the session check has settled. One message, not a cancelled/failed split, kept the entry bundle under its 180 kB budget (179.98 kB). (4) Dashboard tests wait for a queued stepTo Back with settleAppRouteForTests, which resolves on that popstate, not on a setTimeout(0). (5) Decision (owner approved the default, 2026-11-06): keep stepTo’s return-goes-Back design. It is what keeps the browser Back and Forward a true record of the visit (an exit or close returns to the entry it came from instead of stacking a duplicate), its state is two flags in app-route.ts, and plain pushes would make Back after every close re-open the screen just left. (6) The legacy /?auth= redirect is redirectLegacyAuthIntent in app-route.ts, called once in main.tsx before the first render. (7) Signed in on any path but Sign in or Sign up clears the remembered return-to.",

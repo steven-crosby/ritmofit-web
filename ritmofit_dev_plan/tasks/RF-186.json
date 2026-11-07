@@ -12,7 +12,7 @@
     "The clock keeps running (or holds only while a start is pending, labelled as such) and audio returns without a tap.",
     "A test covers the state sequence that produced Paused."
   ],
-  "nextAction": "Against production (main 75f09a1 since 2026-11-06, which includes #720 and #738). This is an instrumented run, not a feel check: Safari Web Inspector open, console saved, the owner re-runs Live on iPhone Safari with ?playback-timing=1 on an Apple Music class: tap timeline tracks in quick succession until Live shows Paused (or 10 rounds without it), and save the console from the first tap to the resume. The lines needed: [ritmo live] status <kind> (every coordinator status Live receives), [ritmo live] toggle-pause / toggle-play <how> (any activation of the Pause/Play button, with pointer type, trusted flag and x/y), [ritmo live-timeline] pointer-* lines and the Apple #N lines. A toggle-pause line during the taps means the primary button received an activation the owner did not intend (then the fix is layout/hit-target work, likely with RF-188); no toggle line but a status paused means a runtime path this analysis missed.",
+  "nextAction": "Against production (main f55b449a since 2026-11-07; Live changed only in #746's queue Retry and its own chunk, not the timeline). This is an instrumented run, not a feel check: Safari Web Inspector open, console saved by the owner. The owner re-runs Live on iPhone Safari with ?playback-timing=1 on an Apple Music class: tap timeline tracks in quick succession until Live shows Paused (or 10 rounds without it), and save the console from the first tap to the resume. The lines needed: [ritmo live] status <kind> (every coordinator status Live receives), [ritmo live] toggle-pause / toggle-play <how> (any activation of the Pause/Play button, with pointer type, trusted flag and x/y), [ritmo live-timeline] pointer-* lines and the Apple #N lines. A toggle-pause line during the taps means the primary button received an activation the owner did not intend (then the fix is layout/hit-target work); no toggle line but a status paused means a runtime path this analysis missed. By the owner's decision (2026-11-06), 10 clean rounds are recorded as evidence only: the task stays Blocked until a Paused is captured.",
   "blocker": "Device evidence: the owner's instrumented iPhone Safari run (see nextAction) must capture the [ritmo live] lines around a Paused. Source and tests give no credible cause, so no fix was guessed.",
   "evidence": [
     {
@@ -74,6 +74,12 @@
       "ref": "https://github.com/steven-crosby/ritmofit-web/pull/720#issuecomment-6666063619",
       "summary": "Deployed to production on 2026-11-05 from the Air: main 840255c, Worker 40a83587-aae4-4f36-a7a5-a70f06354f3f, SPA assets/index-B3dB3J89.js, rollback 4c906295-6506-4bc5-b886-8f568446c527 (ddd4b70). Smoke, headers and a 5-minute tail (0 exceptions) passed. This proves only that the deploy is up; the owner's iPhone Safari playback run is still owed.",
       "checkedOn": "2026-11-05"
+    },
+    {
+      "kind": "observation",
+      "ref": "https://github.com/steven-crosby/ritmofit-web/pull/743#issuecomment-6675173684",
+      "summary": "Owner decision, 2026-11-06: \"Keep RF-186 open until a Paused is captured\". Clean rounds are evidence only; they do not close the task.",
+      "checkedOn": "2026-11-07"
     }
   ],
   "resolution": null,

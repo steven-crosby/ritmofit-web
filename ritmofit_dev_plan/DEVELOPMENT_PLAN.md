@@ -19,22 +19,24 @@
 <!-- Claude Code, 2026-11-03: Air close-light: RF-183 #714 review folded in. -->
 <!-- Claude Code, 2026-11-03: Device runs recorded (#717): RF-151, RF-147 Done; RF-185..RF-189 filed. -->
 <!-- Claude Code (Air), 2026-11-06: RF-188 deploy 75f09a1; Next step rewritten (see HISTORY). -->
+<!-- Claude Code (Air), 2026-11-07: Web deploy f55b449a; RF-187 moved to the instrumented run (#743 review). -->
 
 **Current actionable state:** [RF board](./tasks.md), backed by canonical [task records](./tasks/README.md).
 The order of work is [Phases](#phases) below; each phase lists RF records, not a second backlog.
-**Main vs production:** production is main `75f09a1` (Worker `ce487041-27d5-4edf-90e2-a6676522574e`;
-SPA `assets/index-CySmXOV6.js`; rollback `40a83587-aae4-4f36-a7a5-a70f06354f3f`). It was deployed
-from the Air on 2026-11-06 as a standalone playback deploy of #738 (RF-188) on top of `840255c`.
-See [HISTORY](./HISTORY.md).
+**Main vs production:** production is main `f55b449a` (Worker `1d95a679-c9c3-4eb4-8371-980147c53a37`;
+SPA `assets/index-BVZTM4Zz.js`; rollback `ce487041-27d5-4edf-90e2-a6676522574e`). It was deployed
+from the Air on 2026-11-07 as a web-only deploy of #728, #744, #746 and #745 on top of `75f09a1`.
+This records PR is not in the deployed tree. See [HISTORY](./HISTORY.md).
 **In flight:** [RF-183](./tasks/RF-183.json) is Blocked on the owner's checks: sign in again after
 sign-out (the rest of the native check passed on the simulator, #715), and on web two `expiresAt`
 readings from the app's own get-session at least 24 hours apart (first not yet taken). The signed-in
 `/auth/session` checks wait on a renewed QA token ([RF-155](./tasks/RF-155.json)).
 **Next step:** the owner's checks on production. iPhone feel pass: the Live timeline
-[RF-188](./tasks/RF-188.json) (tap to track start, drag then lift, a long still hold) and
-[RF-187](./tasks/RF-187.json). Instrumented iPhone runs with `?playback-timing=1` and Safari Web
-Inspector open: [RF-185](./tasks/RF-185.json) (one `seek-sent` per tap) and
-[RF-186](./tasks/RF-186.json) (console saved around any Paused). [RF-172](./tasks/RF-172.json): ▶
+[RF-188](./tasks/RF-188.json) (tap to track start, drag then lift, a long still hold).
+Instrumented iPhone runs with `?playback-timing=1` and Safari Web Inspector open, console saved:
+[RF-185](./tasks/RF-185.json) (one `seek-sent` per tap), [RF-187](./tasks/RF-187.json) (no unhandled
+`play()` rejection) and [RF-186](./tasks/RF-186.json) (console around any Paused; Blocked until one is
+captured). [RF-172](./tasks/RF-172.json): ▶
 audio on Apple Music and SoundCloud, on desktop and iPhone, with Apple Music signed in first;
 Spotify desktop is [RF-205](./tasks/RF-205.json). [RF-108](./tasks/RF-108.json) waits on
 criterion 4 (Retry after a hang) and [RF-128](./tasks/RF-128.json) on a 5G Start. RF-134's live
