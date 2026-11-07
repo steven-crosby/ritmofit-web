@@ -12,7 +12,7 @@ owner's queue: any agent may execute a Ready task. Publishing follows AGENTS.md 
 Evidence marked **recorded** is a carried-forward claim, not fresh verification.
 A checked PR proves its GitHub state, not product acceptance or production behavior.
 
-207 tasks. backlog: 66 · ready: 0 · in_progress: 0 · blocked: 3 · review: 13 · done: 123 · cancelled: 2.
+208 tasks. backlog: 67 · ready: 0 · in_progress: 0 · blocked: 3 · review: 13 · done: 123 · cancelled: 2.
 
 ## In progress
 
@@ -121,6 +121,7 @@ A checked PR proves its GitHub state, not product acceptance or production behav
 | [RF-207](tasks/RF-207.json) RF-195 final-review follow-ups: Back reshow clears page errors, one run-payload read on a failed /live restore, one Apple error read | P3 / task | — | Agent-created from the final review of #728 (RF-195) at fe07411, non-blocking findings 3-5. Backlog until the owner sets Ready. Files: apps/web/src/components/Dashboard.tsx, apps/web/src/App.tsx. | checked 2026-11-06 |
 | [RF-209](tasks/RF-209.json) Live queue follow-ups from the #746 final review: Retry note, chunk error boundary, fallback, preload | P3 / task | — | Agent-created from the final review of #746 (RF-201, RF-208) at 4c7b5eb, all five findings non-blocking. Backlog until the owner sets Ready. Files: apps/web/src/components/LiveWorkspace.tsx, apps/web/src/components/Dashboard.tsx. | checked 2026-11-07 |
 | [RF-210](tasks/RF-210.json) Songs row player preload retry follow-ups from the #745 final review | P3 / task | — | Agent-created from the final review of #745 (RF-199) at 0019fe0, all findings non-blocking. Backlog until the owner sets Ready. Files: apps/web/src/components/Dashboard.tsx, apps/web/src/components/song-row-preview-load.ts. | checked 2026-11-07 |
+| [RF-211](tasks/RF-211.json) Live Full List keeps its scroll position when the Waiting for music banner appears | P3 / task | — | Owner-requested (2026-11-07, Air session) from the owner's iPhone Safari recording of production f55b449a. Backlog until the owner sets Ready. Start in apps/web/src/components/LiveMode.tsx: find why the banner's insertion above the Full List resets its scroll (remount, a key change, or the scroll container's content shifting). Whether the banner should show for a normal 2-4 s start is a separate question, not this task. | checked 2026-11-07 |
 | [RF-74](tasks/RF-74.json) Spotify playlist dialog offers Try again where retry cannot help | untriaged / task | parent RF-92 | Review the error/action mapping. Spotify reopened by the owner on 2026-10-28; Apple work comes first until about 2026-11-27. Resume risk: the Spotify developer app rejects the connected account ("The user is not registered for this application"), so Web API calls return 403. | recorded; checked 2026-10-28; checked 2026-10-29 |
 
 ## Done
