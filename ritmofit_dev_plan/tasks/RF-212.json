@@ -1,0 +1,27 @@
+{
+  "schemaVersion": 1,
+  "id": "RF-212",
+  "title": "D26 recorded: native iOS and macOS apps on TestFlight come first",
+  "kind": "task",
+  "status": "in_progress",
+  "priority": "P1",
+  "parent": null,
+  "dependsOn": [],
+  "acceptance": [
+    "decisions.md has D26 with the owner's words, its meaning, the milestone order (M0a iOS TestFlight, M0b macOS TestFlight, M1 Spotify in native Live, M2 native class building, M3 choreography depth), the known limits, and what it supersedes; D20 and D21 carry a current-status note pointing at it.",
+    "AGENTS.md Product Boundaries and DEVELOPMENT_PLAN.md (Now focus, surface model and platform rows) say native-first under D26, and keep ritmofit-web as the source of truth for the backend, contract, tokens and decisions.",
+    "The milestone work itself is tracked as ritmofit-ios RF records, not here."
+  ],
+  "nextAction": "Owner reviews the PR; AGENTS.md makes it owner-gated, so it needs owner-approved.",
+  "blocker": null,
+  "evidence": [
+    {
+      "kind": "observation",
+      "ref": "ritmofit_dev_plan/decisions.md",
+      "summary": "Owner, 2026-11-07 in the Neo session: chose a native SwiftUI macOS target; then \"I want our focus now to be getting a TestFlight ready iOS and MacOS app ... I think limiting putting the web app first is limiting/handicapping our ability to deliver a complete app.\"; named Spotify as his wife's service; then \"Yes write them\" for the decision record and RF tasks.",
+      "checkedOn": "2026-11-07"
+    }
+  ],
+  "resolution": null,
+  "followUps": []
+}

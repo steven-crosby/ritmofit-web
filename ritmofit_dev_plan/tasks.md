@@ -12,13 +12,13 @@ owner's queue: any agent may execute a Ready task. Publishing follows AGENTS.md 
 Evidence marked **recorded** is a carried-forward claim, not fresh verification.
 A checked PR proves its GitHub state, not product acceptance or production behavior.
 
-208 tasks. backlog: 67 · ready: 0 · in_progress: 0 · blocked: 3 · review: 13 · done: 123 · cancelled: 2.
+209 tasks. backlog: 67 · ready: 0 · in_progress: 1 · blocked: 3 · review: 13 · done: 123 · cancelled: 2.
 
 ## In progress
 
 | Task | Priority / kind | Relationships | Next action / resolution | Evidence |
 | --- | --- | --- | --- | --- |
-| — | — | — | — | — |
+| [RF-212](tasks/RF-212.json) D26 recorded: native iOS and macOS apps on TestFlight come first | P1 / task | — | Owner reviews the PR; AGENTS.md makes it owner-gated, so it needs owner-approved. | checked 2026-11-07 |
 
 ## Blocked / waiting
 
