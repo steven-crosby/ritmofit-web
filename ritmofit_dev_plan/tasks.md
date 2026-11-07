@@ -12,7 +12,7 @@ owner's queue: any agent may execute a Ready task. Publishing follows AGENTS.md 
 Evidence marked **recorded** is a carried-forward claim, not fresh verification.
 A checked PR proves its GitHub state, not product acceptance or production behavior.
 
-206 tasks. backlog: 65 · ready: 0 · in_progress: 0 · blocked: 3 · review: 13 · done: 123 · cancelled: 2.
+207 tasks. backlog: 66 · ready: 0 · in_progress: 0 · blocked: 3 · review: 13 · done: 123 · cancelled: 2.
 
 ## In progress
 
@@ -120,6 +120,7 @@ A checked PR proves its GitHub state, not product acceptance or production behav
 | [RF-206](tasks/RF-206.json) Live timeline follow-ups from the RF-188 review | P3 / task | parent RF-188 | Agent-created from the RF-188 reviews of #738: Backlog until the owner sets Ready. Item 2 was done in #738 round 3. Items 1, 3, 4 and 6-9 are web code or records; items 5, 10 and 13 wait on the owner real-iPhone feel pass on production (RF-188 deployed in 75f09a1, 2026-11-06). Items 14-20 come from the final review of d6cd310. | checked 2026-11-05; checked 2026-11-06 |
 | [RF-207](tasks/RF-207.json) RF-195 final-review follow-ups: Back reshow clears page errors, one run-payload read on a failed /live restore, one Apple error read | P3 / task | — | Agent-created from the final review of #728 (RF-195) at fe07411, non-blocking findings 3-5. Backlog until the owner sets Ready. Files: apps/web/src/components/Dashboard.tsx, apps/web/src/App.tsx. | checked 2026-11-06 |
 | [RF-209](tasks/RF-209.json) Live queue follow-ups from the #746 final review: Retry note, chunk error boundary, fallback, preload | P3 / task | — | Agent-created from the final review of #746 (RF-201, RF-208) at 4c7b5eb, all five findings non-blocking. Backlog until the owner sets Ready. Files: apps/web/src/components/LiveWorkspace.tsx, apps/web/src/components/Dashboard.tsx. | checked 2026-11-07 |
+| [RF-210](tasks/RF-210.json) Songs row player preload retry follow-ups from the #745 final review | P3 / task | — | Agent-created from the final review of #745 (RF-199) at 0019fe0, all findings non-blocking. Backlog until the owner sets Ready. Files: apps/web/src/components/Dashboard.tsx, apps/web/src/components/song-row-preview-load.ts. | checked 2026-11-07 |
 | [RF-74](tasks/RF-74.json) Spotify playlist dialog offers Try again where retry cannot help | untriaged / task | parent RF-92 | Review the error/action mapping. Spotify reopened by the owner on 2026-10-28; Apple work comes first until about 2026-11-27. Resume risk: the Spotify developer app rejects the connected account ("The user is not registered for this application"), so Web API calls return 403. | recorded; checked 2026-10-28; checked 2026-10-29 |
 
 ## Done
