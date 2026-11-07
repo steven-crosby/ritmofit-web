@@ -20,7 +20,12 @@
 <!-- Claude Code, 2026-11-03: Device runs recorded (#717): RF-151, RF-147 Done; RF-185..RF-189 filed. -->
 <!-- Claude Code (Air), 2026-11-06: RF-188 deploy 75f09a1; Next step rewritten (see HISTORY). -->
 <!-- Claude Code (Air), 2026-11-07: Web deploy f55b449a; RF-187 moved to the instrumented run (#743 review). -->
+<!-- Claude Code (Neo), 2026-11-07: D26 focus line (RF-212). -->
 
+**Focus (D26, 2026-11-07):** native iOS and macOS apps on TestFlight first, so the owner's wife uses
+them now: M0a iOS on TestFlight, M0b macOS, M1 Spotify in native Live, then native class building
+([decision](./decisions.md#d26--native-ios-and-macos-apps-on-testflight-come-first-resolved-2026-11-07);
+work is tracked as iOS RF records). Web work below continues as maintenance and production checks.
 **Current actionable state:** [RF board](./tasks.md), backed by canonical [task records](./tasks/README.md).
 The order of work is [Phases](#phases) below; each phase lists RF records, not a second backlog.
 **Main vs production:** production is main `f55b449a` (Worker `1d95a679-c9c3-4eb4-8371-980147c53a37`;
@@ -158,7 +163,7 @@ If a feature seems to require breaking one, **stop and flag it** — don't desig
 
 | Area | Decision |
 |---|---|
-| Surface model | **Solo-first, web-first** — web defines the individual creator loop now; iOS follows later from the proven contract and UX decisions (D20; D18 parity gate paused) |
+| Surface model | **Solo-first, native-first** — the iOS and macOS apps (one SwiftUI app) come first, on TestFlight for the owner's household; the web app stays live and maintained, and the backend and contract stay in this repo (D26, superseding D20's web-first; D18 parity gate paused) |
 | Product frame | **Creator workstation shell over trusted music services** — providers (Spotify/Apple/SoundCloud) are the substrate; Ritmo adds the instructor layer; provider libraries are raw material and class-building is the layer on top; familiar before specialized (D21) |
 | Platform | **Cloudflare-native** — Workers (API) + D1 (database) + the SPA served as Workers static assets from the **same Worker/origin** as the API (no separate Pages site, single origin) |
 | Account system | We own the `users` table; auth providers only verify identity |
@@ -167,7 +172,7 @@ If a feature seems to require breaking one, **stop and flag it** — don't desig
 | Database | **Cloudflare D1** (SQLite); **Drizzle** ORM + migrations |
 | Validation / contract | **Zod** schemas + inferred types in `packages/shared`, consumed by API and web |
 | Web frontend | **React + Vite + TypeScript** (SPA, no SSR) + Tailwind w/ Ritmo Studio design tokens |
-| iOS | Native Swift, separate repo; consumes the same backend via the OpenAPI contract |
+| iOS and macOS | One native SwiftUI app for iPhone and Mac, separate repo (`ritmofit-ios`); consumes the same backend via the OpenAPI contract |
 | Repo shape | **Monorepo**: `packages/shared`, `apps/api`, `apps/web` (add packages only when earned) |
 | Track identity | **Provider-agnostic** `track` + many `track_provider_ids` |
 | Teams | **Dormant scaffolding** (`team_memberships`); preserve schema/routes, but do not surface or expand team workflows now |

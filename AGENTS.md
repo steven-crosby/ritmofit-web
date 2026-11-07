@@ -7,6 +7,7 @@
 <!-- note (Codex, 2026-07-16): Restored stale-chunk recovery and real-browser playback verification guidance. -->
 <!-- note (Grok, 2026-07-22): Added short workspace-container block so nested-git sessions still see multi-checkout rules. -->
 <!-- note (Claude, 2026-07-24): Recorded the agent-agnostic design-audit pack v6 and its docs/audits deliverable path. -->
+<!-- note (Claude Code, Neo, 2026-11-07): Product Boundaries now native-first per the owner's D26 (RF-212). -->
 <!-- note (Claude Code, 2026-10-06): Added Session Workflow (solo/lane/orchestrator roles, per-session handoff files under ritmofit_dev_plan/handoffs/), archived the unused remote maintenance loop (remote-prompts, SCHEDULE.md, agent-reports) to ritmofit_dev_plan/archive/remote-loop/, and added a CLAUDE.md that only imports this file — reversing the 2026-07-12 wrapper removal so the Claude Code CLI loads this canon; it carries no rules of its own. -->
 <!-- note (Claude, 2026-07-25): Replaced the hardcoded `~/repos/ritmostudio/` workspace path with portable discovery commands (split containers are now possible, and ritmofit-ios clones can live in either), noted cross-round machine contention, and pointed at the new parallel-round runbook. -->
 <!-- note (Claude Code, 2026-10-27): Owner restored a tracked CLAUDE.md, superseding the 2026-10-25 removal. It imports this file and holds only a Claude-facing architecture map and test commands; do not delete it, and keep rules here. -->
@@ -104,10 +105,13 @@ meant to be portable belongs in a tracked file here.
 ## Product Boundaries
 
 Ritmo Studio helps individual rhythm fitness instructors build, choreograph, organize, rehearse, and run
-classes in one creative loop. The current product model is **solo-first and web-first**: the web app is
-the product-definition surface, and iOS follows later from proven contracts and UX decisions. D20 pauses
-the old D18 parity gate; current web work is not blocked by iOS parity bookkeeping. Still call out
-contract or design implications when a web change affects future iOS work.
+classes in one creative loop. The current product model is **solo-first and native-first (D26)**: the
+iOS and macOS apps (one SwiftUI app in `ritmofit-ios`) come first, on TestFlight for the owner's
+household, and native work does not wait for a proven web slice. The web app stays live and
+maintained, and this repo stays the source of truth for the backend, the API contract, the design
+tokens and product decisions: a native feature that needs an API change lands here first. The D18
+parity gate stays paused. Call out contract or design implications when a change here affects the
+native apps.
 
 The product frame is a **creator workstation shell over trusted music services (D21)**: Spotify, Apple
 Music, and SoundCloud are the reliable music substrate, and Ritmo adds the instructor layer — class
@@ -115,8 +119,8 @@ structure, choreography, rehearsal, playback windows, readiness, and Live Mode. 
 raw material; class-building is the creative layer on top. Design for **familiar before specialized** —
 instructors browse, listen, and inspect playlists and convert curiosity into a class, with no single
 forced creation flow. The current core disciplines/templates are **Cycle, Pilates, and HIIT** (Pilates
-maps to the stored `sculpt` enum for now). This extends D20's solo-first, web-first model; it does not
-reopen the deferred community surfaces below.
+maps to the stored `sculpt` enum for now). Under D26 this frame applies to the native apps; it does
+not reopen the deferred community surfaces below.
 
 Teams, sharing, publishing, Explore, public class pages, collaborators, invites, and social/community
 discovery are deferred community surfaces. Preserve existing backend/API/schema scaffolding, but do not

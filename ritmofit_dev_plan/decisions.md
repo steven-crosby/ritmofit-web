@@ -398,6 +398,10 @@ present gate under D20.
 
 ## D20 — Solo-first creator reset: web first, community later  **[Resolved 2026-07-05]**
 
+> **Current status (2026-11-07):** [D26](#d26--native-ios-and-macos-apps-on-testflight-come-first-resolved-2026-11-07)
+> supersedes the web-first parts of D20: the native iOS and macOS apps now come first. D20's
+> solo-first scope and its community deferrals stay in effect.
+
 **Decision:** Ritmo Studio's current product is solo-first and web-first. It helps **individual rhythm
 fitness instructors** build, choreograph, organize, rehearse, and run their own classes in one
 continuous creative flow. The current core disciplines are rhythm cycle, Pilates, and HIIT. Web is the
@@ -438,6 +442,10 @@ slice; that is accepted for this hybrid reset.
 ---
 
 ## D21 — Creator workstation shell over trusted music services  **[Resolved 2026-07-06]**
+
+> **Current status (2026-11-07):** under [D26](#d26--native-ios-and-macos-apps-on-testflight-come-first-resolved-2026-11-07)
+> this frame applies to the native iOS and macOS apps; where D21 names the web app as the workstation,
+> D26 replaces it.
 
 **Decision:** Ritmo Studio is a **creator workstation shell over trusted music services**. Spotify, Apple
 Music, and SoundCloud are the reliable music **substrate**; Ritmo adds the instructor-specific layer —
@@ -613,6 +621,61 @@ constraints; UI or SDK success alone does not pass.
 **Refines:** D21/D24. Music constraints, official-SDK-only playback and separate implementation,
 release and deploy approvals stay in effect. This is product canon, not a claim that current code
 meets it.
+
+---
+
+## D26 — Native iOS and macOS apps on TestFlight come first **[Resolved 2026-11-07]**
+
+<!-- note (Claude Code, Neo, 2026-11-07): Records Steven's product decision from the 2026-11-07 Neo session (RF-212). -->
+
+**Decision (owner's words):** "I want our focus now to be getting a TestFlight ready iOS and MacOS
+app. The reason is that I want my wife to start using the macOS and iOS app as soon as possible so
+that we can get her immediate feedback, and make real meaningful progress. I think limiting putting
+the web app first is limiting/handicapping our ability to deliver a complete app." The owner chose a
+native SwiftUI macOS target (over the web app in a Mac window, or Mac Catalyst) and named Spotify as
+the music service she teaches with.
+
+**Meaning:**
+
+- The native apps are the primary product surface: one SwiftUI app in `ritmofit-ios` that builds for
+  iPhone and for macOS (one bundle ID, one App Store Connect record). The goal is TestFlight builds
+  the owner's household uses now; her TestFlight feedback decides the order of work after M1.
+- The web app stays live and maintained (fixes, deploys, the backend it ships with), but it is no
+  longer where new product features land first, and native work no longer waits for a proven web
+  slice.
+- `ritmofit-web` stays the source of truth for the backend, the API contract, the design tokens and
+  product decisions. A native feature that needs an API change still lands in web first, then the iOS
+  snapshot refresh, as before.
+
+**Order (each milestone ships to TestFlight when it is ready):**
+
+1. **M0a — iOS on TestFlight.** The current iOS app, archived and uploaded; she runs Live and edits
+   cues, and still builds classes on the web.
+2. **M0b — macOS on TestFlight.** The same app for macOS: the iPhone-only API fixes, a Mac Live
+   window, the keychain change and the App Sandbox that Mac TestFlight and the App Store require.
+3. **M1 — Spotify plays in native Live.** Mac: Spotify's Web API controls the Spotify desktop app
+   (`PUT /me/player/play` with the track and position), with the short-lived token from
+   `GET /providers/spotify/playback-token`. iPhone: Spotify's official iOS SDK (App Remote) wakes
+   and controls the Spotify app. Both start as spikes; neither needs a backend change, because she
+   connects Spotify once on the web. This is D25's "control the provider's app" path.
+4. **M2 — Native class building:** connect music services, browse playlists and liked songs, import a
+   playlist, reorder tracks, sections. Native connect for Spotify and SoundCloud needs a backend
+   redesign: the connect step keeps its state in a cookie set on the API response, which the native
+   sign-in browser never sees. That is owner-gated provider and auth work.
+5. **M3 — Choreography depth:** moves, plan blocks, BPM, covers, tags.
+
+**Known limits (recorded 2026-11-07):** Spotify development-mode apps allow 5 allowlisted users
+including the owner, and the app owner's account needs Premium; extended quota is not available to
+this project. Apple Music in-app playback on macOS is documented for macOS 14+ but reported unreliable,
+and is unverified here. SoundCloud's embedded widget may stop when an iPhone locks.
+
+**Unchanged:** the music constraints, official-SDK-only playback, D22's invite-only, non-monetized
+beta (TestFlight internal testing fits it; a public App Store release is a launch that triggers D22's
+provider-terms review), D25, the owner gate, and deploy approvals. D20's community deferrals stay.
+
+**Supersedes:** D20's "web-first" model and its rule that iOS follows proven web contracts and UX, and
+D21 where it names the web app as the workstation. D21's frame (a creator workstation over trusted
+music services) now applies to the native apps. D18's parity gate stays paused.
 
 ---
 
