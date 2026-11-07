@@ -12,7 +12,7 @@
     "Any play() rejection on a superseded or re-cued start is caught and recorded in the timing log, not surfaced as unhandled.",
     "An adapter test covers the re-cue path (set-queue-start (again)) rejecting."
   ],
-  "nextAction": "Against production (#720 deployed 2026-11-05, main 840255c), the owner re-runs Live on iPhone Safari with ?playback-timing=1 on an Apple Music class: do one timeline drag across several tracks and a few mid-track taps. The console should show no \"Unhandled Promise Rejection: The play() method was called without a previous stop() or pause() call.\"; any such rejection appears instead as [ritmo apple-music] timing musickit-play-rejection or [ritmo apple-music #N] timing play-rejected-already-playing (handled, this queue playing | waiting for playing), the track plays, and no Retry banner appears while audio plays. If acceptance holds, set Done with that observation.",
+  "nextAction": "Against production (main f55b449a since 2026-11-07; Live changed only in #746's queue Retry and its own chunk, not the timeline), in the owner's instrumented iPhone Safari run (?playback-timing=1, Web Inspector open, console saved, alongside RF-185 and RF-186) on an Apple Music class: do one timeline drag across several tracks, a few mid-track taps and Next. The console should show no \"Unhandled Promise Rejection: The play() method was called without a previous stop() or pause() call.\"; any such rejection appears instead as [ritmo apple-music] timing musickit-play-rejection or [ritmo apple-music #N] timing play-rejected-already-playing (handled, this queue playing | waiting for playing), the track plays, and no Retry banner appears while audio plays. If acceptance holds, set Done with that observation.",
   "blocker": null,
   "evidence": [
     {
@@ -104,6 +104,18 @@
       "ref": "https://github.com/steven-crosby/ritmofit-web/pull/720#issuecomment-6666063619",
       "summary": "Deployed to production on 2026-11-05 from the Air: main 840255c, Worker 40a83587-aae4-4f36-a7a5-a70f06354f3f, SPA assets/index-B3dB3J89.js, rollback 4c906295-6506-4bc5-b886-8f568446c527 (ddd4b70). Smoke, headers and a 5-minute tail (0 exceptions) passed. This proves only that the deploy is up; the owner's iPhone Safari playback run is still owed.",
       "checkedOn": "2026-11-05"
+    },
+    {
+      "kind": "observation",
+      "ref": "https://github.com/steven-crosby/ritmofit-web/pull/738#issuecomment-6673855804",
+      "summary": "Deployed to production on 2026-11-06 from the Air: main 75f09a1 (#738 on top of 840255c, plus records #739-#742), Worker ce487041-27d5-4edf-90e2-a6676522574e. The Apple adapter is unchanged since 840255c.",
+      "checkedOn": "2026-11-06"
+    },
+    {
+      "kind": "observation",
+      "ref": "https://github.com/steven-crosby/ritmofit-web/pull/746#issuecomment-6710181201",
+      "summary": "Deployed to production on 2026-11-07 from the Air: main f55b449a (#728, #744, #746, #745; records #743, #747), Worker 1d95a679-c9c3-4eb4-8371-980147c53a37, SPA assets/index-BVZTM4Zz.js, rollback ce487041-27d5-4edf-90e2-a6676522574e (75f09a1). No migrations. Smoke, headers and a 5-minute tail (0 exceptions) passed. Owner approval recorded before the deploy: https://github.com/steven-crosby/ritmofit-web/pull/746#issuecomment-6710041751. The Apple adapter is unchanged, so the owner check runs on this build.",
+      "checkedOn": "2026-11-07"
     }
   ],
   "resolution": null,

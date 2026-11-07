@@ -38,6 +38,12 @@
       "ref": "apps/web/src/components/Dashboard.test.tsx",
       "summary": "Music: the SoundCloud chip’s textContent is \"SoundCloud Catalog only\" with a space (regression guard). Reconnect: while busy the button is named \"Reconnecting… SoundCloud\" and disabled; failed before the fix (name stayed \"Reconnect SoundCloud\"). The reconnect chip’s select button is found by its visible name /^SoundCloud$/.",
       "checkedOn": "2026-11-06"
+    },
+    {
+      "kind": "observation",
+      "ref": "https://github.com/steven-crosby/ritmofit-web/pull/746#issuecomment-6710181201",
+      "summary": "Deployed to production on 2026-11-07 from the Air: main f55b449a (#728, #744, #746, #745; records #743, #747), Worker 1d95a679-c9c3-4eb4-8371-980147c53a37, SPA assets/index-BVZTM4Zz.js, rollback ce487041-27d5-4edf-90e2-a6676522574e (75f09a1). No migrations. Smoke, headers and a 5-minute tail (0 exceptions) passed. Owner approval recorded before the deploy: https://github.com/steven-crosby/ritmofit-web/pull/746#issuecomment-6710041751. #744 for RF-200 is in that build. CI uses mock providers; this proves the deploy, not device behaviour.",
+      "checkedOn": "2026-11-07"
     }
   ],
   "resolution": "All three items met on #744 (Neo, 2026-11-06). (1) The space between a chip’s service name and its state is now the trailing character of the name span’s own text (`${name} `), not a lone JSX space node, and the aria-label stays the exact name (\"SoundCloud, Catalog only\"). Dropping the aria-label was tried first, but a hidden separator in its own element is trimmed by the name computation (\"SoundCloud,Catalog only\"), so the exact aria-label stays. A unit test fails if the visible text runs the two together. (2) The reconnect button’s name starts with its visible text in both states: \"Reconnect SoundCloud\" and, while busy, \"Reconnecting… SoundCloud\". (3) The reconnect chip uses the shared pill classes (one `pill` plus a `width` string on its wrapper) instead of a copy, and its select button has no aria-label that only repeated its visible name.",

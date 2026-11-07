@@ -32,6 +32,12 @@
       "ref": "apps/web/scripts/check-bundle-budget.mjs",
       "summary": "pnpm --filter @ritmofit/web build on #746 merged with main: entry 178.17 kB gzip (was 180.05 kB); LiveWorkspace chunk 2.86 kB gzip. Web unit suite: 1762 tests passed.",
       "checkedOn": "2026-11-07"
+    },
+    {
+      "kind": "observation",
+      "ref": "https://github.com/steven-crosby/ritmofit-web/pull/746#issuecomment-6710181201",
+      "summary": "Deployed to production on 2026-11-07 from the Air: main f55b449a (#728, #744, #746, #745; records #743, #747), Worker 1d95a679-c9c3-4eb4-8371-980147c53a37, SPA assets/index-BVZTM4Zz.js, rollback ce487041-27d5-4edf-90e2-a6676522574e (75f09a1). No migrations. Smoke, headers and a 5-minute tail (0 exceptions) passed. Owner approval recorded before the deploy: https://github.com/steven-crosby/ritmofit-web/pull/746#issuecomment-6710041751. #746 for RF-208 is in that build. CI uses mock providers; this proves the deploy, not device behaviour.",
+      "checkedOn": "2026-11-07"
     }
   ],
   "resolution": "Done on #746 (Neo, 2026-11-07). LiveWorkspace and its private helpers (the per-class payload state, its read and the queue card) moved from Dashboard.tsx to LiveWorkspace.tsx, loaded with lazyWithReload behind a Suspense boundary that shows a three-row loading skeleton. The shared Retry button class moved to SharedState.tsx so both files use one copy. The entry dropped from 180.05 to 178.17 kB gzip, leaving room for RF-199 (#745). The chunk is precached by the service worker like the other lazy chunks, so Live still opens offline; the cost is one short loading state the first time Live opens in a session.",

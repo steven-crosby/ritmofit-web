@@ -16,7 +16,7 @@
     "Component tests cover that ▶ starts preview without toggling selection; the PR names the real-browser preview check CI cannot prove.",
     "Owner check before Done (owner, 2026-11-05): against production, ▶ plays real audio from the start for Apple Music (desktop and iPhone Safari, in a browser signed in to Apple Music) and for SoundCloud (desktop and iPhone Safari). Spotify ▶ is checked separately in RF-205."
   ],
-  "nextAction": "Owner: against production on Music › Songs, tap ▶ on a liked Apple Music song on desktop and on iPhone Safari, each in a browser already signed in to Apple Music (the simulator run stalled at the Apple Music sign-in), and on a liked SoundCloud song on desktop and iPhone Safari. Confirm audio plays from the start each time. Then set Done. The row UI already passed in the simulator (inline player with Stop, row not ticked, a second ▶ stops the first). Spotify ▶ is RF-205. CI cannot prove real provider audio.",
+  "nextAction": "Owner: against production (main f55b449a since 2026-11-07) on Music › Songs, tap ▶ on a liked Apple Music song on desktop and on iPhone Safari, each in a browser already signed in to Apple Music (the simulator run stalled at the Apple Music sign-in), and on a liked SoundCloud song on desktop and iPhone Safari. Confirm audio plays from the start each time. Then set Done. The row UI already passed in the simulator (inline player with Stop, row not ticked, a second ▶ stops the first). Spotify ▶ is RF-205. CI cannot prove real provider audio.",
   "blocker": null,
   "evidence": [
     {
@@ -108,6 +108,12 @@
       "ref": "https://github.com/steven-crosby/ritmofit-web/pull/741#issuecomment-6668006472",
       "summary": "Owner, 2026-11-05: split RF-172. It closes on Apple Music and SoundCloud ▶ audio; Spotify ▶ (desktop) moves to RF-205, which depends on RF-92. The owner also reconnected Spotify and SoundCloud on the test account the same day.",
       "checkedOn": "2026-11-05"
+    },
+    {
+      "kind": "observation",
+      "ref": "https://github.com/steven-crosby/ritmofit-web/pull/746#issuecomment-6710181201",
+      "summary": "Deployed to production on 2026-11-07 from the Air: main f55b449a (#728, #744, #746, #745; records #743, #747), Worker 1d95a679-c9c3-4eb4-8371-980147c53a37, SPA assets/index-BVZTM4Zz.js, rollback ce487041-27d5-4edf-90e2-a6676522574e (75f09a1). No migrations. Smoke, headers and a 5-minute tail (0 exceptions) passed. Owner approval recorded before the deploy: https://github.com/steven-crosby/ritmofit-web/pull/746#issuecomment-6710041751. #745 (RF-199) hardens the Songs row player's lazy/loaded swap and retries a failed preload, so the owner ▶ check runs on this build.",
+      "checkedOn": "2026-11-07"
     }
   ],
   "resolution": null,
