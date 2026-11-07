@@ -117,6 +117,10 @@ export function RecoveryState({
  * coming, with no explanatory sentence. The label is the accessible name and the
  * polite announcement; the shapes are decorative. The pulse stops under reduced motion.
  */
+/** The primary Retry button on a recovery state (Dashboard and the Live queue). */
+export const RETRY_BUTTON_CLASS =
+  'min-h-11 rounded-control rf-btn-primary px-4 font-ui text-sm font-semibold text-text-on-accent sm:rounded-pill';
+
 export function LoadingSkeleton({
   label,
   shape = 'rows',

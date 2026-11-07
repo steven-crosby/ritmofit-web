@@ -10,7 +10,8 @@ import type {
   Provider,
   RunPayload,
 } from '@ritmofit/shared';
-import { Dashboard, LiveWorkspace } from './Dashboard.js';
+import { Dashboard } from './Dashboard.js';
+import { LiveWorkspace } from './LiveWorkspace.js';
 import { UpdatePrompt } from './UpdatePrompt.js';
 import * as api from '../lib/api.js';
 import { rememberConnectionReturn } from '../lib/connection-return.js';
