@@ -161,6 +161,11 @@ import { ClassPulse } from './ClassPulse.js';
 import { TimelineStrip } from './TimelineStrip.js';
 import { SegmentBand } from './SegmentBand.js';
 import { lazyWithReload } from '../lib/lazyWithReload.js';
+import {
+  loadSongRowPreview,
+  SONG_ROW_PRELOAD_RETRY_MS,
+  SONG_ROW_PRELOAD_TRIES,
+} from './song-row-preview-load.js';
 import { IntensityReadout } from './IntensityReadout.js';
 import { IntensitySegmentedControl } from './IntensitySegmentedControl.js';
 import { ClassReadinessSummary } from './ClassReadinessSummary.js';
@@ -217,8 +222,6 @@ const TrackPreview = lazyWithReload(() =>
 // directly, so a ▶ tap mounts it (and calls play()) inside the tap. A lazy
 // component would suspend on its first render even with the chunk cached, and
 // play after the tap. The lazy one covers only a tap before the chunk arrives.
-const loadSongRowPreview = () =>
-  import('./SongRowPreview.js').then((m) => ({ default: m.SongRowPreview }));
 const SongRowPreviewLazy = lazyWithReload(loadSongRowPreview);
 type SongRowPreviewComponent = Awaited<ReturnType<typeof loadSongRowPreview>>['default'];
 // Music › Songs pick mode (RF-151) loads with the Songs view, not the startup
@@ -2573,24 +2576,39 @@ function MusicWorkspace({
     songPickScope(selectedProvider, connectionState === 'connected', connection),
   );
   const [songPickCreateOpen, setSongPickCreateOpen] = useState(false);
+  const [SongRowPreview, setSongRowPreview] = useState<SongRowPreviewComponent | null>(null);
   // RF-172: the one Songs row whose inline player is open. Changing provider or
   // leaving Songs closes it, which unmounts the player and releases the SDK.
-  const [songPreviewKey, setSongPreviewKey] = useState<string | null>(null);
-  useEffect(() => setSongPreviewKey(null), [selectedProvider, libraryKind]);
-  const [SongRowPreview, setSongRowPreview] = useState<SongRowPreviewComponent | null>(null);
+  // RF-199: it keeps the player it opened with (the loaded one, or null for the
+  // lazy one) until it closes, so a preload landing later cannot remount it, and
+  // each mount starts the song again.
+  const [songPreview, setSongPreview] = useState<{
+    key: string;
+    player: SongRowPreviewComponent | null;
+  } | null>(null);
+  const closeSongPreview = () => setSongPreview(null);
+  useEffect(() => setSongPreview(null), [selectedProvider, libraryKind]);
   const songsView = libraryKind === 'songs';
+  // A failed preload is tried again (RF-199), so one transient failure does not
+  // leave every later ▶ tap on the lazy player, which plays after the tap.
+  const [preloadTry, setPreloadTry] = useState(0);
   useEffect(() => {
     if (!songsView || SongRowPreview) return;
     let cancelled = false;
+    let retry: number | undefined;
     loadSongRowPreview()
       .then((m) => {
         if (!cancelled) setSongRowPreview(() => m.default);
       })
-      .catch(() => {});
+      .catch(() => {
+        if (!cancelled && preloadTry + 1 < SONG_ROW_PRELOAD_TRIES)
+          retry = window.setTimeout(() => setPreloadTry((n) => n + 1), SONG_ROW_PRELOAD_RETRY_MS);
+      });
     return () => {
       cancelled = true;
+      window.clearTimeout(retry);
     };
-  }, [songsView, SongRowPreview]);
+  }, [songsView, SongRowPreview, preloadTry]);
   const statusMark = musicConnectionMark(connectionsStatus, connectionState);
   const truth = providerCapabilityTruth(selectedProvider, connection, Date.now());
   const connectBusy = !!flow.operation && !flow.operation.error && flow.operation.stage !== 'ready';
@@ -2975,19 +2993,18 @@ function MusicWorkspace({
             onCreate: () => setSongPickCreateOpen(true),
           }}
           preview={{
-            key: songPreviewKey,
+            key: songPreview?.key ?? null,
             onPreview: (track) => {
               const key = songPickKey(track);
-              setSongPreviewKey((open) => (open === key ? null : key));
+              setSongPreview((open) =>
+                open?.key === key ? null : { key, player: SongRowPreview },
+              );
             },
-            onClose: () => setSongPreviewKey(null),
-            render: (track) =>
-              SongRowPreview ? (
-                <SongRowPreview
-                  track={track}
-                  connections={connections}
-                  onStop={() => setSongPreviewKey(null)}
-                />
+            onClose: closeSongPreview,
+            render: (track) => {
+              const Player = songPreview?.player;
+              return Player ? (
+                <Player track={track} connections={connections} onStop={closeSongPreview} />
               ) : (
                 <Suspense
                   fallback={
@@ -2999,10 +3016,11 @@ function MusicWorkspace({
                   <SongRowPreviewLazy
                     track={track}
                     connections={connections}
-                    onStop={() => setSongPreviewKey(null)}
+                    onStop={closeSongPreview}
                   />
                 </Suspense>
-              ),
+              );
+            },
           }}
         />
       ) : (
