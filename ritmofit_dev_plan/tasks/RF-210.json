@@ -1,0 +1,27 @@
+{
+  "schemaVersion": 1,
+  "id": "RF-210",
+  "title": "Songs row player preload retry follow-ups from the #745 final review",
+  "kind": "task",
+  "status": "backlog",
+  "priority": "P3",
+  "parent": null,
+  "dependsOn": [],
+  "acceptance": [
+    "A failed row-player preload can actually recover in browsers that cache a failed module import (for example a cache-busted retry URL, or the record says why the cached failure is acceptable).",
+    "Leaving and re-entering Music › Songs after the preload gave up tries it again.",
+    "The loader and its retry live in one helper (in src/lib if it is pure), with a co-located test, so MusicWorkspace makes one call."
+  ],
+  "nextAction": "Agent-created from the final review of #745 (RF-199) at 0019fe0, all findings non-blocking. Backlog until the owner sets Ready. Files: apps/web/src/components/Dashboard.tsx, apps/web/src/components/song-row-preview-load.ts.",
+  "blocker": null,
+  "evidence": [
+    {
+      "kind": "pr",
+      "ref": "https://github.com/steven-crosby/ritmofit-web/pull/745",
+      "summary": "Final review of 0019fe0: no significant findings; four non-blocking findings commented on the PR before the merge.",
+      "checkedOn": "2026-11-07"
+    }
+  ],
+  "resolution": null,
+  "followUps": []
+}
