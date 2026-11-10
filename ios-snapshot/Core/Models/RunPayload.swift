@@ -151,7 +151,9 @@ nonisolated extension RunPayload {
     }
 
     /// A spoken/visual cue anchored at `anchorMs`. `beat`/`bar`/`color` are optional.
-    struct Cue: Decodable, Equatable, Identifiable {
+    /// `durationMs`, `bpm`, `intensity` and `position` (RF-1057) are decoded leniently: an
+    /// older payload without them still decodes, and an unknown intensity reads as `nil`.
+    struct Cue: Equatable, Identifiable {
         let id: String
         let anchorMs: Int
         let beat: Int?
@@ -159,6 +161,14 @@ nonisolated extension RunPayload {
         let text: String
         /// Optional hex string from the backend (e.g. "#3AC0D4"); presentation may ignore it.
         let color: String?
+        /// How long the cue is held, from its anchor. Live counts it down.
+        var durationMs: Int? = nil
+        /// The cue's own tempo, when the instructor set one (never taken from Spotify).
+        var bpm: Int? = nil
+        /// The cue's effort level.
+        var intensity: CueIntensity? = nil
+        /// Teaching order among cues on the same track.
+        var position: Int = 0
     }
 
     /// A placed move (choreography beat) anchored at `anchorMs`, with optional intensity.
@@ -316,4 +326,47 @@ nonisolated enum ProviderKind: Decodable, Equatable {
 
     /// SF Symbol stand-in (provider word marks aren't bundled); paired with `label`.
     var symbol: String { "music.note" }
+}
+
+nonisolated extension RunPayload.Cue: Decodable {
+    private enum CodingKeys: String, CodingKey {
+        case id, anchorMs, beat, bar, text, color, durationMs, bpm, intensity, position
+    }
+
+    init(from decoder: Decoder) throws {
+        let c = try decoder.container(keyedBy: CodingKeys.self)
+        id = try c.decode(String.self, forKey: .id)
+        anchorMs = try c.decode(Int.self, forKey: .anchorMs)
+        beat = try c.decodeIfPresent(Int.self, forKey: .beat)
+        bar = try c.decodeIfPresent(Int.self, forKey: .bar)
+        text = try c.decode(String.self, forKey: .text)
+        color = try c.decodeIfPresent(String.self, forKey: .color)
+        // A non-positive length or tempo has no meaning in Live; treat it as unset.
+        durationMs = try c.decodeIfPresent(Int.self, forKey: .durationMs).flatMap { $0 > 0 ? $0 : nil }
+        bpm = try c.decodeIfPresent(Int.self, forKey: .bpm).flatMap { $0 > 0 ? $0 : nil }
+        intensity = try c.decodeIfPresent(String.self, forKey: .intensity).flatMap(CueIntensity.init(rawValue:))
+        position = try c.decodeIfPresent(Int.self, forKey: .position) ?? 0
+    }
+}
+
+/// A cue's effort level (RF-1057). Cues have one more value than tracks and moves
+/// (`open`), so this is its own type; labels match web `CUE_INTENSITY_LABEL`.
+nonisolated enum CueIntensity: String, Equatable, CaseIterable {
+    case none
+    case easy
+    case mod
+    case hard
+    case allOut = "all_out"
+    case open
+
+    var label: String {
+        switch self {
+        case .none: "None"
+        case .easy: "Easy"
+        case .mod: "Mod"
+        case .hard: "Hard"
+        case .allOut: "All Out"
+        case .open: "Open"
+        }
+    }
 }
