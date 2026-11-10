@@ -28,7 +28,7 @@ the contract surface above.
 
 ## Provenance
 
-- Synced from `ritmofit-ios` `main` at commit `31f4d70` on 2026-11-07 (refreshed `Core/Networking/KeychainStore.swift` for RF-1049, iOS #104: data-protection keychain on signed Mac builds and `deleteAll()`; the other files already matched).
+- Synced from `ritmofit-ios` `main` at commit `79df1e7` on 2026-11-10 (refreshed `Core/Models/RunPayload.swift` for RF-1057, iOS #124: `Cue` decodes `durationMs`, `bpm`, `intensity` and `position`, and adds `CueIntensity`; the other files already matched).
 
 ## Refreshing
 
