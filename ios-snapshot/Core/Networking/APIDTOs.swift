@@ -25,7 +25,7 @@ struct UserProfile: Codable, Identifiable, Equatable {
 }
 
 /// One row of `GET /api/v1/classes` — a class plus the caller's effective access.
-/// Extra fields in the JSON (ownerUserId, timestamps, …) are ignored by Decodable.
+/// Extra fields in the JSON (ownerUserId, updatedAt, …) are ignored by Decodable.
 struct ClassSummary: Codable, Identifiable, Equatable, Hashable {
     let id: String
     let title: String
@@ -34,6 +34,9 @@ struct ClassSummary: Codable, Identifiable, Equatable, Hashable {
     let visibility: String
     let targetDurationMs: Int?
     let accessLevel: String
+    /// When the class was created, in ms since 1970 (the contract's `createdAt`). The library
+    /// lists the newest first (RF-1105). Optional, so a body without it still decodes.
+    var createdAt: Int? = nil
 
     /// Human label for the access level (`none`/`view`/`edit`/`owner`).
     var accessLabel: String {
@@ -74,6 +77,8 @@ nonisolated struct ClassDetail: Codable, Identifiable, Equatable {
     let visibility: String
     let targetDurationMs: Int?
     let accessLevel: String
+    /// When the class was created, in ms since 1970 (RF-1105); optional like `ClassSummary`'s.
+    var createdAt: Int? = nil
 
     /// Whether the caller may edit class fields — `edit` or `owner` per the
     /// authorization contract ("Update class fields" requires EDIT).
@@ -92,11 +97,12 @@ nonisolated struct CreatedClass: Decodable, Equatable {
     let status: String
     let visibility: String
     let targetDurationMs: Int?
+    let createdAt: Int?
 
     /// The creator owns the class they just made.
     var asOwnedDetail: ClassDetail {
         ClassDetail(id: id, title: title, description: description, template: template,
                     status: status, visibility: visibility, targetDurationMs: targetDurationMs,
-                    accessLevel: "owner")
+                    accessLevel: "owner", createdAt: createdAt)
     }
 }
