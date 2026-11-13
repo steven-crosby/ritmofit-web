@@ -1,0 +1,26 @@
+{
+  "schemaVersion": 1,
+  "id": "RF-219",
+  "title": "Catalog search offers Try again only when a retry can help",
+  "kind": "task",
+  "status": "backlog",
+  "priority": "untriaged",
+  "parent": null,
+  "dependsOn": [],
+  "acceptance": [
+    "A 429 PROVIDER_QUOTA_EXCEEDED in catalog search (TrackSearch search mode and the Music tab search in Dashboard.tsx) shows its sentence with no Try again; network, timeout and 5xx failures keep Try again.",
+    "The Music tab search shows the API sentence for quota and the Spotify allowlist instead of the generic \"Couldn’t search … right now. Try again.\""
+  ],
+  "nextAction": "Split from RF-74 (2026-11-13), which fixed the playlist surfaces only. On main the TrackSearch search-mode error row always renders Try again, and Dashboard.tsx Music search swallows the API error and shows the generic retry sentence. Propose the change, then implement with tests.",
+  "blocker": null,
+  "evidence": [
+    {
+      "kind": "source",
+      "ref": "apps/web/src/components/Dashboard.tsx",
+      "summary": "Music tab search .catch() drops the error and always sets the generic retry sentence; the Try again button shows whenever results are null. Read on fix/rf-74-playlist-retry, 2026-11-13.",
+      "checkedOn": "2026-11-13"
+    }
+  ],
+  "resolution": null,
+  "followUps": []
+}

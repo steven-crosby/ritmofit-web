@@ -3,7 +3,7 @@
   "id": "RF-92",
   "title": "Triage Spotify expiry finding C-1 and retry classification C-2",
   "kind": "plan",
-  "status": "review",
+  "status": "done",
   "priority": "P1",
   "parent": null,
   "dependsOn": [],
@@ -11,7 +11,7 @@
     "Reconfirm expired-grant and retry/reconnect classification on current main.",
     "Agree packet 3 and an actual browser/audio acceptance procedure before implementing provider changes."
   ],
-  "nextAction": "Both acceptance criteria are met: C-1 and C-2 were reconfirmed on main f9aba1b7, and the owner agreed packet 3 by setting RF-216 Ready on 2026-11-12. RF-92 stays For review only because its child RF-74 (the playlist dialog's retry mapping) is open; set RF-92 Done when RF-74 closes or is moved to another parent.",
+  "nextAction": null,
   "blocker": null,
   "evidence": [
     {
@@ -67,9 +67,15 @@
       "ref": "https://github.com/steven-crosby/ritmofit-web/pull/757#issuecomment-6841427416",
       "summary": "Owner set RF-216 Ready in the Air session, agreeing packet 3's scope and browser check (2026-11-12).",
       "checkedOn": "2026-11-12"
+    },
+    {
+      "kind": "pr",
+      "ref": "https://github.com/steven-crosby/ritmofit-web/pull/764",
+      "summary": "Closes the last open child, RF-74 (playlist retry mapping).",
+      "checkedOn": "2026-11-13"
     }
   ],
-  "resolution": null,
+  "resolution": "C-1 and C-2 were reconfirmed and packet 3 shipped as RF-216 (#758); the child RF-74 closed with #764.",
   "followUps": [
     "RF-216"
   ]

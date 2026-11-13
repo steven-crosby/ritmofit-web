@@ -225,6 +225,15 @@ async function selectMusicService(name: string) {
   fireEvent.click(await screen.findByRole('button', { name: new RegExp(`^${name},`) }));
 }
 
+/**
+ * A thrown ApiError as the component sees it (RF-74). `vi.mock('../lib/api.js')`
+ * auto-mocks the class, so its constructor sets nothing and its instances are not
+ * Errors; the tests that use this link the mock's prototype to Error for their run.
+ */
+function playlistApiError(message: string, code: string, status: number) {
+  return Object.assign(new api.ApiError(message, code, status), { message, code, status });
+}
+
 async function openSavedPlaylist(service: string, playlistName: string) {
   await selectMusicService(service);
   fireEvent.click(await screen.findByRole('button', { name: `Open ${playlistName}` }));
@@ -761,6 +770,89 @@ describe('Dashboard class library states', () => {
     expect(await screen.findByRole('button', { name: 'Preview Levels' })).toBeTruthy();
     expect(screen.queryByText('player for Levels')).toBeNull();
     expect(songRowPreview.mounts).toEqual(['Levels']);
+  });
+
+  describe('playlist dialog recovery (RF-74)', () => {
+    let apiErrorProto: object | null = null;
+    beforeEach(() => {
+      apiErrorProto = Object.getPrototypeOf(api.ApiError.prototype) as object | null;
+      Object.setPrototypeOf(api.ApiError.prototype, Error.prototype);
+    });
+    afterEach(() => {
+      Object.setPrototypeOf(api.ApiError.prototype, apiErrorProto);
+    });
+
+    it.each<[string, string, string, number]>([
+      [
+        'a playlist the account cannot read',
+        'Spotify only lets Ritmo read playlists you own or collaborate on.',
+        'PROVIDER_FORBIDDEN',
+        403,
+      ],
+      [
+        'a spent provider quota',
+        "Spotify's usage limit for Ritmo is used up. Try again later.",
+        'PROVIDER_QUOTA_EXCEEDED',
+        429,
+      ],
+    ])(
+      'offers no Try again for %s in the playlist dialog (RF-74)',
+      async (_label: string, message: string, code: string, status: number) => {
+        const playlist = {
+          provider: 'spotify' as const,
+          playlistId: 'pl-no-retry',
+          name: 'No Retry',
+          ownerName: 'Someone',
+          trackCount: 3,
+          coverImageUrl: null,
+        };
+        vi.mocked(api.listClasses).mockResolvedValue(page([]));
+        vi.mocked(api.listConnections).mockResolvedValue([spotifyConnection()]);
+        vi.mocked(api.listPlaylists).mockResolvedValue([playlist]);
+        vi.mocked(api.listPlaylistTracks).mockRejectedValue(
+          playlistApiError(message, code, status),
+        );
+
+        renderDashboard();
+        fireEvent.click(await screen.findByRole('button', { name: 'Music' }));
+        await openSavedPlaylist('Spotify', 'No Retry');
+
+        const dialog = await screen.findByRole('dialog', { name: 'Browse Spotify playlists' });
+        expect(await within(dialog).findByText(message)).toBeTruthy();
+        expect(within(dialog).queryByRole('button', { name: 'Try again' })).toBeNull();
+        expect(within(dialog).queryByRole('button', { name: 'Manage connections' })).toBeNull();
+        expect(within(dialog).getByRole('button', { name: 'Back to playlists' })).toBeTruthy();
+        expect(api.listPlaylistTracks).toHaveBeenCalledTimes(1);
+      },
+    );
+
+    it('offers Manage connections, not Try again, when the playlist needs a reconnect (RF-74)', async () => {
+      const playlist = {
+        provider: 'spotify' as const,
+        playlistId: 'pl-reauth',
+        name: 'Needs Reconnect',
+        ownerName: 'Steven',
+        trackCount: 3,
+        coverImageUrl: null,
+      };
+      vi.mocked(api.listClasses).mockResolvedValue(page([]));
+      vi.mocked(api.listConnections).mockResolvedValue([spotifyConnection()]);
+      vi.mocked(api.listPlaylists).mockResolvedValue([playlist]);
+      vi.mocked(api.listPlaylistTracks).mockRejectedValue(
+        playlistApiError('Reconnect your Spotify account.', 'REAUTH_REQUIRED', 409),
+      );
+
+      renderDashboard();
+      fireEvent.click(await screen.findByRole('button', { name: 'Music' }));
+      await openSavedPlaylist('Spotify', 'Needs Reconnect');
+
+      const dialog = await screen.findByRole('dialog', { name: 'Browse Spotify playlists' });
+      expect(await within(dialog).findByText('Reconnect your Spotify account.')).toBeTruthy();
+      expect(within(dialog).queryByRole('button', { name: 'Try again' })).toBeNull();
+      fireEvent.click(within(dialog).getByRole('button', { name: 'Manage connections' }));
+      expect(await screen.findByRole('dialog', { name: 'Music connections' })).toBeTruthy();
+      expect(screen.queryByRole('dialog', { name: 'Browse Spotify playlists' })).toBeNull();
+    });
   });
 
   it('does not create a class when the provider collection fetch fails', async () => {
