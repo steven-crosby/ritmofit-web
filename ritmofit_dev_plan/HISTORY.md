@@ -12,6 +12,31 @@ detail). Current focus and `main` vs production live in the "Now" block of
 ---
 
 ## Deploy and session log (newest first)
+> **Deploy 2026-11-12: hono security bump (#756), then Spotify grant and refresh errors (#758) on main `eaddb1da`**.
+> Two deploys from the Air with `scripts/deploy.sh`, one per change, because AGENTS.md keeps provider changes on
+> their own. The owner's approval ("Yes, deploy") was recorded before both deploys on
+> [#756](https://github.com/steven-crosby/ritmofit-web/pull/756#issuecomment-6843242973) and
+> [#758](https://github.com/steven-crosby/ritmofit-web/pull/758#issuecomment-6843243593).
+>
+> - **Deploy 1, `1b30e7e1`** ([#756](https://github.com/steven-crosby/ritmofit-web/pull/756), RF-215): hono
+>   4.13.14 → 4.13.18 for GHSA-4m76-xfj5-7975, GHSA-h7mg-cq63-vhpq and GHSA-3gg2-335m-rxc6. API dependency only. Worker
+>   `ebdb0cc2-87a9-4573-9698-9172473781ef`; rollback `1d95a679-c9c3-4eb4-8371-980147c53a37` (`f55b449a`). The SPA was
+>   unchanged at `assets/index-BVZTM4Zz.js` (3 of 3 fetches).
+> - **Deploy 2, `eaddb1da`** ([#758](https://github.com/steven-crosby/ritmofit-web/pull/758), RF-216): Spotify stays
+>   connected while its grant is alive; refresh failures are retryable unless Spotify answers `invalid_grant`, which
+>   clears the stored refresh token. Also in the tree: docs and records #755 and #757. Worker
+>   `a12d0e73-f429-41d8-a61f-d163790e8d10`; rollback `ebdb0cc2-87a9-4573-9698-9172473781ef`. SPA
+>   `assets/index-BxS7s1WB.js` (was `assets/index-BVZTM4Zz.js`), seen on 3 of 3 cache-busted fetches.
+> - **Checks, each deploy:** the script's gates passed; no remote D1 migrations to apply; the status smoke (`/` 200,
+>   health 200, classes/explore/teams 401) and the security headers passed. A 5-minute `wrangler tail` after deploy 1
+>   saw 7 requests, all expected statuses, 0 exceptions. Deploy 2's
+>   5-minute tail saw no requests at all, so it proves nothing; afterwards `wrangler deployments status` showed
+>   `a12d0e73` at 100%, health answered 200 on 3 of 3 tries, `/` served `assets/index-BxS7s1WB.js`, and the
+>   playback-token and connections routes answered 401 unauthenticated.
+> - **Not proven:** the authed production smoke returned 401 on both checks because the QA account's session token
+>   (2026-10-26) has expired ([RF-155](./tasks/RF-155.json)), so signed-in reads and the QA Spotify connection were not
+>   checked. Real Spotify playback is the owner's browser check, [RF-217](./tasks/RF-217.json). CI uses mock providers.
+
 > **Deploy 2026-11-07: web follow-ups (#728, #744, #746, #745) on main `f55b449a`**. A standalone web deploy from the Air
 > with `scripts/deploy.sh`, after a deploy-only start-session. The owner's approval ("we need to then deploy our latest
 > changes") was recorded before the deploy on

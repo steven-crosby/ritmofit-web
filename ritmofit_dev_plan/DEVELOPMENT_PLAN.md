@@ -22,6 +22,7 @@
 <!-- Claude Code (Air), 2026-11-07: Web deploy f55b449a; RF-187 moved to the instrumented run (#743 review). -->
 <!-- Claude Code (Neo), 2026-11-07: D26 focus line (RF-212). -->
 <!-- Claude Code (Air), 2026-11-12: D27 Spotify first, Apple Music parked; machine split recorded (RF-214). -->
+<!-- Claude Code (Air), 2026-11-12: Deploys 1b30e7e1 (#756) and eaddb1da (#758, RF-216); RF-217 is the next owner check. -->
 
 **Focus (D26, 2026-11-07):** native iOS and macOS apps on TestFlight first, so the owner's wife uses
 them now: M0a iOS on TestFlight, M0b macOS, M1 Spotify in native Live, then native class building
@@ -29,9 +30,9 @@ them now: M0a iOS on TestFlight, M0b macOS, M1 Spotify in native Live, then nati
 work is tracked as iOS RF records). Web work below continues as maintenance and production checks.
 **Current actionable state:** [RF board](./tasks.md), backed by canonical [task records](./tasks/README.md).
 The order of work is [Phases](#phases) below; each phase lists RF records, not a second backlog.
-**Main vs production:** production is main `f55b449a` (Worker `1d95a679-c9c3-4eb4-8371-980147c53a37`;
-SPA `assets/index-BVZTM4Zz.js`; rollback `ce487041-27d5-4edf-90e2-a6676522574e`). It was deployed
-from the Air on 2026-11-07 as a web-only deploy of #728, #744, #746 and #745 on top of `75f09a1`.
+**Main vs production:** production is main `eaddb1da` (Worker `a12d0e73-f429-41d8-a61f-d163790e8d10`;
+SPA `assets/index-BxS7s1WB.js`; rollback `ebdb0cc2-87a9-4573-9698-9172473781ef`). It was deployed from the Air on
+2026-11-12 in two steps: the hono security bump (#756), then the Spotify grant and refresh-error fix (#758, RF-216).
 This records PR is not in the deployed tree. See [HISTORY](./HISTORY.md).
 **In flight:** [RF-183](./tasks/RF-183.json) is Blocked on the owner's checks: sign in again after
 sign-out (the rest of the native check passed on the simulator, #715), and on web two `expiresAt`
@@ -46,7 +47,8 @@ allows 5 allowlisted users (D26), so other instructors cannot use Spotify in Rit
 **Machines (owner, 2026-11-12):** temporary split by repo, the Neo on macOS/iOS and the Air on web
 ([record](https://github.com/steven-crosby/ritmofit-ios/issues/113#issuecomment-6840223222)). The
 web priorities under this split are not yet set by the owner.
-**Next step:** the owner's checks on production. iPhone feel pass on a Spotify class: the Live
+**Next step:** the owner's checks on production. [RF-217](./tasks/RF-217.json): Spotify stays playable past the
+hour and asks to reconnect only for a dead grant (desktop Chrome, three steps). iPhone feel pass on a Spotify class: the Live
 timeline [RF-188](./tasks/RF-188.json) (tap to track start, drag then lift, a long still hold).
 [RF-205](./tasks/RF-205.json): Spotify ▶ on desktop. [RF-172](./tasks/RF-172.json): the owner
 decides whether SoundCloud ▶ alone closes it while Apple Music is parked. Spotify liked songs load in

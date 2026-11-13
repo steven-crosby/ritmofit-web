@@ -12,13 +12,19 @@
   "acceptance": [
     "On desktop Chrome with Spotify Premium, against a production build that includes RF-216: (1) leave Ritmo and Spotify unused for at least 65 minutes, then open a Spotify-only class: Music and Connections show Spotify Connected, Live preflight passes and Start class is audible within a few seconds with no Reconnect prompt; (2) run a class across the hour mark from the last Spotify use and confirm music keeps playing through it; (3) remove Ritmo in Spotify's account 'Manage apps', then Start a Spotify class: Ritmo asks to reconnect Spotify. Retryable failures (Spotify 5xx/429, network) are proved by tests only; they cannot be forced on production."
   ],
-  "nextAction": "Needs a deploy of RF-216 (owner approval; provider change, deploy on its own per AGENTS.md), then the owner runs the three steps and records the result here. Real Spotify playback cannot be proved by CI's mock providers.",
+  "nextAction": "RF-216 is deployed (main eaddb1da, Worker a12d0e73, 2026-11-12). Owner: run the three steps on desktop Chrome with Spotify Premium and record the result here. Step 3 removes Ritmo from Spotify's Manage apps, so reconnect Spotify afterwards.",
   "blocker": null,
   "evidence": [
     {
       "kind": "pr",
       "ref": "https://github.com/steven-crosby/ritmofit-web/pull/758",
       "summary": "Split from RF-216's acceptance because it needs a deploy first.",
+      "checkedOn": "2026-11-12"
+    },
+    {
+      "kind": "document",
+      "ref": "ritmofit_dev_plan/HISTORY.md",
+      "summary": "Deploy 2026-11-12: RF-216 live on Worker a12d0e73 (main eaddb1da). Deploy only; no Spotify playback checked.",
       "checkedOn": "2026-11-12"
     }
   ],
