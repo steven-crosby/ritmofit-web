@@ -12,13 +12,13 @@ owner's queue: any agent may execute a Ready task. Publishing follows AGENTS.md 
 Evidence marked **recorded** is a carried-forward claim, not fresh verification.
 A checked PR proves its GitHub state, not product acceptance or production behavior.
 
-210 tasks. backlog: 68 · ready: 0 · in_progress: 0 · blocked: 3 · review: 13 · done: 124 · cancelled: 2.
+211 tasks. backlog: 68 · ready: 0 · in_progress: 1 · blocked: 3 · review: 13 · done: 124 · cancelled: 2.
 
 ## In progress
 
 | Task | Priority / kind | Relationships | Next action / resolution | Evidence |
 | --- | --- | --- | --- | --- |
-| — | — | — | — | — |
+| [RF-215](tasks/RF-215.json) hono patched past GHSA-4m76-xfj5-7975, GHSA-h7mg-cq63-vhpq and GHSA-3gg2-335m-rxc6 | P1 / task | — | Air session 2026-11-12, branch fix/hono-ghsa-20261112: open the PR, cite it here, set Done. | none |
 
 ## Blocked / waiting
 
