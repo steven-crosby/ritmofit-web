@@ -12,13 +12,13 @@ owner's queue: any agent may execute a Ready task. Publishing follows AGENTS.md 
 Evidence marked **recorded** is a carried-forward claim, not fresh verification.
 A checked PR proves its GitHub state, not product acceptance or production behavior.
 
-212 tasks. backlog: 67 · ready: 1 · in_progress: 0 · blocked: 3 · review: 14 · done: 125 · cancelled: 2.
+212 tasks. backlog: 67 · ready: 0 · in_progress: 1 · blocked: 3 · review: 14 · done: 125 · cancelled: 2.
 
 ## In progress
 
 | Task | Priority / kind | Relationships | Next action / resolution | Evidence |
 | --- | --- | --- | --- | --- |
-| — | — | — | — | — |
+| [RF-216](tasks/RF-216.json) Spotify stays connected while its grant is alive, and a failed refresh is retryable unless the grant is dead (packet 3) | P1 / task | — | Air session 2026-11-12, branch feat/rf-216-spotify-grant: implement C-1 (web) and C-2 (package, API, web), tests and OpenAPI, then run the full gate. Owner-gated; needs a deploy for the owner's browser check. | checked 2026-11-12 |
 
 ## Blocked / waiting
 
@@ -51,7 +51,7 @@ A checked PR proves its GitHub state, not product acceptance or production behav
 
 | Task | Priority / kind | Relationships | Next action / resolution | Evidence |
 | --- | --- | --- | --- | --- |
-| [RF-216](tasks/RF-216.json) Spotify stays connected while its grant is alive, and a failed refresh is retryable unless the grant is dead (packet 3) | P1 / task | — | Owner set Ready on 2026-11-12 (Air session). Implementation follows in its own PR. Owner-gated (provider and playback code). Likely files: packages/music/src/spotify-oauth.ts, packages/music/src/errors.ts, apps/api/src/lib/music/{spotify-playback-token,user-likes,user-playlists}.ts plus a shared refresh-failure helper, apps/web/src/lib/providers.ts, apps/web/src/lib/playback/{coordinator,spotify-adapter}.ts and their tests, apps/api/scripts/generate-openapi.ts. Needs a deploy for the owner's check. | checked 2026-11-12 |
+| — | — | — | — | — |
 
 ## Backlog
 
