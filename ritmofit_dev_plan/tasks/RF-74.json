@@ -11,7 +11,7 @@
     "Identify each unretryable playlist error and its actionable recovery.",
     "After approved implementation, verify retryable errors retain retry and unretryable errors offer the appropriate recovery."
   ],
-  "nextAction": "Review the error/action mapping. Spotify reopened by the owner on 2026-10-28; Apple work comes first until about 2026-11-27. Resume risk: the Spotify developer app rejects the connected account (\"The user is not registered for this application\"), so Web API calls return 403.",
+  "nextAction": "Owner asked to start RF-74 in the Air session on 2026-11-13 (next in the web plan; closes RF-92); the session closed after read-only orientation, so claim it on a branch and draft PR first. Mapping so far in apps/web/src/components/TrackSearch.tsx on main b22ec04c: the saved-playlist drill-in already has no retry for forbidden, quota and reauth (classifyPlaylistDrillInError), and paste-a-link offers Manage connections for NOT_CONNECTED/REAUTH_REQUIRED. Two gaps found: the saved-playlists index shows Try again on a 429 PROVIDER_QUOTA_EXCEEDED (only reauth is split out before the retry branch), and catalog search shows Try again on the same quota error. Still to review: paste-a-link forbidden/quota copy and any other unretryable code. Then propose the mapping, implement with TrackSearch tests, and close RF-92 with it.",
   "blocker": null,
   "evidence": [
     {
@@ -31,6 +31,12 @@
       "ref": "ritmofit_dev_plan/DEVELOPMENT_PLAN.md",
       "checkedOn": "2026-10-29",
       "summary": "Owner-approved phased plan (2026-10-29) groups RF-74 under RF-92 in Phase 3 (Spotify)."
+    },
+    {
+      "kind": "source",
+      "ref": "apps/web/src/components/TrackSearch.tsx",
+      "summary": "Read-only on main b22ec04c, 2026-11-13: classifyPlaylistDrillInError keeps retry off the drill-in for PROVIDER_FORBIDDEN, PROVIDER_QUOTA_EXCEEDED and reauth; the playlist index (savedPlaylists === null branch) and search-mode error row still render Try again for PROVIDER_QUOTA_EXCEEDED. Not run in a browser.",
+      "checkedOn": "2026-11-13"
     }
   ],
   "resolution": null,
