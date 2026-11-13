@@ -677,6 +677,38 @@ provider-terms review), D25, the owner gate, and deploy approvals. D20's communi
 D21 where it names the web app as the workstation. D21's frame (a creator workstation over trusted
 music services) now applies to the native apps. D18's parity gate stays paused.
 
+## D27 — Spotify first; Apple Music work is parked **[Resolved 2026-11-12]**
+
+<!-- note (Claude Code, Air, 2026-11-12): Records Steven's product decision from the 2026-11-12 Air session (RF-214). -->
+
+**Decision (owner's words):** "for now, let's just drop Apple Music. My wife doesn't use and her
+peers, those using StructClub at her gym, don't use it either. We need Spotify working and
+optimized". Asked whether that means parking Apple Music work while leaving it in the app, or also
+hiding it, the owner chose "Park, leave in app".
+
+**Meaning:**
+
+- **Spotify is the music service that matters now,** on web and native. Spotify connect, library,
+  Live playback, reliability and speed come first among music work.
+- **Apple Music work is parked, not removed.** Apple Music stays in the app as shipped: no code is
+  removed or hidden, and no deploy is needed. Open Apple Music-only RF records move to Backlog with a
+  D27 note (RF-108, RF-121, RF-125, RF-128, RF-150, RF-159, RF-160, RF-161, RF-185, RF-186, RF-187).
+  The owner's Apple Music device checks are no longer owed, and the subscription end around
+  2026-11-27 no longer sets the order of work. RF-172's Apple Music check is on hold for the
+  owner's decision.
+- **Shared Live work is checked on Spotify,** not Apple Music (for example RF-188's timeline feel
+  pass).
+- **SoundCloud is unchanged** by this decision.
+- Reopening Apple Music is the owner's call; a parked record restarts only then.
+
+**Known limit:** D26 records that Spotify development-mode apps allow 5 allowlisted users including
+the owner, and that extended quota is not available to this project (RF-213 tracks backing that with
+Spotify's own page). Instructors outside the allowlist, such as the owner's wife's peers, cannot use
+Ritmo with Spotify until that changes.
+
+**Unchanged:** D26's native-first order, the music constraints, official-SDK-only playback, D25, the
+owner gate and deploy approvals.
+
 ---
 
 ## Deferred from M1
