@@ -7,14 +7,15 @@
   "priority": "P2",
   "parent": null,
   "dependsOn": [
-    "RF-92"
+    "RF-92",
+    "RF-216"
   ],
   "acceptance": [
     "First the real current Spotify response for a non-allowlisted account is captured (status, body shape) and recorded here; RF-92's 403 note dates from 2026-10-28 and RF-31 was never re-tested.",
-    "Spotify stays visible in Music and preflight. When Spotify refuses an account because it is not on the app's developer allowlist, the message says so in plain words and points to Apple Music or SoundCloud, instead of a generic error.",
+    "Spotify stays visible in Music and preflight. When Spotify refuses an account because it is not on the app's developer allowlist, the message says so in plain words and points to SoundCloud and to asking the owner to add the account to the allowlist (D27 parks Apple Music), instead of a generic error.",
     "Other Spotify failures (expired session, quota, outage) keep their own messages."
   ],
-  "nextAction": "From RF-131 decision 6 (b). Likely files: apps/api/src/routes/provider*.ts or apps/api/src/lib/music/ (error classification) and apps/web/src/lib/providers.ts: owner-gated (provider). Starts after RF-92, which owns probing the live Spotify response. Surface: web; iOS if the error code is new. Agent-created: Backlog until the owner sets Ready.",
+  "nextAction": "From RF-131 decision 6 (b). Likely files: apps/api/src/routes/provider*.ts or apps/api/src/lib/music/ (error classification) and apps/web/src/lib/providers.ts: owner-gated (provider). Starts after RF-92 and RF-216; probing the live Spotify response for a non-allowlisted account is this task's first criterion. Surface: web; iOS if the error code is new. Agent-created: Backlog until the owner sets Ready.",
   "blocker": null,
   "evidence": [
     {
@@ -34,6 +35,12 @@
       "ref": "https://github.com/steven-crosby/ritmofit-web/pull/677",
       "summary": "Final review of #677 corrected file pointers, record links and the design system 10 §1a reading.",
       "checkedOn": "2026-10-31"
+    },
+    {
+      "kind": "document",
+      "ref": "ritmofit_dev_plan/decisions.md",
+      "summary": "D27 (2026-11-12, web #755) parks Apple Music, so the suggested alternative is SoundCloud or allowlisting, not Apple Music.",
+      "checkedOn": "2026-11-12"
     }
   ],
   "resolution": null,

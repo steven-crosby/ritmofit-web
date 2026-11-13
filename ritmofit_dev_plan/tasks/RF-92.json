@@ -3,7 +3,7 @@
   "id": "RF-92",
   "title": "Triage Spotify expiry finding C-1 and retry classification C-2",
   "kind": "plan",
-  "status": "backlog",
+  "status": "review",
   "priority": "P1",
   "parent": null,
   "dependsOn": [],
@@ -11,7 +11,7 @@
     "Reconfirm expired-grant and retry/reconnect classification on current main.",
     "Agree packet 3 and an actual browser/audio acceptance procedure before implementing provider changes."
   ],
-  "nextAction": "Spotify reopened by the owner on 2026-10-28. Await owner Ready; Apple work comes first until the Apple Music subscription ends around 2026-11-27. Resume risk, updated 2026-10-31: liked songs now load for the owner account (evidence), so the 403 allowlist block appears lifted for it; recheck playlists and playback before starting.",
+  "nextAction": "Both acceptance criteria are met: C-1 and C-2 were reconfirmed on main f9aba1b7, and the owner agreed packet 3 by setting RF-216 Ready on 2026-11-12. RF-92 stays For review only because its child RF-74 (the playlist dialog's retry mapping) is open; set RF-92 Done when RF-74 closes or is moved to another parent.",
   "blocker": null,
   "evidence": [
     {
@@ -31,8 +31,46 @@
       "ref": "https://github.com/steven-crosby/ritmofit-web/pull/685",
       "summary": "Read-only check on production a1b971d in the owner signed-in browser, 2026-10-31 (Neo): Music shows Spotify Connected and Music > Songs lists Spotify liked songs (Re-Arranged, High Speed, Paradise Circus and more) with no allowlist or 403 message. The Air conductor saw the same in the owner recording. So the developer app no longer rejects this account for likes; playlists, playback and other accounts were not checked.",
       "checkedOn": "2026-10-31"
+    },
+    {
+      "kind": "source",
+      "ref": "apps/web/src/lib/providers.ts",
+      "summary": "C-1 still holds on main f9aba1b7: providerConnectionState returns 'expired' when expiresAt <= now for any account-backed provider, and the coordinator's liveConnections keeps only 'connected', so a Spotify-only track becomes no_connected_provider about an hour after the last server-side refresh. Wider than the audit said: the same 'expired' state drives 'Session expired' and Reconnect in Dashboard, TrackSearch, ConnectionsDialog and ConnectionStateMark.",
+      "checkedOn": "2026-11-12"
+    },
+    {
+      "kind": "source",
+      "ref": "apps/api/src/routes/provider-connections.ts",
+      "summary": "GET /providers/connections returns the stored expiresAt and never refreshes; the view does not say whether a refresh token exists.",
+      "checkedOn": "2026-11-12"
+    },
+    {
+      "kind": "source",
+      "ref": "apps/api/src/lib/music/spotify-playback-token.ts",
+      "summary": "C-2 still holds: a bare catch around refreshSpotifyToken maps every failure (Spotify 5xx, 429, network, invalid_grant) to 409 REAUTH_REQUIRED. user-likes.ts and user-playlists.ts have the same bare catch. packages/music/src/spotify-oauth.ts postToken throws a plain ProviderError with only the status in its message and never reads the OAuth error code, so the API cannot tell invalid_grant from an outage today.",
+      "checkedOn": "2026-11-12"
+    },
+    {
+      "kind": "observation",
+      "ref": "https://github.com/steven-crosby/ritmofit-web/pull/757#issuecomment-6840561392",
+      "summary": "Owner set RF-92 Ready and approved the start in the Air session, 2026-11-12 (D27: Spotify first).",
+      "checkedOn": "2026-11-12"
+    },
+    {
+      "kind": "pr",
+      "ref": "https://github.com/steven-crosby/ritmofit-web/pull/757",
+      "summary": "This triage PR: records only, no provider code. Packet 3 proposed as RF-216.",
+      "checkedOn": "2026-11-12"
+    },
+    {
+      "kind": "observation",
+      "ref": "https://github.com/steven-crosby/ritmofit-web/pull/757#issuecomment-6841427416",
+      "summary": "Owner set RF-216 Ready in the Air session, agreeing packet 3's scope and browser check (2026-11-12).",
+      "checkedOn": "2026-11-12"
     }
   ],
   "resolution": null,
-  "followUps": []
+  "followUps": [
+    "RF-216"
+  ]
 }

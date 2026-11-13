@@ -7,15 +7,14 @@
   "priority": "P2",
   "parent": null,
   "dependsOn": [
-    "RF-92",
-    "RF-108"
+    "RF-216"
   ],
   "acceptance": [
     "A seek, skip, or pause then resume during an in-flight Spotify start ends playing or buffering at the new position (the Spotify half of lane repro CM-01 passes).",
-    "The Spotify adapter implements the whenIdle() settle signal from RF-108, so runtime.enterTrack waits for a cancelled Spotify start, bounded to about 3 s, and re-checks the epoch before prepare; a never-settling call ends in a bounded, clearly worded error.",
+    "The Spotify adapter implements the whenIdle() settle signal (the runtime side is already on main: runtime.ts calls adapter.whenIdle()), so runtime.enterTrack waits for a cancelled Spotify start, bounded to about 3 s, and re-checks the epoch before prepare; a never-settling call ends in a bounded, clearly worded error.",
     "Owner device check: audible scrub, pause and resume on desktop Chrome with Spotify."
   ],
-  "nextAction": "Split from RF-108 on 2026-10-30 (#667 final review, item 1) so RF-108 can close on Apple inside the Apple Music window. No parent on purpose: an open child would block RF-108 from Done. Start after RF-92 (Spotify Web API answering) and RF-108 (the adapter-agnostic settle wait in runtime.ts) are Done. Agent-created: Backlog until the owner sets Ready. Owner-gated (playback code).",
+  "nextAction": "D27 (2026-11-12): no longer waits on the parked RF-108, because the runtime's bounded whenIdle() wait is already on main and only the Spotify adapter's side is missing. Starts after RF-216 (Spotify grant and refresh errors), so a token failure during the repro is classified correctly. Agent-created: Backlog until the owner sets Ready. Owner-gated (playback code).",
   "blocker": null,
   "evidence": [
     {
@@ -29,6 +28,12 @@
       "ref": "https://github.com/steven-crosby/ritmofit-web/pull/668",
       "summary": "RF-108 PR that split this record out. Its whenIdle() adapter contract and bounded runtime settle wait were reverted out of #668 on 2026-10-30 (owner: measure first) and are preserved on wip/rf-108-apple-locks; RF-108's redesign defines the settle signal this record implements for Spotify.",
       "checkedOn": "2026-10-30"
+    },
+    {
+      "kind": "source",
+      "ref": "apps/web/src/lib/playback/runtime.ts",
+      "summary": "On main f9aba1b7 runtime.ts calls adapter.whenIdle?.() and types.ts declares it; only the Apple Music adapter implements it.",
+      "checkedOn": "2026-11-12"
     }
   ],
   "resolution": null,
