@@ -1297,6 +1297,72 @@ describe('real adapter boundary regression', () => {
     }
   });
 
+  it.each([
+    ['a seek', (c: RuntimePlaybackCoordinator) => c.seek(60_000)],
+    [
+      'a pause then resume',
+      async (c: RuntimePlaybackCoordinator) => {
+        await c.pause();
+        await c.resume(60_000);
+      },
+    ],
+  ])(
+    'waits for a cancelled Spotify start after %s, then starts at the new position (RF-158)',
+    async (_label: string, act: (c: RuntimePlaybackCoordinator) => Promise<void>) => {
+      let resolveFirst!: () => void;
+      const firstStart = new Promise<void>((resolve) => {
+        resolveFirst = resolve;
+      });
+      const calls: string[] = [];
+      const player = {
+        addListener: () => {},
+        removeListener: () => {},
+        pause: async () => {
+          calls.push('pause');
+        },
+        getCurrentState: async () => null,
+      } as unknown as SpotifyPlayer;
+      const startTrack = vi.fn(({ positionMs }: { positionMs: number }): Promise<void> => {
+        calls.push(`start:${positionMs}`);
+        return startTrack.mock.calls.length === 1 ? firstStart : Promise.resolve();
+      });
+      const coordinator = new RuntimePlaybackCoordinator(
+        makePayload([makeEntry({ providers: ['spotify'] })]),
+        connections('spotify'),
+        {
+          now: NOW,
+          adapters: {
+            spotify: (events) =>
+              new SpotifyAdapter(events, {
+                getPlayback: async () => ({ player, deviceId: 'qa' }),
+                startTrack: startTrack as never,
+              }),
+          },
+        },
+      );
+      try {
+        const starting = coordinator.start(0);
+        for (let i = 0; i < 30 && startTrack.mock.calls.length === 0; i += 1)
+          await Promise.resolve();
+        expect(calls).toEqual(['start:0']);
+
+        const moved = act(coordinator);
+        for (let i = 0; i < 30; i += 1) await Promise.resolve();
+        // No second start races the first while it is still in flight.
+        expect(startTrack).toHaveBeenCalledTimes(1);
+
+        resolveFirst();
+        await starting;
+        await moved;
+        // Cancel pauses the device, the settled start pauses it again, then the new start.
+        expect(calls).toEqual(['start:0', 'pause', 'pause', 'start:60000']);
+        expect(coordinator.getStatus()).toMatchObject({ kind: 'playing', index: 0 });
+      } finally {
+        coordinator.destroy();
+      }
+    },
+  );
+
   it('ends paused when the user pauses during an in-flight play, and music does not start when that play resolves', async () => {
     let resolvePlay!: () => void;
     const pendingPlay = new Promise<void>((resolve) => {

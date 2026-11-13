@@ -402,10 +402,11 @@ export class RuntimePlaybackCoordinator {
     }
 
     this.setStatus({ kind: 'preparing', index, provider: selection.provider });
-    // A singleton SDK (Apple Music) may still be finishing a queue request from
-    // an adapter this run (or a failed run before Retry) cancelled. This is
-    // the one bounded wait (the adapter bounds its own signal, 2 s from the
-    // cancel); skip the prepare entirely if the instructor moved on (RF-108).
+    // A singleton SDK (Apple Music's queue request, Spotify's Connect start) may
+    // still be finishing a call from an adapter this run (or a failed run before
+    // Retry) cancelled. This is the one bounded wait (each adapter bounds its own
+    // signal, 2 s from the cancel); skip the prepare entirely if the instructor
+    // moved on (RF-108, RF-158).
     const settling = retired
       .filter((entry) => entry.provider === selection.provider)
       .map((entry) => entry.idle);

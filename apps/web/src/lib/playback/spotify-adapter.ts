@@ -50,6 +50,13 @@ import type {
 } from './types.js';
 
 const DEFAULT_START_TIMEOUT_MS = 20_000;
+/**
+ * How long `whenIdle()` waits, from the cancel, for a cancelled Connect start to
+ * settle before the next start is let through (RF-158). The runtime's own
+ * backstop is 3 s; past this bound the next prepare refuses with a Retry
+ * message rather than racing a second start against the late one.
+ */
+const DEFAULT_SETTLE_WAIT_MS = 2_000;
 
 /**
  * Which adapter currently owns each shared player's transport. Claimed in play();
@@ -72,6 +79,7 @@ export interface SpotifyAdapterHost extends SpotifyPlaybackHost {
   getPlayback?: (host?: SpotifyPlaybackHost) => Promise<SpotifyPlayback>;
   startTrack?: typeof startSpotifyTrack;
   startTimeoutMs?: number;
+  settleWaitMs?: number;
   requireActivation?: boolean;
 }
 
@@ -92,6 +100,13 @@ export class SpotifyAdapter implements PlaybackAdapter {
   private lastPlayingPosition = 0;
   private finishedPosition: number | null = null;
   private autoplayBlocked = false;
+  /**
+   * The Connect start this adapter issued, until it settles, including the
+   * pause a cancelled start runs on settle. Never rejects. See `whenIdle`.
+   */
+  private pendingStart: Promise<void> | null = null;
+  /** When `destroy()` cancelled the pending start; the settle bound runs from here. */
+  private cancelledAt: number | null = null;
 
   private readonly onStateChange = (state: SpotifyPlayerState | null): void => {
     if (!this.started || !this.player || transportOwners.get(this.player) !== this) return;
@@ -180,7 +195,7 @@ export class SpotifyAdapter implements PlaybackAdapter {
     if (this.destroyed) throw new Error('Spotify player was torn down while loading.');
     if (pendingStarts.has(playback.player))
       throw new Error(
-        'Spotify is still finishing a cancelled start request. Retry after it finishes, or reload.',
+        'Spotify is still finishing the previous start request. Retry in a moment, or reload if it keeps happening.',
       );
     if (this.host.requireActivation && !isSpotifyPlaybackActivated(playback.player))
       throw new Error('Enable Spotify playback in this browser before retrying.');
@@ -236,6 +251,15 @@ export class SpotifyAdapter implements PlaybackAdapter {
       }
       pendingStarts.delete(player);
       this.starting = false;
+    });
+    const settled = start.then(
+      () => undefined,
+      () => undefined,
+    );
+    this.pendingStart = settled;
+    this.cancelledAt = null;
+    void settled.then(() => {
+      if (this.pendingStart === settled) this.pendingStart = null;
     });
     try {
       await this.withTimeout(
@@ -331,7 +355,31 @@ export class SpotifyAdapter implements PlaybackAdapter {
     this.cueMs = this.windowStartMs;
   }
 
+  /**
+   * Settle signal for the runtime (RF-158, the Spotify half of RF-108): resolves
+   * once the Connect start this adapter issued has settled (and, if it was
+   * cancelled, paused the device), or the settle bound has passed since the
+   * cancel. The runtime waits on it before the next Spotify prepare, so a seek,
+   * skip, or pause then resume during a start no longer fails with "still
+   * finishing". Never rejects. Null when no start is pending.
+   */
+  whenIdle(): Promise<void> | null {
+    const pending = this.pendingStart;
+    if (!pending) return null;
+    const from = this.cancelledAt ?? Date.now();
+    const waitMs = Math.max(
+      0,
+      from + (this.host.settleWaitMs ?? DEFAULT_SETTLE_WAIT_MS) - Date.now(),
+    );
+    let timer: ReturnType<typeof setTimeout> | undefined;
+    const bound = new Promise<void>((resolve) => {
+      timer = setTimeout(resolve, waitMs);
+    });
+    return Promise.race([pending, bound]).finally(() => clearTimeout(timer));
+  }
+
   destroy(): void {
+    if (this.pendingStart && this.cancelledAt === null) this.cancelledAt = Date.now();
     this.destroyed = true;
     this.started = false;
     const player = this.player;

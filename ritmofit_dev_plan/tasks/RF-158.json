@@ -3,7 +3,7 @@
   "id": "RF-158",
   "title": "Scrubbing or pausing Live during a Spotify track start keeps music playing",
   "kind": "task",
-  "status": "backlog",
+  "status": "review",
   "priority": "P2",
   "parent": null,
   "dependsOn": [
@@ -14,7 +14,7 @@
     "The Spotify adapter implements the whenIdle() settle signal (the runtime side is already on main: runtime.ts calls adapter.whenIdle()), so runtime.enterTrack waits for a cancelled Spotify start, bounded to about 3 s, and re-checks the epoch before prepare; a never-settling call ends in a bounded, clearly worded error.",
     "Owner device check: audible scrub, pause and resume on desktop Chrome with Spotify."
   ],
-  "nextAction": "D27 (2026-11-12): no longer waits on the parked RF-108, because the runtime's bounded whenIdle() wait is already on main and only the Spotify adapter's side is missing. Starts after RF-216 (Spotify grant and refresh errors), so a token failure during the repro is classified correctly. Agent-created: Backlog until the owner sets Ready. Owner-gated (playback code).",
+  "nextAction": "Owner device check (criterion 3), on production after a deploy of #761: desktop Chrome with Spotify Premium, start a Spotify class, then within the first second or two of a track (while it is still starting) (a) scrub to a later point, (b) skip to the next track, (c) pause then resume. Each should end playing at the new position with no \"still finishing\" error. Criteria 1 and 2 are proved with mock players only. Record the result here.",
   "blocker": null,
   "evidence": [
     {
@@ -34,6 +34,12 @@
       "ref": "apps/web/src/lib/playback/runtime.ts",
       "summary": "On main f9aba1b7 runtime.ts calls adapter.whenIdle?.() and types.ts declares it; only the Apple Music adapter implements it.",
       "checkedOn": "2026-11-12"
+    },
+    {
+      "kind": "pr",
+      "ref": "https://github.com/steven-crosby/ritmofit-web/pull/761",
+      "summary": "SpotifyAdapter.whenIdle() resolves when its cancelled Connect start settles (after the settle pause), bounded 2 s from the cancel; past the bound the next prepare refuses with \"still finishing the previous start request. Retry in a moment\". Runtime tests drive a real SpotifyAdapter: a seek, or a pause then resume, during an in-flight start ends in one new start at 60000 ms and status playing; both fail on the old adapter. Adapter tests cover null, settle-then-replace at a new cue, and the bound. Local gate green except e2e (Chromium not installed locally; CI runs it). Mock players only: real Spotify audio not checked.",
+      "checkedOn": "2026-11-13"
     }
   ],
   "resolution": null,
