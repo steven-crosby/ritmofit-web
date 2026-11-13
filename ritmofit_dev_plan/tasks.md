@@ -12,13 +12,13 @@ owner's queue: any agent may execute a Ready task. Publishing follows AGENTS.md 
 Evidence marked **recorded** is a carried-forward claim, not fresh verification.
 A checked PR proves its GitHub state, not product acceptance or production behavior.
 
-215 tasks. backlog: 73 · ready: 0 · in_progress: 0 · blocked: 2 · review: 10 · done: 128 · cancelled: 2.
+215 tasks. backlog: 72 · ready: 0 · in_progress: 1 · blocked: 2 · review: 10 · done: 128 · cancelled: 2.
 
 ## In progress
 
 | Task | Priority / kind | Relationships | Next action / resolution | Evidence |
 | --- | --- | --- | --- | --- |
-| — | — | — | — | — |
+| [RF-74](tasks/RF-74.json) Spotify playlist dialog offers Try again where retry cannot help | P2 / task | parent RF-92 | In progress on fix/rf-74-playlist-retry (Air session, 2026-11-13). Restart: finish the mapping in PlaylistBrowserDialog (Dashboard.tsx) and TrackSearch saved playlists: retry only for generic failures; forbidden, quota and the Spotify allowlist show their reason with no retry; reauth/not-connected offers Manage connections. Add tests, then set Done in this PR. | recorded; checked 2026-10-28; checked 2026-10-29; checked 2026-11-13 |
 
 ## Blocked / waiting
 
@@ -124,7 +124,6 @@ A checked PR proves its GitHub state, not product acceptance or production behav
 | [RF-211](tasks/RF-211.json) Live Full List keeps its scroll position when the Waiting for music banner appears | P3 / task | — | Owner-requested (2026-11-07, Air session) from the owner's iPhone Safari recording of production f55b449a. Backlog until the owner sets Ready. Start in apps/web/src/components/LiveMode.tsx: find why the banner's insertion above the Full List resets its scroll (remount, a key change, or the scroll container's content shifting). Whether the banner should show for a normal 2-4 s start is a separate question, not this task. | checked 2026-11-07 |
 | [RF-213](tasks/RF-213.json) Docs that still say web-first agree with D26 | P3 / task | — | Logged from the /code-review high of #750 (Neo, 2026-11-07): non-blocking findings. Agent-created: Backlog until the owner sets Ready. | checked 2026-11-07 |
 | [RF-218](tasks/RF-218.json) A token-endpoint 4xx other than invalid_grant reads as a server problem, not Reconnect | P3 / task | needs RF-216 | From the #758 final review on 30e0b29 (2026-11-12, non-blocking): a wrong app secret tells instructors to reconnect, which cannot help. Provider code, owner-gated. Agent-created: Backlog until the owner sets Ready. | checked 2026-11-12 |
-| [RF-74](tasks/RF-74.json) Spotify playlist dialog offers Try again where retry cannot help | untriaged / task | parent RF-92 | Owner asked to start RF-74 in the Air session on 2026-11-13 (next in the web plan; closes RF-92); the session closed after read-only orientation, so claim it on a branch and draft PR first. Mapping so far in apps/web/src/components/TrackSearch.tsx on main b22ec04c: the saved-playlist drill-in already has no retry for forbidden, quota and reauth (classifyPlaylistDrillInError), and paste-a-link offers Manage connections for NOT_CONNECTED/REAUTH_REQUIRED. Two gaps found: the saved-playlists index shows Try again on a 429 PROVIDER_QUOTA_EXCEEDED (only reauth is split out before the retry branch), and catalog search shows Try again on the same quota error. Still to review: paste-a-link forbidden/quota copy and any other unretryable code. Then propose the mapping, implement with TrackSearch tests, and close RF-92 with it. | recorded; checked 2026-10-28; checked 2026-10-29; checked 2026-11-13 |
 
 ## Done
 

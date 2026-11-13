@@ -3,15 +3,15 @@
   "id": "RF-74",
   "title": "Spotify playlist dialog offers Try again where retry cannot help",
   "kind": "task",
-  "status": "backlog",
-  "priority": "untriaged",
+  "status": "in_progress",
+  "priority": "P2",
   "parent": "RF-92",
   "dependsOn": [],
   "acceptance": [
     "Identify each unretryable playlist error and its actionable recovery.",
     "After approved implementation, verify retryable errors retain retry and unretryable errors offer the appropriate recovery."
   ],
-  "nextAction": "Owner asked to start RF-74 in the Air session on 2026-11-13 (next in the web plan; closes RF-92); the session closed after read-only orientation, so claim it on a branch and draft PR first. Mapping so far in apps/web/src/components/TrackSearch.tsx on main b22ec04c: the saved-playlist drill-in already has no retry for forbidden, quota and reauth (classifyPlaylistDrillInError), and paste-a-link offers Manage connections for NOT_CONNECTED/REAUTH_REQUIRED. Two gaps found: the saved-playlists index shows Try again on a 429 PROVIDER_QUOTA_EXCEEDED (only reauth is split out before the retry branch), and catalog search shows Try again on the same quota error. Still to review: paste-a-link forbidden/quota copy and any other unretryable code. Then propose the mapping, implement with TrackSearch tests, and close RF-92 with it.",
+  "nextAction": "In progress on fix/rf-74-playlist-retry (Air session, 2026-11-13). Restart: finish the mapping in PlaylistBrowserDialog (Dashboard.tsx) and TrackSearch saved playlists: retry only for generic failures; forbidden, quota and the Spotify allowlist show their reason with no retry; reauth/not-connected offers Manage connections. Add tests, then set Done in this PR.",
   "blocker": null,
   "evidence": [
     {
