@@ -169,7 +169,11 @@ import {
 import { IntensityReadout } from './IntensityReadout.js';
 import { IntensitySegmentedControl } from './IntensitySegmentedControl.js';
 import { ClassReadinessSummary } from './ClassReadinessSummary.js';
-import { TrackSearch, providerTrackKeysFromRun } from './TrackSearch.js';
+import {
+  TrackSearch,
+  classifyPlaylistDrillInError,
+  providerTrackKeysFromRun,
+} from './TrackSearch.js';
 import { CreateClassDialog, type CreateClassMode } from './CreateClassDialog.js';
 import { ClassPlanBlocks, planBlockOptionLabel, type PlanBlockTarget } from './ClassPlanBlocks.js';
 import { SourceList, sourceCandidateKey } from './SourceList.js';
@@ -1230,6 +1234,10 @@ export function Dashboard({
             initialPlaylistId={playlistBrowse.playlistId}
             onClose={() => setPlaylistBrowse(null)}
             onCreateClass={handleCreateClassFromPlaylist}
+            onOpenConnections={() => {
+              setPlaylistBrowse(null);
+              setConnectionsOpen(true);
+            }}
           />
         )}
         {cardPreview && (
@@ -4056,6 +4064,7 @@ function PlaylistBrowserDialog({
   initialPlaylistId = null,
   onClose,
   onCreateClass,
+  onOpenConnections,
 }: {
   provider: Provider;
   playlists: ProviderPlaylistSummary[];
@@ -4069,6 +4078,8 @@ function PlaylistBrowserDialog({
     template: ClassTemplate,
     tracks: TrackSearchResult[],
   ) => Promise<void>;
+  /** Reconnect path for a playlist that needs the account reconnected (RF-74). */
+  onOpenConnections?: () => void;
 }) {
   const [template, setTemplate] = useState<ClassTemplate>('cycle');
   const [selectedPlaylist, setSelectedPlaylist] = useState<ProviderPlaylistSummary | null>(null);
@@ -4076,6 +4087,8 @@ function PlaylistBrowserDialog({
   const [loadingTracks, setLoadingTracks] = useState(false);
   const [creatingId, setCreatingId] = useState<string | null>(null);
   const [rowError, setRowError] = useState<string | null>(null);
+  /** API code of a failed playlist open; decides whether Try again can help (RF-74). */
+  const [openErrorCode, setOpenErrorCode] = useState<string | undefined>();
   const [picking, setPicking] = useState(false);
   const label = providerLabel(provider);
 
@@ -4085,10 +4098,12 @@ function PlaylistBrowserDialog({
       setTracks(null);
       setLoadingTracks(true);
       setRowError(null);
+      setOpenErrorCode(undefined);
       try {
         setTracks(await listPlaylistTracks(provider, playlist.playlistId));
       } catch (e) {
         setRowError(errMessage(e));
+        setOpenErrorCode(e instanceof ApiError ? e.code : undefined);
       } finally {
         setLoadingTracks(false);
       }
@@ -4116,6 +4131,12 @@ function PlaylistBrowserDialog({
       setCreatingId(null);
     }
   };
+
+  // A failed open leaves no tracks; classify it so Try again shows only where it can help.
+  const openFailureKind =
+    rowError && selectedPlaylist && tracks == null && !loadingTracks
+      ? classifyPlaylistDrillInError(rowError, openErrorCode)
+      : null;
 
   const handleCreate = async (playlist: ProviderPlaylistSummary) => {
     if (!tracks?.length) {
@@ -4213,12 +4234,30 @@ function PlaylistBrowserDialog({
         </div>
       </div>
 
-      {rowError && (
+      {rowError && openFailureKind !== null && openFailureKind !== 'generic' ? (
+        // An expected limitation, not a broken load (RF-74): the sentence says why.
+        // No Try again; a reauth offers the reconnect path instead.
+        <div
+          role="alert"
+          className="mb-3 flex flex-col items-start gap-2 rounded-control border border-state-caution/35 bg-state-caution/10 p-3 font-ui text-sm text-state-caution"
+        >
+          <span>{rowError}</span>
+          {openFailureKind === 'reauth' && onOpenConnections && (
+            <button
+              type="button"
+              onClick={onOpenConnections}
+              className="min-h-11 rounded-pill border border-state-caution/40 px-3 font-ui text-xs font-semibold text-state-caution rf-focus-ring"
+            >
+              Manage connections
+            </button>
+          )}
+        </div>
+      ) : rowError ? (
         <div className="mb-3 flex flex-wrap items-center gap-2">
           <p role="alert" className="font-ui text-sm text-state-danger">
             {rowError}
           </p>
-          {selectedPlaylist && tracks == null && !loadingTracks && (
+          {openFailureKind === 'generic' && selectedPlaylist && (
             <button
               type="button"
               onClick={() => void openPlaylist(selectedPlaylist)}
@@ -4228,7 +4267,7 @@ function PlaylistBrowserDialog({
             </button>
           )}
         </div>
-      )}
+      ) : null}
 
       {selectedPlaylist ? (
         <div className="flex flex-col gap-3">
@@ -4242,6 +4281,7 @@ function PlaylistBrowserDialog({
                 setSelectedPlaylist(null);
                 setTracks(null);
                 setRowError(null);
+                setOpenErrorCode(undefined);
                 setPicking(false);
               }}
               className="min-h-11 rounded-pill border border-interactive/30 px-3 font-ui text-xs text-text-secondary hover:text-text-primary"

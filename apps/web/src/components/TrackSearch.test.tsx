@@ -35,6 +35,8 @@ vi.mock('../lib/api.js', async (original) => {
 });
 
 const QUOTA_MESSAGE = "Spotify's usage limit for Ritmo is used up. Try again later.";
+const ALLOWLIST_MESSAGE =
+  'Spotify has not allowlisted this account. Add it under User Management in the Spotify developer dashboard, then retry.';
 
 /** A SoundCloud connection view; `expiresAt` decides connected vs expired. */
 function soundcloudConnection(expiresAt: number | null): MusicConnectionView {
@@ -738,6 +740,34 @@ describe('TrackSearch saved-playlists drill-in', () => {
 
     expect(await screen.findByText(QUOTA_MESSAGE)).toBeTruthy();
     expect(screen.queryByText(/Couldn’t load your Spotify playlists/)).toBeNull();
+    // Retrying a spent quota now repeats the 429 (RF-74).
+    expect(screen.queryByRole('button', { name: /try again/i })).toBeNull();
+  });
+
+  it('shows the allowlist sentence on the playlist index and keeps Try again (RF-74)', async () => {
+    vi.mocked(api.listPlaylists).mockRejectedValueOnce(
+      new api.ApiError(ALLOWLIST_MESSAGE, 'SPOTIFY_DEVELOPMENT_MODE', 403),
+    );
+    render(<TrackSearch classId="c1" onAdded={() => {}} />);
+    fireEvent.click(screen.getByRole('button', { name: 'Spotify' }));
+    fireEvent.click(screen.getByRole('button', { name: 'Saved playlists' }));
+
+    expect((await screen.findByRole('alert')).textContent).toContain(ALLOWLIST_MESSAGE);
+    // The sentence says to retry once the account is allowlisted, so retry stays.
+    expect(screen.getByRole('button', { name: /try again/i })).toBeTruthy();
+  });
+
+  it('keeps Try again on a generic playlist-index failure and re-fetches (RF-74)', async () => {
+    vi.mocked(api.listPlaylists).mockRejectedValueOnce(
+      new api.ApiError('Request failed (502)', 'PROVIDER_UNAVAILABLE', 502),
+    );
+    render(<TrackSearch classId="c1" onAdded={() => {}} />);
+    fireEvent.click(screen.getByRole('button', { name: 'Spotify' }));
+    fireEvent.click(screen.getByRole('button', { name: 'Saved playlists' }));
+
+    expect(await screen.findByText(/Couldn’t load your Spotify playlists/)).toBeTruthy();
+    fireEvent.click(screen.getByRole('button', { name: /try again/i }));
+    await waitFor(() => expect(api.listPlaylists).toHaveBeenCalledTimes(2));
   });
 
   it('surfaces a generic drill-in failure as a retryable error and re-fetches on retry', async () => {
@@ -836,6 +866,13 @@ describe('classifyPlaylistDrillInError (unit)', () => {
         'Spotify only lets Ritmo read playlists you own or collaborate on.',
       ),
     ).toBe('forbidden');
+  });
+
+  it('classifies quota as a limit, and the allowlist as retryable once fixed (RF-74)', () => {
+    expect(classifyPlaylistDrillInError('Usage limit.', 'PROVIDER_QUOTA_EXCEEDED')).toBe('limit');
+    expect(classifyPlaylistDrillInError('Not on the list.', 'SPOTIFY_DEVELOPMENT_MODE')).toBe(
+      'generic',
+    );
   });
 
   it('prefers stable API codes over message wording', () => {

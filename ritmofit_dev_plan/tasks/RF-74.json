@@ -3,15 +3,15 @@
   "id": "RF-74",
   "title": "Spotify playlist dialog offers Try again where retry cannot help",
   "kind": "task",
-  "status": "backlog",
-  "priority": "untriaged",
+  "status": "done",
+  "priority": "P2",
   "parent": "RF-92",
   "dependsOn": [],
   "acceptance": [
     "Identify each unretryable playlist error and its actionable recovery.",
-    "After approved implementation, verify retryable errors retain retry and unretryable errors offer the appropriate recovery."
+    "Retryable playlist errors keep Try again; unretryable ones show their reason with no Try again, and a reconnect error offers Manage connections."
   ],
-  "nextAction": "Owner asked to start RF-74 in the Air session on 2026-11-13 (next in the web plan; closes RF-92); the session closed after read-only orientation, so claim it on a branch and draft PR first. Mapping so far in apps/web/src/components/TrackSearch.tsx on main b22ec04c: the saved-playlist drill-in already has no retry for forbidden, quota and reauth (classifyPlaylistDrillInError), and paste-a-link offers Manage connections for NOT_CONNECTED/REAUTH_REQUIRED. Two gaps found: the saved-playlists index shows Try again on a 429 PROVIDER_QUOTA_EXCEEDED (only reauth is split out before the retry branch), and catalog search shows Try again on the same quota error. Still to review: paste-a-link forbidden/quota copy and any other unretryable code. Then propose the mapping, implement with TrackSearch tests, and close RF-92 with it.",
+  "nextAction": null,
   "blocker": null,
   "evidence": [
     {
@@ -37,10 +37,18 @@
       "ref": "apps/web/src/components/TrackSearch.tsx",
       "summary": "Read-only on main b22ec04c, 2026-11-13: classifyPlaylistDrillInError keeps retry off the drill-in for PROVIDER_FORBIDDEN, PROVIDER_QUOTA_EXCEEDED and reauth; the playlist index (savedPlaylists === null branch) and search-mode error row still render Try again for PROVIDER_QUOTA_EXCEEDED. Not run in a browser.",
       "checkedOn": "2026-11-13"
+    },
+    {
+      "kind": "pr",
+      "ref": "https://github.com/steven-crosby/ritmofit-web/pull/764",
+      "summary": "Mapping: PROVIDER_FORBIDDEN and PROVIDER_QUOTA_EXCEEDED show their sentence with no retry; REAUTH_REQUIRED/NOT_CONNECTED offer Manage connections; SPOTIFY_DEVELOPMENT_MODE keeps Try again because its sentence says to retry once the account is allowlisted; timeouts, 5xx and others keep Try again. Music tab PlaylistBrowserDialog and the builder saved-playlist index now follow it (the builder drill-in already did). Dashboard and TrackSearch tests cover each kind; 4 of the new tests fail on the old components. jsdom with mocked API only: not checked in a browser against real Spotify errors.",
+      "checkedOn": "2026-11-13"
     }
   ],
-  "resolution": null,
-  "followUps": [],
+  "resolution": "The Music tab playlist dialog and the builder saved-playlist index offer Try again only for failures a retry can fix; forbidden and quota show their reason, and reauth offers Manage connections (#764). Catalog search has the same quota gap and moved to RF-219.",
+  "followUps": [
+    "RF-219"
+  ],
   "imported": {
     "status": "Queued",
     "title": "Spotify playlist dialog offers Try again where retry cannot help"

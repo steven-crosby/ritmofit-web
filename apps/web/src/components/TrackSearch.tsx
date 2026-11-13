@@ -41,7 +41,7 @@ import {
   ApiError,
 } from '../lib/api.js';
 import { errMessage } from '../lib/errors.js';
-import { PROVIDER_QUOTA_CODE } from '../lib/music-library.js';
+import { PROVIDER_QUOTA_CODE, libraryFailureExplainsItself } from '../lib/music-library.js';
 import {
   PLAYLIST_LINK_PLACEHOLDER,
   playlistProviderFromUrl,
@@ -174,6 +174,8 @@ export function browseAnnouncement(input: {
  *     collaborate on."                                    → 'forbidden' (retry can't help)
  *   - 429 PROVIDER_QUOTA_EXCEEDED → "Spotify's usage limit for Ritmo is used up. Try
  *     again later."                                       → 'limit' (retry now can't help)
+ *   - 403 SPOTIFY_DEVELOPMENT_MODE → "…allowlisted… then retry." → 'generic': a retry
+ *     helps once the account is added in the developer dashboard, so it keeps Try again.
  *   - 409 REAUTH_REQUIRED    → "Reconnect your <Provider> account."    ┐
  *   - 409 NOT_CONNECTED      → "Connect your <Provider> account first." ┘ → 'reauth'
  *   - anything else (e.g. 503 "<Provider> is not configured.")         → 'generic'
@@ -494,7 +496,7 @@ export function TrackSearch({
         const reauth = classifyProviderLibraryError(message, code) === 'reauth';
         setSavedPlaylists(null);
         setError(
-          reauth || code === PROVIDER_QUOTA_CODE
+          reauth || libraryFailureExplainsItself(code)
             ? errMessage(e)
             : `Couldn’t load your ${providerLabel(provider)} playlists.`,
         );
@@ -1251,6 +1253,11 @@ export function TrackSearch({
           error &&
           classifyProviderLibraryError(error, libraryErrorCode) === 'reauth' ? (
           renderLibraryReauth(error)
+        ) : savedPlaylists === null && error && libraryErrorCode === PROVIDER_QUOTA_CODE ? (
+          // A spent quota (RF-74): the sentence says to wait; retrying now repeats the 429.
+          <p role="alert" className="font-ui text-sm text-state-caution">
+            {error}
+          </p>
         ) : savedPlaylists === null ? (
           <p role="alert" className="flex flex-col gap-1 font-ui text-sm text-state-danger">
             <span>{error ?? `Couldn’t load your ${providerLabel(provider)} playlists.`}</span>
