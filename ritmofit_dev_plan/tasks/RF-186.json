@@ -3,7 +3,7 @@
   "id": "RF-186",
   "title": "A quick Live timeline tap can leave the class paused, then it resumes by itself",
   "kind": "task",
-  "status": "blocked",
+  "status": "backlog",
   "priority": "P2",
   "parent": null,
   "dependsOn": [],
@@ -12,8 +12,8 @@
     "The clock keeps running (or holds only while a start is pending, labelled as such) and audio returns without a tap.",
     "A test covers the state sequence that produced Paused."
   ],
-  "nextAction": "Against production (main f55b449a since 2026-11-07; Live changed only in #746's queue Retry and its own chunk, not the timeline). This is an instrumented run, not a feel check: Safari Web Inspector open, console saved by the owner. The owner re-runs Live on iPhone Safari with ?playback-timing=1 on an Apple Music class: tap timeline tracks in quick succession until Live shows Paused (or 10 rounds without it), and save the console from the first tap to the resume. The lines needed: [ritmo live] status <kind> (every coordinator status Live receives), [ritmo live] toggle-pause / toggle-play <how> (any activation of the Pause/Play button, with pointer type, trusted flag and x/y), [ritmo live-timeline] pointer-* lines and the Apple #N lines. A toggle-pause line during the taps means the primary button received an activation the owner did not intend (then the fix is layout/hit-target work); no toggle line but a status paused means a runtime path this analysis missed. By the owner's decision (2026-11-06), 10 clean rounds are recorded as evidence only: the task stays Blocked until a Paused is captured.",
-  "blocker": "Device evidence: the owner's instrumented iPhone Safari run (see nextAction) must capture the [ritmo live] lines around a Paused. Source and tests give no credible cause, so no fix was guessed.",
+  "nextAction": "Parked under D27 (owner, 2026-11-12): Apple Music work is paused and Apple Music stays in the app; restart only if the owner reopens Apple Music. The quick-tap Paused was seen only on an Apple Music class; reopen if a Spotify class shows it. Before parking (blocked): Against production (main f55b449a since 2026-11-07; Live changed only in #746's queue Retry and its own chunk, not the timeline). This is an instrumented run, not a feel check: Safari Web Inspector open, console saved by the owner. The owner re-runs Live on iPhone Safari with ?playback-timing=1 on an Apple Music class: tap timeline tracks in quick succession until Live shows Paused (or 10 rounds without it), and save the console from the first tap to the resume. The lines needed: [ritmo live] status <kind> (every coordinator status Live receives), [ritmo live] toggle-pause / toggle-play <how> (any activation of the Pause/Play button, with pointer type, trusted flag and x/y), [ritmo live-timeline] pointer-* lines and the Apple #N lines. A toggle-pause line during the taps means the primary button received an activation the owner did not intend (then the fix is layout/hit-target work); no toggle line but a status paused means a runtime path this analysis missed. By the owner's decision (2026-11-06), 10 clean rounds are recorded as evidence only: the task stays Blocked until a Paused is captured.",
+  "blocker": null,
   "evidence": [
     {
       "kind": "observation",
@@ -80,6 +80,12 @@
       "ref": "https://github.com/steven-crosby/ritmofit-web/pull/743#issuecomment-6675173684",
       "summary": "Owner decision, 2026-11-06: \"Keep RF-186 open until a Paused is captured\". Clean rounds are evidence only; they do not close the task.",
       "checkedOn": "2026-11-07"
+    },
+    {
+      "kind": "document",
+      "ref": "ritmofit_dev_plan/decisions.md#d27--spotify-first-apple-music-work-is-parked-resolved-2026-11-12",
+      "summary": "Owner decision D27 parks this Apple Music task (was blocked, P2). No verification claim changes.",
+      "checkedOn": "2026-11-12"
     }
   ],
   "resolution": null,

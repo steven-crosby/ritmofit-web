@@ -12,7 +12,7 @@
     "If the adapter is re-prepared for another track while a deferred failure report is pending, the banner names the track that failed, or the stale report is dropped; it never names the next track.",
     "Component or adapter tests cover both cases with mock MusicKit."
   ],
-  "nextAction": "From the #668 final review (items 1-2); both behaviors are already on main, not introduced by #668. The deferred reportPlaybackFailed in apps/web/src/lib/playback/apple-music-adapter.ts checks only !this.destroyed. Playback code is owner-gated. Agent-created: Backlog until the owner sets Ready.",
+  "nextAction": "Parked under D27 (owner, 2026-11-12): Apple Music work is paused and Apple Music stays in the app; restart only if the owner reopens Apple Music. Before parking (backlog): From the #668 final review (items 1-2); both behaviors are already on main, not introduced by #668. The deferred reportPlaybackFailed in apps/web/src/lib/playback/apple-music-adapter.ts checks only !this.destroyed. Playback code is owner-gated. Agent-created: Backlog until the owner sets Ready.",
   "blocker": null,
   "evidence": [
     {
@@ -20,6 +20,12 @@
       "ref": "https://github.com/steven-crosby/ritmofit-web/pull/668#issuecomment-6539391050",
       "summary": "Final review of #668 on b70f529, items 1-2: onPlaybackError waits for the desktop-Safari FairPlay probe (up to 2 s) before the banner although the probe word now goes only to the console; the deferred reportPlaybackFailed checks only !this.destroyed, so a re-prepare while the probe is pending can name the next track.",
       "checkedOn": "2026-10-31"
+    },
+    {
+      "kind": "document",
+      "ref": "ritmofit_dev_plan/decisions.md#d27--spotify-first-apple-music-work-is-parked-resolved-2026-11-12",
+      "summary": "Owner decision D27 parks this Apple Music task (was backlog, P3). No verification claim changes.",
+      "checkedOn": "2026-11-12"
     }
   ],
   "resolution": null,

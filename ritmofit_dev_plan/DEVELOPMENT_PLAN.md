@@ -21,6 +21,7 @@
 <!-- Claude Code (Air), 2026-11-06: RF-188 deploy 75f09a1; Next step rewritten (see HISTORY). -->
 <!-- Claude Code (Air), 2026-11-07: Web deploy f55b449a; RF-187 moved to the instrumented run (#743 review). -->
 <!-- Claude Code (Neo), 2026-11-07: D26 focus line (RF-212). -->
+<!-- Claude Code (Air), 2026-11-12: D27 Spotify first, Apple Music parked; machine split recorded (RF-214). -->
 
 **Focus (D26, 2026-11-07):** native iOS and macOS apps on TestFlight first, so the owner's wife uses
 them now: M0a iOS on TestFlight, M0b macOS, M1 Spotify in native Live, then native class building
@@ -36,19 +37,21 @@ This records PR is not in the deployed tree. See [HISTORY](./HISTORY.md).
 sign-out (the rest of the native check passed on the simulator, #715), and on web two `expiresAt`
 readings from the app's own get-session at least 24 hours apart (first not yet taken). The signed-in
 `/auth/session` checks wait on a renewed QA token ([RF-155](./tasks/RF-155.json)).
-**Next step:** the owner's checks on production. iPhone feel pass: the Live timeline
-[RF-188](./tasks/RF-188.json) (tap to track start, drag then lift, a long still hold).
-Instrumented iPhone runs with `?playback-timing=1` and Safari Web Inspector open, console saved:
-[RF-185](./tasks/RF-185.json) (one `seek-sent` per tap), [RF-187](./tasks/RF-187.json) (no unhandled
-`play()` rejection) and [RF-186](./tasks/RF-186.json) (console around any Paused; Blocked until one is
-captured). [RF-172](./tasks/RF-172.json): ▶
-audio on Apple Music and SoundCloud, on desktop and iPhone, with Apple Music signed in first;
-Spotify desktop is [RF-205](./tasks/RF-205.json). [RF-108](./tasks/RF-108.json) waits on
-criterion 4 (Retry after a hang) and [RF-128](./tasks/RF-128.json) on a 5G Start. RF-134's live
-labels are still unchecked.
-**Window:** the Apple Music subscription ends around 2026-11-27, so Phase 1 work that needs a live
-Apple account goes first. Spotify is reopened; liked songs load in production for the owner account
-(playlists and playback not rechecked; [RF-92](./tasks/RF-92.json)).
+**Spotify first (D27, 2026-11-12):** Spotify working and optimized is the music priority; Apple
+Music work is parked and Apple Music stays in the app
+([decision](./decisions.md#d27--spotify-first-apple-music-work-is-parked-resolved-2026-11-12)). The
+Apple Music device checks (RF-128, RF-185, RF-186, RF-187, RF-108) are parked in Backlog and no
+longer owed; the Apple Music subscription end no longer sets the order. Spotify development mode
+allows 5 allowlisted users (D26), so other instructors cannot use Spotify in Ritmo yet.
+**Machines (owner, 2026-11-12):** temporary split by repo, the Neo on macOS/iOS and the Air on web
+([record](https://github.com/steven-crosby/ritmofit-ios/issues/113#issuecomment-6840223222)). The
+web priorities under this split are not yet set by the owner.
+**Next step:** the owner's checks on production. iPhone feel pass on a Spotify class: the Live
+timeline [RF-188](./tasks/RF-188.json) (tap to track start, drag then lift, a long still hold).
+[RF-205](./tasks/RF-205.json): Spotify ▶ on desktop. [RF-172](./tasks/RF-172.json): the owner
+decides whether SoundCloud ▶ alone closes it while Apple Music is parked. Spotify liked songs load in
+production for the owner account (playlists and playback not rechecked; [RF-92](./tasks/RF-92.json)).
+RF-134's live labels are still unchecked.
 **Open owner decisions:** whether Live stops showing "No BPM set" on every cue
 ([RF-168](./tasks/RF-168.json)); the review queue (RF-91, RF-93, RF-94, RF-96, RF-16, RF-23, RF-32);
 whether [RF-80](./tasks/RF-80.json) is cancelled or rescoped after RF-124's root cause; the native
@@ -57,6 +60,10 @@ sign-out Origin design ([RF-180](./tasks/RF-180.json)); Live finish placement (s
 ## Phases
 
 <!-- Claude Code, 2026-10-29: Owner-approved phased plan (session 2026-10-29). -->
+
+> **D27 (2026-11-12):** Phase 1's Apple Music records are parked and Spotify comes first. The new
+> phase order is the owner's to set; until then, read this table as the 2026-10-29 order with
+> Phase 1's Apple Music items paused.
 
 Ordered by the Apple Music window, then by the audit's P0s. A phase lists records; each record's
 status, acceptance and next action stay canonical. Agents still need the owner's Ready, a brief or a
