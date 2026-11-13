@@ -24,7 +24,7 @@
 <!-- Claude Code (Air), 2026-11-12: D27 Spotify first, Apple Music parked; machine split recorded (RF-214). -->
 <!-- Claude Code (Air), 2026-11-12: Deploys 1b30e7e1 (#756) and eaddb1da (#758, RF-216); RF-217 is the next owner check. -->
 <!-- Claude Code (Air), 2026-11-13: Web priorities under the machine split (owner approved in session). -->
-<!-- Claude Code (Air), 2026-11-13: Deploy 579c5950 (#761, RF-158). -->
+<!-- Claude Code (Air), 2026-11-13: Deploy 579c5950 (#761, RF-158); RF-158 owner check passed. -->
 
 **Focus (D26, 2026-11-07):** native iOS and macOS apps on TestFlight first, so the owner's wife uses
 them now: M0a iOS on TestFlight, M0b macOS, M1 Spotify in native Live, then native class building
@@ -57,8 +57,9 @@ Spotify start), [RF-74](./tasks/RF-74.json) (closes RF-92), [RF-218](./tasks/RF-
 [RF-157](./tasks/RF-157.json) (Spotify library depth), then [RF-138](./tasks/RF-138.json) after a design
 pass. [RF-167](./tasks/RF-167.json) waits on a non-allowlisted Spotify account to probe. Owner checks
 alongside: RF-217, RF-205, RF-148, RF-155. Account security (RF-116, RF-140) is not in this order.
-**Next step:** the owner's checks on production. [RF-158](./tasks/RF-158.json): scrub, skip, and pause then
-resume while a Spotify track is still starting (desktop Chrome). [RF-217](./tasks/RF-217.json): Spotify stays playable past the
+**Next step:** [RF-74](./tasks/RF-74.json) (closes RF-92); RF-158 is Done (owner heard scrub, skip, and pause
+then resume during a Spotify start land correctly on production, 2026-11-13). Owner checks on production:
+[RF-217](./tasks/RF-217.json): Spotify stays playable past the
 hour and asks to reconnect only for a dead grant (desktop Chrome, three steps). iPhone feel pass on a Spotify class: the Live
 timeline [RF-188](./tasks/RF-188.json) (tap to track start, drag then lift, a long still hold).
 [RF-205](./tasks/RF-205.json): Spotify ▶ on desktop. [RF-172](./tasks/RF-172.json): the owner

@@ -3,7 +3,7 @@
   "id": "RF-158",
   "title": "Scrubbing or pausing Live during a Spotify track start keeps music playing",
   "kind": "task",
-  "status": "review",
+  "status": "done",
   "priority": "P2",
   "parent": null,
   "dependsOn": [
@@ -14,7 +14,7 @@
     "The Spotify adapter implements the whenIdle() settle signal (the runtime side is already on main: runtime.ts calls adapter.whenIdle()), so runtime.enterTrack waits for a cancelled Spotify start, bounded to about 3 s, and re-checks the epoch before prepare; a never-settling call ends in a bounded, clearly worded error.",
     "Owner device check: audible scrub, pause and resume on desktop Chrome with Spotify."
   ],
-  "nextAction": "RF-158 is deployed (main 579c5950, Worker 78f9eb69, 2026-11-13). Owner device check (criterion 3): desktop Chrome with Spotify Premium, start a Spotify class, then within the first second or two of a track (while it is still starting) (a) scrub to a later point, (b) skip to the next track, (c) pause then resume. Each should end playing at the new position with no \"still finishing\" error. Criteria 1 and 2 are proved with mock players only. Record the result here.",
+  "nextAction": null,
   "blocker": null,
   "evidence": [
     {
@@ -46,8 +46,14 @@
       "ref": "ritmofit_dev_plan/HISTORY.md",
       "summary": "Deploy 2026-11-13: RF-158 live on Worker 78f9eb69 (main 579c5950). Deploy only; no Spotify playback checked.",
       "checkedOn": "2026-11-13"
+    },
+    {
+      "kind": "observation",
+      "ref": "https://ritmofit.studio/",
+      "summary": "Owner listening check on production (Worker 78f9eb69, main 579c5950), desktop Chrome on the Air with Spotify Premium, class \"Ritmo Spotify QA Test\". Claude drove Live through Claude in Chrome; the owner listened and confirmed all three by ear. (a) Scrub: four 30 s keyboard seeks fired back to back at 0:03 of Disturbia landed at 2:03 and kept playing. (b) Skip: a 30 s seek then Next at once played Maneater from its start. (c) Pause then resume: a 30 s seek then Pause and Play at once carried on about 30 s into Maneater. No \"still finishing\" error, no console errors; rf-liveness went start → advancing on both tracks with no stall. That each later command landed while the earlier Connect start was still in flight is inferred from the back-to-back timing, not instrumented.",
+      "checkedOn": "2026-11-13"
     }
   ],
-  "resolution": null,
+  "resolution": "SpotifyAdapter.whenIdle() (#761) makes the runtime wait, bounded, for a cancelled Spotify Connect start before the next one. Mock-player runtime and adapter tests cover criteria 1 and 2; the owner heard scrub, skip and pause then resume during a start land correctly on production desktop Chrome on 2026-11-13 (criterion 3).",
   "followUps": []
 }
