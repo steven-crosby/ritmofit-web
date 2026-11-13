@@ -1,0 +1,27 @@
+{
+  "schemaVersion": 1,
+  "id": "RF-215",
+  "title": "hono patched past GHSA-4m76-xfj5-7975, GHSA-h7mg-cq63-vhpq and GHSA-3gg2-335m-rxc6",
+  "kind": "task",
+  "status": "done",
+  "priority": "P1",
+  "parent": null,
+  "dependsOn": [],
+  "acceptance": [
+    "apps/api depends on hono ~4.13.16 or later, and the lockfile resolves a version at or above 4.13.16 (the patched version for GHSA-4m76-xfj5-7975, GHSA-h7mg-cq63-vhpq and GHSA-3gg2-335m-rxc6).",
+    "pnpm audit:ci passes with no new ignore entries.",
+    "API typecheck, unit tests and D1 integration tests pass on the bump."
+  ],
+  "nextAction": null,
+  "blocker": null,
+  "evidence": [
+    {
+      "kind": "pr",
+      "ref": "https://github.com/steven-crosby/ritmofit-web/pull/756",
+      "summary": "hono ~4.13.16 (lockfile 4.13.18). Local on 2026-11-12: pnpm audit:ci passes; typecheck clean; API unit 655/655 and integration 265/265 pass. Not deployed.",
+      "checkedOn": "2026-11-12"
+    }
+  ],
+  "resolution": "apps/api moves to hono ~4.13.16, resolving 4.13.18, which patches the three advisories; the audit gate passes again. Production gets the patch only with a deploy.",
+  "followUps": []
+}
