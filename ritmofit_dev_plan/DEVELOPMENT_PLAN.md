@@ -23,6 +23,7 @@
 <!-- Claude Code (Neo), 2026-11-07: D26 focus line (RF-212). -->
 <!-- Claude Code (Air), 2026-11-12: D27 Spotify first, Apple Music parked; machine split recorded (RF-214). -->
 <!-- Claude Code (Air), 2026-11-12: Deploys 1b30e7e1 (#756) and eaddb1da (#758, RF-216); RF-217 is the next owner check. -->
+<!-- Claude Code (Air), 2026-11-13: Web priorities under the machine split (owner approved in session). -->
 
 **Focus (D26, 2026-11-07):** native iOS and macOS apps on TestFlight first, so the owner's wife uses
 them now: M0a iOS on TestFlight, M0b macOS, M1 Spotify in native Live, then native class building
@@ -46,7 +47,14 @@ longer owed; the Apple Music subscription end no longer sets the order. Spotify 
 allows 5 allowlisted users (D26), so other instructors cannot use Spotify in Ritmo yet.
 **Machines (owner, 2026-11-12):** temporary split by repo, the Neo on macOS/iOS and the Air on web
 ([record](https://github.com/steven-crosby/ritmofit-ios/issues/113#issuecomment-6840223222)). The
-web priorities under this split are not yet set by the owner.
+web priorities under this split (owner approved in the Air session, 2026-11-13): Spotify working end
+to end, then Live polish, one RF per PR. Order: [RF-158](./tasks/RF-158.json) (scrub or pause during a
+Spotify start), [RF-74](./tasks/RF-74.json) (closes RF-92), [RF-218](./tasks/RF-218.json),
+[RF-136](./tasks/RF-136.json) (preflight groups), [RF-130](./tasks/RF-130.json) and
+[RF-211](./tasks/RF-211.json) (Live polish), [RF-149](./tasks/RF-149.json) and
+[RF-157](./tasks/RF-157.json) (Spotify library depth), then [RF-138](./tasks/RF-138.json) after a design
+pass. [RF-167](./tasks/RF-167.json) waits on a non-allowlisted Spotify account to probe. Owner checks
+alongside: RF-217, RF-205, RF-148, RF-155. Account security (RF-116, RF-140) is not in this order.
 **Next step:** the owner's checks on production. [RF-217](./tasks/RF-217.json): Spotify stays playable past the
 hour and asks to reconnect only for a dead grant (desktop Chrome, three steps). iPhone feel pass on a Spotify class: the Live
 timeline [RF-188](./tasks/RF-188.json) (tap to track start, drag then lift, a long still hold).
