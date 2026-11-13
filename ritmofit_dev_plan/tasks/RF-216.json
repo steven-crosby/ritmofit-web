@@ -3,7 +3,7 @@
   "id": "RF-216",
   "title": "Spotify stays connected while its grant is alive, and a failed refresh is retryable unless the grant is dead (packet 3)",
   "kind": "task",
-  "status": "backlog",
+  "status": "ready",
   "priority": "P1",
   "parent": null,
   "dependsOn": [],
@@ -16,13 +16,19 @@
     "Contract: the OpenAPI entry for GET /providers/spotify/playback-token documents the 502 and 429 responses, regenerated with no drift. The PR tells the Neo, because the native Mac Live uses this route and should treat 502/429 as retry, not reconnect.",
     "Owner browser check on desktop Chrome with Spotify Premium, after a deploy: (1) leave Ritmo and Spotify unused for at least 65 minutes, then open a Spotify-only class: Music and Connections show Spotify Connected, Live preflight passes and Start class is audible within a few seconds with no Reconnect prompt; (2) run a class across the hour mark from the last Spotify use and confirm music keeps playing through it; (3) remove Ritmo in Spotify's account 'Manage apps', then Start a Spotify class: Ritmo asks to reconnect Spotify. Retryable failures (Spotify 5xx/429, network) are proved by tests only; they cannot be forced on production."
   ],
-  "nextAction": "Proposed by RF-92 (Air, 2026-11-12) as audit packet 3. Waits for the owner to agree this scope and set Ready. Owner-gated (provider and playback code). Likely files: packages/music/src/spotify-oauth.ts, packages/music/src/errors.ts, apps/api/src/lib/music/{spotify-playback-token,user-likes,user-playlists}.ts plus a shared refresh-failure helper, apps/web/src/lib/providers.ts, apps/web/src/lib/playback/{coordinator,spotify-adapter}.ts and their tests, apps/api/scripts/generate-openapi.ts. Needs a deploy for the owner's check.",
+  "nextAction": "Owner set Ready on 2026-11-12 (Air session). Implementation follows in its own PR. Owner-gated (provider and playback code). Likely files: packages/music/src/spotify-oauth.ts, packages/music/src/errors.ts, apps/api/src/lib/music/{spotify-playback-token,user-likes,user-playlists}.ts plus a shared refresh-failure helper, apps/web/src/lib/providers.ts, apps/web/src/lib/playback/{coordinator,spotify-adapter}.ts and their tests, apps/api/scripts/generate-openapi.ts. Needs a deploy for the owner's check.",
   "blocker": null,
   "evidence": [
     {
       "kind": "pr",
       "ref": "https://github.com/steven-crosby/ritmofit-web/pull/757",
       "summary": "RF-92 triage on main f9aba1b7 that proposed this record; see RF-92's evidence for the reconfirmed C-1 and C-2 code paths.",
+      "checkedOn": "2026-11-12"
+    },
+    {
+      "kind": "observation",
+      "ref": "https://github.com/steven-crosby/ritmofit-web/pull/757#issuecomment-6841427416",
+      "summary": "Owner set this task Ready in the Air session, 2026-11-12.",
       "checkedOn": "2026-11-12"
     }
   ],
