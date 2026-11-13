@@ -494,6 +494,97 @@ describe('adversarial Spotify regressions', () => {
     await replacement.play();
     replacement.destroy();
   });
+  describe('whenIdle settle signal (RF-158)', () => {
+    function heldStart() {
+      let resolve!: () => void;
+      const pending = new Promise<void>((done) => {
+        resolve = done;
+      });
+      return { pending, resolve };
+    }
+
+    it('is null before play and after a start settles', async () => {
+      const player = new FakePlayer();
+      const adapter = new SpotifyAdapter({}, makeHost(player).host);
+      await adapter.prepare(makeEntry(), { startMs: 0, endMs: 180000 });
+      expect(adapter.whenIdle()).toBeNull();
+      await adapter.play();
+      await Promise.resolve();
+      expect(adapter.whenIdle()).toBeNull();
+      adapter.destroy();
+    });
+
+    it('resolves once a cancelled start settles and pauses, then a replacement starts at the new cue', async () => {
+      const player = new FakePlayer();
+      const held = heldStart();
+      const { host } = makeHost(player);
+      const startTrack = vi.fn().mockReturnValueOnce(held.pending).mockResolvedValue(undefined);
+      host.startTrack = startTrack as unknown as SpotifyAdapterHost['startTrack'];
+      const first = new SpotifyAdapter({}, host);
+      await first.prepare(makeEntry(), { startMs: 0, endMs: 180000 });
+      const start = first.play();
+      const cancelled = expect(start).rejects.toThrow('cancelled');
+      first.destroy();
+
+      const idle = first.whenIdle();
+      expect(idle).not.toBeNull();
+      let released = false;
+      void idle!.then(() => {
+        released = true;
+      });
+      await Promise.resolve();
+      expect(released).toBe(false);
+
+      held.resolve();
+      await cancelled;
+      await idle;
+      // The settle pause ran before the next start was let through.
+      expect(player.calls.filter((call) => call === 'pause')).toHaveLength(2);
+
+      const next = new SpotifyAdapter({}, host);
+      await next.prepare(makeEntry(), { startMs: 0, endMs: 180000 });
+      await next.seek(42_000);
+      await next.play();
+      expect(startTrack).toHaveBeenCalledTimes(2);
+      expect(startTrack.mock.calls[1][0]).toMatchObject({ positionMs: 42_000 });
+      next.destroy();
+    });
+
+    it('bounds the wait from the cancel; a start still pending past it refuses with a Retry message', async () => {
+      vi.useFakeTimers();
+      try {
+        const player = new FakePlayer();
+        const held = heldStart();
+        const { host } = makeHost(player);
+        host.startTrack = () => held.pending;
+        const first = new SpotifyAdapter({}, { ...host, settleWaitMs: 2_000 });
+        await first.prepare(makeEntry(), { startMs: 0, endMs: 180000 });
+        const start = first.play();
+        const cancelled = expect(start).rejects.toThrow('cancelled');
+        first.destroy();
+        await vi.advanceTimersByTimeAsync(500);
+
+        let released = false;
+        void first.whenIdle()!.then(() => {
+          released = true;
+        });
+        await vi.advanceTimersByTimeAsync(1_400);
+        expect(released).toBe(false);
+        await vi.advanceTimersByTimeAsync(100);
+        expect(released).toBe(true);
+
+        const next = new SpotifyAdapter({}, host);
+        await expect(next.prepare(makeEntry(), { startMs: 0, endMs: 180000 })).rejects.toThrow(
+          /still finishing the previous start request\. Retry in a moment/,
+        );
+        held.resolve();
+        await cancelled;
+        expect(first.whenIdle()).toBeNull();
+      } finally {
+        vi.useRealTimers();
+      }
+    });
+  });
   it('reports blocked autoplay and invalidates the browser activation', async () => {
     const player = new FakePlayer();
     const onError = vi.fn();
