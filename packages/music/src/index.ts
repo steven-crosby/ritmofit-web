@@ -20,6 +20,7 @@ export {
   ProviderError,
   InvalidProviderCursorError,
   ProviderQuotaExceededError,
+  ProviderTokenError,
   PlaylistOverLimitError,
   abortError,
   isAbortError,

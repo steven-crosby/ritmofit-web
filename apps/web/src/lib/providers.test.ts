@@ -146,6 +146,33 @@ describe('providerConnectionState', () => {
     expect(providerConnectionState('soundcloud', { expiresAt: NOW }, NOW)).toBe('expired');
     expect(providerConnectionState('soundcloud', { expiresAt: NOW - 1 }, NOW)).toBe('expired');
   });
+
+  it('keeps Spotify connected after its access-token expiry passes (server refreshes, RF-216)', () => {
+    expect(providerConnectionState('spotify', { expiresAt: NOW - 1 }, NOW)).toBe('connected');
+    expect(providerConnectionState('spotify', { expiresAt: NOW }, NOW)).toBe('connected');
+  });
+
+  it('reports Spotify expired once its expiry passed and the server can no longer refresh', () => {
+    expect(
+      providerConnectionState('spotify', { expiresAt: NOW - 1, refreshable: false }, NOW),
+    ).toBe('expired');
+    expect(providerConnectionState('spotify', { expiresAt: NOW - 1, refreshable: true }, NOW)).toBe(
+      'connected',
+    );
+    // Not yet expired: still connected even without a refresh token.
+    expect(
+      providerConnectionState('spotify', { expiresAt: NOW + 1, refreshable: false }, NOW),
+    ).toBe('connected');
+  });
+
+  it('reports expired for any provider the API reported as needing re-auth', () => {
+    expect(
+      providerConnectionState('spotify', { expiresAt: NOW + 1, reauthRequired: true }, NOW),
+    ).toBe('expired');
+    expect(
+      providerConnectionState('soundcloud', { expiresAt: null, reauthRequired: true }, NOW),
+    ).toBe('expired');
+  });
 });
 
 describe('spotifyScopeHasSavedPlaylists', () => {

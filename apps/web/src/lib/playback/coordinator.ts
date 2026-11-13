@@ -27,7 +27,10 @@ import type {
 } from './types.js';
 
 /** The connection fields selection needs — a subset of `MusicConnectionView`. */
-export type ConnectionLike = Pick<MusicConnectionView, 'provider' | 'expiresAt' | 'scope'>;
+export type ConnectionLike = Pick<
+  MusicConnectionView,
+  'provider' | 'expiresAt' | 'scope' | 'refreshable'
+>;
 
 /** Inputs shared by selection and preflight. */
 export interface SelectionOptions {

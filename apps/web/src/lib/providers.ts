@@ -102,19 +102,36 @@ export const ALL_PROVIDERS_LABELLED = providerValues.every((p) => p in PROVIDER_
 export type ProviderConnectionState = 'connected' | 'expired' | 'disconnected' | 'catalog-only';
 
 /**
+ * Providers whose `expiresAt` is only the hourly access-token expiry: the server
+ * refreshes the token on use (playback token, likes, playlists), so a passed
+ * `expiresAt` is not a lost grant while the connection is `refreshable` (RF-216,
+ * audit C-1). The server clears `refreshable` when the provider refuses the grant,
+ * and a 409 REAUTH_REQUIRED seen by a caller is passed as `reauthRequired`.
+ */
+const SERVER_REFRESHED_PROVIDERS: ReadonlySet<Provider> = new Set<Provider>(['spotify']);
+
+/**
  * Derive the connection state. `catalog-only` providers have no per-user account
- * integration; a connection whose `expiresAt` has passed is `expired` (re-auth
- * needed); a present, unexpired connection is `connected`; everything else is
- * `disconnected`. `now` is injected so the mapping is pure and unit-testable.
+ * integration; a connection the API reported as needing re-auth, or (for a provider
+ * the server does not refresh) whose `expiresAt` has passed, is `expired`; a present
+ * connection is otherwise `connected`; everything else is `disconnected`. `now` is
+ * injected so the mapping is pure and unit-testable.
  */
 export function providerConnectionState(
   provider: Provider,
-  connection: { expiresAt: number | null } | undefined,
+  connection:
+    | { expiresAt: number | null; reauthRequired?: boolean; refreshable?: boolean }
+    | undefined,
   now: number,
 ): ProviderConnectionState {
   if (!supportsUserAccount(provider)) return 'catalog-only';
   if (!connection) return 'disconnected';
-  if (connection.expiresAt != null && connection.expiresAt <= now) return 'expired';
+  if (connection.reauthRequired) return 'expired';
+  const refreshedOnUse =
+    SERVER_REFRESHED_PROVIDERS.has(provider) && connection.refreshable !== false;
+  if (connection.expiresAt != null && connection.expiresAt <= now && !refreshedOnUse) {
+    return 'expired';
+  }
   return 'connected';
 }
 
@@ -188,7 +205,14 @@ export interface ProviderCapabilityTruth {
  */
 export function providerCapabilityTruth(
   provider: Provider,
-  connection: { expiresAt: number | null; scope: string | null } | undefined,
+  connection:
+    | {
+        expiresAt: number | null;
+        scope: string | null;
+        reauthRequired?: boolean;
+        refreshable?: boolean;
+      }
+    | undefined,
   now: number,
   freshness: ProviderCapabilityFreshness = 'verified',
 ): ProviderCapabilityTruth {

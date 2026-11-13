@@ -182,7 +182,7 @@ update/delete/attach are **owner-only** (a simple ownership check, *not* `requir
 | POST | `/providers/track-import` | Import a provider result into the caller's per-user track library with provider refs. Also used for bulk playlist import (the web client calls this in concurrency-4 batches for "Import all N"). |
 | POST | `/providers/:provider/connect` | Start provider OAuth and return the provider authorization URL. Apple Music uses the concrete MusicKit routes below instead. |
 | GET | `/providers/:provider/callback` | Complete provider OAuth and store encrypted tokens. |
-| GET | `/providers/connections` | List the caller's connected providers. |
+| GET | `/providers/connections` | List the caller's connected providers. Each row carries `refreshable` (RF-216, 2026-11-12): true while the server holds a refresh token it can use. Spotify is still connected after `expiresAt` passes while `refreshable` is true; the server clears it when Spotify refuses the refresh grant, so the row then needs a reconnect. |
 | DELETE | `/providers/:provider/connection` | Disconnect a provider and enqueue required provider-metadata purge work. |
 | GET | `/providers/apple_music/config` | Return the developer token and storefront used to configure MusicKit JS. |
 | POST | `/providers/apple_music/connection` | Store the Music-User-Token returned by MusicKit JS, encrypted at rest. |
@@ -194,7 +194,7 @@ update/delete/attach are **owner-only** (a simple ownership check, *not* `requir
 
 | Method | Path | Purpose |
 |---|---|---|
-| GET | `/providers/spotify/playback-token` | Mint a short-lived Spotify access token scoped for the Web Playback SDK. The token is returned to the client for the SDK session only — never stored server-side after the response. Requires a connected Spotify account with playback-capable scopes. Shipped 2026-07-06. |
+| GET | `/providers/spotify/playback-token` | Mint a short-lived Spotify access token scoped for the Web Playback SDK. The token is returned to the client for the SDK session only — never stored server-side after the response. Requires a connected Spotify account with playback-capable scopes. Shipped 2026-07-06. Errors (RF-216, 2026-11-12): `409` `NOT_CONNECTED`, `PLAYBACK_REAUTH_REQUIRED` or `REAUTH_REQUIRED` (Spotify refused the refresh grant) mean reconnect; `502` `PROVIDER_UNAVAILABLE` and `429` `PROVIDER_QUOTA_EXCEEDED` mean the server-side refresh hit a Spotify outage, network failure or rate limit, so retry rather than reconnect. |
 
 ## Uploads
 

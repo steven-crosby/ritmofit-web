@@ -359,7 +359,9 @@ export function TrackSearch({
   };
   const connection = connections?.find((row) => row.provider === provider);
   const effectiveConnection =
-    connection && libraryReauthProvider === provider ? { ...connection, expiresAt: 0 } : connection;
+    connection && libraryReauthProvider === provider
+      ? { ...connection, reauthRequired: true }
+      : connection;
   const connectionState =
     libraryReauthProvider === provider
       ? 'expired'

@@ -102,7 +102,10 @@ describe('ConnectionsDialog capability gating', () => {
 
 describe('ConnectionsDialog connection-state marks', () => {
   it('renders Session expired on the caution channel with an icon, not tertiary text', async () => {
-    vi.mocked(api.listConnections).mockResolvedValue([{ ...connection('spotify'), expiresAt: 1 }]);
+    // SoundCloud's expiry still reads as expired here; Spotify's does not (RF-216).
+    vi.mocked(api.listConnections).mockResolvedValue([
+      { ...connection('soundcloud'), expiresAt: 1 },
+    ]);
 
     render(<ConnectionsDialog onClose={() => {}} />);
 
@@ -111,6 +114,27 @@ describe('ConnectionsDialog connection-state marks', () => {
     expect(mark?.className).toContain('text-state-caution');
     expect(mark?.className).not.toContain('text-text-tertiary');
     expect(mark?.querySelector('svg[aria-hidden]')).toBeTruthy();
+  });
+
+  it('shows Spotify Connected after its access-token expiry passes (server refreshes, RF-216)', async () => {
+    vi.mocked(api.listConnections).mockResolvedValue([{ ...connection('spotify'), expiresAt: 1 }]);
+
+    render(<ConnectionsDialog onClose={() => {}} />);
+
+    expect(await screen.findByText('Connected')).toBeTruthy();
+    expect(screen.queryByText('Session expired')).toBeNull();
+    expect(document.querySelector('[data-connection-state="expired"]')).toBeNull();
+  });
+
+  it('offers Reconnect Spotify once the server can no longer refresh a dead grant (RF-216)', async () => {
+    vi.mocked(api.listConnections).mockResolvedValue([
+      { ...connection('spotify'), expiresAt: 1, refreshable: false },
+    ]);
+
+    render(<ConnectionsDialog onClose={() => {}} />);
+
+    expect(await screen.findByText('Session expired')).toBeTruthy();
+    expect(screen.getByRole('button', { name: /Reconnect Spotify/ })).toBeTruthy();
   });
 });
 

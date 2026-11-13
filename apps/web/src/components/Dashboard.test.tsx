@@ -2585,20 +2585,29 @@ describe('Dashboard connection-state headers', () => {
 
   it('uses the caution tone for Session expired on Music and Account headers', async () => {
     vi.mocked(api.listClasses).mockResolvedValue(page([]));
-    vi.mocked(api.listConnections).mockResolvedValue([{ ...spotifyConnection(), expiresAt: 1 }]);
+    // SoundCloud's expiry still reads as expired; Spotify's does not (RF-216).
+    vi.mocked(api.listConnections).mockResolvedValue([
+      {
+        ...spotifyConnection(),
+        id: 'conn-soundcloud',
+        provider: 'soundcloud',
+        scope: null,
+        expiresAt: 1,
+      },
+    ]);
     vi.mocked(api.getMe).mockResolvedValue(profile);
 
     renderDashboard();
     fireEvent.click(await screen.findByRole('button', { name: 'Music' }));
 
-    const spotify = await screen.findByRole('button', { name: 'Reconnect Spotify' });
-    const chipMark = spotify.querySelector('[data-connection-state="expired"]');
+    const soundcloud = await screen.findByRole('button', { name: 'Reconnect SoundCloud' });
+    const chipMark = soundcloud.querySelector('[data-connection-state="expired"]');
     expect(chipMark?.className).toContain('text-state-caution');
     expect(chipMark?.className).not.toContain('text-text-tertiary');
     expect(chipMark?.querySelector('svg[aria-hidden]')).toBeTruthy();
-    fireEvent.click(screen.getByRole('button', { name: /^Spotify$/ }));
+    fireEvent.click(screen.getByRole('button', { name: /^SoundCloud$/ }));
     fireEvent.click(screen.getByRole('button', { name: 'Playlists' }));
-    expect(screen.getByText(/Reconnect Spotify to see your library/)).toBeTruthy();
+    expect(screen.getByText(/Reconnect SoundCloud to see your library/)).toBeTruthy();
     const musicExpired = await screen.findAllByText('Session expired');
     expect(musicExpired.length).toBeGreaterThan(0);
     expect(musicExpired.some((node) => node.closest('[data-connection-state="expired"]'))).toBe(
@@ -2613,6 +2622,27 @@ describe('Dashboard connection-state headers', () => {
     expect(accountMark?.className).toContain('text-state-caution');
     expect(accountMark?.className).not.toContain('text-text-tertiary');
     expect(accountMark?.querySelector('svg[aria-hidden]')).toBeTruthy();
+  });
+
+  it('keeps Spotify Connected on Music after its access-token expiry passes (RF-216)', async () => {
+    vi.mocked(api.listClasses).mockResolvedValue(page([]));
+    vi.mocked(api.listConnections).mockResolvedValue([
+      {
+        ...spotifyConnection(
+          'user-library-read streaming playlist-read-private playlist-read-collaborative',
+        ),
+        expiresAt: 1,
+      },
+    ]);
+    vi.mocked(api.getMe).mockResolvedValue(profile);
+
+    renderDashboard();
+    fireEvent.click(await screen.findByRole('button', { name: 'Music' }));
+
+    expect((await screen.findAllByRole('button', { name: /Spotify/ })).length).toBeGreaterThan(0);
+    await waitFor(() => expect(api.listConnections).toHaveBeenCalled());
+    expect(screen.queryByRole('button', { name: 'Reconnect Spotify' })).toBeNull();
+    expect(document.querySelector('[data-connection-state="expired"]')).toBeNull();
   });
 });
 

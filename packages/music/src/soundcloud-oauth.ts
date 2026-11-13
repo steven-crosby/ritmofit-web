@@ -13,7 +13,7 @@
  */
 import { z } from 'zod';
 import type { FetchLike } from './provider.js';
-import { readJson, parseProvider, ProviderError } from './errors.js';
+import { readJson, parseProvider, ProviderTokenError, readOAuthErrorCode } from './errors.js';
 
 const AUTHORIZE_URL = 'https://secure.soundcloud.com/authorize';
 const TOKEN_URL = 'https://secure.soundcloud.com/oauth/token';
@@ -64,7 +64,12 @@ async function postToken(
     body,
   });
   if (!res.ok) {
-    throw new ProviderError('soundcloud', `SoundCloud token endpoint returned ${res.status}`);
+    throw new ProviderTokenError(
+      'soundcloud',
+      'SoundCloud',
+      res.status,
+      await readOAuthErrorCode(res),
+    );
   }
   const t = parseProvider(tokenResponseSchema, await readJson(res, 'soundcloud'), 'soundcloud');
   return {

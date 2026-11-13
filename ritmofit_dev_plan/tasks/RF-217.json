@@ -1,0 +1,27 @@
+{
+  "schemaVersion": 1,
+  "id": "RF-217",
+  "title": "Owner browser check: Spotify stays playable past the hour and reconnects only for a dead grant (RF-216)",
+  "kind": "verification",
+  "status": "backlog",
+  "priority": "P1",
+  "parent": null,
+  "dependsOn": [
+    "RF-216"
+  ],
+  "acceptance": [
+    "On desktop Chrome with Spotify Premium, against a production build that includes RF-216: (1) leave Ritmo and Spotify unused for at least 65 minutes, then open a Spotify-only class: Music and Connections show Spotify Connected, Live preflight passes and Start class is audible within a few seconds with no Reconnect prompt; (2) run a class across the hour mark from the last Spotify use and confirm music keeps playing through it; (3) remove Ritmo in Spotify's account 'Manage apps', then Start a Spotify class: Ritmo asks to reconnect Spotify. Retryable failures (Spotify 5xx/429, network) are proved by tests only; they cannot be forced on production."
+  ],
+  "nextAction": "Needs a deploy of RF-216 (owner approval; provider change, deploy on its own per AGENTS.md), then the owner runs the three steps and records the result here. Real Spotify playback cannot be proved by CI's mock providers.",
+  "blocker": null,
+  "evidence": [
+    {
+      "kind": "pr",
+      "ref": "https://github.com/steven-crosby/ritmofit-web/pull/758",
+      "summary": "Split from RF-216's acceptance because it needs a deploy first.",
+      "checkedOn": "2026-11-12"
+    }
+  ],
+  "resolution": null,
+  "followUps": []
+}

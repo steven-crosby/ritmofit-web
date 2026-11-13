@@ -21,7 +21,7 @@
  */
 import { z } from 'zod';
 import type { FetchLike } from './provider.js';
-import { readJson, parseProvider, ProviderError } from './errors.js';
+import { readJson, parseProvider, ProviderTokenError, readOAuthErrorCode } from './errors.js';
 import type { OAuthTokens } from './soundcloud-oauth.js';
 
 // Available in Workers and Node ≥18 (vitest). Declared so the package needs no
@@ -117,7 +117,7 @@ async function postToken(
     body,
   });
   if (!res.ok) {
-    throw new ProviderError('spotify', `Spotify token endpoint returned ${res.status}`);
+    throw new ProviderTokenError('spotify', 'Spotify', res.status, await readOAuthErrorCode(res));
   }
   const t = parseProvider(tokenResponseSchema, await readJson(res, 'spotify'), 'spotify');
   return {

@@ -21,6 +21,7 @@ import type { Db } from '../db.js';
 import type { Env } from '../types.js';
 import { HttpError } from '../errors.js';
 import { boundFetch } from '../fetch.js';
+import { forgetRefusedRefreshToken, isDeadGrant, refreshFailure } from './refresh-failure.js';
 import { encryptSecret, decryptSecret } from '../crypto.js';
 import { requireEncryptionKey, spotifyCreds } from './provider-config.js';
 import { musicConnections } from '../../db/schema.js';
@@ -40,6 +41,8 @@ const DEFAULT_TTL_MS = 3_600_000;
  *    `streaming` scope, so the SPA must prompt a reconnect *for playback* (distinct
  *    from a dead grant, which the search path surfaces as REAUTH_REQUIRED).
  *  - 409 REAUTH_REQUIRED        — the refresh grant is dead; reconnect.
+ *  - 502 PROVIDER_UNAVAILABLE / 429 PROVIDER_QUOTA_EXCEEDED — the refresh hit a
+ *    Spotify outage, network failure or rate limit; retry, do not reconnect.
  */
 export async function mintSpotifyPlaybackToken(
   db: Db,
@@ -81,21 +84,29 @@ export async function mintSpotifyPlaybackToken(
   }
 
   // Expired (or about to) — refresh, persist the rotated pair, hand back the fresh
-  // token. A failed refresh means the grant is dead → reconnect (never leak detail).
+  // token. A refused grant is dead → reconnect; a Spotify outage, rate limit or
+  // network failure is retryable and must not start OAuth mid-class (RF-216).
+  const reauth = 'Reconnect your Spotify account.';
   if (!conn.refreshTokenEncrypted) {
-    throw new HttpError(409, 'REAUTH_REQUIRED', 'Reconnect your Spotify account.');
+    throw new HttpError(409, 'REAUTH_REQUIRED', reauth);
+  }
+  let refreshToken;
+  try {
+    refreshToken = await decryptSecret(conn.refreshTokenEncrypted, key);
+  } catch {
+    throw new HttpError(409, 'REAUTH_REQUIRED', reauth);
   }
   let tokens;
   try {
-    const refreshToken = await decryptSecret(conn.refreshTokenEncrypted, key);
     tokens = await refreshSpotifyToken({
       clientId: creds.clientId,
       clientSecret: creds.clientSecret,
       refreshToken,
       fetchImpl: boundFetch,
     });
-  } catch {
-    throw new HttpError(409, 'REAUTH_REQUIRED', 'Reconnect your Spotify account.');
+  } catch (err) {
+    if (isDeadGrant(err)) await forgetRefusedRefreshToken(db, conn);
+    throw refreshFailure('spotify', err, reauth);
   }
 
   await db

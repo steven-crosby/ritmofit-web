@@ -1863,7 +1863,9 @@ describe('TrackSearch Spotify paste session snapshot', () => {
   async function openSpotifyPaste() {
     fireEvent.click(screen.getByRole('button', { name: 'Spotify' }));
     fireEvent.click(screen.getByRole('button', { name: 'Import Playlist URL' }));
-    expect(await screen.findByText('Session expired')).toBeTruthy();
+    // A passed access-token expiry is not a lost grant: the server refreshes (RF-216).
+    expect(await screen.findByText('Connected')).toBeTruthy();
+    expect(screen.queryByText('Session expired')).toBeNull();
   }
 
   function submitSpotifyUrl() {
@@ -1871,7 +1873,7 @@ describe('TrackSearch Spotify paste session snapshot', () => {
     fireEvent.click(screen.getByRole('button', { name: 'Import' }));
   }
 
-  it('drops Session expired after a working Spotify paste import', async () => {
+  it('rereads connections after a working Spotify paste import', async () => {
     vi.mocked(api.listConnections)
       .mockResolvedValueOnce([spotifyConnection(1)])
       .mockResolvedValue([spotifyConnection(Date.now() + 3_600_000)]);
@@ -1888,7 +1890,7 @@ describe('TrackSearch Spotify paste session snapshot', () => {
     expect(api.listConnections).toHaveBeenCalledTimes(2);
   });
 
-  it('keeps Session expired when the Spotify paste import fails', async () => {
+  it('shows the reconnect message and does not reread when the Spotify paste import is refused', async () => {
     vi.mocked(api.listConnections).mockResolvedValue([spotifyConnection(1)]);
     vi.mocked(api.importPlaylist).mockRejectedValue(
       new api.ApiError('Reconnect Spotify to import this playlist.', 'REAUTH_REQUIRED', 409),
@@ -1899,7 +1901,6 @@ describe('TrackSearch Spotify paste session snapshot', () => {
     submitSpotifyUrl();
 
     expect(await screen.findByText('Reconnect Spotify to import this playlist.')).toBeTruthy();
-    expect(screen.getByText('Session expired')).toBeTruthy();
     expect(api.listConnections).toHaveBeenCalledTimes(1);
   });
 

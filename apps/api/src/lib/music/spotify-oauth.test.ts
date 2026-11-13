@@ -6,6 +6,7 @@ import {
   spotifyScopeHasPlayback,
   spotifyScopeHasSavedPlaylists,
   SPOTIFY_CONNECT_SCOPE,
+  ProviderTokenError,
   type FetchLike,
 } from '@ritmofit/music';
 
@@ -197,5 +198,32 @@ describe('refreshSpotifyToken', () => {
     expect(tokens.refreshToken).toBeNull();
     expect(calls[0]?.init?.body).toContain('grant_type=refresh_token');
     expect(calls[0]?.init?.body).toContain('refresh_token=ref-1');
+  });
+
+  // RF-216: keep the status and the OAuth error code so callers can tell a dead
+  // grant from an outage; never the body text.
+  it.each([
+    [400, { error: 'invalid_grant', error_description: 'Refresh token revoked' }, 'invalid_grant'],
+    [503, { message: 'upstream down' }, null],
+    [429, 'not json', null],
+  ])('throws ProviderTokenError with status %s', async (status, body, oauthError) => {
+    const fetchImpl: FetchLike = async () => ({
+      ok: false,
+      status,
+      json: async () => {
+        if (typeof body === 'string') throw new SyntaxError('not json');
+        return body;
+      },
+      text: async () => '',
+    });
+    const err = await refreshSpotifyToken({
+      clientId: 'cid',
+      clientSecret: 'sec',
+      refreshToken: 'ref-1',
+      fetchImpl,
+    }).catch((e: unknown) => e);
+    expect(err).toBeInstanceOf(ProviderTokenError);
+    expect(err).toMatchObject({ provider: 'spotify', status, oauthError });
+    expect((err as Error).message).not.toContain('revoked');
   });
 });

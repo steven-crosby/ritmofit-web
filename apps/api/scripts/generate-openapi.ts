@@ -953,7 +953,18 @@ const doc = {
         responses: {
           '200': jsonResp('SpotifyPlaybackToken', 'Short-lived access token + TTL'),
           '401': { description: 'Authentication required' },
-          '409': { description: 'Not connected, or reconnect required for playback scope' },
+          '409': {
+            description:
+              'NOT_CONNECTED, PLAYBACK_REAUTH_REQUIRED (reconnect for the playback scope), or REAUTH_REQUIRED (Spotify refused the refresh grant: reconnect)',
+          },
+          '429': {
+            description:
+              'PROVIDER_QUOTA_EXCEEDED — Spotify rate-limited the server-side token refresh. Retryable later; not a reconnect.',
+          },
+          '502': {
+            description:
+              'PROVIDER_UNAVAILABLE — the server-side token refresh hit a Spotify outage or network failure. Retryable; not a reconnect.',
+          },
           '503': { description: 'Spotify not configured' },
         },
       },

@@ -28,10 +28,20 @@ export type MusicConnection = z.infer<typeof musicConnectionSchema>;
  * The client-safe view of a connection — the encrypted token blobs are dropped.
  * This is the ONLY connection shape a route may return to a client.
  */
-export const musicConnectionViewSchema = musicConnectionSchema.omit({
-  accessTokenEncrypted: true,
-  refreshTokenEncrypted: true,
-});
+export const musicConnectionViewSchema = musicConnectionSchema
+  .omit({
+    accessTokenEncrypted: true,
+    refreshTokenEncrypted: true,
+  })
+  .extend({
+    /**
+     * Whether the server holds a refresh token it can use (RF-216). A provider
+     * that refreshes on use (Spotify) is connected past `expiresAt` while this is
+     * true; the server clears it when the provider refuses the refresh grant, so a
+     * dead grant reads as expired. Optional for older servers; absent means true.
+     */
+    refreshable: z.boolean().optional(),
+  });
 export type MusicConnectionView = z.infer<typeof musicConnectionViewSchema>;
 
 /**

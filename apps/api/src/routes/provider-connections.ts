@@ -160,6 +160,7 @@ function toConnectionView(row: typeof musicConnections.$inferSelect): MusicConne
     expiresAt: row.expiresAt,
     createdAt: row.createdAt,
     updatedAt: row.updatedAt,
+    refreshable: row.refreshTokenEncrypted != null,
   });
 }
 
