@@ -1,0 +1,28 @@
+{
+  "schemaVersion": 1,
+  "id": "RF-220",
+  "title": "Playlist error states share one classifier and one caution alert",
+  "kind": "task",
+  "status": "backlog",
+  "priority": "untriaged",
+  "parent": null,
+  "dependsOn": [],
+  "acceptance": [
+    "classifyPlaylistDrillInError (and classifyProviderLibraryError) live in apps/web/src/lib/music-library.ts, imported by TrackSearch and Dashboard.",
+    "One caution alert component renders forbidden, quota and reauth playlist errors in the builder drill-in, the builder playlist index and the Music tab PlaylistBrowserDialog, with the same glyph and styling.",
+    "Dashboard RF-74 tests build ApiError failures without reparenting the mocked ApiError prototype.",
+    "Optional, owner call: Manage connections from the playlist dialog keeps the chosen template and playlist after reconnecting."
+  ],
+  "nextAction": "Non-blocking findings from the #764 final review (2026-11-13), cleanup only. Propose the shared helper and component, then implement with the existing RF-74 tests as the regression net.",
+  "blocker": null,
+  "evidence": [
+    {
+      "kind": "pr",
+      "ref": "https://github.com/steven-crosby/ritmofit-web/pull/764",
+      "summary": "Final review (/code-review medium) on 443c477a: no significant findings; five cleanup findings (classifier in a component file, duplicated caution markup, inconsistent index quota styling, prototype-mutating test helper, reconnect path drops dialog state).",
+      "checkedOn": "2026-11-13"
+    }
+  ],
+  "resolution": null,
+  "followUps": []
+}

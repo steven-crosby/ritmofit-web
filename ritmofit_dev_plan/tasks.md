@@ -12,7 +12,7 @@ owner's queue: any agent may execute a Ready task. Publishing follows AGENTS.md 
 Evidence marked **recorded** is a carried-forward claim, not fresh verification.
 A checked PR proves its GitHub state, not product acceptance or production behavior.
 
-216 tasks. backlog: 73 · ready: 0 · in_progress: 0 · blocked: 2 · review: 9 · done: 130 · cancelled: 2.
+217 tasks. backlog: 74 · ready: 0 · in_progress: 0 · blocked: 2 · review: 9 · done: 130 · cancelled: 2.
 
 ## In progress
 
@@ -124,6 +124,7 @@ A checked PR proves its GitHub state, not product acceptance or production behav
 | [RF-213](tasks/RF-213.json) Docs that still say web-first agree with D26 | P3 / task | — | Logged from the /code-review high of #750 (Neo, 2026-11-07): non-blocking findings. Agent-created: Backlog until the owner sets Ready. | checked 2026-11-07 |
 | [RF-218](tasks/RF-218.json) A token-endpoint 4xx other than invalid_grant reads as a server problem, not Reconnect | P3 / task | needs RF-216 | From the #758 final review on 30e0b29 (2026-11-12, non-blocking): a wrong app secret tells instructors to reconnect, which cannot help. Provider code, owner-gated. Agent-created: Backlog until the owner sets Ready. | checked 2026-11-12 |
 | [RF-219](tasks/RF-219.json) Catalog search offers Try again only when a retry can help | untriaged / task | — | Split from RF-74 (2026-11-13), which fixed the playlist surfaces only. On main the TrackSearch search-mode error row always renders Try again, and Dashboard.tsx Music search swallows the API error and shows the generic retry sentence. Propose the change, then implement with tests. | checked 2026-11-13 |
+| [RF-220](tasks/RF-220.json) Playlist error states share one classifier and one caution alert | untriaged / task | — | Non-blocking findings from the #764 final review (2026-11-13), cleanup only. Propose the shared helper and component, then implement with the existing RF-74 tests as the regression net. | checked 2026-11-13 |
 
 ## Done
 
