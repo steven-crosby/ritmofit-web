@@ -2,6 +2,8 @@ import { beforeEach, describe, expect, it, vi } from 'vitest';
 import {
   AppleMusicUnauthorizedError,
   InvalidProviderCursorError,
+  ProviderError,
+  ProviderTokenError,
   fetchAppleMusicLibrarySongsPage,
   searchAppleMusicLibrarySongs,
   fetchSoundCloudLikesPage,
@@ -240,10 +242,12 @@ describe('fetchUserLikes — Spotify (shared connected-token path)', () => {
     expect(fetchSpotifySavedTracksPage).toHaveBeenCalledTimes(1);
   });
 
-  it('maps REAUTH_REQUIRED when the reactive refresh itself fails', async () => {
+  it('maps REAUTH_REQUIRED when the reactive refresh is refused (400 invalid_grant)', async () => {
     const { db } = makeDb(makeConnection());
     vi.mocked(fetchSpotifySavedTracksPage).mockRejectedValueOnce(new SpotifyUnauthorizedError());
-    vi.mocked(refreshSpotifyToken).mockRejectedValueOnce(new Error('token endpoint 400'));
+    vi.mocked(refreshSpotifyToken).mockRejectedValueOnce(
+      new ProviderTokenError('spotify', 'Spotify', 400, 'invalid_grant'),
+    );
 
     await expect(fetchUserLikes(db, env, 'user-1', 'spotify')).rejects.toMatchObject({
       status: 409,
@@ -252,6 +256,18 @@ describe('fetchUserLikes — Spotify (shared connected-token path)', () => {
     } satisfies Partial<HttpError>);
     // The provider was hit once (401), then the refresh failed → no second read.
     expect(fetchSpotifySavedTracksPage).toHaveBeenCalledTimes(1);
+  });
+
+  it('surfaces a retryable 502, not REAUTH, when the refresh hits a Spotify outage (RF-216)', async () => {
+    const { db } = makeDb(makeConnection());
+    vi.mocked(fetchSpotifySavedTracksPage).mockRejectedValueOnce(new SpotifyUnauthorizedError());
+    vi.mocked(refreshSpotifyToken).mockRejectedValueOnce(
+      new ProviderTokenError('spotify', 'Spotify', 502, null),
+    );
+
+    const err = await fetchUserLikes(db, env, 'user-1', 'spotify').catch((e: unknown) => e);
+    expect(err).toBeInstanceOf(ProviderError);
+    expect(err).not.toBeInstanceOf(HttpError);
   });
 
   it('maps REAUTH_REQUIRED when a proactive refresh is followed by a 401 (no second refresh)', async () => {

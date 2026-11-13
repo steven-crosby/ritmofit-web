@@ -1,4 +1,8 @@
 import type { TransportReading } from './types.js';
+
+/** A temporary Spotify or network failure: Live's Retry can recover it (RF-216). */
+export const SPOTIFY_TEMPORARILY_UNAVAILABLE =
+  'Spotify is temporarily unavailable. Retry in a moment to keep playing.';
 /**
  * Spotify playback adapter — wraps the official Web Playback SDK behind the
  * `PlaybackAdapter` contract. Spotify owns the audio stream, the Premium
@@ -26,6 +30,8 @@ import {
   getSpotifyPlayback,
   isSpotifyPlaybackActivated,
   invalidateSpotifyActivation,
+  isRetryableSpotifyTokenError,
+  lastSpotifyTokenFailureWasRetryable,
   startSpotifyTrack,
   type SpotifyPlayback,
   type SpotifyPlaybackHost,
@@ -120,7 +126,12 @@ export class SpotifyAdapter implements PlaybackAdapter {
     }
   };
   private readonly onAuthError = (): void => {
-    this.surfaceError('Spotify playback needs a reconnect — reconnect Spotify to keep playing.');
+    // A token outage is not a dead grant: offer Retry, not OAuth (RF-216).
+    this.surfaceError(
+      lastSpotifyTokenFailureWasRetryable()
+        ? SPOTIFY_TEMPORARILY_UNAVAILABLE
+        : 'Spotify playback needs a reconnect — reconnect Spotify to keep playing.',
+    );
   };
   private readonly onAccountError = (): void => {
     this.surfaceError('Spotify playback requires an active Premium account.');
@@ -236,6 +247,7 @@ export class SpotifyAdapter implements PlaybackAdapter {
       if (err instanceof SpotifyPlaybackTokenError && err.code === 'PLAYBACK_REAUTH_REQUIRED') {
         throw new Error('Reconnect Spotify to enable in-app playback.');
       }
+      if (isRetryableSpotifyTokenError(err)) throw new Error(SPOTIFY_TEMPORARILY_UNAVAILABLE);
       throw err;
     }
     // A fulfilled start request permits polling; it is not playback-progress evidence.

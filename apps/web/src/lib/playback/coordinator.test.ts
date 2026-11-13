@@ -115,11 +115,23 @@ describe('selectProvider', () => {
     expect(selection).toMatchObject({ status: 'playable', provider: 'soundcloud' });
   });
 
-  it('treats an expired connection as not connected', () => {
+  it('keeps Spotify playable after its access-token expiry passes (server refreshes, RF-216)', () => {
     const entry = makeEntry({ providers: ['spotify'] });
     const selection = selectProvider(
       entry,
       [{ provider: 'spotify', expiresAt: NOW - 1, scope: 'user-library-read streaming' }],
+      {
+        now: NOW,
+      },
+    );
+    expect(selection).toMatchObject({ status: 'playable', provider: 'spotify' });
+  });
+
+  it('treats an expired Apple Music connection as not connected', () => {
+    const entry = makeEntry({ providers: ['apple_music'] });
+    const selection = selectProvider(
+      entry,
+      [{ provider: 'apple_music', expiresAt: NOW - 1, scope: null }],
       {
         now: NOW,
       },

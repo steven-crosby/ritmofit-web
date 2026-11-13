@@ -1,8 +1,19 @@
 import { activateSpotifyPlayback, isSpotifyPlaybackActivated } from '../spotify-playback.js';
-import { describe, expect, it, vi } from 'vitest';
+import { afterEach, describe, expect, it, vi } from 'vitest';
+
+// Lets a test say the SDK token callback's last failure was temporary (RF-216).
+const tokenFailure = vi.hoisted(() => ({ retryable: false }));
+vi.mock('../spotify-playback.js', async (importOriginal) => {
+  const actual = await importOriginal<typeof import('../spotify-playback.js')>();
+  return {
+    ...actual,
+    lastSpotifyTokenFailureWasRetryable: () => tokenFailure.retryable,
+  };
+});
 import type { RunPayloadTrackEntry } from '@ritmofit/shared';
 import type { SpotifyPlayback, SpotifyPlayer, SpotifyPlayerState } from '../spotify-playback.js';
 import {
+  SPOTIFY_TEMPORARILY_UNAVAILABLE,
   SpotifyAdapter,
   spotifyAdapterFactory,
   spotifyTrackUri,
@@ -250,6 +261,50 @@ describe('SpotifyAdapter', () => {
     const adapter = new SpotifyAdapter({}, makeHost(player, startTrack).host);
     await adapter.prepare(makeEntry(), { startMs: 0, endMs: 1000 });
     await expect(adapter.play()).rejects.toThrow(/Reconnect Spotify to enable in-app playback/i);
+  });
+
+  describe('token outages are retryable, not a reconnect (RF-216)', () => {
+    afterEach(() => {
+      tokenFailure.retryable = false;
+    });
+
+    it.each<[string, unknown]>([
+      ['a 502', new SpotifyPlaybackTokenError('down', 'PROVIDER_UNAVAILABLE', 502)],
+      ['a 429', new SpotifyPlaybackTokenError('busy', 'PROVIDER_QUOTA_EXCEEDED', 429)],
+      ['a network failure', new TypeError('Failed to fetch')],
+    ])('play() rejects with the retry message on %s', async (_label: string, cause: unknown) => {
+      const player = new FakePlayer();
+      const adapter = new SpotifyAdapter(
+        {},
+        makeHost(player, vi.fn().mockRejectedValue(cause)).host,
+      );
+      await adapter.prepare(makeEntry(), { startMs: 0, endMs: 1000 });
+      await expect(adapter.play()).rejects.toThrow(SPOTIFY_TEMPORARILY_UNAVAILABLE);
+    });
+
+    it('play() keeps the reconnect message for a dead grant (409 REAUTH_REQUIRED)', async () => {
+      const player = new FakePlayer();
+      const startTrack = vi
+        .fn()
+        .mockRejectedValue(
+          new SpotifyPlaybackTokenError('Reconnect your Spotify account.', 'REAUTH_REQUIRED', 409),
+        );
+      const adapter = new SpotifyAdapter({}, makeHost(player, startTrack).host);
+      await adapter.prepare(makeEntry(), { startMs: 0, endMs: 1000 });
+      await expect(adapter.play()).rejects.toThrow('Reconnect your Spotify account.');
+    });
+
+    it('an SDK authentication_error after a temporary token failure offers Retry', async () => {
+      tokenFailure.retryable = true;
+      const player = new FakePlayer();
+      const onError = vi.fn();
+      const adapter = new SpotifyAdapter({ onError }, makeHost(player).host);
+      await adapter.prepare(makeEntry(), { startMs: 0, endMs: 1000 });
+
+      player.emit('authentication_error', { message: 'x' });
+      expect(onError.mock.calls[0][0].message).toBe(SPOTIFY_TEMPORARILY_UNAVAILABLE);
+      expect(onError.mock.calls[0][0].message).not.toMatch(/reconnect/i);
+    });
   });
 
   it('destroy removes this adapter listeners and pauses only if it owns transport; never disconnects', async () => {

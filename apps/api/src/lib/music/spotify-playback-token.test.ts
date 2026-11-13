@@ -191,21 +191,60 @@ describe('mintSpotifyPlaybackToken', () => {
     );
   });
 
-  it('throws 409 REAUTH_REQUIRED if refresh fails', async () => {
-    mockGet.mockResolvedValueOnce({
-      id: 'conn1',
-      userId: 'user1',
-      provider: 'spotify',
-      scope: 'user-library-read streaming',
-      accessTokenEncrypted: 'enc:token1',
-      refreshTokenEncrypted: 'enc:refresh1',
-      expiresAt: Date.now() - 1000,
-    });
+  const expiredConn = () => ({
+    id: 'conn1',
+    userId: 'user1',
+    provider: 'spotify',
+    scope: 'user-library-read streaming',
+    accessTokenEncrypted: 'enc:token1',
+    refreshTokenEncrypted: 'enc:refresh1',
+    expiresAt: Date.now() - 1000,
+  });
 
-    vi.mocked(musicPkg.refreshSpotifyToken).mockRejectedValueOnce(new Error('fail'));
+  it('throws 409 REAUTH_REQUIRED when Spotify refuses the grant (400 invalid_grant)', async () => {
+    mockGet.mockResolvedValueOnce(expiredConn());
+    vi.mocked(musicPkg.refreshSpotifyToken).mockRejectedValueOnce(
+      new musicPkg.ProviderTokenError('spotify', 'Spotify', 400, 'invalid_grant'),
+    );
 
     await expect(mintSpotifyPlaybackToken(mockDb, mockEnv, 'user1')).rejects.toThrowError(
       new HttpError(409, 'REAUTH_REQUIRED', 'Reconnect your Spotify account.'),
+    );
+  });
+
+  it('throws 409 REAUTH_REQUIRED when the stored refresh token cannot be decrypted', async () => {
+    mockGet.mockResolvedValueOnce(expiredConn());
+    vi.mocked(cryptoLib.decryptSecret).mockRejectedValueOnce(new Error('bad ciphertext'));
+
+    await expect(mintSpotifyPlaybackToken(mockDb, mockEnv, 'user1')).rejects.toThrowError(
+      new HttpError(409, 'REAUTH_REQUIRED', 'Reconnect your Spotify account.'),
+    );
+    expect(musicPkg.refreshSpotifyToken).not.toHaveBeenCalled();
+  });
+
+  // RF-216 (audit C-2): an outage, rate limit or network failure must not start OAuth.
+  it.each([
+    ['a Spotify 5xx', new musicPkg.ProviderTokenError('spotify', 'Spotify', 503, null)],
+    ['a thrown fetch', new TypeError('fetch failed')],
+    ['a malformed 2xx body', new musicPkg.ProviderError('spotify', 'bad shape')],
+  ])('throws a retryable ProviderError (502), not REAUTH, on %s', async (_label, cause) => {
+    mockGet.mockResolvedValueOnce(expiredConn());
+    vi.mocked(musicPkg.refreshSpotifyToken).mockRejectedValueOnce(cause);
+
+    const err = await mintSpotifyPlaybackToken(mockDb, mockEnv, 'user1').catch((e: unknown) => e);
+    expect(err).toBeInstanceOf(musicPkg.ProviderError);
+    expect(err).not.toBeInstanceOf(musicPkg.ProviderQuotaExceededError);
+    expect(err).not.toBeInstanceOf(HttpError);
+  });
+
+  it('throws the retryable 429 quota error when Spotify rate-limits the refresh', async () => {
+    mockGet.mockResolvedValueOnce(expiredConn());
+    vi.mocked(musicPkg.refreshSpotifyToken).mockRejectedValueOnce(
+      new musicPkg.ProviderTokenError('spotify', 'Spotify', 429, null),
+    );
+
+    await expect(mintSpotifyPlaybackToken(mockDb, mockEnv, 'user1')).rejects.toBeInstanceOf(
+      musicPkg.ProviderQuotaExceededError,
     );
   });
 });

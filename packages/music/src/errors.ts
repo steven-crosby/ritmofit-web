@@ -18,6 +18,39 @@ export class ProviderError extends Error {
 }
 
 /**
+ * The provider's OAuth token endpoint answered with a non-2xx status. It keeps
+ * the HTTP status and the OAuth `error` code (RFC 6749 §5.2, for example
+ * `invalid_grant`) so callers can tell a dead grant from an outage or a rate
+ * limit (RF-216). Never carries the response body text or any token.
+ */
+export class ProviderTokenError extends ProviderError {
+  readonly status: number;
+  readonly oauthError: string | null;
+  constructor(provider: string, label: string, status: number, oauthError: string | null) {
+    super(
+      provider,
+      `${label} token endpoint returned ${status}${oauthError ? ` (${oauthError})` : ''}`,
+    );
+    this.name = 'ProviderTokenError';
+    this.status = status;
+    this.oauthError = oauthError;
+  }
+}
+
+/** Read the OAuth `error` code from a failed token response; null when absent. */
+export async function readOAuthErrorCode(res: {
+  json(): Promise<unknown>;
+}): Promise<string | null> {
+  try {
+    const body = (await res.json()) as { error?: unknown };
+    // RFC 6749 error codes are short ASCII tokens; anything else is not one.
+    return typeof body.error === 'string' && /^[a-z_]{1,64}$/.test(body.error) ? body.error : null;
+  } catch {
+    return null;
+  }
+}
+
+/**
  * A paging cursor handed back by a client is not a continuation this adapter
  * issued (wrong host, wrong path or malformed). A client request error, not an
  * upstream failure: it deliberately does not extend `ProviderError` (502), and

@@ -32,6 +32,7 @@ import type { Db } from '../db.js';
 import type { Env } from '../types.js';
 import { HttpError } from '../errors.js';
 import { boundFetch } from '../fetch.js';
+import { refreshFailure } from './refresh-failure.js';
 import { decryptSecret, encryptSecret } from '../crypto.js';
 import {
   appleMusicCreds,
@@ -417,17 +418,23 @@ async function refreshAndPersist(
     throw new HttpError(409, 'REAUTH_REQUIRED', reauth);
   }
 
+  let refreshToken;
+  try {
+    refreshToken = await decryptSecret(conn.refreshTokenEncrypted, key);
+  } catch {
+    throw new HttpError(409, 'REAUTH_REQUIRED', reauth);
+  }
   let tokens;
   try {
-    const refreshToken = await decryptSecret(conn.refreshTokenEncrypted, key);
     tokens = await adapter.refreshToken({
       clientId: creds.clientId,
       clientSecret: creds.clientSecret,
       refreshToken,
       fetchImpl: boundFetch,
     });
-  } catch {
-    throw new HttpError(409, 'REAUTH_REQUIRED', reauth);
+  } catch (err) {
+    // Only a refused grant means reconnect; an outage or rate limit is retryable (RF-216).
+    throw refreshFailure(conn.provider, err, reauth);
   }
 
   await db

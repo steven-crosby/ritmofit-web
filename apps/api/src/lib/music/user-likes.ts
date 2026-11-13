@@ -39,6 +39,7 @@ import type { Db } from '../db.js';
 import type { Env } from '../types.js';
 import { HttpError } from '../errors.js';
 import { boundFetch } from '../fetch.js';
+import { refreshFailure } from './refresh-failure.js';
 import { encryptSecret, decryptSecret } from '../crypto.js';
 import {
   requireEncryptionKey,
@@ -257,18 +258,25 @@ async function refreshAndPersist(
     throw new HttpError(409, 'REAUTH_REQUIRED', `Reconnect your ${adapter.label} account.`);
   }
 
+  const reauth = `Reconnect your ${adapter.label} account.`;
+  let refreshToken;
+  try {
+    refreshToken = await decryptSecret(conn.refreshTokenEncrypted, key);
+  } catch {
+    // An unreadable stored grant cannot be refreshed: reconnect.
+    throw new HttpError(409, 'REAUTH_REQUIRED', reauth);
+  }
   let tokens;
   try {
-    const refreshToken = await decryptSecret(conn.refreshTokenEncrypted, key);
     tokens = await adapter.refreshToken({
       clientId: creds.clientId,
       clientSecret: creds.clientSecret,
       refreshToken,
       fetchImpl: boundFetch,
     });
-  } catch {
-    // A failed refresh means the grant is dead — surface a reconnect, not detail.
-    throw new HttpError(409, 'REAUTH_REQUIRED', `Reconnect your ${adapter.label} account.`);
+  } catch (err) {
+    // Only a refused grant means reconnect; an outage or rate limit is retryable (RF-216).
+    throw refreshFailure(conn.provider, err, reauth);
   }
 
   await db
