@@ -21,7 +21,7 @@ import type { Db } from '../db.js';
 import { HttpError } from '../errors.js';
 import { musicConnections } from '../../db/schema.js';
 
-/** True when the token endpoint refused the grant itself (a 4xx other than 429). */
+/** True when the token endpoint refused the request with a 4xx other than 429. */
 export function isRefusedGrant(err: unknown): boolean {
   return (
     err instanceof ProviderTokenError && err.status >= 400 && err.status < 500 && err.status !== 429
@@ -29,7 +29,17 @@ export function isRefusedGrant(err: unknown): boolean {
 }
 
 /**
- * Forget a refresh token the provider refused, so the connection view reports
+ * True only when the provider says this user's refresh grant is dead (OAuth
+ * `invalid_grant`: revoked, expired or already rotated). Other 4xx, such as
+ * `invalid_client` after Ritmo's own client secret changed, are Ritmo's fault and
+ * must never cost users their stored grants.
+ */
+export function isDeadGrant(err: unknown): boolean {
+  return err instanceof ProviderTokenError && err.oauthError === 'invalid_grant';
+}
+
+/**
+ * Forget a refresh token the provider declared dead (`isDeadGrant`), so the connection view reports
  * `refreshable: false` and the SPA shows Reconnect (RF-216). Only clears the exact
  * ciphertext this request used: a concurrent request that already refreshed and
  * stored a rotated token keeps it.

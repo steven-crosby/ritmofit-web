@@ -245,6 +245,16 @@ describe('Spotify playback-token endpoint (integration)', () => {
         expect(await storedRefreshToken()).toBe(rotated);
       });
 
+      it("keeps the refresh token when Spotify rejects Ritmo's own client (400 invalid_client)", async () => {
+        await seedExpired();
+        fakeTokenEndpoint(() => Response.json({ error: 'invalid_client' }, { status: 400 }));
+        const res = await callProd(user.cookie);
+        expect(res.status).toBe(409);
+        // A rotated or mistyped client secret must not wipe users' grants.
+        expect(await storedRefreshToken()).toBeTruthy();
+        expect((await connectionsView())[0]).toMatchObject({ refreshable: true });
+      });
+
       it('keeps the refresh token after a retryable outage', async () => {
         await seedExpired();
         fakeTokenEndpoint(() => new Response('upstream error', { status: 503 }));

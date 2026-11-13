@@ -1,7 +1,7 @@
 import { describe, it, expect } from 'vitest';
 import { ProviderError, ProviderQuotaExceededError, ProviderTokenError } from '@ritmofit/music';
 import { HttpError } from '../errors.js';
-import { refreshFailure } from './refresh-failure.js';
+import { isDeadGrant, refreshFailure } from './refresh-failure.js';
 
 const REAUTH = 'Reconnect your Spotify account.';
 
@@ -51,5 +51,17 @@ describe('refreshFailure (RF-216, audit C-2)', () => {
   it('a malformed 2xx token body stays a provider error', () => {
     const cause = new ProviderError('spotify', 'unexpected shape');
     expect(refreshFailure('spotify', cause, REAUTH)).toBe(cause);
+  });
+
+  it("only invalid_grant marks the stored grant dead; invalid_client is Ritmo's own fault", () => {
+    expect(isDeadGrant(new ProviderTokenError('spotify', 'Spotify', 400, 'invalid_grant'))).toBe(
+      true,
+    );
+    expect(isDeadGrant(new ProviderTokenError('spotify', 'Spotify', 400, 'invalid_client'))).toBe(
+      false,
+    );
+    expect(isDeadGrant(new ProviderTokenError('spotify', 'Spotify', 401, null))).toBe(false);
+    expect(isDeadGrant(new ProviderTokenError('spotify', 'Spotify', 503, null))).toBe(false);
+    expect(isDeadGrant(new TypeError('fetch failed'))).toBe(false);
   });
 });
