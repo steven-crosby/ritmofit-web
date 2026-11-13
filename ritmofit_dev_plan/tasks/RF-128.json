@@ -3,7 +3,7 @@
   "id": "RF-128",
   "title": "Apple Music Start class sounds within 1 s on iPhone Safari",
   "kind": "task",
-  "status": "review",
+  "status": "backlog",
   "priority": "P2",
   "parent": null,
   "dependsOn": [
@@ -13,7 +13,7 @@
     "On iPhone Safari Live, the first Apple Music song is audible within 1 s of tapping Start class on 5G.",
     "Work that needs no gesture (load MusicKit, configure, check authorization) happens before Start; only setQueue/play run in the tap."
   ],
-  "nextAction": "Wi-Fi timing on 2026-11-03 (evidence below): the two Start class taps reached first playing state 647 and 819 ms after prepare, and later starts ranged 479-1052 ms (one over 1 s). The log measures from prepare, not from the tap, so the tap-to-audio time is not yet measured. Criterion 0 still needs the owner's timed Start on 5G (audible within 1 s of the tap); the owner may instead decide how to treat this Wi-Fi run. #668 review items 3-8 stay noted in this record's evidence.",
+  "nextAction": "Parked under D27 (owner, 2026-11-12): Apple Music work is paused and Apple Music stays in the app; restart only if the owner reopens Apple Music. Before parking (review): Wi-Fi timing on 2026-11-03 (evidence below): the two Start class taps reached first playing state 647 and 819 ms after prepare, and later starts ranged 479-1052 ms (one over 1 s). The log measures from prepare, not from the tap, so the tap-to-audio time is not yet measured. Criterion 0 still needs the owner's timed Start on 5G (audible within 1 s of the tap); the owner may instead decide how to treat this Wi-Fi run. #668 review items 3-8 stay noted in this record's evidence.",
   "blocker": null,
   "evidence": [
     {
@@ -69,6 +69,12 @@
       "ref": "https://github.com/steven-crosby/ritmofit-web/pull/717",
       "summary": "#717 final review finding 4: nextAction omitted the 1052 ms start and the prepare-vs-tap basis; corrected here.",
       "checkedOn": "2026-11-03"
+    },
+    {
+      "kind": "document",
+      "ref": "ritmofit_dev_plan/decisions.md#d27--spotify-first-apple-music-work-is-parked-resolved-2026-11-12",
+      "summary": "Owner decision D27 parks this Apple Music task (was review, P2). No verification claim changes.",
+      "checkedOn": "2026-11-12"
     }
   ],
   "resolution": null,

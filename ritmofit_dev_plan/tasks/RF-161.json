@@ -19,7 +19,7 @@
     "A decision is recorded on making coordinator seek idempotent, which would remove the throttle firedLast special case and cover other duplicate-commit sources.",
     "Each behavior change has a failing-then-passing test with mock MusicKit; existing runtime supersession tests pass."
   ],
-  "nextAction": "From the #669 round-2 final review (items 2-8). Start after RF-108 closes, so its owed device check runs on the code it reviewed. Playback code is owner-gated. Agent-created: Backlog until the owner sets Ready.",
+  "nextAction": "Parked under D27 (owner, 2026-11-12): Apple Music work is paused and Apple Music stays in the app; restart only if the owner reopens Apple Music. Before parking (backlog): From the #669 round-2 final review (items 2-8). Start after RF-108 closes, so its owed device check runs on the code it reviewed. Playback code is owner-gated. Agent-created: Backlog until the owner sets Ready.",
   "blocker": null,
   "evidence": [
     {
@@ -27,6 +27,12 @@
       "ref": "https://github.com/steven-crosby/ritmofit-web/pull/669#issuecomment-6546640152",
       "summary": "Final review of #669 on d0e2b52 (merged 0a77110), items 2-8: whenIdle() doc says \"superseded\" but the code fails with the Retry wording; missed play() rejection after first playing state; seek burst after a pending play() settles; lost retry on the firedLast release path; queueRequests/queueGenerations duplication and dead abandonedAt/expired/pendingPlays; idempotent coordinator seek as a design option; module-global retired list shared across coordinators and tests.",
       "checkedOn": "2026-10-31"
+    },
+    {
+      "kind": "document",
+      "ref": "ritmofit_dev_plan/decisions.md#d27--spotify-first-apple-music-work-is-parked-resolved-2026-11-12",
+      "summary": "Owner decision D27 parks this Apple Music task (was backlog, P3). No verification claim changes.",
+      "checkedOn": "2026-11-12"
     }
   ],
   "resolution": null,
