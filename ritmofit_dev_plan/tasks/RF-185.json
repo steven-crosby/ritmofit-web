@@ -3,7 +3,7 @@
   "id": "RF-185",
   "title": "Live timeline tap starts Apple Music twice on iPhone Safari",
   "kind": "task",
-  "status": "review",
+  "status": "backlog",
   "priority": "P2",
   "parent": null,
   "dependsOn": [],
@@ -12,7 +12,7 @@
     "A LiveTimeline or LiveMode test reproduces a still-finger tap (pointerdown, a pointermove at the same clientX, pointerup) and asserts the provider gets exactly one seek, sent on release; it fails on the pre-#738 code.",
     "Next, Previous, auto-advance and a drag that rests before release keep their current behaviour; a drag sends one seek on release."
   ],
-  "nextAction": "Against production (main f55b449a since 2026-11-07; Live changed only in #746's queue Retry and its own chunk, not the timeline), the owner re-runs Live on iPhone Safari with ?playback-timing=1 on an Apple Music class. (1) Tap one timeline track with a still finger three times, a few seconds apart. Each tap should show one [ritmo live-timeline] pointer-down and pointer-up ... tap, one [ritmo live] seek-sent (#738 sends the one seek on release; release-skipped is gone) and one Apple #N prepare, with no #N cancelled about 60-115 ms later. Any pointer-move lines between them confirm or refute the still-finger move premise. (2) Quick taps on 2-3 tracks (#N cancelled is expected here). (3) One drag across several tracks, rest, release: one start after the release, unless a track ended mid-drag (RF-206). (4) A small deliberate nudge lands where released. Next, Previous and auto-advance behave as before. If acceptance holds, set Done with that observation; otherwise attach the console lines.",
+  "nextAction": "Parked under D27 (owner, 2026-11-12): Apple Music work is paused and Apple Music stays in the app; restart only if the owner reopens Apple Music. Before parking (review): Against production (main f55b449a since 2026-11-07; Live changed only in #746's queue Retry and its own chunk, not the timeline), the owner re-runs Live on iPhone Safari with ?playback-timing=1 on an Apple Music class. (1) Tap one timeline track with a still finger three times, a few seconds apart. Each tap should show one [ritmo live-timeline] pointer-down and pointer-up ... tap, one [ritmo live] seek-sent (#738 sends the one seek on release; release-skipped is gone) and one Apple #N prepare, with no #N cancelled about 60-115 ms later. Any pointer-move lines between them confirm or refute the still-finger move premise. (2) Quick taps on 2-3 tracks (#N cancelled is expected here). (3) One drag across several tracks, rest, release: one start after the release, unless a track ended mid-drag (RF-206). (4) A small deliberate nudge lands where released. Next, Previous and auto-advance behave as before. If acceptance holds, set Done with that observation; otherwise attach the console lines.",
   "blocker": null,
   "evidence": [
     {
@@ -152,6 +152,12 @@
       "ref": "https://github.com/steven-crosby/ritmofit-web/pull/743#issuecomment-6674577031",
       "summary": "#743 final review notes 3, 7 and 8: deploy evidence now names records #739-#742, acceptance items 2 and 3 retargeted from the removed trailing throttle to the one seek on release, and the duplicate release-skipped phrase removed.",
       "checkedOn": "2026-11-07"
+    },
+    {
+      "kind": "document",
+      "ref": "ritmofit_dev_plan/decisions.md#d27--spotify-first-apple-music-work-is-parked-resolved-2026-11-12",
+      "summary": "Owner decision D27 parks this Apple Music task (was review, P2). No verification claim changes.",
+      "checkedOn": "2026-11-12"
     }
   ],
   "resolution": null,
