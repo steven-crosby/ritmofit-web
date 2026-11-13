@@ -3,7 +3,7 @@
   "id": "RF-92",
   "title": "Triage Spotify expiry finding C-1 and retry classification C-2",
   "kind": "plan",
-  "status": "backlog",
+  "status": "in_progress",
   "priority": "P1",
   "parent": null,
   "dependsOn": [],
@@ -11,7 +11,7 @@
     "Reconfirm expired-grant and retry/reconnect classification on current main.",
     "Agree packet 3 and an actual browser/audio acceptance procedure before implementing provider changes."
   ],
-  "nextAction": "Spotify reopened by the owner on 2026-10-28. Await owner Ready; Apple work comes first until the Apple Music subscription ends around 2026-11-27. Resume risk, updated 2026-10-31: liked songs now load for the owner account (evidence), so the 403 allowlist block appears lifted for it; recheck playlists and playback before starting.",
+  "nextAction": "Air session 2026-11-12, branch docs/rf-92-spotify-triage (owner set Ready and approved the start in session; D27 makes Spotify first): reconfirm C-1 and C-2 on current main, then write packet 3 and the browser/audio check for the owner's agreement. No provider code changes in this PR.",
   "blocker": null,
   "evidence": [
     {
