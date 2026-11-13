@@ -20,7 +20,7 @@
  * adapter drives this behind host seams so its logic is unit-tested with a fake SDK.
  */
 import type { SpotifyPlaybackToken } from '@ritmofit/shared';
-import { ApiError, getSpotifyPlaybackToken } from './api.js';
+import { SpotifyPlaybackTokenError, getSpotifyPlaybackToken } from './api.js';
 
 const SDK_SRC = 'https://sdk.scdn.co/spotify-player.js';
 const PLAYER_NAME = 'Ritmo Studio';
@@ -30,14 +30,16 @@ const TOKEN_RETRY_DELAY_MS = 1_500;
 
 /**
  * True when a playback-token failure is temporary (RF-216): the API answered 502
- * (Spotify or network outage during the server refresh), 503 or 429, or the request
- * never reached the API. A dead grant (409 REAUTH_REQUIRED / NOT_CONNECTED /
- * PLAYBACK_REAUTH_REQUIRED) is not, and still asks for a reconnect.
+ * (Spotify or network outage during the server refresh), 503 or 429, or the token
+ * request never reached the API (`getSpotifyPlaybackToken` reports status 0). A dead
+ * grant (409 REAUTH_REQUIRED / NOT_CONNECTED / PLAYBACK_REAUTH_REQUIRED) is not, and
+ * still asks for a reconnect. Any other error, including a code bug, is not retryable.
  */
 export function isRetryableSpotifyTokenError(err: unknown): boolean {
-  if (err instanceof ApiError) return err.status === 429 || err.status >= 500;
-  // fetch() rejects with a TypeError when the request never completes.
-  return err instanceof TypeError;
+  return (
+    err instanceof SpotifyPlaybackTokenError &&
+    (err.status === 0 || err.status === 429 || err.status >= 500)
+  );
 }
 
 // Whether the SDK token callback's latest failure was temporary; null after a success.

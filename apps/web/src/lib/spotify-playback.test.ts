@@ -43,8 +43,10 @@ describe('isRetryableSpotifyTokenError (RF-216)', () => {
   it.each<[unknown, boolean]>([
     [new SpotifyPlaybackTokenError('down', 'PROVIDER_UNAVAILABLE', 502), true],
     [new SpotifyPlaybackTokenError('busy', 'PROVIDER_QUOTA_EXCEEDED', 429), true],
-    [new ApiError('unconfigured', 'PROVIDER_UNAVAILABLE', 503), true],
-    [new TypeError('Failed to fetch'), true],
+    [new SpotifyPlaybackTokenError('unconfigured', 'PROVIDER_UNAVAILABLE', 503), true],
+    [new SpotifyPlaybackTokenError('offline', 'NETWORK_ERROR', 0), true],
+    [new ApiError('other route', 'PROVIDER_UNAVAILABLE', 502), false],
+    [new TypeError('Cannot read properties of undefined'), false],
     [new SpotifyPlaybackTokenError('reconnect', 'REAUTH_REQUIRED', 409), false],
     [new SpotifyPlaybackTokenError('connect', 'NOT_CONNECTED', 409), false],
     [new SpotifyPlaybackTokenError('scope', 'PLAYBACK_REAUTH_REQUIRED', 409), false],

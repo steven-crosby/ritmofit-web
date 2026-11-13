@@ -104,8 +104,9 @@ export type ProviderConnectionState = 'connected' | 'expired' | 'disconnected' |
 /**
  * Providers whose `expiresAt` is only the hourly access-token expiry: the server
  * refreshes the token on use (playback token, likes, playlists), so a passed
- * `expiresAt` is not a lost grant (RF-216, audit C-1). A dead grant reaches the SPA
- * as a 409 REAUTH_REQUIRED instead, which callers pass as `reauthRequired`.
+ * `expiresAt` is not a lost grant while the connection is `refreshable` (RF-216,
+ * audit C-1). The server clears `refreshable` when the provider refuses the grant,
+ * and a 409 REAUTH_REQUIRED seen by a caller is passed as `reauthRequired`.
  */
 const SERVER_REFRESHED_PROVIDERS: ReadonlySet<Provider> = new Set<Provider>(['spotify']);
 
@@ -118,17 +119,17 @@ const SERVER_REFRESHED_PROVIDERS: ReadonlySet<Provider> = new Set<Provider>(['sp
  */
 export function providerConnectionState(
   provider: Provider,
-  connection: { expiresAt: number | null; reauthRequired?: boolean } | undefined,
+  connection:
+    | { expiresAt: number | null; reauthRequired?: boolean; refreshable?: boolean }
+    | undefined,
   now: number,
 ): ProviderConnectionState {
   if (!supportsUserAccount(provider)) return 'catalog-only';
   if (!connection) return 'disconnected';
   if (connection.reauthRequired) return 'expired';
-  if (
-    connection.expiresAt != null &&
-    connection.expiresAt <= now &&
-    !SERVER_REFRESHED_PROVIDERS.has(provider)
-  ) {
+  const refreshedOnUse =
+    SERVER_REFRESHED_PROVIDERS.has(provider) && connection.refreshable !== false;
+  if (connection.expiresAt != null && connection.expiresAt <= now && !refreshedOnUse) {
     return 'expired';
   }
   return 'connected';
@@ -205,7 +206,12 @@ export interface ProviderCapabilityTruth {
 export function providerCapabilityTruth(
   provider: Provider,
   connection:
-    | { expiresAt: number | null; scope: string | null; reauthRequired?: boolean }
+    | {
+        expiresAt: number | null;
+        scope: string | null;
+        reauthRequired?: boolean;
+        refreshable?: boolean;
+      }
     | undefined,
   now: number,
   freshness: ProviderCapabilityFreshness = 'verified',

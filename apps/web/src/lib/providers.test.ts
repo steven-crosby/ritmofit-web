@@ -152,6 +152,19 @@ describe('providerConnectionState', () => {
     expect(providerConnectionState('spotify', { expiresAt: NOW }, NOW)).toBe('connected');
   });
 
+  it('reports Spotify expired once its expiry passed and the server can no longer refresh', () => {
+    expect(
+      providerConnectionState('spotify', { expiresAt: NOW - 1, refreshable: false }, NOW),
+    ).toBe('expired');
+    expect(providerConnectionState('spotify', { expiresAt: NOW - 1, refreshable: true }, NOW)).toBe(
+      'connected',
+    );
+    // Not yet expired: still connected even without a refresh token.
+    expect(
+      providerConnectionState('spotify', { expiresAt: NOW + 1, refreshable: false }, NOW),
+    ).toBe('connected');
+  });
+
   it('reports expired for any provider the API reported as needing re-auth', () => {
     expect(
       providerConnectionState('spotify', { expiresAt: NOW + 1, reauthRequired: true }, NOW),

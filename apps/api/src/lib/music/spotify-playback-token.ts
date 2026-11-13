@@ -21,7 +21,7 @@ import type { Db } from '../db.js';
 import type { Env } from '../types.js';
 import { HttpError } from '../errors.js';
 import { boundFetch } from '../fetch.js';
-import { refreshFailure } from './refresh-failure.js';
+import { forgetRefusedRefreshToken, isRefusedGrant, refreshFailure } from './refresh-failure.js';
 import { encryptSecret, decryptSecret } from '../crypto.js';
 import { requireEncryptionKey, spotifyCreds } from './provider-config.js';
 import { musicConnections } from '../../db/schema.js';
@@ -105,6 +105,7 @@ export async function mintSpotifyPlaybackToken(
       fetchImpl: boundFetch,
     });
   } catch (err) {
+    if (isRefusedGrant(err)) await forgetRefusedRefreshToken(db, conn);
     throw refreshFailure('spotify', err, reauth);
   }
 

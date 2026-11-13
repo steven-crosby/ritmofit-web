@@ -182,7 +182,7 @@ update/delete/attach are **owner-only** (a simple ownership check, *not* `requir
 | POST | `/providers/track-import` | Import a provider result into the caller's per-user track library with provider refs. Also used for bulk playlist import (the web client calls this in concurrency-4 batches for "Import all N"). |
 | POST | `/providers/:provider/connect` | Start provider OAuth and return the provider authorization URL. Apple Music uses the concrete MusicKit routes below instead. |
 | GET | `/providers/:provider/callback` | Complete provider OAuth and store encrypted tokens. |
-| GET | `/providers/connections` | List the caller's connected providers. |
+| GET | `/providers/connections` | List the caller's connected providers. Each row carries `refreshable` (RF-216, 2026-11-12): true while the server holds a refresh token it can use. Spotify is still connected after `expiresAt` passes while `refreshable` is true; the server clears it when Spotify refuses the refresh grant, so the row then needs a reconnect. |
 | DELETE | `/providers/:provider/connection` | Disconnect a provider and enqueue required provider-metadata purge work. |
 | GET | `/providers/apple_music/config` | Return the developer token and storefront used to configure MusicKit JS. |
 | POST | `/providers/apple_music/connection` | Store the Music-User-Token returned by MusicKit JS, encrypted at rest. |

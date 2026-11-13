@@ -356,10 +356,21 @@ export class SpotifyPlaybackTokenError extends ApiError {
  * code on failure so the adapter can tell "reconnect for playback" from "reconnect".
  */
 export const getSpotifyPlaybackToken = async (): Promise<SpotifyPlaybackToken> => {
-  const res = await fetch(`${API_BASE_URL}/api/v1/providers/spotify/playback-token`, {
-    credentials: 'include',
-    headers: { 'Content-Type': 'application/json' },
-  });
+  let res: Response;
+  try {
+    res = await fetch(`${API_BASE_URL}/api/v1/providers/spotify/playback-token`, {
+      credentials: 'include',
+      headers: { 'Content-Type': 'application/json' },
+    });
+  } catch {
+    // The request never completed (offline, DNS, dropped connection). Status 0
+    // marks it as a network failure, which is retryable (RF-216).
+    throw new SpotifyPlaybackTokenError(
+      'Could not reach Ritmo to authorize Spotify playback.',
+      'NETWORK_ERROR',
+      0,
+    );
+  }
   if (res.status === 401) void authClient.signOut();
   if (!res.ok) {
     let code: string | undefined;

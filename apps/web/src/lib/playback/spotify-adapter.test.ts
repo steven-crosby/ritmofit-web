@@ -271,7 +271,7 @@ describe('SpotifyAdapter', () => {
     it.each<[string, unknown]>([
       ['a 502', new SpotifyPlaybackTokenError('down', 'PROVIDER_UNAVAILABLE', 502)],
       ['a 429', new SpotifyPlaybackTokenError('busy', 'PROVIDER_QUOTA_EXCEEDED', 429)],
-      ['a network failure', new TypeError('Failed to fetch')],
+      ['a network failure', new SpotifyPlaybackTokenError('offline', 'NETWORK_ERROR', 0)],
     ])('play() rejects with the retry message on %s', async (_label: string, cause: unknown) => {
       const player = new FakePlayer();
       const adapter = new SpotifyAdapter(
@@ -280,6 +280,14 @@ describe('SpotifyAdapter', () => {
       );
       await adapter.prepare(makeEntry(), { startMs: 0, endMs: 1000 });
       await expect(adapter.play()).rejects.toThrow(SPOTIFY_TEMPORARILY_UNAVAILABLE);
+    });
+
+    it('play() keeps the real message for a code error, not the retry message', async () => {
+      const player = new FakePlayer();
+      const startTrack = vi.fn().mockRejectedValue(new TypeError('x is undefined'));
+      const adapter = new SpotifyAdapter({}, makeHost(player, startTrack).host);
+      await adapter.prepare(makeEntry(), { startMs: 0, endMs: 1000 });
+      await expect(adapter.play()).rejects.toThrow('x is undefined');
     });
 
     it('play() keeps the reconnect message for a dead grant (409 REAUTH_REQUIRED)', async () => {

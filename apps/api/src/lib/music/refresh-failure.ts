@@ -15,8 +15,40 @@
  * Callers keep their own guards for a missing or undecryptable refresh token, which
  * are dead grants: run only the refresh request itself through this.
  */
+import { and, eq } from 'drizzle-orm';
 import { ProviderError, ProviderQuotaExceededError, ProviderTokenError } from '@ritmofit/music';
+import type { Db } from '../db.js';
 import { HttpError } from '../errors.js';
+import { musicConnections } from '../../db/schema.js';
+
+/** True when the token endpoint refused the grant itself (a 4xx other than 429). */
+export function isRefusedGrant(err: unknown): boolean {
+  return (
+    err instanceof ProviderTokenError && err.status >= 400 && err.status < 500 && err.status !== 429
+  );
+}
+
+/**
+ * Forget a refresh token the provider refused, so the connection view reports
+ * `refreshable: false` and the SPA shows Reconnect (RF-216). Only clears the exact
+ * ciphertext this request used: a concurrent request that already refreshed and
+ * stored a rotated token keeps it.
+ */
+export async function forgetRefusedRefreshToken(
+  db: Db,
+  conn: { id: string; refreshTokenEncrypted: string | null },
+): Promise<void> {
+  if (!conn.refreshTokenEncrypted) return;
+  await db
+    .update(musicConnections)
+    .set({ refreshTokenEncrypted: null, updatedAt: Date.now() })
+    .where(
+      and(
+        eq(musicConnections.id, conn.id),
+        eq(musicConnections.refreshTokenEncrypted, conn.refreshTokenEncrypted),
+      ),
+    );
+}
 
 export function refreshFailure(provider: string, err: unknown, reauthMessage: string): Error {
   if (err instanceof ProviderTokenError) {
@@ -24,7 +56,7 @@ export function refreshFailure(provider: string, err: unknown, reauthMessage: st
     if (err.status === 429) {
       return provider === 'spotify' ? new ProviderQuotaExceededError(provider) : err;
     }
-    if (err.status >= 500) return err;
+    if (err.status >= 500 || !isRefusedGrant(err)) return err;
     return new HttpError(409, 'REAUTH_REQUIRED', reauthMessage);
   }
   // A malformed 2xx token body is an upstream fault, not a dead grant.

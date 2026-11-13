@@ -125,6 +125,17 @@ describe('ConnectionsDialog connection-state marks', () => {
     expect(screen.queryByText('Session expired')).toBeNull();
     expect(document.querySelector('[data-connection-state="expired"]')).toBeNull();
   });
+
+  it('offers Reconnect Spotify once the server can no longer refresh a dead grant (RF-216)', async () => {
+    vi.mocked(api.listConnections).mockResolvedValue([
+      { ...connection('spotify'), expiresAt: 1, refreshable: false },
+    ]);
+
+    render(<ConnectionsDialog onClose={() => {}} />);
+
+    expect(await screen.findByText('Session expired')).toBeTruthy();
+    expect(screen.getByRole('button', { name: /Reconnect Spotify/ })).toBeTruthy();
+  });
 });
 
 describe('ConnectionsDialog saved-playlist reconnect affordance', () => {

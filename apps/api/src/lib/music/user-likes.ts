@@ -39,7 +39,7 @@ import type { Db } from '../db.js';
 import type { Env } from '../types.js';
 import { HttpError } from '../errors.js';
 import { boundFetch } from '../fetch.js';
-import { refreshFailure } from './refresh-failure.js';
+import { forgetRefusedRefreshToken, isRefusedGrant, refreshFailure } from './refresh-failure.js';
 import { encryptSecret, decryptSecret } from '../crypto.js';
 import {
   requireEncryptionKey,
@@ -276,6 +276,7 @@ async function refreshAndPersist(
     });
   } catch (err) {
     // Only a refused grant means reconnect; an outage or rate limit is retryable (RF-216).
+    if (isRefusedGrant(err)) await forgetRefusedRefreshToken(db, conn);
     throw refreshFailure(conn.provider, err, reauth);
   }
 

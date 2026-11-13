@@ -16,8 +16,10 @@ import { env, createExecutionContext, waitOnExecutionContext } from 'cloudflare:
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import worker from '../src/index.js';
 import { createDb } from '../src/lib/db.js';
+import { eq } from 'drizzle-orm';
 import { musicConnections } from '../src/db/schema.js';
 import { encryptSecret } from '../src/lib/crypto.js';
+import { forgetRefusedRefreshToken } from '../src/lib/music/refresh-failure.js';
 import { authed, signUpUser, verifyUserEmail, type TestUser } from './helpers.js';
 
 const PATH = '/api/v1/providers/spotify/playback-token';
@@ -185,8 +187,29 @@ describe('Spotify playback-token endpoint (integration)', () => {
         expect(calls).toHaveLength(1);
       });
 
-      it('returns 409 REAUTH_REQUIRED when Spotify refuses the grant (400 invalid_grant)', async () => {
+      async function storedRefreshToken(): Promise<string | null | undefined> {
+        const row = await createDb(env)
+          .select({ refreshTokenEncrypted: musicConnections.refreshTokenEncrypted })
+          .from(musicConnections)
+          .where(eq(musicConnections.userId, user.userId))
+          .get();
+        return row?.refreshTokenEncrypted;
+      }
+
+      async function connectionsView(): Promise<{ provider: string; refreshable?: boolean }[]> {
+        vi.unstubAllGlobals();
+        const res = await authed(user.cookie)('/api/v1/providers/connections');
+        expect(res.status).toBe(200);
+        return (await res.json()) as { provider: string; refreshable?: boolean }[];
+      }
+
+      it('returns 409 REAUTH_REQUIRED and forgets the refused refresh token (400 invalid_grant)', async () => {
         await seedExpired();
+        expect(await storedRefreshToken()).toBeTruthy();
+        expect((await connectionsView())[0]).toMatchObject({
+          provider: 'spotify',
+          refreshable: true,
+        });
         fakeTokenEndpoint(() =>
           Response.json(
             { error: 'invalid_grant', error_description: 'Refresh token revoked' },
@@ -196,6 +219,39 @@ describe('Spotify playback-token endpoint (integration)', () => {
         const res = await callProd(user.cookie);
         expect(res.status).toBe(409);
         expect(await errorOf(res)).toBe('REAUTH_REQUIRED');
+        // The SPA now sees a dead grant and offers Reconnect.
+        expect(await storedRefreshToken()).toBeNull();
+        expect((await connectionsView())[0]).toMatchObject({
+          provider: 'spotify',
+          refreshable: false,
+        });
+      });
+
+      it('does not forget a refresh token another request rotated in meanwhile', async () => {
+        await seedExpired();
+        const db = createDb(env);
+        const before = await db
+          .select()
+          .from(musicConnections)
+          .where(eq(musicConnections.userId, user.userId))
+          .get();
+        const rotated = await encryptSecret('sp-refresh-2', env.ENCRYPTION_KEY!);
+        await db
+          .update(musicConnections)
+          .set({ refreshTokenEncrypted: rotated })
+          .where(eq(musicConnections.id, before!.id));
+        // A slower request that read the old token now sees it refused.
+        await forgetRefusedRefreshToken(db, before!);
+        expect(await storedRefreshToken()).toBe(rotated);
+      });
+
+      it('keeps the refresh token after a retryable outage', async () => {
+        await seedExpired();
+        fakeTokenEndpoint(() => new Response('upstream error', { status: 503 }));
+        const res = await callProd(user.cookie);
+        expect(res.status).toBe(502);
+        expect(await storedRefreshToken()).toBeTruthy();
+        expect((await connectionsView())[0]).toMatchObject({ refreshable: true });
       });
 
       it.each([500, 503])(
