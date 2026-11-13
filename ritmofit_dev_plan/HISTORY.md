@@ -12,6 +12,22 @@ detail). Current focus and `main` vs production live in the "Now" block of
 ---
 
 ## Deploy and session log (newest first)
+> **Deploy 2026-11-13: Spotify waits for a cancelled start before the next one (#761, RF-158) on main `579c5950`**.
+> A standalone deploy from the Air with `scripts/deploy.sh`, because AGENTS.md keeps playback changes on their own. The
+> owner's approval ("Yes, deploy") was recorded before the deploy on
+> [#761](https://github.com/steven-crosby/ritmofit-web/pull/761#issuecomment-6860657431).
+>
+> - **Tree:** [#761](https://github.com/steven-crosby/ritmofit-web/pull/761) (RF-158, web playback only), plus docs
+>   [#759](https://github.com/steven-crosby/ritmofit-web/pull/759) and [#760](https://github.com/steven-crosby/ritmofit-web/pull/760).
+>   Worker `78f9eb69-fc76-4db6-80e9-3fa57db58e29` at 100%; rollback `a12d0e73-f429-41d8-a61f-d163790e8d10` (`eaddb1da`).
+>   SPA `assets/index-B6p62-bR.js` (was `assets/index-BxS7s1WB.js`), seen on 3 of 3 propagation fetches.
+> - **Checks:** the script's gates passed; no remote D1 migrations to apply; the status smoke (`/` 200, health 200,
+>   classes/explore/teams 401) and the security headers passed. A 5-minute `wrangler tail` saw 2 requests, both the
+>   authed smoke's 401s below, and 0 exceptions.
+> - **Not proven:** the authed production smoke returned 401 on both checks because the QA session token has expired
+>   ([RF-155](./tasks/RF-155.json)). Real Spotify scrub, skip and pause during a start is the owner's check,
+>   [RF-158](./tasks/RF-158.json) criterion 3. CI uses mock players.
+
 > **Deploy 2026-11-12: hono security bump (#756), then Spotify grant and refresh errors (#758) on main `eaddb1da`**.
 > Two deploys from the Air with `scripts/deploy.sh`, one per change, because AGENTS.md keeps provider changes on
 > their own. The owner's approval ("Yes, deploy") was recorded before both deploys on
