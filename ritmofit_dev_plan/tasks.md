@@ -12,13 +12,13 @@ owner's queue: any agent may execute a Ready task. Publishing follows AGENTS.md 
 Evidence marked **recorded** is a carried-forward claim, not fresh verification.
 A checked PR proves its GitHub state, not product acceptance or production behavior.
 
-211 tasks. backlog: 73 · ready: 0 · in_progress: 1 · blocked: 2 · review: 9 · done: 124 · cancelled: 2.
+211 tasks. backlog: 73 · ready: 0 · in_progress: 0 · blocked: 2 · review: 9 · done: 125 · cancelled: 2.
 
 ## In progress
 
 | Task | Priority / kind | Relationships | Next action / resolution | Evidence |
 | --- | --- | --- | --- | --- |
-| [RF-214](tasks/RF-214.json) Record D27: Spotify first, Apple Music work parked | P2 / documentation | — | Air session 2026-11-12, branch docs/d27-spotify-first: open the draft PR, record the owner's words as a PR comment, cite both here, then set Done. | none |
+| — | — | — | — | — |
 
 ## Blocked / waiting
 
@@ -160,6 +160,7 @@ A checked PR proves its GitHub state, not product acceptance or production behav
 | [RF-190](tasks/RF-190.json) Two-machine conductors: equal authority between the Air and Neo conductors | P2 / documentation | needs RF-182; follow-ups RF-191 | Equal authority is on main in both repos: web #721 (a9dcdfa) and iOS #83 (8a7fed3). Deploy approval from either conductor stays out of scope (RF-191). | checked 2026-11-03; checked 2026-11-04 |
 | [RF-192](tasks/RF-192.json) Standing rule: iOS simulator work runs on the Neo only | P2 / documentation | — | AGENTS.md gains the "iOS simulator work runs on the Neo" bullet under Two-machine conductors. | checked 2026-11-03 |
 | [RF-193](tasks/RF-193.json) Shared two-machine rules: one web-canonical file both repos follow (modes, claiming, unattended nights) | P2 / documentation | needs RF-192; follow-ups RF-194 | ritmofit_dev_plan/two-machine-rules.md is the shared, owner-gated rules file; AGENTS.md, CLAUDE.md, start-session and the deployment runbook point to it, and the merge policy names the unattended-night exception. The iOS copy and its parity check are iOS RF-1041. | checked 2026-11-04 |
+| [RF-214](tasks/RF-214.json) Record D27: Spotify first, Apple Music work parked | P2 / documentation | — | D27 recorded with the owner's words; 11 Apple Music-only records parked in Backlog with their history kept; RF-172's Apple Music check left for the owner's decision; RF-188 runs on Spotify; DEVELOPMENT_PLAN Now and Phases updated without setting new priorities. | checked 2026-11-12 |
 | [RF-100](tasks/RF-100.json) Label changes rerun only the PR gates, not the full CI job | P3 / task | needs RF-98; follow-ups RF-175, RF-176 | Label events run only owner-gate.yml, which writes the required `owner-gate` commit status; ci.yml writes no status and keys concurrency per PR, so a label edit no longer reruns or cancels CI and the required CI check fails only on real checks. The fail-closed issues #700 merged with under a one-time waiver were fixed in RF-176; remaining edge cases are in RF-175. | checked 2026-10-27; checked 2026-10-28; checked 2026-11-01; checked 2026-11-02 |
 | [RF-144](tasks/RF-144.json) The design brief and D21 describe the provider capabilities and Account sections the product has | P3 / documentation | needs RF-131 | Design brief 9.8 and D21 match the product (#679): provider capabilities per providerCapabilities, and the three Account sections with Preferences cut per RF-131 decision 5. | checked 2026-10-29; checked 2026-10-31 |
 | [RF-147](tasks/RF-147.json) Apple Music adapter diagnostics and FairPlay flag handling match the legacy path RF-124 restored | P3 / task | — | Criteria 0-2 shipped in #668; criterion 3 met by the owner's 2026-11-03 iPhone Safari run on af800c8 (Start, Next and auto-advance audible). FairPlay flag clearing is unchanged; once-per-load clear and late-settle checks remain RF-159. | checked 2026-10-29; checked 2026-10-30; checked 2026-11-03 |

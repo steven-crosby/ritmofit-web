@@ -3,7 +3,7 @@
   "id": "RF-214",
   "title": "Record D27: Spotify first, Apple Music work parked",
   "kind": "documentation",
-  "status": "in_progress",
+  "status": "done",
   "priority": "P2",
   "parent": null,
   "dependsOn": [],
@@ -13,9 +13,28 @@
     "DEVELOPMENT_PLAN.md › Now and › Phases reflect D27 and the 2026-11-12 machine split, without setting new web priorities the owner has not confirmed.",
     "The owner's words are recorded as a comment on this PR."
   ],
-  "nextAction": "Air session 2026-11-12, branch docs/d27-spotify-first: open the draft PR, record the owner's words as a PR comment, cite both here, then set Done.",
+  "nextAction": null,
   "blocker": null,
-  "evidence": [],
-  "resolution": null,
+  "evidence": [
+    {
+      "kind": "pr",
+      "ref": "https://github.com/steven-crosby/ritmofit-web/pull/755",
+      "summary": "D27 records PR: decisions.md D27, Apple Music-only records parked, RF-172 flagged, RF-188 on Spotify, Now and Phases notes.",
+      "checkedOn": "2026-11-12"
+    },
+    {
+      "kind": "observation",
+      "ref": "https://github.com/steven-crosby/ritmofit-web/pull/755#issuecomment-6840321636",
+      "summary": "The owner's words for D27, quoted on the PR (Air session, 2026-11-12).",
+      "checkedOn": "2026-11-12"
+    },
+    {
+      "kind": "observation",
+      "ref": "https://github.com/steven-crosby/ritmofit-ios/issues/113#issuecomment-6840223222",
+      "summary": "The owner's machine split (Neo on macOS/iOS, Air on web), recorded from the Air session, 2026-11-12.",
+      "checkedOn": "2026-11-12"
+    }
+  ],
+  "resolution": "D27 recorded with the owner's words; 11 Apple Music-only records parked in Backlog with their history kept; RF-172's Apple Music check left for the owner's decision; RF-188 runs on Spotify; DEVELOPMENT_PLAN Now and Phases updated without setting new priorities.",
   "followUps": []
 }

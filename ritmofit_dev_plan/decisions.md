@@ -684,7 +684,8 @@ music services) now applies to the native apps. D18's parity gate stays paused.
 **Decision (owner's words):** "for now, let's just drop Apple Music. My wife doesn't use and her
 peers, those using StructClub at her gym, don't use it either. We need Spotify working and
 optimized". Asked whether that means parking Apple Music work while leaving it in the app, or also
-hiding it, the owner chose "Park, leave in app".
+hiding it, the owner chose "Park, leave in app"
+([record](https://github.com/steven-crosby/ritmofit-web/pull/755#issuecomment-6840321636)).
 
 **Meaning:**
 
