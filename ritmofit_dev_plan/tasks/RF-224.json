@@ -1,0 +1,27 @@
+{
+  "schemaVersion": 1,
+  "id": "RF-224",
+  "title": "Owner browser check: Live preflight groups with a provider disconnected (RF-136)",
+  "kind": "task",
+  "status": "backlog",
+  "priority": "P2",
+  "parent": null,
+  "dependsOn": [],
+  "acceptance": [
+    "On production after a deploy that includes #768, in a real browser, Live on a class with tracks linked to a disconnected provider shows one group naming that provider with a count.",
+    "The group's Manage connections opens Music connections, and after connecting the group goes away and focus lands on a visible control.",
+    "Run without music and the Blocked verdict read as before."
+  ],
+  "nextAction": "Owed by the owner after the next web deploy (the Air). CI uses mock providers, and the PR's screenshots are the component alone with fixture tracks, so the signed-in screen with a real connection has not been seen. Agent-created: Backlog until the owner sets Ready.",
+  "blocker": null,
+  "evidence": [
+    {
+      "kind": "pr",
+      "ref": "https://github.com/steven-crosby/ritmofit-web/pull/768",
+      "summary": "RF-136 merged as d7231c4 on 2026-11-13; not deployed. The manual check named in the PR is this task.",
+      "checkedOn": "2026-11-13"
+    }
+  ],
+  "resolution": null,
+  "followUps": []
+}

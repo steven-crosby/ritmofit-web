@@ -36,5 +36,7 @@
     }
   ],
   "resolution": "A Spotify or SoundCloud token-endpoint 4xx other than invalid_grant (and other than Spotify's 429) now answers the retryable 502 PROVIDER_UNAVAILABLE at the three refresh sites (spotify-playback-token.ts, user-likes.ts, user-playlists.ts) instead of 409 REAUTH_REQUIRED, and the stored grant is kept. The 409 is answered exactly when the site forgets the token (isDeadGrant). app.onError logs the ProviderTokenError message: provider, HTTP status and OAuth error code, never the body or a token. No OpenAPI change: the 502 was already documented; api.md gained one sentence. Judgment calls: a 4xx with no OAuth code is also a 502; a provider that reports a dead grant with a code other than invalid_grant would now read as a server problem with no Reconnect prompt until someone reads the log. Not verified against the real providers: the owner's check after a deploy is that Spotify still refreshes after an hour and a revoked grant still shows Reconnect (the RF-217 check covers both).",
-  "followUps": []
+  "followUps": [
+    "RF-221"
+  ]
 }

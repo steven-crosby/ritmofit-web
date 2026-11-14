@@ -1,0 +1,25 @@
+{
+  "schemaVersion": 1,
+  "id": "RF-225",
+  "title": "The RF-185 Live timing test passes under machine load",
+  "kind": "task",
+  "status": "backlog",
+  "priority": "P3",
+  "parent": null,
+  "dependsOn": [],
+  "acceptance": [
+    "The 200 ms wall-clock assertion in LiveMode.test.tsx (RF-185) uses a fake clock or a bound that holds under load, and still fails if the double start it guards returns."
+  ],
+  "nextAction": "Seen on 2026-11-13: the test failed once in a local pnpm test run while three agents ran gates on one machine, and passed on rerun; CI was green. Agent-created: Backlog until the owner sets Ready.",
+  "blocker": null,
+  "evidence": [
+    {
+      "kind": "pr",
+      "ref": "https://github.com/steven-crosby/ritmofit-web/pull/768",
+      "summary": "Reported by the RF-136 agent during its local gate for #768: one failure under heavy load, pass on a full rerun. Other suites also needed reruns under the same load (web UI 5 s timeouts, an integration worker RPC timeout) during #767's gate.",
+      "checkedOn": "2026-11-13"
+    }
+  ],
+  "resolution": null,
+  "followUps": []
+}
