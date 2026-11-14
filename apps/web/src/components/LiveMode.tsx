@@ -1051,8 +1051,14 @@ export function LiveMode({
 
   /** Scroll the recovery panel (or the teaching card) into view and focus it. */
   const reveal = (needsRecovery: boolean, viewChanged: boolean) => {
-    const target = needsRecovery ? recoveryRef.current : teachingRef.current;
-    target?.scrollIntoView?.({ block: 'start' });
+    // The shell is the one scrollport, so scrolling the panel or the teaching
+    // region to its start also takes a scrolled Full List back to row 1. In
+    // Full List the panel pins under the header instead (see its className),
+    // and the list stays where the instructor left it (RF-211).
+    if (view !== 'list' || viewChanged) {
+      const target = needsRecovery ? recoveryRef.current : teachingRef.current;
+      target?.scrollIntoView?.({ block: 'start' });
+    }
     // Switching views reveals their content while the selected tab retains focus.
     if (viewChanged) return;
     if (needsRecovery) {
@@ -1285,7 +1291,7 @@ export function LiveMode({
             aria-label="Playback recovery"
             role={playbackFailure ? 'alert' : 'status'}
             data-quiet={recoveryQuiet || undefined}
-            className={`${recoveryQuiet ? 'invisible ' : ''}shrink-0 border-t border-state-caution/30 bg-bg-raised px-4 py-3 rf-focus-ring sm:px-6 [@media(max-height:480px)]:max-h-[calc(100dvh-var(--live-top-height,0px)-var(--live-bottom-height,0px))] [@media(max-height:480px)]:overflow-y-auto [@media(max-height:480px)]:px-2 [@media(max-height:480px)]:py-2`}
+            className={`${recoveryQuiet ? 'invisible ' : ''}${view === 'list' ? 'sticky top-[var(--live-top-height,0px)] z-10 ' : ''}shrink-0 border-t border-state-caution/30 bg-bg-raised px-4 py-3 rf-focus-ring sm:px-6 [@media(max-height:480px)]:max-h-[calc(100dvh-var(--live-top-height,0px)-var(--live-bottom-height,0px))] [@media(max-height:480px)]:overflow-y-auto [@media(max-height:480px)]:px-2 [@media(max-height:480px)]:py-2`}
           >
             <h2 className="font-ui text-sm font-semibold text-text-primary">
               {playbackFailure ? 'Playback stopped' : 'Waiting for music'}

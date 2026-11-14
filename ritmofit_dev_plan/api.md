@@ -194,7 +194,7 @@ update/delete/attach are **owner-only** (a simple ownership check, *not* `requir
 
 | Method | Path | Purpose |
 |---|---|---|
-| GET | `/providers/spotify/playback-token` | Mint a short-lived Spotify access token scoped for the Web Playback SDK. The token is returned to the client for the SDK session only — never stored server-side after the response. Requires a connected Spotify account with playback-capable scopes. Shipped 2026-07-06. Errors (RF-216, 2026-11-12): `409` `NOT_CONNECTED`, `PLAYBACK_REAUTH_REQUIRED` or `REAUTH_REQUIRED` (Spotify refused the refresh grant) mean reconnect; `502` `PROVIDER_UNAVAILABLE` and `429` `PROVIDER_QUOTA_EXCEEDED` mean the server-side refresh hit a Spotify outage, network failure or rate limit, so retry rather than reconnect. |
+| GET | `/providers/spotify/playback-token` | Mint a short-lived Spotify access token scoped for the Web Playback SDK. The token is returned to the client for the SDK session only — never stored server-side after the response. Requires a connected Spotify account with playback-capable scopes. Shipped 2026-07-06. Errors (RF-216, 2026-11-12): `409` `NOT_CONNECTED`, `PLAYBACK_REAUTH_REQUIRED` or `REAUTH_REQUIRED` (Spotify answered OAuth `invalid_grant` to the refresh) mean reconnect; `502` `PROVIDER_UNAVAILABLE` and `429` `PROVIDER_QUOTA_EXCEEDED` mean the server-side refresh hit a Spotify outage, network failure or rate limit, so retry rather than reconnect. Since RF-218 (2026-11-13) any other token-endpoint 4xx (for example `invalid_client` after Ritmo's client secret changes) is also the `502`, on this route and on the Spotify and SoundCloud likes and playlist reads, and the stored grant is kept. |
 
 ## Uploads
 

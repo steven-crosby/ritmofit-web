@@ -560,9 +560,12 @@ describe('LiveMode focus management', () => {
       fullList.focus();
       fireEvent.click(fullList);
       fireEvent.click(screen.getByRole('button', { name: 'More controls' }));
+      const revealsInFullList = revealed.length;
       act(() => fail({ message: 'Lost playback during teaching' }));
       const recovery = await screen.findByRole('alert', { name: 'Playback recovery' });
-      expect(revealed.at(-1)).toBe(recovery);
+      // Full List pins the panel under the header instead of scrolling to it (RF-211).
+      expect(revealed).toHaveLength(revealsInFullList);
+      expect(recovery.className).toContain('sticky');
       expect(document.activeElement).toBe(recovery);
       expect(
         screen.getByRole('button', { name: 'More controls' }).getAttribute('aria-expanded'),
@@ -576,7 +579,7 @@ describe('LiveMode focus management', () => {
 
       fireEvent.click(within(recovery).getByRole('button', { name: 'Continue without music' }));
       expect(screen.queryByRole('alert')).toBeNull();
-      expect(revealed.at(-1)).toBe(teaching);
+      expect(revealed).toHaveLength(revealCount); // the list stays where it was
       expect(document.activeElement).toBe(screen.getByRole('button', { name: 'Pause' }));
     } finally {
       focus.mockRestore();
@@ -1215,6 +1218,60 @@ describe('LiveMode waiting panel grace', () => {
       });
       expect(scrolled).not.toHaveBeenCalled();
       expect(document.activeElement).toBe(slider);
+    } finally {
+      delete (Element.prototype as { scrollIntoView?: unknown }).scrollIntoView;
+    }
+  });
+
+  it('keeps a scrolled Full List in place when Waiting for music appears and goes (RF-211)', async () => {
+    const stalled = { current: false };
+    let transport: NonNullable<AdapterEvents['onTransportState']> = () => {};
+    await startTeaching((events) => {
+      transport = (state) => events.onTransportState?.(state);
+      return playingTransportAdapter(stalled);
+    });
+    // jsdom has no layout. Stand in for the browser: the shell is the one
+    // scrollport, so scrolling the panel or the teaching region to its start
+    // puts the shell back at the top.
+    const teaching = document.querySelector<HTMLElement>('[data-live-region="teaching"]')!;
+    const shell = teaching.closest<HTMLElement>('.overflow-y-auto')!;
+    Element.prototype.scrollIntoView = function (this: Element) {
+      if (shell.contains(this)) shell.scrollTop = 0;
+    };
+    try {
+      fireEvent.click(screen.getByRole('tab', { name: 'Full List' }));
+      shell.scrollTop = 600; // the instructor scrolls down to a later track
+      stalled.current = true;
+      act(() => transport('buffering'));
+      await act(async () => {
+        await vi.advanceTimersByTimeAsync(2_100);
+      });
+      const panel = screen.getByRole('status', { name: 'Playback recovery' });
+      expect(within(panel).getByRole('heading', { name: 'Waiting for music' })).toBeTruthy();
+      expect(shell.scrollTop).toBe(600);
+      // Still reachable without scrolling: pinned under the header and focused.
+      expect(panel.className).toContain('sticky');
+      expect(document.activeElement).toBe(panel);
+
+      stalled.current = false; // music starts
+      await act(async () => {
+        await vi.advanceTimersByTimeAsync(500);
+      });
+      expect(screen.queryByRole('heading', { name: 'Waiting for music' })).toBeNull();
+      expect(shell.scrollTop).toBe(600);
+
+      // Cue-by-Cue keeps the reveal: one card, nothing to lose by scrolling to it.
+      fireEvent.click(screen.getByRole('tab', { name: 'Cue-by-Cue' }));
+      shell.scrollTop = 600;
+      stalled.current = true;
+      act(() => transport('buffering'));
+      await act(async () => {
+        await vi.advanceTimersByTimeAsync(2_100);
+      });
+      expect(screen.getByRole('status', { name: 'Playback recovery' }).className).not.toContain(
+        'sticky',
+      );
+      expect(shell.scrollTop).toBe(0);
     } finally {
       delete (Element.prototype as { scrollIntoView?: unknown }).scrollIntoView;
     }

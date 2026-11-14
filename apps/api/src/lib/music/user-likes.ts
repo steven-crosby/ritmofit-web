@@ -275,7 +275,8 @@ async function refreshAndPersist(
       fetchImpl: boundFetch,
     });
   } catch (err) {
-    // Only a refused grant means reconnect; an outage or rate limit is retryable (RF-216).
+    // Only a dead grant (invalid_grant) means reconnect; an outage, a rate limit or
+    // any other 4xx is retryable and keeps the stored grant (RF-216, RF-218).
     if (isDeadGrant(err)) await forgetRefusedRefreshToken(db, conn);
     throw refreshFailure(conn.provider, err, reauth);
   }
