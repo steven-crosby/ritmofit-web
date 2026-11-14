@@ -3,7 +3,7 @@
   "id": "RF-211",
   "title": "Live Full List keeps its scroll position when the Waiting for music banner appears",
   "kind": "task",
-  "status": "backlog",
+  "status": "in_progress",
   "priority": "P3",
   "parent": null,
   "dependsOn": [],
@@ -12,7 +12,7 @@
     "The same holds when the banner goes away again, and for Start, Next, Previous and a timeline tap.",
     "A LiveMode test covers the banner appearing while the Full List is scrolled and fails before the fix."
   ],
-  "nextAction": "Owner-requested (2026-11-07, Air session) from the owner's iPhone Safari recording of production f55b449a. Backlog until the owner sets Ready. Start in apps/web/src/components/LiveMode.tsx: find why the banner's insertion above the Full List resets its scroll (remount, a key change, or the scroll container's content shifting). Whether the banner should show for a normal 2-4 s start is a separate question, not this task.",
+  "nextAction": "In progress on branch fix/rf-211-full-list-scroll (background delegate agent, started 2026-11-13). Judgment call, flagged: the owner approved this web priority order on 2026-11-13 (DEVELOPMENT_PLAN.md Now), and the conducting session took the owner's \"what can we complete while I'm away\" as the go-ahead to start it; the owner did not set Ready. Restart: check out the branch, reproduce the scroll reset in LiveMode.tsx at 390 wide with mock providers, name the root cause, fix, add the LiveMode test.",
   "blocker": null,
   "evidence": [
     {

@@ -12,13 +12,13 @@ owner's queue: any agent may execute a Ready task. Publishing follows AGENTS.md 
 Evidence marked **recorded** is a carried-forward claim, not fresh verification.
 A checked PR proves its GitHub state, not product acceptance or production behavior.
 
-217 tasks. backlog: 74 · ready: 0 · in_progress: 0 · blocked: 2 · review: 9 · done: 130 · cancelled: 2.
+217 tasks. backlog: 73 · ready: 0 · in_progress: 1 · blocked: 2 · review: 9 · done: 130 · cancelled: 2.
 
 ## In progress
 
 | Task | Priority / kind | Relationships | Next action / resolution | Evidence |
 | --- | --- | --- | --- | --- |
-| — | — | — | — | — |
+| [RF-211](tasks/RF-211.json) Live Full List keeps its scroll position when the Waiting for music banner appears | P3 / task | — | In progress on branch fix/rf-211-full-list-scroll (background delegate agent, started 2026-11-13). Judgment call, flagged: the owner approved this web priority order on 2026-11-13 (DEVELOPMENT_PLAN.md Now), and the conducting session took the owner's "what can we complete while I'm away" as the go-ahead to start it; the owner did not set Ready. Restart: check out the branch, reproduce the scroll reset in LiveMode.tsx at 390 wide with mock providers, name the root cause, fix, add the LiveMode test. | checked 2026-11-07 |
 
 ## Blocked / waiting
 
@@ -120,7 +120,6 @@ A checked PR proves its GitHub state, not product acceptance or production behav
 | [RF-207](tasks/RF-207.json) RF-195 final-review follow-ups: Back reshow clears page errors, one run-payload read on a failed /live restore, one Apple error read | P3 / task | — | Agent-created from the final review of #728 (RF-195) at fe07411, non-blocking findings 3-5. Backlog until the owner sets Ready. Files: apps/web/src/components/Dashboard.tsx, apps/web/src/App.tsx. | checked 2026-11-06 |
 | [RF-209](tasks/RF-209.json) Live queue follow-ups from the #746 final review: Retry note, chunk error boundary, fallback, preload | P3 / task | — | Agent-created from the final review of #746 (RF-201, RF-208) at 4c7b5eb, all five findings non-blocking. Backlog until the owner sets Ready. Files: apps/web/src/components/LiveWorkspace.tsx, apps/web/src/components/Dashboard.tsx. | checked 2026-11-07 |
 | [RF-210](tasks/RF-210.json) Songs row player preload retry follow-ups from the #745 final review | P3 / task | — | Agent-created from the final review of #745 (RF-199) at 0019fe0, all findings non-blocking. Backlog until the owner sets Ready. Files: apps/web/src/components/Dashboard.tsx, apps/web/src/components/song-row-preview-load.ts. | checked 2026-11-07 |
-| [RF-211](tasks/RF-211.json) Live Full List keeps its scroll position when the Waiting for music banner appears | P3 / task | — | Owner-requested (2026-11-07, Air session) from the owner's iPhone Safari recording of production f55b449a. Backlog until the owner sets Ready. Start in apps/web/src/components/LiveMode.tsx: find why the banner's insertion above the Full List resets its scroll (remount, a key change, or the scroll container's content shifting). Whether the banner should show for a normal 2-4 s start is a separate question, not this task. | checked 2026-11-07 |
 | [RF-213](tasks/RF-213.json) Docs that still say web-first agree with D26 | P3 / task | — | Logged from the /code-review high of #750 (Neo, 2026-11-07): non-blocking findings. Agent-created: Backlog until the owner sets Ready. | checked 2026-11-07 |
 | [RF-218](tasks/RF-218.json) A token-endpoint 4xx other than invalid_grant reads as a server problem, not Reconnect | P3 / task | needs RF-216 | From the #758 final review on 30e0b29 (2026-11-12, non-blocking): a wrong app secret tells instructors to reconnect, which cannot help. Provider code, owner-gated. Agent-created: Backlog until the owner sets Ready. | checked 2026-11-12 |
 | [RF-219](tasks/RF-219.json) Catalog search offers Try again only when a retry can help | untriaged / task | — | Split from RF-74 (2026-11-13), which fixed the playlist surfaces only. On main the TrackSearch search-mode error row always renders Try again, and Dashboard.tsx Music search swallows the API error and shows the generic retry sentence. Propose the change, then implement with tests. | checked 2026-11-13 |
