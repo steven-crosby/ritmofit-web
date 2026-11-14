@@ -3,7 +3,7 @@
   "id": "RF-218",
   "title": "A token-endpoint 4xx other than invalid_grant reads as a server problem, not Reconnect",
   "kind": "task",
-  "status": "in_progress",
+  "status": "done",
   "priority": "P3",
   "parent": null,
   "dependsOn": [
@@ -13,7 +13,7 @@
     "When Spotify's or SoundCloud's token endpoint answers a 4xx other than invalid_grant and 429 (for example invalid_client after Ritmo's client secret changes), the refresh sites answer a retryable 502 and log the provider, status and OAuth error code (never the body or a token), instead of 409 REAUTH_REQUIRED, and keep the stored grant.",
     "Unit and integration tests cover invalid_client and an unknown 4xx code."
   ],
-  "nextAction": "In progress on branch fix/rf-218-token-4xx-not-reauth (background delegate agent, 2026-11-13). Judgment call, flagged: the owner approved this web priority order on 2026-11-13 (DEVELOPMENT_PLAN.md \"Now\"), and the conducting session took the owner's \"what can we complete while I'm away\" as the go-ahead to start it; the owner did not set Ready. Restart: make refreshFailure answer the 502 provider error for a non-invalid_grant 4xx, add unit and integration tests, finish the record in the same PR. Provider code, owner-gated: the agent never merges.",
+  "nextAction": null,
   "blocker": null,
   "evidence": [
     {
@@ -27,8 +27,14 @@
       "ref": "ritmofit_dev_plan/DEVELOPMENT_PLAN.md",
       "summary": "Start authority, a flagged judgment call: the owner approved the web priority order on 2026-11-13 (DEVELOPMENT_PLAN.md \"Now\", which lists RF-218), and the conducting session took the owner's \"what can we complete while I'm away\" as the go-ahead to start this task from Backlog. The owner did not set Ready.",
       "checkedOn": "2026-11-13"
+    },
+    {
+      "kind": "pr",
+      "ref": "https://github.com/steven-crosby/ritmofit-web/pull/767",
+      "summary": "Implementation, opened as the draft claim. refreshFailure answers 409 REAUTH_REQUIRED only for OAuth invalid_grant; every other token-endpoint 4xx except Spotify's 429 is the 502 provider error at all three refresh sites, and the stored grant is kept. New unit cases (refresh-failure, spotify-playback-token, user-likes and user-playlists, Spotify and SoundCloud) and playback-token integration cases against a fake Spotify token endpoint cover 401 and 400 invalid_client, an unknown 4xx code and a 4xx with no code, and assert the log line carries provider, status and OAuth code but not the body, the refresh token or the client secret. They failed on the old classification (run against the pre-fix helper) and pass with the fix. Local gate on 2026-11-13: format, owner-gate/rf-trace/tasks tests, tasks:check, typecheck, eslint, design-system verify, theme-classes, pnpm test (web 1,801; API 698; music 30), API integration (277), web build within budget (178.48 kB gzip), Playwright e2e (2 passed), OpenAPI regenerated with no drift, contract-parity clean, audit:ci. Earlier runs of the web unit and integration suites timed out under machine load from concurrent agents and passed on rerun. No real Spotify or SoundCloud token endpoint was contacted.",
+      "checkedOn": "2026-11-13"
     }
   ],
-  "resolution": null,
+  "resolution": "A Spotify or SoundCloud token-endpoint 4xx other than invalid_grant (and other than Spotify's 429) now answers the retryable 502 PROVIDER_UNAVAILABLE at the three refresh sites (spotify-playback-token.ts, user-likes.ts, user-playlists.ts) instead of 409 REAUTH_REQUIRED, and the stored grant is kept. The 409 is answered exactly when the site forgets the token (isDeadGrant). app.onError logs the ProviderTokenError message: provider, HTTP status and OAuth error code, never the body or a token. No OpenAPI change: the 502 was already documented; api.md gained one sentence. Judgment calls: a 4xx with no OAuth code is also a 502; a provider that reports a dead grant with a code other than invalid_grant would now read as a server problem with no Reconnect prompt until someone reads the log. Not verified against the real providers: the owner's check after a deploy is that Spotify still refreshes after an hour and a revoked grant still shows Reconnect (the RF-217 check covers both).",
   "followUps": []
 }

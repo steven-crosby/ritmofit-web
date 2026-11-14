@@ -84,8 +84,9 @@ export async function mintSpotifyPlaybackToken(
   }
 
   // Expired (or about to) — refresh, persist the rotated pair, hand back the fresh
-  // token. A refused grant is dead → reconnect; a Spotify outage, rate limit or
-  // network failure is retryable and must not start OAuth mid-class (RF-216).
+  // token. A dead grant (invalid_grant) → reconnect; a Spotify outage, rate limit,
+  // network failure or any other 4xx (for example invalid_client) is retryable and
+  // must not start OAuth mid-class (RF-216, RF-218).
   const reauth = 'Reconnect your Spotify account.';
   if (!conn.refreshTokenEncrypted) {
     throw new HttpError(409, 'REAUTH_REQUIRED', reauth);
