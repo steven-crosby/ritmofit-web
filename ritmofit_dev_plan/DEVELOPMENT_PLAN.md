@@ -62,11 +62,12 @@ Spotify start), [RF-74](./tasks/RF-74.json) (closes RF-92), [RF-218](./tasks/RF-
 [RF-157](./tasks/RF-157.json) (Spotify library depth), then [RF-138](./tasks/RF-138.json) after a design
 pass. [RF-167](./tasks/RF-167.json) waits on a non-allowlisted Spotify account to probe. Owner checks
 alongside: RF-217, RF-205, RF-148, RF-155. Account security (RF-116, RF-140) is not in this order.
-**Next step:** a deploy from the Air of the four merged PRs above (#767 is provider code, which `AGENTS.md`
-deploys on its own), then the owner checks they need: [RF-211](./tasks/RF-211.json) on iPhone Safari,
+**Next step:** deploys from the Air of the four merged PRs above (#767 separately: it is provider code, which
+`AGENTS.md` deploys on its own), then the owner checks they need: [RF-211](./tasks/RF-211.json) on iPhone Safari,
 [RF-224](./tasks/RF-224.json) (preflight groups with a provider disconnected), and RF-217, which also covers
 RF-218. In the order above RF-158, RF-74, RF-218 and RF-136 are Done and RF-211 is For review; next to build
-are [RF-130](./tasks/RF-130.json), then [RF-149](./tasks/RF-149.json) and [RF-157](./tasks/RF-157.json).
+are [RF-130](./tasks/RF-130.json), then [RF-149](./tasks/RF-149.json) and [RF-157](./tasks/RF-157.json),
+then [RF-138](./tasks/RF-138.json) after a design pass.
 Follow-ups from the 2026-11-13 reviews are RF-221 to RF-225 (Backlog). Owner checks on production:
 [RF-217](./tasks/RF-217.json): Spotify stays playable past the
 hour and asks to reconnect only for a dead grant (desktop Chrome, three steps). iPhone feel pass on a Spotify class: the Live

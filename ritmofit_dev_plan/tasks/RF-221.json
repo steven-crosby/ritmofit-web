@@ -12,7 +12,7 @@
     "OpenAPI describes the 409 as an invalid_grant refusal and the playback-token 502 as including a refused client, matching api.md; the iOS snapshot refresh is named if the spec changes.",
     "The SoundCloud refresh path has an integration test, and the record states what SoundCloud's token endpoint answers for a revoked grant, checked against the provider."
   ],
-  "nextAction": "Non-blocking findings from the #767 final review and the RF-218 agent's report (2026-11-13). Provider code and OpenAPI are owner-gated. Agent-created: Backlog until the owner sets Ready.",
+  "nextAction": "Non-blocking findings from the #767 final review (2026-11-13). The SoundCloud items come from the RF-218 agent's report to the conducting session, which is not on the PR: there is no prod-like SoundCloud route harness today, and SoundCloud's real token endpoint was not probed. Provider code and OpenAPI are owner-gated. Agent-created: Backlog until the owner sets Ready.",
   "blocker": null,
   "evidence": [
     {

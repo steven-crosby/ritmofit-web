@@ -19,7 +19,7 @@
     {
       "kind": "pr",
       "ref": "https://github.com/steven-crosby/ritmofit-web/pull/768",
-      "summary": "Final review on 10598d8: no significant findings. Non-blocking: Dialog.tsx focus fallback takes the first marked element; every Manage connections button shares one accessible name; an unreachable fallback name; about 830 KB of screenshots. The agent chose Manage connections because a direct connect needs LiveMode.tsx, which its brief put off limits.",
+      "summary": "Final review on 10598d8 (the PR diff is identical on the merged head a8b27ab): no significant findings. Non-blocking: Dialog.tsx focus fallback takes the first marked element; every Manage connections button shares one accessible name; an unreachable fallback name; about 830 KB of screenshots. The agent chose Manage connections because a direct connect needs LiveMode.tsx, which its brief put off limits.",
       "checkedOn": "2026-11-13"
     }
   ],

@@ -2,9 +2,9 @@
   "schemaVersion": 1,
   "id": "RF-224",
   "title": "Owner browser check: Live preflight groups with a provider disconnected (RF-136)",
-  "kind": "task",
+  "kind": "verification",
   "status": "backlog",
-  "priority": "P2",
+  "priority": "untriaged",
   "parent": null,
   "dependsOn": [],
   "acceptance": [
