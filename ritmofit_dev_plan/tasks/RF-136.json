@@ -3,7 +3,7 @@
   "id": "RF-136",
   "title": "Preflight groups repeated failures, names the provider and puts the fix beside them",
   "kind": "task",
-  "status": "backlog",
+  "status": "in_progress",
   "priority": "P1",
   "parent": null,
   "dependsOn": [],
@@ -13,7 +13,7 @@
     "The fix action (connect or reconnect that provider, or Manage connections) sits with the group, not after the full list.",
     "Run without music and the honest Blocked verdict are unchanged."
   ],
-  "nextAction": "Files: apps/web/src/components/LivePreflight.tsx, apps/web/src/lib/playback/coordinator.ts and types.ts (the unplayable reason needs the provider). Owner-gated (playback code): the PR needs owner-approved. Surface: web.",
+  "nextAction": "In progress on branch feat/rf-136-preflight-groups (background delegate agent, 2026-11-13), claimed by its draft PR. Start basis, a flagged judgment call: the owner approved the web priority order in DEVELOPMENT_PLAN.md \"Now\" on 2026-11-13, and the conducting session took the owner’s \"what can we complete while I’m away\" as the go-ahead to start this task; it was never in Ready. Restart: finish the grouping in apps/web/src/components/LivePreflight.tsx and carry the provider on the unplayable reason (coordinator.ts, types.ts), then set the final state in the same PR. Owner-gated (playback code): the PR needs owner-approved. Surface: web.",
   "blocker": null,
   "evidence": [
     {
