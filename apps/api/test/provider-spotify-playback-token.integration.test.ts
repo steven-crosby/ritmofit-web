@@ -245,14 +245,54 @@ describe('Spotify playback-token endpoint (integration)', () => {
         expect(await storedRefreshToken()).toBe(rotated);
       });
 
-      it("keeps the refresh token when Spotify rejects Ritmo's own client (400 invalid_client)", async () => {
+      // RF-218: a 4xx that is not invalid_grant is Ritmo's own fault (for example a
+      // changed client secret). Reconnecting cannot help, so it is the retryable 502,
+      // the grant is kept, and the log names provider, status and OAuth code only.
+      it.each([
+        [401, 'invalid_client', 'Spotify token endpoint returned 401 (invalid_client)'],
+        [400, 'invalid_client', 'Spotify token endpoint returned 400 (invalid_client)'],
+        [
+          400,
+          'some_code_nobody_knows',
+          'Spotify token endpoint returned 400 (some_code_nobody_knows)',
+        ],
+      ])(
+        'returns a retryable 502, not REAUTH, and keeps the refresh token on a %s %s',
+        async (status, code, logged) => {
+          await seedExpired();
+          const warn = vi.spyOn(console, 'warn').mockImplementation(() => {});
+          try {
+            fakeTokenEndpoint(() =>
+              Response.json(
+                { error: code, error_description: 'BODY-TEXT-MUST-NOT-BE-LOGGED' },
+                { status },
+              ),
+            );
+            const res = await callProd(user.cookie);
+            expect(res.status).toBe(502);
+            expect(await errorOf(res)).toBe('PROVIDER_UNAVAILABLE');
+            const lines = warn.mock.calls.map((args) => args.map(String).join(' '));
+            expect(lines).toContain(`[provider:spotify] ${logged}`);
+            const all = lines.join('\n');
+            expect(all).not.toContain('BODY-TEXT-MUST-NOT-BE-LOGGED');
+            expect(all).not.toContain('sp-refresh-1');
+            expect(all).not.toContain('ssec-test');
+          } finally {
+            warn.mockRestore();
+          }
+          // A rotated or mistyped client secret must not wipe users' grants.
+          expect(await storedRefreshToken()).toBeTruthy();
+          expect((await connectionsView())[0]).toMatchObject({ refreshable: true });
+        },
+      );
+
+      it('returns a retryable 502 on a 4xx with no OAuth error code', async () => {
         await seedExpired();
-        fakeTokenEndpoint(() => Response.json({ error: 'invalid_client' }, { status: 400 }));
+        fakeTokenEndpoint(() => new Response('<html>Forbidden</html>', { status: 403 }));
         const res = await callProd(user.cookie);
-        expect(res.status).toBe(409);
-        // A rotated or mistyped client secret must not wipe users' grants.
+        expect(res.status).toBe(502);
+        expect(await errorOf(res)).toBe('PROVIDER_UNAVAILABLE');
         expect(await storedRefreshToken()).toBeTruthy();
-        expect((await connectionsView())[0]).toMatchObject({ refreshable: true });
       });
 
       it('keeps the refresh token after a retryable outage', async () => {

@@ -1,6 +1,8 @@
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 import {
   AppleMusicUnauthorizedError,
+  ProviderError,
+  ProviderTokenError,
   fetchAppleMusicLibraryPlaylistTracks,
   fetchAppleMusicLibraryPlaylists,
   fetchSoundCloudPlaylistTracks,
@@ -204,6 +206,32 @@ describe('user playlist token helper', () => {
     expect(refreshSpotifyToken).not.toHaveBeenCalled();
     expect(fetchSpotifySavedPlaylists).toHaveBeenCalledTimes(1);
   });
+
+  it.each([
+    [400, 'invalid_grant', true],
+    [401, 'invalid_client', false],
+    [400, 'some_code_nobody_knows', false],
+  ])(
+    'a refresh refused with %s %s asks to reconnect only for a dead grant (RF-218)',
+    async (status, code, dead) => {
+      const { db, updates } = makeDb(makeConnection());
+      vi.mocked(fetchSpotifySavedPlaylists).mockRejectedValueOnce(new SpotifyUnauthorizedError());
+      vi.mocked(refreshSpotifyToken).mockRejectedValueOnce(
+        new ProviderTokenError('spotify', 'Spotify', status, code),
+      );
+
+      const err = await fetchUserPlaylists(db, env, 'user-1', 'spotify').catch((e: unknown) => e);
+      if (dead) {
+        expect(err).toMatchObject({ status: 409, code: 'REAUTH_REQUIRED' });
+        expect(updates).toEqual([expect.objectContaining({ refreshTokenEncrypted: null })]);
+      } else {
+        expect(err).toBeInstanceOf(ProviderError);
+        expect(err).not.toBeInstanceOf(HttpError);
+        // The stored grant is untouched.
+        expect(updates).toEqual([]);
+      }
+    },
+  );
 
   it('maps a Development Mode 403 to the allowlist code without refreshing', async () => {
     const { db } = makeDb(makeConnection());
@@ -492,6 +520,27 @@ describe('SoundCloud saved playlists (shared connected-token path)', () => {
     );
     expect(refreshSoundCloudToken).toHaveBeenCalledTimes(1);
   });
+
+  it.each([
+    [401, 'invalid_client'],
+    [400, 'some_code_nobody_knows'],
+  ])(
+    'surfaces a retryable 502, not REAUTH, and keeps the grant on a refresh %s %s (RF-218)',
+    async (status, code) => {
+      vi.mocked(fetchSoundCloudPlaylists).mockRejectedValueOnce(new SoundCloudUnauthorizedError());
+      vi.mocked(refreshSoundCloudToken).mockRejectedValueOnce(
+        new ProviderTokenError('soundcloud', 'SoundCloud', status, code),
+      );
+      const { db, updates } = makeDb(makeConnection({ provider: 'soundcloud' }));
+
+      const err = await fetchUserPlaylists(db, soundcloudEnv, 'user-1', 'soundcloud').catch(
+        (e: unknown) => e,
+      );
+      expect(err).toBeInstanceOf(ProviderError);
+      expect(err).not.toBeInstanceOf(HttpError);
+      expect(updates).toEqual([]);
+    },
+  );
 
   it('maps a SoundCloud auth failure with no refresh token to REAUTH_REQUIRED', async () => {
     vi.mocked(fetchSoundCloudPlaylists).mockRejectedValueOnce(new SoundCloudUnauthorizedError());
