@@ -3,7 +3,7 @@
   "id": "RF-218",
   "title": "A token-endpoint 4xx other than invalid_grant reads as a server problem, not Reconnect",
   "kind": "task",
-  "status": "backlog",
+  "status": "in_progress",
   "priority": "P3",
   "parent": null,
   "dependsOn": [
@@ -13,7 +13,7 @@
     "When Spotify's or SoundCloud's token endpoint answers a 4xx other than invalid_grant and 429 (for example invalid_client after Ritmo's client secret changes), the refresh sites answer a retryable 502 and log the provider, status and OAuth error code (never the body or a token), instead of 409 REAUTH_REQUIRED, and keep the stored grant.",
     "Unit and integration tests cover invalid_client and an unknown 4xx code."
   ],
-  "nextAction": "From the #758 final review on 30e0b29 (2026-11-12, non-blocking): a wrong app secret tells instructors to reconnect, which cannot help. Provider code, owner-gated. Agent-created: Backlog until the owner sets Ready.",
+  "nextAction": "In progress on branch fix/rf-218-token-4xx-not-reauth (background delegate agent, 2026-11-13). Judgment call, flagged: the owner approved this web priority order on 2026-11-13 (DEVELOPMENT_PLAN.md \"Now\"), and the conducting session took the owner's \"what can we complete while I'm away\" as the go-ahead to start it; the owner did not set Ready. Restart: make refreshFailure answer the 502 provider error for a non-invalid_grant 4xx, add unit and integration tests, finish the record in the same PR. Provider code, owner-gated: the agent never merges.",
   "blocker": null,
   "evidence": [
     {
@@ -21,6 +21,12 @@
       "ref": "https://github.com/steven-crosby/ritmofit-web/pull/758",
       "summary": "Final review note on 30e0b29: refreshFailure maps a non-invalid_grant 4xx to 409 REAUTH_REQUIRED; pre-existing, no data loss after the invalid_grant-only fix.",
       "checkedOn": "2026-11-12"
+    },
+    {
+      "kind": "observation",
+      "ref": "ritmofit_dev_plan/DEVELOPMENT_PLAN.md",
+      "summary": "Start authority, a flagged judgment call: the owner approved the web priority order on 2026-11-13 (DEVELOPMENT_PLAN.md \"Now\", which lists RF-218), and the conducting session took the owner's \"what can we complete while I'm away\" as the go-ahead to start this task from Backlog. The owner did not set Ready.",
+      "checkedOn": "2026-11-13"
     }
   ],
   "resolution": null,

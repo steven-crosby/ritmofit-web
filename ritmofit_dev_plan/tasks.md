@@ -12,13 +12,13 @@ owner's queue: any agent may execute a Ready task. Publishing follows AGENTS.md 
 Evidence marked **recorded** is a carried-forward claim, not fresh verification.
 A checked PR proves its GitHub state, not product acceptance or production behavior.
 
-217 tasks. backlog: 74 · ready: 0 · in_progress: 0 · blocked: 2 · review: 9 · done: 130 · cancelled: 2.
+217 tasks. backlog: 73 · ready: 0 · in_progress: 1 · blocked: 2 · review: 9 · done: 130 · cancelled: 2.
 
 ## In progress
 
 | Task | Priority / kind | Relationships | Next action / resolution | Evidence |
 | --- | --- | --- | --- | --- |
-| — | — | — | — | — |
+| [RF-218](tasks/RF-218.json) A token-endpoint 4xx other than invalid_grant reads as a server problem, not Reconnect | P3 / task | needs RF-216 | In progress on branch fix/rf-218-token-4xx-not-reauth (background delegate agent, 2026-11-13). Judgment call, flagged: the owner approved this web priority order on 2026-11-13 (DEVELOPMENT_PLAN.md "Now"), and the conducting session took the owner's "what can we complete while I'm away" as the go-ahead to start it; the owner did not set Ready. Restart: make refreshFailure answer the 502 provider error for a non-invalid_grant 4xx, add unit and integration tests, finish the record in the same PR. Provider code, owner-gated: the agent never merges. | checked 2026-11-12; checked 2026-11-13 |
 
 ## Blocked / waiting
 
@@ -122,7 +122,6 @@ A checked PR proves its GitHub state, not product acceptance or production behav
 | [RF-210](tasks/RF-210.json) Songs row player preload retry follow-ups from the #745 final review | P3 / task | — | Agent-created from the final review of #745 (RF-199) at 0019fe0, all findings non-blocking. Backlog until the owner sets Ready. Files: apps/web/src/components/Dashboard.tsx, apps/web/src/components/song-row-preview-load.ts. | checked 2026-11-07 |
 | [RF-211](tasks/RF-211.json) Live Full List keeps its scroll position when the Waiting for music banner appears | P3 / task | — | Owner-requested (2026-11-07, Air session) from the owner's iPhone Safari recording of production f55b449a. Backlog until the owner sets Ready. Start in apps/web/src/components/LiveMode.tsx: find why the banner's insertion above the Full List resets its scroll (remount, a key change, or the scroll container's content shifting). Whether the banner should show for a normal 2-4 s start is a separate question, not this task. | checked 2026-11-07 |
 | [RF-213](tasks/RF-213.json) Docs that still say web-first agree with D26 | P3 / task | — | Logged from the /code-review high of #750 (Neo, 2026-11-07): non-blocking findings. Agent-created: Backlog until the owner sets Ready. | checked 2026-11-07 |
-| [RF-218](tasks/RF-218.json) A token-endpoint 4xx other than invalid_grant reads as a server problem, not Reconnect | P3 / task | needs RF-216 | From the #758 final review on 30e0b29 (2026-11-12, non-blocking): a wrong app secret tells instructors to reconnect, which cannot help. Provider code, owner-gated. Agent-created: Backlog until the owner sets Ready. | checked 2026-11-12 |
 | [RF-219](tasks/RF-219.json) Catalog search offers Try again only when a retry can help | untriaged / task | — | Split from RF-74 (2026-11-13), which fixed the playlist surfaces only. On main the TrackSearch search-mode error row always renders Try again, and Dashboard.tsx Music search swallows the API error and shows the generic retry sentence. Propose the change, then implement with tests. | checked 2026-11-13 |
 | [RF-220](tasks/RF-220.json) Playlist error states share one classifier and one caution alert | untriaged / task | — | Non-blocking findings from the #764 final review (2026-11-13), cleanup only. Propose the shared helper and component, then implement with the existing RF-74 tests as the regression net. | checked 2026-11-13 |
 
