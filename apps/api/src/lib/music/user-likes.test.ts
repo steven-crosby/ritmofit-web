@@ -270,6 +270,25 @@ describe('fetchUserLikes — Spotify (shared connected-token path)', () => {
     expect(err).not.toBeInstanceOf(HttpError);
   });
 
+  it.each([
+    [401, 'invalid_client'],
+    [400, 'some_code_nobody_knows'],
+  ])(
+    'surfaces a retryable 502, not REAUTH, and keeps the grant on a refresh %s %s (RF-218)',
+    async (status, code) => {
+      const { db, updates } = makeDb(makeConnection());
+      vi.mocked(fetchSpotifySavedTracksPage).mockRejectedValueOnce(new SpotifyUnauthorizedError());
+      vi.mocked(refreshSpotifyToken).mockRejectedValueOnce(
+        new ProviderTokenError('spotify', 'Spotify', status, code),
+      );
+
+      const err = await fetchUserLikes(db, env, 'user-1', 'spotify').catch((e: unknown) => e);
+      expect(err).toBeInstanceOf(ProviderError);
+      expect(err).not.toBeInstanceOf(HttpError);
+      expect(updates).toEqual([]);
+    },
+  );
+
   it('maps REAUTH_REQUIRED when a proactive refresh is followed by a 401 (no second refresh)', async () => {
     // Expired token → proactive refresh succeeds → the read still 401s. Because we
     // already refreshed this request, the `refreshed` guard short-circuits to REAUTH
@@ -349,6 +368,27 @@ describe('fetchUserLikes — SoundCloud (shared connected-token path)', () => {
     );
     expect(refreshSoundCloudToken).toHaveBeenCalledTimes(1);
   });
+
+  it.each([
+    [401, 'invalid_client'],
+    [400, 'some_code_nobody_knows'],
+  ])(
+    'surfaces a retryable 502, not REAUTH, and keeps the grant on a refresh %s %s (RF-218)',
+    async (status, code) => {
+      vi.mocked(fetchSoundCloudLikesPage).mockRejectedValueOnce(new SoundCloudUnauthorizedError());
+      vi.mocked(refreshSoundCloudToken).mockRejectedValueOnce(
+        new ProviderTokenError('soundcloud', 'SoundCloud', status, code),
+      );
+      const { db, updates } = makeDb(makeConnection({ provider: 'soundcloud' }));
+
+      const err = await fetchUserLikes(db, soundcloudEnv, 'user-1', 'soundcloud').catch(
+        (e: unknown) => e,
+      );
+      expect(err).toBeInstanceOf(ProviderError);
+      expect(err).not.toBeInstanceOf(HttpError);
+      expect(updates).toEqual([]);
+    },
+  );
 
   it('maps a SoundCloud auth failure with no refresh token to REAUTH_REQUIRED', async () => {
     vi.mocked(fetchSoundCloudLikesPage).mockRejectedValueOnce(new SoundCloudUnauthorizedError());

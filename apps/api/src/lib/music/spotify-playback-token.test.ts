@@ -225,6 +225,15 @@ describe('mintSpotifyPlaybackToken', () => {
   // RF-216 (audit C-2): an outage, rate limit or network failure must not start OAuth.
   it.each([
     ['a Spotify 5xx', new musicPkg.ProviderTokenError('spotify', 'Spotify', 503, null)],
+    // RF-218: Ritmo's own client or request was refused; reconnecting cannot help.
+    [
+      'a 401 invalid_client',
+      new musicPkg.ProviderTokenError('spotify', 'Spotify', 401, 'invalid_client'),
+    ],
+    [
+      'an unknown 4xx code',
+      new musicPkg.ProviderTokenError('spotify', 'Spotify', 400, 'some_code_nobody_knows'),
+    ],
     ['a thrown fetch', new TypeError('fetch failed')],
     ['a malformed 2xx body', new musicPkg.ProviderError('spotify', 'bad shape')],
   ])('throws a retryable ProviderError (502), not REAUTH, on %s', async (_label, cause) => {

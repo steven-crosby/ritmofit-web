@@ -8,9 +8,8 @@ const REAUTH = 'Reconnect your Spotify account.';
 describe('refreshFailure (RF-216, audit C-2)', () => {
   it.each([
     [400, 'invalid_grant'],
-    [401, 'invalid_client'],
-    [403, null],
-  ])('a refused grant (%s %s) asks to reconnect', (status, code) => {
+    [401, 'invalid_grant'],
+  ])('a dead grant (%s %s) asks to reconnect', (status, code) => {
     const err = refreshFailure(
       'spotify',
       new ProviderTokenError('spotify', 'Spotify', status, code),
@@ -18,6 +17,35 @@ describe('refreshFailure (RF-216, audit C-2)', () => {
     );
     expect(err).toEqual(new HttpError(409, 'REAUTH_REQUIRED', REAUTH));
     expect(err).toMatchObject({ status: 409, code: 'REAUTH_REQUIRED' });
+  });
+
+  // RF-218: reconnecting cannot fix Ritmo's own client or request, so these are 502s.
+  describe.each(['spotify', 'soundcloud'])('%s: a 4xx that is not invalid_grant', (provider) => {
+    it.each([
+      [401, 'invalid_client'],
+      [400, 'invalid_client'],
+      [400, 'unsupported_grant_type'],
+      [400, 'some_code_nobody_knows'],
+      [403, null],
+      [404, null],
+    ])('%s %s is a retryable provider error, not REAUTH_REQUIRED', (status, code) => {
+      const cause = new ProviderTokenError(provider, 'Label', status, code);
+      const err = refreshFailure(provider, cause, REAUTH);
+      expect(err).toBe(cause);
+      expect(err).toBeInstanceOf(ProviderError);
+      expect(err).not.toBeInstanceOf(HttpError);
+      expect(err).not.toBeInstanceOf(ProviderQuotaExceededError);
+      expect(isDeadGrant(cause)).toBe(false);
+    });
+  });
+
+  it('the logged message is the provider label, status and OAuth code only', () => {
+    const err = refreshFailure(
+      'spotify',
+      new ProviderTokenError('spotify', 'Spotify', 401, 'invalid_client'),
+      REAUTH,
+    );
+    expect(err.message).toBe('Spotify token endpoint returned 401 (invalid_client)');
   });
 
   it.each([500, 502, 503])('a token-endpoint %s is a retryable provider error', (status) => {
