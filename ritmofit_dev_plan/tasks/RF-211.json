@@ -41,5 +41,7 @@
     }
   ],
   "resolution": null,
-  "followUps": []
+  "followUps": [
+    "RF-222"
+  ]
 }

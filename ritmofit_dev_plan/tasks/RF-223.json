@@ -1,0 +1,28 @@
+{
+  "schemaVersion": 1,
+  "id": "RF-223",
+  "title": "Live preflight groups: follow-ups from the RF-136 final review and build",
+  "kind": "task",
+  "status": "backlog",
+  "priority": "P3",
+  "parent": null,
+  "dependsOn": [],
+  "acceptance": [
+    "Owner decision recorded: whether a connection group offers a one-click Connect or Reconnect for its provider (wired through LiveMode.tsx) instead of Manage connections.",
+    "Owner decision recorded: whether builder-fixable groups (no duration, no provider link) offer a way into the builder.",
+    "With two or more connection groups, each Manage connections button has a distinct accessible name, and focus returns to the nearest group's button rather than the first marked element in the document.",
+    "The unreachable 'Spotify' fallback name in preflight-groups.ts is removed or covered; the committed screenshots under docs/audits/preflight-groups-2026-11-13/ are kept or replaced by the CI artifact on purpose."
+  ],
+  "nextAction": "Non-blocking findings from the #768 final review and the RF-136 agent's suggested follow-ups (2026-11-13). The two owner decisions come first; the rest is cleanup. Playback and LiveMode paths are owner-gated. Agent-created: Backlog until the owner sets Ready.",
+  "blocker": null,
+  "evidence": [
+    {
+      "kind": "pr",
+      "ref": "https://github.com/steven-crosby/ritmofit-web/pull/768",
+      "summary": "Final review on 10598d8 (the PR diff is identical on the merged head a8b27ab): no significant findings. Non-blocking: Dialog.tsx focus fallback takes the first marked element; every Manage connections button shares one accessible name; an unreachable fallback name; about 830 KB of screenshots. The agent chose Manage connections because a direct connect needs LiveMode.tsx, which its brief put off limits.",
+      "checkedOn": "2026-11-13"
+    }
+  ],
+  "resolution": null,
+  "followUps": []
+}

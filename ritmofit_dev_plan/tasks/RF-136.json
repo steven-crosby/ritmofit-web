@@ -48,5 +48,8 @@
     }
   ],
   "resolution": "Live preflight now shows failing tracks as one group per reason and provider, with a track count; a no-connection group names the linked provider (for example \"Apple Music is not connected\"); connection-fixable groups carry Manage connections themselves, and the standalone button stays only when no group has one. The unplayable selection carries display-only `providers`; provider selection, the reason, clip math and runtime are unchanged. Start basis, a flagged judgment call: the owner approved the web priority order in DEVELOPMENT_PLAN.md \"Now\" on 2026-11-13, and the conducting session took the owner’s \"what can we complete while I’m away\" as the go-ahead to start this task; it was never in Ready. Judgment calls: the group action is Manage connections (the acceptance allows it) because a direct per-provider connect button needs LiveMode.tsx, which was out of scope; the dialog primitive returns focus to a marked fallback when a fix removes the group that opened it. Not verified: the grouped screen against real Apple Music and Spotify connections in a browser (jsdom tests and a component render with fixtures only). Owner-gated (playback code): the PR needs owner-approved.",
-  "followUps": []
+  "followUps": [
+    "RF-223",
+    "RF-224"
+  ]
 }

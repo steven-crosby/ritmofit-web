@@ -1,0 +1,34 @@
+{
+  "schemaVersion": 1,
+  "id": "RF-222",
+  "title": "Live Full List with the pinned music banner: a focused row is never hidden under it, and short phones keep a row in view",
+  "kind": "task",
+  "status": "backlog",
+  "priority": "untriaged",
+  "parent": null,
+  "dependsOn": [],
+  "acceptance": [
+    "In Live › Full List with the Waiting for music or Playback stopped panel pinned, a keyboard-focused or programmatically scrolled row lands fully below the panel (WCAG 2.2 focus not obscured).",
+    "At 390x480 with a failure showing, at least one Full List row is fully visible between the panel and the bottom dock, or the owner accepts that it is not.",
+    "The e2e smoke shows the Waiting for music banner in Full List, so CI screenshots cover the pinned layout.",
+    "The reveal doc comment in LiveMode.tsx describes what Full List does."
+  ],
+  "nextAction": "Non-blocking findings from the #766 final review, measured afterwards in Chromium at 390 wide (2026-11-13). Likely fix: add the panel's height to the Live shell's scroll padding in Full List. LiveMode.tsx is owner-gated. Agent-created: Backlog until the owner sets Ready.",
+  "blocker": null,
+  "evidence": [
+    {
+      "kind": "pr",
+      "ref": "https://github.com/steven-crosby/ritmofit-web/pull/766",
+      "summary": "Final review on 6e30dd3 (the PR diff is identical on the merged head ed5e94b): no significant findings. Non-blocking: a keyboard-focused or programmatically scrolled Full List row can land under the pinned panel; the new test asserts a class name in jsdom; the reveal doc comment is out of date. The PR comment also records the measurement made after the review: at 390 wide and 844, 667, 568 and 480 tall every panel button stays visible and clickable, and at 390x480 with a failure no row is fully visible. Not measured: Safari, Spotify's activation action inside the panel, other widths.",
+      "checkedOn": "2026-11-13"
+    },
+    {
+      "kind": "observation",
+      "ref": "https://github.com/steven-crosby/ritmofit-web/pull/766",
+      "summary": "From the RF-211 agent's measurement report to the conducting session (2026-11-13, Chromium, 390 wide, built SPA with mock providers; not posted on the PR): walking focus up the list from row 15 left 12 to 14 of 15 rows overlapping the pinned panel, most of them fully hidden in the failure states; with the sticky class removed, none did.",
+      "checkedOn": "2026-11-13"
+    }
+  ],
+  "resolution": null,
+  "followUps": []
+}

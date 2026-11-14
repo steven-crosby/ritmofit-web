@@ -1,0 +1,27 @@
+{
+  "schemaVersion": 1,
+  "id": "RF-221",
+  "title": "Token refresh classification: follow-ups from the RF-218 final review",
+  "kind": "task",
+  "status": "backlog",
+  "priority": "P3",
+  "parent": null,
+  "dependsOn": [],
+  "acceptance": [
+    "A test pins what refreshFailure answers when a 429 or 5xx token response carries invalid_grant, and the order of the dead-grant and status checks is deliberate.",
+    "OpenAPI describes the 409 as an invalid_grant refusal and the playback-token 502 as including a refused client, matching api.md; the iOS snapshot refresh is named if the spec changes.",
+    "The SoundCloud refresh path has an integration test, and the record states what SoundCloud's token endpoint answers for a revoked grant, checked against the provider."
+  ],
+  "nextAction": "Non-blocking findings from the #767 final review (2026-11-13). The SoundCloud items come from the RF-218 agent's report to the conducting session, which is not on the PR: there is no prod-like SoundCloud route harness today, and SoundCloud's real token endpoint was not probed. Provider code and OpenAPI are owner-gated. Agent-created: Backlog until the owner sets Ready.",
+  "blocker": null,
+  "evidence": [
+    {
+      "kind": "pr",
+      "ref": "https://github.com/steven-crosby/ritmofit-web/pull/767",
+      "summary": "Final review on 4e53977: no significant findings. Non-blocking: isDeadGrant is checked before the status in refresh-failure.ts with no test for the ordering; generate-openapi.ts 409 wording drifts from api.md and the playback-token 502 description omits a refused client; a provider that signals a dead grant with another code now gives a 502 with no Reconnect, not verified against real Spotify or SoundCloud.",
+      "checkedOn": "2026-11-13"
+    }
+  ],
+  "resolution": null,
+  "followUps": []
+}
