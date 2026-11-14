@@ -223,7 +223,7 @@ describe('LiveMode preflight', () => {
     const list = await screen.findByRole('list', { name: 'Track playback check' });
     expect(within(list).getByText('Active Track')).toBeTruthy();
     // No Apple Music connection → nothing can play it.
-    expect(within(list).getByText('No connected provider can play this')).toBeTruthy();
+    expect(within(list).getByText('Apple Music is not connected')).toBeTruthy();
     expect(screen.getByText('Blocked')).toBeTruthy();
     expect(
       screen.getByRole('heading', { name: '1 track needs a fix before starting with music.' }),
@@ -236,7 +236,7 @@ describe('LiveMode preflight', () => {
       ),
     ).toBeTruthy();
     const exceptionRow = within(list).getByText('Active Track').closest('li');
-    expect(exceptionRow?.className).toContain('py-3');
+    expect(exceptionRow?.className).toContain('py-1');
     expect(exceptionRow?.className).not.toContain('shadow-card');
     const start = screen.getByRole('button', { name: 'Start class' });
     expect((start as HTMLButtonElement).disabled).toBe(true);
@@ -342,7 +342,7 @@ describe('LiveMode preflight', () => {
       .mockResolvedValueOnce([appleMusicConnection]);
 
     render(<LiveMode payload={{ ...payload, tracks: [appleOnly] }} onExit={() => {}} />);
-    expect(await screen.findByText('No connected provider can play this')).toBeTruthy();
+    expect(await screen.findByText('Apple Music is not connected')).toBeTruthy();
     expect(
       screen.getByText(/Spotify and SoundCloud authorization open a provider page/),
     ).toBeTruthy();
@@ -370,7 +370,9 @@ describe('LiveMode preflight', () => {
 
     fireEvent.click(within(dialog).getByRole('button', { name: 'Close connections dialog' }));
     expect(screen.queryByRole('dialog', { name: 'Music connections' })).toBeNull();
-    expect(document.activeElement).toBe(manage);
+    // The group that offered the fix is gone, so focus lands on the standing button (RF-136).
+    expect(manage.isConnected).toBe(false);
+    expect(document.activeElement).toBe(screen.getByRole('button', { name: 'Manage connections' }));
   });
 
   it('fails closed while refreshing after an in-dialog disconnect', async () => {
@@ -396,10 +398,9 @@ describe('LiveMode preflight', () => {
     vi.mocked(disconnectProvider).mockResolvedValue(undefined);
 
     render(<LiveMode payload={{ ...payload, tracks: [appleOnly] }} onExit={() => {}} />);
-    expect(await screen.findByText('No connected provider can play this')).toBeTruthy();
+    expect(await screen.findByText('Apple Music is not connected')).toBeTruthy();
 
-    const manage = screen.getByRole('button', { name: 'Manage connections' });
-    fireEvent.click(manage);
+    fireEvent.click(screen.getByRole('button', { name: 'Manage connections' }));
     let dialog = await screen.findByRole('dialog', { name: 'Music connections' });
     let appleRow = within(dialog).getByText('Apple Music').closest('li');
     fireEvent.click(within(appleRow!).getByRole('button', { name: 'Connect Apple Music' }));
@@ -409,6 +410,8 @@ describe('LiveMode preflight', () => {
     expect(await screen.findByText('Selected: Apple Music')).toBeTruthy();
     fireEvent.click(within(dialog).getByRole('button', { name: 'Close connections dialog' }));
 
+    // Connecting removed the blocked group; the standing button replaces its action (RF-136).
+    const manage = screen.getByRole('button', { name: 'Manage connections' });
     manage.focus();
     fireEvent.click(manage);
     dialog = await screen.findByRole('dialog', { name: 'Music connections' });
@@ -429,7 +432,7 @@ describe('LiveMode preflight', () => {
     expect(document.activeElement).toBe(manage);
 
     parentDisconnectRefresh.resolve([]);
-    expect(await screen.findByText('No connected provider can play this')).toBeTruthy();
+    expect(await screen.findByText('Apple Music is not connected')).toBeTruthy();
   });
 
   it('ignores a late success from an invalidated connection request', async () => {

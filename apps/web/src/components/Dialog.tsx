@@ -19,6 +19,13 @@
 import { useCallback, useEffect, useRef, type ReactNode, type RefObject } from 'react';
 import { createPortal } from 'react-dom';
 
+/**
+ * Mark a control with this attribute to receive focus when a dialog closes and
+ * the element that opened it no longer exists. The first marked element in
+ * document order wins.
+ */
+export const DIALOG_FOCUS_FALLBACK_ATTR = 'data-dialog-focus-fallback';
+
 const FOCUSABLE =
   'a[href], button:not([disabled]), textarea:not([disabled]), input:not([disabled]), select:not([disabled]), [tabindex]:not([tabindex="-1"])';
 
@@ -84,7 +91,13 @@ export function Dialog({
       root?.removeAttribute('inert');
       root?.removeAttribute('aria-hidden');
       document.body.style.overflow = prevOverflow;
-      previouslyFocused?.focus?.();
+      // The trigger can be gone by now: a fix made inside the dialog may remove
+      // the very row that offered it (RF-136). Land on a control the surface
+      // marked as its fallback rather than dropping focus to <body>.
+      const returnTo = previouslyFocused?.isConnected
+        ? previouslyFocused
+        : document.querySelector<HTMLElement>(`[${DIALOG_FOCUS_FALLBACK_ATTR}]`);
+      returnTo?.focus?.();
     };
   }, [focusablesIn, initialFocusRef]);
 

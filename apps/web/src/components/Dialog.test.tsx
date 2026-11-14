@@ -1,7 +1,7 @@
 // @vitest-environment jsdom
 import { describe, it, expect, vi, afterEach } from 'vitest';
 import { render, screen, fireEvent, cleanup } from '@testing-library/react';
-import { Dialog } from './Dialog.js';
+import { DIALOG_FOCUS_FALLBACK_ATTR, Dialog } from './Dialog.js';
 
 afterEach(cleanup);
 
@@ -95,6 +95,25 @@ describe('Dialog', () => {
 
   it('returns focus to the triggering element on close', () => {
     const { trigger, unmount } = renderDialog();
+    unmount();
+    expect(document.activeElement).toBe(trigger);
+  });
+
+  it('returns focus to the marked fallback when the trigger was removed while open (RF-136)', () => {
+    const { trigger, root, unmount } = renderDialog();
+    const fallback = document.createElement('button');
+    fallback.setAttribute(DIALOG_FOCUS_FALLBACK_ATTR, '');
+    root.appendChild(fallback);
+    trigger.remove();
+    unmount();
+    expect(document.activeElement).toBe(fallback);
+  });
+
+  it('prefers a trigger that still exists over the marked fallback', () => {
+    const { trigger, root, unmount } = renderDialog();
+    const fallback = document.createElement('button');
+    fallback.setAttribute(DIALOG_FOCUS_FALLBACK_ATTR, '');
+    root.appendChild(fallback);
     unmount();
     expect(document.activeElement).toBe(trigger);
   });
