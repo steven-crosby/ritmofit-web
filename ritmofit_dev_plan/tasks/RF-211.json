@@ -3,7 +3,7 @@
   "id": "RF-211",
   "title": "Live Full List keeps its scroll position when the Waiting for music banner appears",
   "kind": "task",
-  "status": "in_progress",
+  "status": "review",
   "priority": "P3",
   "parent": null,
   "dependsOn": [],
@@ -12,7 +12,7 @@
     "The same holds when the banner goes away again, and for Start, Next, Previous and a timeline tap.",
     "A LiveMode test covers the banner appearing while the Full List is scrolled and fails before the fix."
   ],
-  "nextAction": "In progress on branch fix/rf-211-full-list-scroll (background delegate agent, started 2026-11-13). Judgment call, flagged: the owner approved this web priority order on 2026-11-13 (DEVELOPMENT_PLAN.md Now), and the conducting session took the owner's \"what can we complete while I'm away\" as the go-ahead to start it; the owner did not set Ready. Restart: check out the branch, reproduce the scroll reset in LiveMode.tsx at 390 wide with mock providers, name the root cause, fix, add the LiveMode test.",
+  "nextAction": "For review in PR #766 (owner-gated: LiveMode.tsx). Judgment call, flagged: the owner approved this web priority order on 2026-11-13 (DEVELOPMENT_PLAN.md Now), and the conducting session took the owner's \"what can we complete while I'm away\" as the go-ahead to start it; the owner did not set Ready. What remains before Done, after merge and a deploy: the owner's iPhone Safari check of acceptance 1 and 2 with real provider playback. In Live › Full List, scroll to a late track, tap a row so Waiting for music appears, and confirm the list stays put while the banner shows pinned under the header and after it goes; repeat with Next, Previous, a timeline tap and Start. Chromium keeps the rows still through scroll anchoring; if Safari does not, the rows shift down by the banner's height while it shows and back when it goes, which is expected and is not the jump to the top. Whether the banner should show for a normal 2-4 s start stays a separate question, not this task.",
   "blocker": null,
   "evidence": [
     {
@@ -20,6 +20,24 @@
       "ref": "https://github.com/steven-crosby/ritmofit-web/pull/749",
       "summary": "Owner's iPhone Safari screen recording (12:37, production f55b449a, Apple Music, class Limp Bizkit Essentials), kept by the owner, not in the repo: Full List scrolled to tracks 12-15, the owner tapped row 13; the clock jumped to 50:44 and about 2 s later Waiting for music appeared and the list was back at the top (Track 13 of 15, rows 1-2 showing). Music started about 2 s after that. Earlier row jumps to 6 and 9, which showed no banner, kept the scroll position.",
       "checkedOn": "2026-11-07"
+    },
+    {
+      "kind": "pr",
+      "ref": "https://github.com/steven-crosby/ritmofit-web/pull/766",
+      "summary": "Draft PR opened as the claim, then the fix and its test. Root cause: LiveMode's reveal effect calls scrollIntoView({ block: 'start' }) on the recovery panel when it appears, and on the teaching region when music recovers. The shell is the only scrollport, so either call puts a scrolled Full List back at row 1. Not a remount or a key change. Fix: in Full List the panel is sticky under the header and the reveal only moves focus; Cue-by-Cue and a view switch are unchanged. Not merged at the time of this entry.",
+      "checkedOn": "2026-11-13"
+    },
+    {
+      "kind": "test",
+      "ref": "apps/web/src/components/LiveMode.test.tsx",
+      "summary": "'keeps a scrolled Full List in place when Waiting for music appears and goes (RF-211)' (jsdom, a scrollIntoView stand-in that resets the shell's scrollTop): fails on the pre-fix LiveMode.tsx with 'expected +0 to be 600' and passes with the fix, for the banner appearing and for it going. It also keeps the Cue-by-Cue reveal.",
+      "checkedOn": "2026-11-13"
+    },
+    {
+      "kind": "observation",
+      "ref": "https://github.com/steven-crosby/ritmofit-web/pull/766",
+      "summary": "Real-browser check with Playwright Chromium at 390x844 (touch), the built SPA on the local Worker with mock providers, a 15-track run payload and a stand-in SoundCloud widget script that delays its play acknowledgement by 6 s. Full List scrolled to rows 10-15, tapped row 14. Before the fix: shell scrollTop 1139 -> 0 when the banner showed (rows 1-5 visible) and still 0 after it went. After the fix: 1139 -> 1341 with the banner pinned under the header and rows 10-15 still visible (Chromium scroll anchoring added the banner's height), then 1139 with rows 10-15 after it went. Not checked: iPhone Safari, real provider playback, or Next, Previous, Start and a timeline tap in a browser (they reach the same reveal code).",
+      "checkedOn": "2026-11-13"
     }
   ],
   "resolution": null,
