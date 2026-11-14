@@ -148,7 +148,18 @@ export type UnplayableReason =
 /** The provider decision for one track: a concrete playable job, or why not. */
 export type ProviderSelection =
   | { status: 'playable'; provider: Provider; ref: RunPayloadProviderRef }
-  | { status: 'unplayable'; reason: UnplayableReason };
+  | {
+      status: 'unplayable';
+      reason: UnplayableReason;
+      /**
+       * The provider(s) the fix applies to, in `PROVIDER_ORDER`: for
+       * `no_connected_provider`, the playable providers this track is linked
+       * to that have no live connection; for `playback_reauth_required`, the
+       * connected providers whose grant lacks playback scope. Absent for the
+       * other reasons. Display only (RF-136) — selection never reads it.
+       */
+      providers?: Provider[];
+    };
 
 /**
  * Static preflight verdict for one track — connection/ref/duration checks only.

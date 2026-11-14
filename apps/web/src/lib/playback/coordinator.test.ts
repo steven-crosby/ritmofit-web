@@ -141,7 +141,11 @@ describe('selectProvider', () => {
       ],
       { now: NOW },
     );
-    expect(selection).toEqual({ status: 'unplayable', reason: 'no_connected_provider' });
+    expect(selection).toEqual({
+      status: 'unplayable',
+      reason: 'no_connected_provider',
+      providers: ['spotify'],
+    });
   });
 
   it('treats an expired Apple Music connection as not connected', () => {
@@ -153,7 +157,11 @@ describe('selectProvider', () => {
         now: NOW,
       },
     );
-    expect(selection).toEqual({ status: 'unplayable', reason: 'no_connected_provider' });
+    expect(selection).toEqual({
+      status: 'unplayable',
+      reason: 'no_connected_provider',
+      providers: ['apple_music'],
+    });
   });
 
   it('reports a track with no provider refs as unplayable', () => {
@@ -165,7 +173,11 @@ describe('selectProvider', () => {
   it('reports refs without any connected provider as unplayable', () => {
     const entry = makeEntry({ providers: ['apple_music'] });
     const selection = selectProvider(entry, connections('soundcloud'), { now: NOW });
-    expect(selection).toEqual({ status: 'unplayable', reason: 'no_connected_provider' });
+    expect(selection).toEqual({
+      status: 'unplayable',
+      reason: 'no_connected_provider',
+      providers: ['apple_music'],
+    });
   });
 
   it('plays SoundCloud with no connection at all (public Widget needs no token)', () => {
@@ -201,6 +213,7 @@ describe('selectProvider', () => {
     expect(selection).toEqual({
       status: 'unplayable',
       reason: 'playback_reauth_required',
+      providers: ['spotify'],
     });
   });
 
@@ -222,6 +235,7 @@ describe('selectProvider', () => {
     expect(selectProvider(entry, [], { now: NOW })).toEqual({
       status: 'unplayable',
       reason: 'no_connected_provider',
+      providers: ['apple_music'],
     });
     expect(selectProvider(entry, connections('apple_music'), { now: NOW })).toMatchObject({
       status: 'playable',
@@ -247,7 +261,11 @@ describe('selectProvider', () => {
         now: NOW,
         availableProviders: ['soundcloud', 'apple_music'],
       }),
-    ).toEqual({ status: 'unplayable', reason: 'no_connected_provider' });
+    ).toEqual({
+      status: 'unplayable',
+      reason: 'no_connected_provider',
+      providers: ['apple_music'],
+    });
     // Spotify has no adapter → provider_not_playable (connecting won't help).
     expect(
       selectProvider(makeEntry({ providers: ['spotify'] }), connections('spotify'), {
@@ -255,6 +273,50 @@ describe('selectProvider', () => {
         availableProviders: ['soundcloud', 'apple_music'],
       }),
     ).toEqual({ status: 'unplayable', reason: 'provider_not_playable' });
+  });
+
+  it('names every linked provider a connection would fix, in product order (RF-136)', () => {
+    const entry = makeEntry({ providers: ['apple_music', 'spotify'] });
+    expect(
+      selectProvider(entry, [], { now: NOW, availableProviders: ['spotify', 'apple_music'] }),
+    ).toEqual({
+      status: 'unplayable',
+      reason: 'no_connected_provider',
+      providers: ['spotify', 'apple_music'],
+    });
+    // A linked provider with no adapter here is not something connecting fixes.
+    expect(selectProvider(entry, [], { now: NOW, availableProviders: ['apple_music'] })).toEqual({
+      status: 'unplayable',
+      reason: 'no_connected_provider',
+      providers: ['apple_music'],
+    });
+  });
+
+  it('names only the provider whose grant lacks playback scope when reauth is needed (RF-136)', () => {
+    const entry = makeEntry({ providers: ['apple_music', 'spotify'] });
+    expect(
+      selectProvider(
+        entry,
+        [{ provider: 'spotify', expiresAt: NOW + 3_600_000, scope: 'user-library-read' }],
+        { now: NOW, availableProviders: ['spotify', 'apple_music'] },
+      ),
+    ).toEqual({
+      status: 'unplayable',
+      reason: 'playback_reauth_required',
+      providers: ['spotify'],
+    });
+  });
+
+  it('carries no provider for the reasons a connection cannot fix (RF-136)', () => {
+    expect(selectProvider(makeEntry({ providers: [] }), [], { now: NOW })).not.toHaveProperty(
+      'providers',
+    );
+    expect(
+      selectProvider(makeEntry({ providers: ['spotify'] }), [], {
+        now: NOW,
+        availableProviders: ['soundcloud'],
+      }),
+    ).not.toHaveProperty('providers');
   });
 
   it('skips a ref whose provider is unavailable and falls back to an available one', () => {

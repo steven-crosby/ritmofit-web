@@ -1,7 +1,12 @@
 // @vitest-environment jsdom
 import { afterEach, describe, expect, it, vi } from 'vitest';
 import { cleanup, fireEvent, render, screen, within } from '@testing-library/react';
-import type { PreflightResult } from '../lib/playback/types.js';
+import type { Provider } from '@ritmofit/shared';
+import type {
+  PreflightResult,
+  PreflightTrackResult,
+  UnplayableReason,
+} from '../lib/playback/types.js';
 import { DISABLED_CONTROL_CLASS, LivePreflight } from './LivePreflight.js';
 
 afterEach(cleanup);
@@ -58,17 +63,40 @@ function renderPreflight(
 ) {
   const onStart = vi.fn();
   const onRunWithoutMusic = vi.fn();
+  const onManageConnections = vi.fn();
   render(
     <LivePreflight
       preflight={preflight}
       connectionsError={connectionsError}
       onRetryConnections={() => {}}
-      onManageConnections={() => {}}
+      onManageConnections={onManageConnections}
       onStart={onStart}
       onRunWithoutMusic={onRunWithoutMusic}
     />,
   );
-  return { onStart, onRunWithoutMusic };
+  return { onStart, onRunWithoutMusic, onManageConnections };
+}
+
+function failingTrack(
+  position: number,
+  reason: UnplayableReason,
+  providers?: Provider[],
+): PreflightTrackResult {
+  return {
+    classTrackId: `failing-${position}`,
+    position,
+    title: `Failing track ${position + 1}`,
+    selection: { status: 'unplayable', reason, ...(providers ? { providers } : {}) },
+    window,
+  };
+}
+
+function blockedBy(tracks: PreflightTrackResult[]): PreflightResult {
+  return {
+    ok: false,
+    tracks,
+    unplayable: tracks.filter((track) => track.selection.status === 'unplayable'),
+  };
 }
 
 describe('LivePreflight Start class (SPC-19)', () => {
@@ -253,5 +281,125 @@ describe('actionable preflight results', () => {
     expect(screen.getByText('Runnable with warnings')).toBeTruthy();
     expect(screen.getByRole('button', { name: 'Retry check' })).toBeTruthy();
     expect(screen.queryByRole('list', { name: 'Track playback check' })).toBeNull();
+  });
+});
+
+describe('grouped failures with the fix beside them (RF-136)', () => {
+  it('shows tracks that fail for the same reason and provider as one group with a count', () => {
+    renderPreflight(
+      blockedBy([
+        failingTrack(0, 'no_connected_provider', ['apple_music']),
+        { ...ready.tracks[0]!, classTrackId: 'passing', position: 1 },
+        failingTrack(2, 'no_connected_provider', ['apple_music']),
+        failingTrack(3, 'no_connected_provider', ['apple_music']),
+      ]),
+    );
+
+    const headings = screen.getAllByRole('heading', { level: 3 });
+    expect(headings).toHaveLength(1);
+    expect(headings[0]!.textContent).toContain('Apple Music is not connected');
+    expect(headings[0]!.textContent).toContain('3 tracks');
+    // The reason and its fix are said once, not once per track.
+    expect(screen.getAllByText('Connect Apple Music to play these tracks.')).toHaveLength(1);
+    const tracks = screen.getByRole('list', { name: /Apple Music is not connected/ });
+    expect(within(tracks).getAllByRole('listitem')).toHaveLength(3);
+    expect(tracks.textContent).toContain('#1');
+    expect(tracks.textContent).toContain('Failing track 4');
+    // The verdict and the class-level counts are unchanged by grouping.
+    expect(screen.getByText('Blocked')).toBeTruthy();
+    expect(
+      screen.getByRole('heading', { name: '3 tracks need a fix before starting with music.' }),
+    ).toBeTruthy();
+    expect(screen.getByText('4 tracks checked · 1 passed · 3 need attention')).toBeTruthy();
+  });
+
+  it('names the provider the tracks are linked to and puts Manage connections in that group', () => {
+    const { onManageConnections } = renderPreflight(
+      blockedBy([failingTrack(0, 'no_connected_provider', ['apple_music'])]),
+    );
+
+    const heading = screen.getByRole('heading', { level: 3 });
+    expect(heading.textContent).toContain('Apple Music is not connected');
+    expect(heading.textContent).toContain('1 track');
+    expect(screen.getByText('Connect Apple Music to play this track.')).toBeTruthy();
+
+    // One Manage connections, inside the group and described by it; none after the list.
+    const manage = screen.getAllByRole('button', { name: 'Manage connections' });
+    expect(manage).toHaveLength(1);
+    expect(heading.closest('li')?.contains(manage[0]!)).toBe(true);
+    expect(manage[0]!.getAttribute('aria-describedby')).toBe(heading.id);
+    expect(manage[0]!.className).toContain('rf-focus-ring');
+    expect(manage[0]!.className).toContain('min-h-11');
+    fireEvent.click(manage[0]!);
+    expect(onManageConnections).toHaveBeenCalledTimes(1);
+  });
+
+  it('gives each provider and reason its own group and its own fix', () => {
+    const { onManageConnections } = renderPreflight(
+      blockedBy([
+        failingTrack(0, 'no_connected_provider', ['apple_music']),
+        failingTrack(1, 'playback_reauth_required', ['spotify']),
+        failingTrack(2, 'no_connected_provider', ['apple_music']),
+        failingTrack(3, 'missing_duration'),
+        failingTrack(4, 'playback_reauth_required', ['spotify']),
+      ]),
+    );
+
+    const headings = screen.getAllByRole('heading', { level: 3 });
+    expect(headings.map((heading) => heading.textContent)).toEqual([
+      expect.stringMatching(/Apple Music is not connected.*2 tracks/),
+      expect.stringMatching(/Spotify needs reconnecting.*2 tracks/),
+      expect.stringMatching(/No duration set.*1 track$/),
+    ]);
+    // Connection fixes carry the action; a builder fix carries its instruction only.
+    const manage = screen.getAllByRole('button', { name: 'Manage connections' });
+    expect(manage).toHaveLength(2);
+    expect(headings[0]!.closest('li')?.contains(manage[0]!)).toBe(true);
+    expect(headings[1]!.closest('li')?.contains(manage[1]!)).toBe(true);
+    expect(within(headings[2]!.closest('li')!).queryByRole('button')).toBeNull();
+    expect(screen.getByText('Enter the track duration in the builder.')).toBeTruthy();
+    fireEvent.click(manage[1]!);
+    expect(onManageConnections).toHaveBeenCalledTimes(1);
+  });
+
+  it('keeps Manage connections after the list when no group is fixed by a connection', () => {
+    renderPreflight(blockedBy([failingTrack(0, 'missing_duration')]));
+    const manage = screen.getAllByRole('button', { name: 'Manage connections' });
+    expect(manage).toHaveLength(1);
+    expect(manage[0]!.closest('li')).toBeNull();
+  });
+
+  it('leaves Run without music and the Blocked verdict as they were', () => {
+    const { onStart, onRunWithoutMusic } = renderPreflight(
+      blockedBy([
+        failingTrack(0, 'no_connected_provider', ['apple_music']),
+        failingTrack(1, 'no_connected_provider', ['apple_music']),
+      ]),
+    );
+    expect(screen.getByText('Blocked')).toBeTruthy();
+    expect(screen.getByText(/Run without music keeps your cues and timer/)).toBeTruthy();
+    const start = screen.getByRole('button', { name: 'Start class' }) as HTMLButtonElement;
+    expect(start.disabled).toBe(true);
+    fireEvent.click(start);
+    expect(onStart).not.toHaveBeenCalled();
+    fireEvent.click(screen.getByRole('button', { name: 'Run without music' }));
+    expect(onRunWithoutMusic).toHaveBeenCalledTimes(1);
+  });
+
+  it('keeps Manage connections reachable while loading and when the check fails', () => {
+    const { unmount } = render(
+      <LivePreflight
+        preflight={null}
+        connectionsError={null}
+        onRetryConnections={() => {}}
+        onManageConnections={() => {}}
+        onStart={() => {}}
+        onRunWithoutMusic={() => {}}
+      />,
+    );
+    expect(screen.getAllByRole('button', { name: 'Manage connections' })).toHaveLength(1);
+    unmount();
+    renderPreflight(null, 'network down');
+    expect(screen.getAllByRole('button', { name: 'Manage connections' })).toHaveLength(1);
   });
 });

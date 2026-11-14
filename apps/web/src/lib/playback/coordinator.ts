@@ -120,20 +120,29 @@ export function selectProvider(
   // in-app adapter yet — a Spotify-only track (provider_not_playable), fixable
   // by cross-provider resolution rather than connecting.
   const hasAvailableRef = entry.providerRefs.some((ref) => available.has(ref.provider));
-  const needsPlaybackReauth = entry.providerRefs.some(
-    (ref) =>
-      available.has(ref.provider) &&
-      playbackRequiresConnection(ref.provider) &&
-      connected.has(ref.provider) &&
-      !hasPlaybackScope(ref.provider),
-  );
+  const lacksPlaybackScope = (provider: Provider): boolean =>
+    available.has(provider) &&
+    playbackRequiresConnection(provider) &&
+    connected.has(provider) &&
+    !hasPlaybackScope(provider);
+  const needsPlaybackReauth = entry.providerRefs.some((ref) => lacksPlaybackScope(ref.provider));
+  if (!needsPlaybackReauth && !hasAvailableRef) {
+    return { status: 'unplayable', reason: 'provider_not_playable' };
+  }
+  // Which linked provider(s) the fix applies to, for the preflight copy only
+  // (RF-136). The reason above is decided exactly as before.
+  const fixable = needsPlaybackReauth
+    ? lacksPlaybackScope
+    : (provider: Provider) => available.has(provider);
+  const linked = new Set(entry.providerRefs.map((ref) => ref.provider).filter(fixable));
+  const providers = [
+    ...PROVIDER_ORDER.filter((provider) => linked.has(provider)),
+    ...[...linked].filter((provider) => !PROVIDER_ORDER.includes(provider)),
+  ];
   return {
     status: 'unplayable',
-    reason: needsPlaybackReauth
-      ? 'playback_reauth_required'
-      : hasAvailableRef
-        ? 'no_connected_provider'
-        : 'provider_not_playable',
+    reason: needsPlaybackReauth ? 'playback_reauth_required' : 'no_connected_provider',
+    providers,
   };
 }
 

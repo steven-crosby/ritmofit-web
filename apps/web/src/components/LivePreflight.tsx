@@ -1,11 +1,9 @@
 /** Static track checks and browser consent precede Live; neither proves audible playback. */
 import { type ReactNode } from 'react';
 import { providerLabel } from '../lib/providers.js';
-import type {
-  PreflightResult,
-  PreflightTrackResult,
-  UnplayableReason,
-} from '../lib/playback/types.js';
+import type { PreflightResult, PreflightTrackResult } from '../lib/playback/types.js';
+import { groupPreflightFailures, type PreflightFailureGroup } from '../lib/preflight-groups.js';
+import { DIALOG_FOCUS_FALLBACK_ATTR } from './Dialog.js';
 import { RecoveryState, StatusLabel } from './SharedState.js';
 
 /**
@@ -14,50 +12,17 @@ import { RecoveryState, StatusLabel } from './SharedState.js';
  */
 export const DISABLED_CONTROL_CLASS = 'disabled:pointer-events-none disabled:opacity-40';
 
-const REASON_META: Record<UnplayableReason, { label: string; hint: string }> = {
-  no_provider_ref: {
-    label: 'No provider link',
-    hint: 'Add a music provider to this track in the builder.',
-  },
-  no_connected_provider: {
-    label: 'No connected provider can play this',
-    hint: 'Connect a music provider that has this track.',
-  },
-  playback_reauth_required: {
-    label: 'Spotify needs reconnecting',
-    hint: 'Reconnect Spotify for playback so it can grant the streaming scope.',
-  },
-  provider_not_playable: {
-    label: 'Not on a provider Ritmo can play yet',
-    hint: 'Open the track in the builder and find it on SoundCloud or Apple Music.',
-  },
-  missing_duration: {
-    label: 'No duration set',
-    hint: 'Enter the track duration in the builder.',
-  },
-};
+/**
+ * Connecting a provider in the dialog can remove the group whose button opened
+ * it. Every Manage connections here is a place for focus to return to.
+ */
+const FOCUS_FALLBACK = { [DIALOG_FOCUS_FALLBACK_ATTR]: '' };
 
-function Verdict({ result }: { result: PreflightTrackResult }) {
-  if (result.selection.status === 'playable') {
-    return (
-      <span className="flex items-center gap-1.5 font-ui text-sm text-text-secondary">
-        <span aria-hidden className="text-state-positive">
-          ✓
-        </span>
-        Selected: {providerLabel(result.selection.provider)}
-      </span>
-    );
-  }
-  const meta = REASON_META[result.selection.reason];
-  return (
-    <span className="flex min-w-0 flex-col gap-1 text-left sm:items-end sm:text-right">
-      <span className="flex items-center gap-1.5 font-ui text-sm font-semibold text-state-caution">
-        <span aria-hidden>⊘</span>
-        {meta.label}
-      </span>
-      <span className="font-ui text-xs text-text-tertiary">{meta.hint}</span>
-    </span>
-  );
+const SECONDARY_ACTION_CLASS =
+  'min-h-11 rounded-control border border-interactive px-4 py-2 font-ui text-sm font-semibold text-interactive transition-colors hover:bg-interactive/10 rf-focus-ring sm:rounded-pill';
+
+function trackWord(count: number): string {
+  return count === 1 ? 'track' : 'tracks';
 }
 
 function trackCheckSummary(
@@ -104,9 +69,11 @@ export function LivePreflight({
   const playableTracks = preflight?.tracks.filter(
     (result) => result.selection.status === 'playable',
   );
-  const unplayableTracks = preflight?.tracks.filter(
-    (result) => result.selection.status === 'unplayable',
-  );
+  const failureGroups = groupPreflightFailures(preflight?.tracks ?? []);
+  // A group whose fix is a provider connection carries Manage connections
+  // itself (RF-136); the standalone button stays for every other state.
+  const fixSitsWithGroup =
+    !connectionsError && failureGroups.some((group) => group.fix === 'connections');
   // Everything passed: one status line and one Start class, no repeated "passed".
   const allPass = preflight?.ok === true && browserAuthorizationReady && !connectionsError;
   const counts =
@@ -261,96 +228,153 @@ export function LivePreflight({
       ) : (
         <div className="flex flex-col gap-4" role="list" aria-label="Track playback check">
           {unplayableCount > 0 && (
-            <PreflightGroup
+            <FailureGroups
               title="Needs attention before music can start"
-              results={unplayableTracks ?? []}
-              caution
+              count={unplayableCount}
+              groups={failureGroups}
+              onManageConnections={onManageConnections}
             />
           )}
           {passingCount > 0 && (
-            <PreflightGroup
+            <PassedTracks
               title={
                 allPass
                   ? 'Track details'
                   : `${passingCount} ${passingCount === 1 ? 'track passed' : 'tracks passed'} checks`
               }
               results={playableTracks ?? []}
-              disclosure
             />
           )}
         </div>
       )}
 
-      <div className="flex flex-wrap items-center gap-3">
-        <button
-          className="min-h-11 rounded-control border border-interactive px-4 py-2 font-ui text-sm font-semibold text-interactive transition-colors hover:bg-interactive/10 rf-focus-ring sm:rounded-pill"
-          onClick={() => {
-            onManageConnections();
-          }}
-        >
-          Manage connections
-        </button>
-      </div>
+      {!fixSitsWithGroup && (
+        <div className="flex flex-wrap items-center gap-3">
+          <button
+            className={SECONDARY_ACTION_CLASS}
+            onClick={onManageConnections}
+            {...FOCUS_FALLBACK}
+          >
+            Manage connections
+          </button>
+        </div>
+      )}
     </div>
   );
 }
 
-function PreflightGroup({
+/** Failing tracks, one group per reason and provider, each with its own fix (RF-136). */
+function FailureGroups({
   title,
-  results,
-  caution = false,
-  disclosure = false,
+  count,
+  groups,
+  onManageConnections,
 }: {
   title: string;
-  results: PreflightTrackResult[];
-  caution?: boolean;
-  disclosure?: boolean;
+  count: number;
+  groups: PreflightFailureGroup[];
+  onManageConnections: () => void;
 }) {
-  const tracks = (
-    <ul className="divide-y divide-border-subtle">
-      {results.map((result) => (
-        <li
-          key={result.classTrackId}
-          className="grid min-h-16 gap-2 px-1 py-3 sm:grid-cols-[minmax(0,1fr)_minmax(12rem,1fr)] sm:items-center"
-        >
-          <span className="min-w-0">
-            <span className="font-data text-xs text-text-tertiary">#{result.position + 1}</span>
-            <p className="break-words font-display font-semibold text-text-primary">
-              {result.title}
-            </p>
-          </span>
-          <Verdict result={result} />
-        </li>
-      ))}
-    </ul>
-  );
   return (
     <section
       role="listitem"
       className="rounded-card border border-border-subtle bg-bg-raised p-3 sm:p-4"
     >
-      {disclosure ? (
-        <details>
-          <summary className="min-h-11 cursor-pointer rounded-control px-1 py-3 font-ui text-sm font-semibold text-text-secondary rf-focus-ring">
-            {title}
-          </summary>
-          {tracks}
-        </details>
-      ) : (
-        <>
-          <div className="flex items-center justify-between gap-3 border-b border-border-subtle px-1 pb-3">
-            <p className="font-data text-[11px] font-semibold uppercase tracking-[0.18em] text-text-tertiary">
-              {title}
-            </p>
-            <span
-              className={`font-data text-sm ${caution ? 'text-state-caution' : 'text-state-positive'}`}
+      <div className="flex items-center justify-between gap-3 border-b border-border-subtle px-1 pb-3">
+        <p className="font-data text-[11px] font-semibold uppercase tracking-[0.18em] text-text-tertiary">
+          {title}
+        </p>
+        <span className="font-data text-sm text-state-caution">{count}</span>
+      </div>
+      <ul className="divide-y divide-border-subtle">
+        {groups.map((group) => {
+          const headingId = `preflight-group-${group.key}`;
+          return (
+            <li key={group.key} className="flex flex-col gap-3 px-1 py-4">
+              <div className="flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
+                <div className="min-w-0">
+                  <h3
+                    id={headingId}
+                    className="flex flex-wrap items-baseline gap-x-2 gap-y-1 font-ui text-sm font-semibold text-state-caution"
+                  >
+                    <span>
+                      <span aria-hidden className="mr-1.5">
+                        ⊘
+                      </span>
+                      {group.label}
+                    </span>
+                    <span className="font-data text-xs font-normal text-text-secondary">
+                      {group.tracks.length} {trackWord(group.tracks.length)}
+                    </span>
+                  </h3>
+                  <p className="mt-1 font-ui text-sm text-text-secondary">{group.hint}</p>
+                </div>
+                {group.fix === 'connections' && (
+                  <button
+                    className={`${SECONDARY_ACTION_CLASS} shrink-0 self-start`}
+                    aria-describedby={headingId}
+                    onClick={onManageConnections}
+                    {...FOCUS_FALLBACK}
+                  >
+                    Manage connections
+                  </button>
+                )}
+              </div>
+              <ul aria-labelledby={headingId} className="grid gap-x-6 gap-y-1 sm:grid-cols-2">
+                {group.tracks.map((result) => (
+                  <li key={result.classTrackId} className="flex min-w-0 items-baseline gap-2 py-1">
+                    <span className="w-8 shrink-0 font-data text-xs text-text-tertiary">
+                      #{result.position + 1}
+                    </span>
+                    <span className="min-w-0 break-words font-ui text-sm text-text-primary">
+                      {result.title}
+                    </span>
+                  </li>
+                ))}
+              </ul>
+            </li>
+          );
+        })}
+      </ul>
+    </section>
+  );
+}
+
+/** The tracks that passed, collapsed: each row says which provider plays it. */
+function PassedTracks({ title, results }: { title: string; results: PreflightTrackResult[] }) {
+  return (
+    <section
+      role="listitem"
+      className="rounded-card border border-border-subtle bg-bg-raised p-3 sm:p-4"
+    >
+      <details>
+        <summary className="min-h-11 cursor-pointer rounded-control px-1 py-3 font-ui text-sm font-semibold text-text-secondary rf-focus-ring">
+          {title}
+        </summary>
+        <ul className="divide-y divide-border-subtle">
+          {results.map((result) => (
+            <li
+              key={result.classTrackId}
+              className="grid min-h-16 gap-2 px-1 py-3 sm:grid-cols-[minmax(0,1fr)_minmax(12rem,1fr)] sm:items-center"
             >
-              {results.length}
-            </span>
-          </div>
-          {tracks}
-        </>
-      )}
+              <span className="min-w-0">
+                <span className="font-data text-xs text-text-tertiary">#{result.position + 1}</span>
+                <p className="break-words font-display font-semibold text-text-primary">
+                  {result.title}
+                </p>
+              </span>
+              {result.selection.status === 'playable' && (
+                <span className="flex items-center gap-1.5 font-ui text-sm text-text-secondary">
+                  <span aria-hidden className="text-state-positive">
+                    ✓
+                  </span>
+                  Selected: {providerLabel(result.selection.provider)}
+                </span>
+              )}
+            </li>
+          ))}
+        </ul>
+      </details>
     </section>
   );
 }
