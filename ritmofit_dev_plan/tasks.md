@@ -12,7 +12,7 @@ owner's queue: any agent may execute a Ready task. Publishing follows AGENTS.md 
 Evidence marked **recorded** is a carried-forward claim, not fresh verification.
 A checked PR proves its GitHub state, not product acceptance or production behavior.
 
-222 tasks. backlog: 76 · ready: 0 · in_progress: 0 · blocked: 2 · review: 10 · done: 132 · cancelled: 2.
+223 tasks. backlog: 77 · ready: 0 · in_progress: 0 · blocked: 2 · review: 10 · done: 132 · cancelled: 2.
 
 ## In progress
 
@@ -128,6 +128,7 @@ A checked PR proves its GitHub state, not product acceptance or production behav
 | [RF-220](tasks/RF-220.json) Playlist error states share one classifier and one caution alert | untriaged / task | — | Non-blocking findings from the #764 final review (2026-11-13), cleanup only. Propose the shared helper and component, then implement with the existing RF-74 tests as the regression net. | checked 2026-11-13 |
 | [RF-222](tasks/RF-222.json) Live Full List with the pinned music banner: a focused row is never hidden under it, and short phones keep a row in view | untriaged / task | — | Non-blocking findings from the #766 final review, measured afterwards in Chromium at 390 wide (2026-11-13). Likely fix: add the panel's height to the Live shell's scroll padding in Full List. LiveMode.tsx is owner-gated. Agent-created: Backlog until the owner sets Ready. | checked 2026-11-13 |
 | [RF-224](tasks/RF-224.json) Owner browser check: Live preflight groups with a provider disconnected (RF-136) | untriaged / verification | — | Owed by the owner after the next web deploy (the Air). CI uses mock providers, and the PR's screenshots are the component alone with fixture tracks, so the signed-in screen with a real connection has not been seen. Agent-created: Backlog until the owner sets Ready. | checked 2026-11-13 |
+| [RF-226](tasks/RF-226.json) Class Pulse card is revisited and refined | untriaged / plan | — | Owner note (2026-11-15): revisit and refine the Class Pulse card/feature; no specifics given yet. Next: owner says what bothers them about Class Pulse today, then turn that into concrete acceptance or child tasks. Related: RF-141 already covers Class Pulse accessible-label copy (D17 effort words, summary instead of a track list). This record authorizes no implementation. Surface: web (ClassPulse.tsx); check iOS impact if it changes. | none |
 
 ## Done
 
