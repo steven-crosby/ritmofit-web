@@ -1,0 +1,18 @@
+{
+  "schemaVersion": 1,
+  "id": "RF-226",
+  "title": "Class Pulse card is revisited and refined",
+  "kind": "plan",
+  "status": "backlog",
+  "priority": "untriaged",
+  "parent": null,
+  "dependsOn": [],
+  "acceptance": [
+    "The owner names what to change about the Class Pulse card (purpose, content, layout, or behavior), and that scope is recorded here before any implementation task is created."
+  ],
+  "nextAction": "Owner note (2026-11-15): revisit and refine the Class Pulse card/feature; no specifics given yet. Next: owner says what bothers them about Class Pulse today, then turn that into concrete acceptance or child tasks. Related: RF-141 already covers Class Pulse accessible-label copy (D17 effort words, summary instead of a track list). This record authorizes no implementation. Surface: web (ClassPulse.tsx); check iOS impact if it changes.",
+  "blocker": null,
+  "evidence": [],
+  "resolution": null,
+  "followUps": []
+}
