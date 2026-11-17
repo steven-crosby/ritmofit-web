@@ -28,7 +28,7 @@ the contract surface above.
 
 ## Provenance
 
-- Synced from `ritmofit-ios` `main` at commit `35a6904` on 2026-11-11 (refreshed `Core/Networking/APIDTOs.swift` for RF-1105, iOS #143: `ClassSummary` and `ClassDetail` decode an optional `createdAt`, and `CreatedClass` carries it, so the native library lists the newest created class first; the other files already matched).
+- Synced from `ritmofit-ios` `main` at commit `56aa942` on 2026-11-17 (refreshed `Core/Networking/APIClient.swift` for RF-1180, iOS #197: the unreachable message reads "Can't reach Ritmo. Check your connection, then try again." for more connection errors, and `APIError` gains `isCancellation` and `message(for:)` so a cancelled load shows nothing; the other files already matched).
 
 ## Refreshing
 
