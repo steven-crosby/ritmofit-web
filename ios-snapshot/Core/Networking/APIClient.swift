@@ -27,14 +27,41 @@ enum APIError: LocalizedError {
         case .decoding:
             return "Couldn't read the server's response."
         case let .transport(error):
-            let ns = error as NSError
-            if ns.domain == NSURLErrorDomain, ns.code == NSURLErrorCannotConnectToHost
-                || ns.code == NSURLErrorCannotFindHost
-                || ns.code == NSURLErrorNotConnectedToInternet {
-                return "Couldn't reach the server. Is the backend running?"
+            if Self.isUnreachable(error) {
+                return Self.unreachableMessage
             }
             return error.localizedDescription
         }
+    }
+
+    /// The web's words when the server can't be reached (web `NETWORK_ERROR_MESSAGE`, RF-1180).
+    static let unreachableMessage = "Can't reach Ritmo. Check your connection, then try again."
+
+    /// Whether a transport failure means the server couldn't be reached: no network, a host
+    /// that can't be found or connected to, a lost connection or a timeout.
+    static func isUnreachable(_ error: Error) -> Bool {
+        let ns = error as NSError
+        guard ns.domain == NSURLErrorDomain else { return false }
+        return [
+            NSURLErrorCannotConnectToHost, NSURLErrorCannotFindHost, NSURLErrorDNSLookupFailed,
+            NSURLErrorNotConnectedToInternet, NSURLErrorNetworkConnectionLost, NSURLErrorTimedOut,
+        ].contains(ns.code)
+    }
+
+    /// Whether `error` is a request its caller cut short (a cancelled task, or URLSession's
+    /// `URLError.cancelled`, bare or wrapped in `.transport`), not a failure to show (RF-1180).
+    static func isCancellation(_ error: Error) -> Bool {
+        if error is CancellationError { return true }
+        if let urlError = error as? URLError { return urlError.code == .cancelled }
+        if case let .transport(underlying) = error as? APIError { return isCancellation(underlying) }
+        return false
+    }
+
+    /// What a screen shows for a failed load: nil for a cancelled one, which isn't a failure
+    /// (RF-1180), else the error's description.
+    static func message(for error: Error) -> String? {
+        if isCancellation(error) { return nil }
+        return (error as? APIError)?.errorDescription ?? error.localizedDescription
     }
 }
 
