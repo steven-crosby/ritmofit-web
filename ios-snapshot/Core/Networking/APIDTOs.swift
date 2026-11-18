@@ -37,6 +37,11 @@ struct ClassSummary: Codable, Identifiable, Equatable, Hashable {
     /// When the class was created, in ms since 1970 (the contract's `createdAt`). The library
     /// lists the newest first (RF-1105). Optional, so a body without it still decodes.
     var createdAt: Int? = nil
+    /// How many tracks the class has, and their total length in ms (the contract's
+    /// `trackCount` and `totalDurationMs`), shown on the library row as the web shows them
+    /// (RF-1183). Optional, so a body without them still decodes.
+    var trackCount: Int? = nil
+    var totalDurationMs: Int? = nil
 
     /// Human label for the access level (`none`/`view`/`edit`/`owner`).
     var accessLabel: String {
@@ -58,10 +63,23 @@ struct ClassSummary: Codable, Identifiable, Equatable, Hashable {
         }
     }
 
-    /// Title-cased template label, e.g. "cycle" → "Cycle"; nil when untemplated.
+    /// The class's discipline as the web names it, e.g. "sculpt" → "Pilates"; nil when
+    /// untemplated.
     var templateLabel: String? {
         guard let template, !template.isEmpty else { return nil }
-        return template.prefix(1).uppercased() + template.dropFirst()
+        return Self.disciplineLabel(for: template)
+    }
+
+    /// A discipline's name as the web shows it (`formatTemplateLabel`, RF-1183): HIIT in
+    /// capitals and Pilates for the stored `sculpt`. An unknown value shows title-cased.
+    static func disciplineLabel(for template: String) -> String {
+        switch template {
+        case "cycle": "Cycle"
+        case "hiit": "HIIT"
+        case "sculpt": "Pilates"
+        case "tread": "Tread"
+        default: template.prefix(1).uppercased() + template.dropFirst()
+        }
     }
 }
 
