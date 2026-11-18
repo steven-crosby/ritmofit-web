@@ -28,7 +28,7 @@ the contract surface above.
 
 ## Provenance
 
-- Synced from `ritmofit-ios` `main` at commit `56aa942` on 2026-11-17 (refreshed `Core/Networking/APIClient.swift` for RF-1180, iOS #197: the unreachable message reads "Can't reach Ritmo. Check your connection, then try again." for more connection errors, and `APIError` gains `isCancellation` and `message(for:)` so a cancelled load shows nothing; the other files already matched).
+- Synced from `ritmofit-ios` `main` at commit `39a8401` on 2026-11-18 (refreshed `Core/Networking/APIDTOs.swift` for RF-1183, iOS #202: `ClassSummary` decodes the list's `trackCount` and `totalDurationMs` for the library row, and `disciplineLabel(for:)` names disciplines as the web does, HIIT and Pilates; the other files already matched).
 
 ## Refreshing
 
