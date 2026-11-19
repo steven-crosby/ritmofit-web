@@ -33,6 +33,12 @@
       "ref": "https://github.com/steven-crosby/ritmofit-ios/pull/204",
       "summary": "iOS RF-1200 records D28 in web-parity.md, RF-1082, RF-1169 and BUILD_ORDER, and files RF-1201 (the Mac design re-audit). It refreshes the web-contract copy of 08-ios-web-alignment.md after this PR merges.",
       "checkedOn": "2026-11-19"
+    },
+    {
+      "kind": "observation",
+      "ref": "https://github.com/steven-crosby/ritmofit-ios/pull/205#issuecomment-7022765864",
+      "summary": "Follow-up, 2026-11-19: the owner decided D28's first open item. The Mac uses the web's top bar, not RF-1169's Classes/Music sidebar (\"Web's top bar\"). The web PR that marks the item decided in decisions.md is docs/rf-227-d28-mac-nav; the iOS records are iOS RF-1202 (#205).",
+      "checkedOn": "2026-11-19"
     }
   ],
   "resolution": "D28 recorded with the owner's words: native parity with the web at Spotify's bar is the priority goal, and the Mac matches the web while the iPhone keeps native grammar. The research is under docs/audits/spotify-parity-2026-11-19/. 08-ios-web-alignment.md, web-ios-parity.md and DEVELOPMENT_PLAN.md › Now point to D28 without setting new priorities. Open for the owner: the Mac half of iOS RF-1169 and a Mac column for 08.",
