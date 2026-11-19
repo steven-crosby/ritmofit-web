@@ -712,6 +712,63 @@ owner gate and deploy approvals.
 
 ---
 
+## D28 — Native parity with the web at Spotify's bar; the Mac matches the web **[Resolved 2026-11-19]**
+
+<!-- note (Claude Code, Neo, 2026-11-19): Records Steven's product decision from the 2026-11-19 Neo session (RF-227). -->
+
+**Decision (owner's words):** "Our priority goal is still 1:1, or nearly 1:1 feature and design
+parity for macos/ios and the web-app. [...] deep dive research the feature and design parity of
+Spotify web app and desktop app. That level of parity is what I want for Ritmo." After the
+research, the owner was asked what bar the Mac app should meet against the web app. The two choices
+were the way Spotify's desktop app matches its web player, or the "cohesion" Spotify uses for its
+iPhone app on both native apps. The owner chose "Mac matches web"
+([record](https://github.com/steven-crosby/ritmofit-web/pull/773#issuecomment-7022022472)).
+
+**Research:** [Spotify parity research](../docs/audits/spotify-parity-2026-11-19/README.md).
+In short:
+- **Desktop and web.** Spotify's desktop app is the web player's React code running in a native
+  shell. So the two share layout, components and keyboard shortcuts. They differ only where the
+  shell reaches the operating system: offline downloads, local files, audio quality, notifications.
+- **iPhone.** Spotify's iPhone app is separate native code. It shares the design system's tokens
+  and per-component specs with the web, a bar Spotify calls "cohesion".
+
+**Meaning:**
+
+- **Parity with the web is the native apps' priority goal,** in features and in design. The bar is
+  Spotify's: the same features on every surface, with each exception written down with the platform
+  reason for it.
+- **The Mac matches the web the way Spotify's desktop app matches its web player.** The Mac has the
+  web's layout and navigation, icons, type and components, rebuilt in SwiftUI. Only Mac conventions
+  may differ: the menu bar and its commands, the window frame, keyboard shortcuts and pointer hover.
+  The iPhone's "expresses differently" table in
+  [`08-ios-web-alignment.md`](../ritmofit_design_system/08-ios-web-alignment.md) (SF Symbols,
+  SF Pro Text, the bottom tab bar, native density) does not apply to the Mac.
+- **The iPhone keeps "same language, native grammar"** (`08-ios-web-alignment.md`): the web's
+  features, tokens and design language, laid out the iPhone way. Both choices the owner was shown
+  kept this.
+- **Native stays SwiftUI (D26).** Pixel-identical screens would need the web app in a Mac window,
+  which D26 turned down. The bar is the same layout, components and behaviour, not the same pixels.
+- **The native parity matrix measures it:** ritmofit-ios `ritmofit_dev_plan/web-parity.md`
+  ([iOS RF-1082](https://github.com/steven-crosby/ritmofit-ios/blob/main/ritmofit_dev_plan/tasks/RF-1082.json)).
+  Under D28, a Mac design status that rests on an iPhone exception is a gap.
+
+**Open, for the owner:**
+
+- The Mac half of iOS RF-1169 plans a Classes/Music sidebar, but the web has a top header. Its Mac
+  scope is decided against D28 before it starts.
+- `08-ios-web-alignment.md` has no Mac column yet. Until one is written, D28's "Meaning" above is
+  the Mac rule.
+
+**Refines:** D26. Native-first stays, and the native apps now aim for parity with the web. The
+principle D18 set (every capability on both surfaces) is the goal again, but D28 does not bring
+back D18's merge gate: web changes still don't wait for native.
+
+**Unchanged:** D25, D26's native-first order and its TestFlight milestones, D27's Spotify first,
+the music constraints, official-SDK-only playback, D20's community deferrals, the owner gate and
+deploy approvals. The order of native work stays the owner's Ready queue.
+
+---
+
 ## Deferred from M1
 
 - **Segments / class sections.** *(Deferred from M1; **shipped later**.)* In M1 segments were a design
