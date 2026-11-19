@@ -4,6 +4,12 @@
 > the active product gate. Web is the product-definition surface now; iOS follows later after the solo
 > creator loop is proven. Keep this doc for contract/design sync context and historical backlog, but do
 > not use it to block current web work or to reopen Explore/sharing/teams.
+>
+> **2026-11-19 (D28):** parity with the web is the native apps' priority goal again, at Spotify's
+> bar, and the Mac matches the web
+> ([D28](./decisions.md#d28--native-parity-with-the-web-at-spotifys-bar-the-mac-matches-the-web-resolved-2026-11-19)).
+> The live matrix is ritmofit-ios `ritmofit_dev_plan/web-parity.md` (iOS RF-1082). This doc stays
+> historical, and web changes still don't wait for native.
 
 ## The current principle
 

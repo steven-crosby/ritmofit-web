@@ -32,6 +32,11 @@ brand evolves.
 
 ## What expresses differently (by design)
 
+> **The iOS column is the iPhone's.** The Mac uses the web column instead, rebuilt in SwiftUI
+> ([D28](../ritmofit_dev_plan/decisions.md#d28--native-parity-with-the-web-at-spotifys-bar-the-mac-matches-the-web-resolved-2026-11-19),
+> 2026-11-19). Only Mac conventions may differ: the menu bar and its commands, the window frame,
+> keyboard shortcuts and pointer hover. A Mac column for this table is still to be written.
+
 | Aspect         | Web (browser)                                                       | iOS (Liquid Glass)                                               |
 | -------------- | ------------------------------------------------------------------- | ---------------------------------------------------------------- |
 | Glass          | `backdrop-filter: blur()` + translucent fill; opaque fallback       | Native material/blur; richer real translucency                   |

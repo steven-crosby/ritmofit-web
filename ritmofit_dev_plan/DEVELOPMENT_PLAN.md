@@ -26,6 +26,7 @@
 <!-- Claude Code (Air), 2026-11-13: Web priorities under the machine split (owner approved in session). -->
 <!-- Claude Code (Air), 2026-11-13: Deploy 579c5950 (#761, RF-158); RF-158 owner check passed. -->
 <!-- Claude Code (third machine), 2026-11-13: Close: #764, #767, #766, #768 merged and not deployed; RF-218 and RF-136 Done, RF-211 For review; RF-221..RF-225 filed. -->
+<!-- Claude Code (Neo), 2026-11-19: D28 parity bar line (RF-227). -->
 
 **Focus (D26, 2026-11-07):** native iOS and macOS apps on TestFlight first, so the owner's wife uses
 them now: M0a iOS on TestFlight, M0b macOS, M1 Spotify in native Live, then native class building
@@ -52,6 +53,11 @@ Music work is parked and Apple Music stays in the app
 Apple Music device checks (RF-128, RF-185, RF-186, RF-187, RF-108) are parked in Backlog and no
 longer owed; the Apple Music subscription end no longer sets the order. Spotify development mode
 allows 5 allowlisted users (D26), so other instructors cannot use Spotify in Ritmo yet.
+**Parity bar (D28, 2026-11-19):** near 1:1 feature and design parity between the native apps and
+the web is the priority goal, at Spotify's bar. The Mac matches the web the way Spotify's desktop app
+matches its web player, and the iPhone keeps native grammar
+([decision](./decisions.md#d28--native-parity-with-the-web-at-spotifys-bar-the-mac-matches-the-web-resolved-2026-11-19)).
+The iOS parity matrix measures it. Web work under the split is unchanged.
 **Machines (owner, 2026-11-12):** temporary split by repo, the Neo on macOS/iOS and the Air on web
 ([record](https://github.com/steven-crosby/ritmofit-ios/issues/113#issuecomment-6840223222)). The
 web priorities under this split (owner approved in the Air session, 2026-11-13): Spotify working end
