@@ -37,7 +37,13 @@
     {
       "kind": "observation",
       "ref": "https://github.com/steven-crosby/ritmofit-ios/pull/205#issuecomment-7022765864",
-      "summary": "Follow-up, 2026-11-19: the owner decided D28's first open item. The Mac uses the web's top bar, not RF-1169's Classes/Music sidebar (\"Web's top bar\"). The web PR that marks the item decided in decisions.md is docs/rf-227-d28-mac-nav; the iOS records are iOS RF-1202 (#205).",
+      "summary": "Follow-up, 2026-11-19: the owner decided D28's first open item. The Mac uses the web's top bar, not RF-1169's Classes/Music sidebar (\"Web's top bar\"). Web #775 marks the item decided in decisions.md; the iOS records are iOS RF-1202 (#205).",
+      "checkedOn": "2026-11-19"
+    },
+    {
+      "kind": "pr",
+      "ref": "https://github.com/steven-crosby/ritmofit-web/pull/775",
+      "summary": "Follow-up to RF-227: D28's first open item (the Mac half of iOS RF-1169) is marked decided, the web's top bar, with the owner's record linked.",
       "checkedOn": "2026-11-19"
     }
   ],
