@@ -754,8 +754,11 @@ In short:
 
 **Open, for the owner:**
 
-- The Mac half of iOS RF-1169 plans a Classes/Music sidebar, but the web has a top header. Its Mac
-  scope is decided against D28 before it starts.
+- ~~The Mac half of iOS RF-1169 plans a Classes/Music sidebar, but the web has a top header. Its Mac
+  scope is decided against D28 before it starts.~~ **Decided 2026-11-19:** the Mac uses the web's
+  top bar, not the sidebar. The owner answered "Web's top bar"
+  ([record](https://github.com/steven-crosby/ritmofit-ios/pull/205#issuecomment-7022765864); iOS
+  RF-1169, recorded by iOS RF-1202).
 - `08-ios-web-alignment.md` has no Mac column yet. Until one is written, D28's "Meaning" above is
   the Mac rule.
 
