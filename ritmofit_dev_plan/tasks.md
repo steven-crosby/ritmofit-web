@@ -12,13 +12,13 @@ owner's queue: any agent may execute a Ready task. Publishing follows AGENTS.md 
 Evidence marked **recorded** is a carried-forward claim, not fresh verification.
 A checked PR proves its GitHub state, not product acceptance or production behavior.
 
-223 tasks. backlog: 77 · ready: 0 · in_progress: 0 · blocked: 2 · review: 10 · done: 132 · cancelled: 2.
+224 tasks. backlog: 77 · ready: 0 · in_progress: 1 · blocked: 2 · review: 10 · done: 132 · cancelled: 2.
 
 ## In progress
 
 | Task | Priority / kind | Relationships | Next action / resolution | Evidence |
 | --- | --- | --- | --- | --- |
-| — | — | — | — | — |
+| [RF-227](tasks/RF-227.json) Record D28: native parity with the web at Spotify's bar; the Mac matches the web | P2 / documentation | — | Neo session 2026-11-19, branch docs/rf-227-record-d28: write D28, the research report and the pointers, then ask the owner to merge. The iOS records (web-parity.md, RF-1082) follow in a ritmofit-ios PR, and the web-contract copy of 08-ios-web-alignment.md is refreshed after this merges. | none |
 
 ## Blocked / waiting
 

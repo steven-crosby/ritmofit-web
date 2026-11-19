@@ -1,0 +1,21 @@
+{
+  "schemaVersion": 1,
+  "id": "RF-227",
+  "title": "Record D28: native parity with the web at Spotify's bar; the Mac matches the web",
+  "kind": "documentation",
+  "status": "in_progress",
+  "priority": "P2",
+  "parent": null,
+  "dependsOn": [],
+  "acceptance": [
+    "decisions.md records D28 with the owner's words: near 1:1 feature and design parity between the native apps and the web is the priority goal, at Spotify's web-player-vs-desktop bar, and the Mac matches the web (owner, 2026-11-19, Neo session).",
+    "The Spotify parity research the decision rests on is committed under docs/audits/spotify-parity-2026-11-19/ with its sources.",
+    "08-ios-web-alignment.md says its 'expresses differently' table is the iPhone's and points the Mac to D28; web-ios-parity.md and DEVELOPMENT_PLAN.md › Now point to D28 without setting new priorities the owner has not confirmed.",
+    "The owner's words are recorded as a comment on this PR."
+  ],
+  "nextAction": "Neo session 2026-11-19, branch docs/rf-227-record-d28: write D28, the research report and the pointers, then ask the owner to merge. The iOS records (web-parity.md, RF-1082) follow in a ritmofit-ios PR, and the web-contract copy of 08-ios-web-alignment.md is refreshed after this merges.",
+  "blocker": null,
+  "evidence": [],
+  "resolution": null,
+  "followUps": []
+}
