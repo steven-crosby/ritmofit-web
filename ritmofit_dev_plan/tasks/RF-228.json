@@ -1,0 +1,27 @@
+{
+  "schemaVersion": 1,
+  "id": "RF-228",
+  "title": "Tidy the D28 records after the #773 review",
+  "kind": "documentation",
+  "status": "backlog",
+  "priority": "P3",
+  "parent": null,
+  "dependsOn": [],
+  "acceptance": [
+    "08-ios-web-alignment.md links D28 in a way that still resolves in the ritmofit-ios web-contract copy (for example an absolute GitHub URL), and the iOS copy is refreshed afterwards in an iOS PR. The existing relative link to the design system README at line 56 gets the same fix.",
+    "DEVELOPMENT_PLAN.md › Now's \"Parity bar (D28)\" line says D26's TestFlight order is unchanged, as D28 itself does.",
+    "docs/audits/spotify-parity-2026-11-19/README.md agrees with itself on desktop sign-in: §1 says native login, while the §4 table says native with a browser handoff. Source [2] is either cited or removed, and the gaps in the source numbering are noted or closed."
+  ],
+  "nextAction": "Logged from the final review of #773 (Neo, 2026-11-19): non-blocking findings. Agent-created: Backlog until the owner sets Ready. The review's other findings went elsewhere. The shortcut question (D28 lets the Mac's shortcuts differ, but Spotify's are the same on web and desktop) went to iOS RF-1201's acceptance, and so did the Mac column for 08, which RF-1201 drafts. The iOS parity copy of 08 is refreshed by iOS #204.",
+  "blocker": null,
+  "evidence": [
+    {
+      "kind": "observation",
+      "ref": "https://github.com/steven-crosby/ritmofit-web/pull/773",
+      "summary": "Final review (/code-review medium, fresh context) of #773 at c30059e: 0 significant findings and 8 non-significant ones. This record holds the three web wording findings; the rest are routed in its next action, or need no action (the machine-split note is recorded in the owner's-words comment).",
+      "checkedOn": "2026-11-19"
+    }
+  ],
+  "resolution": null,
+  "followUps": []
+}
