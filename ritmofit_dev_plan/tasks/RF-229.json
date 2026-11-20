@@ -21,6 +21,12 @@
       "ref": "https://github.com/steven-crosby/ritmofit-ios/issues/113#issuecomment-7032728249",
       "summary": "The owner's words (Neo session, 2026-11-19): \"we need to update the verbiage, instructions. Macbook Neo is doing dev work for web-app and macos/ios\"; asked whether the Air keeps any dev work, \"Retire the Air\"; asked how deploys work, \"wrangler login on Neo\" (the CI-runner trade-off was stated before the answer).",
       "checkedOn": "2026-11-19"
+    },
+    {
+      "kind": "pr",
+      "ref": "https://github.com/steven-crosby/ritmofit-web/pull/776",
+      "summary": "The Air retired in two-machine-rules.md › 1 and › 2, the deploy runbook, AGENTS.md, CLAUDE.md, start-session step 9 and DEVELOPMENT_PLAN.md › Now; the Neo holds the owner's own wrangler login.",
+      "checkedOn": "2026-11-19"
     }
   ],
   "resolution": "The two-machine rules, deploy runbook, AGENTS.md, CLAUDE.md, start-session step 9 and DEVELOPMENT_PLAN.md › Now say the Air is retired and the Neo does all dev work and holds the owner's own wrangler login. Agents still never sign in to Cloudflare, and every production step still needs the owner's yes. The parts of the rules about a second conductor stay for if the owner adds a machine. Open for the owner: sign the Neo in with wrangler login. iOS refreshes its copy next.",
