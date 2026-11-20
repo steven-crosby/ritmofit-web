@@ -1,0 +1,33 @@
+{
+  "schemaVersion": 1,
+  "id": "RF-231",
+  "title": "The web's Sign in with Apple uses Apple's white button, as the Mac does",
+  "kind": "task",
+  "status": "backlog",
+  "priority": "P2",
+  "parent": null,
+  "dependsOn": [],
+  "acceptance": [
+    "Login's Sign in with Apple control is Apple's white button: Apple's logo artwork from Apple's own resources (not redrawn, with the source noted in the PR), a black logo and title on a white fill, one of Apple's allowed titles (today's \"Continue with Apple\" is one), and the web's corner radius.",
+    "Its busy (\"Opening Apple sign-in…\"), checking and unavailable states behave as they do today, and it stays keyboard reachable, visibly focused and labelled.",
+    "The Mac keeps its system Sign in with Apple button; 08's Mac column (RF-233) shows both as Apple's white button."
+  ],
+  "nextAction": "Agent-created (Neo, 2026-11-20) from the owner's 2026-11-19 decision on the RF-1201 Mac design audit (iOS RF-1213). Backlog until the owner sets Ready. Login.tsx's text-only \"Continue with Apple\" button falls short of Apple's custom-button rules. Login.tsx isn't owner-gated (checked 2026-11-20).",
+  "blocker": null,
+  "evidence": [
+    {
+      "kind": "observation",
+      "ref": "https://github.com/steven-crosby/ritmofit-ios/issues/113#issuecomment-7028435786",
+      "summary": "Owner decision, Neo session, 2026-11-19: \"Apple's button on both\". The Mac and the web both use Apple's white Sign in with Apple button; the web change is a web task.",
+      "checkedOn": "2026-11-20"
+    },
+    {
+      "kind": "pr",
+      "ref": "https://github.com/steven-crosby/ritmofit-ios/pull/207",
+      "summary": "iOS RF-1213 records the decision in web-parity.md › Owner decisions, item 11, and names this web half for a web PR.",
+      "checkedOn": "2026-11-20"
+    }
+  ],
+  "resolution": null,
+  "followUps": []
+}

@@ -1,0 +1,35 @@
+{
+  "schemaVersion": 1,
+  "id": "RF-232",
+  "title": "Web Live gets the Mac's keys: Space, ←, → and Esc",
+  "kind": "task",
+  "status": "backlog",
+  "priority": "P2",
+  "parent": null,
+  "dependsOn": [],
+  "acceptance": [
+    "In Live, Space plays or pauses, ← goes to the previous track, → goes to the next and Esc exits Live, as in the Mac's Live window.",
+    "None of them fires while typing in a field (input, textarea, select or contenteditable).",
+    "A focused seek strip (LiveTimeline: arrows seek 5 s) or view toggle (arrows switch views) keeps its own arrows.",
+    "The menu keys (⌘N, ⌘R, ⇧⌘M) stay Mac only, because browsers use ⌘N and ⌘R.",
+    "Tests cover each key and the typing and focused-control exceptions."
+  ],
+  "nextAction": "Agent-created (Neo, 2026-11-20) from the owner's 2026-11-19 decision on the RF-1201 Mac design audit (iOS RF-1213; the Mac side is iOS RF-1212). Backlog until the owner sets Ready. LiveMode.tsx is owner-gated (playback), so the PR gets needs-owner. One point to settle when it is set Ready: whether Space plays or pauses while a button has focus, or keeps the button's own Space.",
+  "blocker": null,
+  "evidence": [
+    {
+      "kind": "observation",
+      "ref": "https://github.com/steven-crosby/ritmofit-ios/issues/113#issuecomment-7028941648",
+      "summary": "Owner decision, Neo session, 2026-11-19: \"Yes, a web task\". Web Live gets the Mac's Space, ←, → and Esc, except while typing, with a focused seek strip or view toggle keeping its arrows. The menu keys stay Mac only (the agent's stated default; the owner didn't object).",
+      "checkedOn": "2026-11-20"
+    },
+    {
+      "kind": "pr",
+      "ref": "https://github.com/steven-crosby/ritmofit-ios/pull/207",
+      "summary": "iOS RF-1213 records the decision in web-parity.md › Owner decisions, item 14, and names this web half for a web PR.",
+      "checkedOn": "2026-11-20"
+    }
+  ],
+  "resolution": null,
+  "followUps": []
+}
