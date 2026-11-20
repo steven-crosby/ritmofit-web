@@ -1,0 +1,33 @@
+{
+  "schemaVersion": 1,
+  "id": "RF-233",
+  "title": "08-ios-web-alignment.md gets its Mac column (D28)",
+  "kind": "documentation",
+  "status": "backlog",
+  "priority": "P2",
+  "parent": null,
+  "dependsOn": [],
+  "acceptance": [
+    "08's \"What expresses differently\" table gains a Mac column, replacing the note \"A Mac column for this table is still to be written\". It starts from the draft in the iOS RF-1201 audit (agent-reports/2026-11-19/mac-design-parity-audit/README.md › Draft Mac column) and carries the owner's 2026-11-19 decisions.",
+    "The Sign in with Apple and Live keys rows say what the web does today and name RF-231 and RF-232 until those land.",
+    "The iOS web-contract/08-ios-web-alignment.md copy is refreshed in an iOS PR, with its README provenance line, as soon as this merges: 08 drift fails iOS parity, so iOS main is red until then."
+  ],
+  "nextAction": "Agent-created (Neo, 2026-11-20) from the owner's 2026-11-19 decisions on the RF-1201 Mac design audit (iOS RF-1213). Backlog until the owner sets Ready. RF-228 also edits 08 (its D28 link), so the two can share a PR.",
+  "blocker": null,
+  "evidence": [
+    {
+      "kind": "pr",
+      "ref": "https://github.com/steven-crosby/ritmofit-ios/pull/207",
+      "summary": "iOS RF-1213 records the five decisions (web-parity.md › Owner decisions, items 9 to 14) and updates the audit README's draft Mac column for this web PR.",
+      "checkedOn": "2026-11-20"
+    },
+    {
+      "kind": "observation",
+      "ref": "https://github.com/steven-crosby/ritmofit-ios/issues/113#issuecomment-7026089171",
+      "summary": "The first of the owner's 2026-11-19 decisions recorded on #113 (accent, sheets, Sign in with Apple, right-click menus, the Mac top bar, Live keys); each answer has its own comment there.",
+      "checkedOn": "2026-11-20"
+    }
+  ],
+  "resolution": null,
+  "followUps": []
+}
