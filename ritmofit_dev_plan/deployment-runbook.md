@@ -7,8 +7,9 @@ API-scoped Wrangler commands use `pnpm --filter @ritmofit/api exec wrangler …`
 
 **Which machine.** Every Wrangler command against production in this runbook (deploy, tail,
 `deployments status`, rollback, secrets, remote D1) runs only on the machine that holds the Cloudflare
-credentials, the MacBook Air (`two-machine-rules.md` › 1). Never run `wrangler login`
-elsewhere to get past an auth error; if the Air is offline, stop and ask the owner.
+credentials, the MacBook Neo, signed in by the owner with `wrangler login` (`two-machine-rules.md` › 1;
+the Air is retired). A conductor never runs `wrangler login` itself, on the Neo or anywhere else. On
+an auth error, or a missing or expired session, stop and ask the owner to sign the Neo in.
 
 ## Environment matrix
 
@@ -256,7 +257,7 @@ pnpm --filter @ritmofit/api exec wrangler rollback <version-id> -m "reason"
 
 This re-publishes that version's code **and bindings**; it does **not** touch D1 data.
 
-**If the Air is offline.** The Neo holds no Cloudflare credentials, so it cannot roll back. The
+**If the Neo can't roll back** (it is off, or its wrangler session is missing or expired). The
 owner does it: either from the Cloudflare dashboard's deployments view for the `ritmofit-api` Worker
 (roll back to the version named as rollback in `DEVELOPMENT_PLAN.md`'s Now block), or by running the
 commands above on a machine where the owner is signed in to Cloudflare. A conductor never signs in

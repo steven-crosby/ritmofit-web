@@ -27,6 +27,7 @@
 <!-- Claude Code (Air), 2026-11-13: Deploy 579c5950 (#761, RF-158); RF-158 owner check passed. -->
 <!-- Claude Code (third machine), 2026-11-13: Close: #764, #767, #766, #768 merged and not deployed; RF-218 and RF-136 Done, RF-211 For review; RF-221..RF-225 filed. -->
 <!-- Claude Code (Neo), 2026-11-19: D28 parity bar line (RF-227). -->
+<!-- Claude Code (Neo), 2026-11-19: Machines line: the Air retired, the Neo holds the owner's wrangler login (RF-229). -->
 
 **Focus (D26, 2026-11-07):** native iOS and macOS apps on TestFlight first, so the owner's wife uses
 them now: M0a iOS on TestFlight, M0b macOS, M1 Spotify in native Live, then native class building
@@ -57,10 +58,11 @@ allows 5 allowlisted users (D26), so other instructors cannot use Spotify in Rit
 the web is the priority goal, at Spotify's bar. The Mac matches the web the way Spotify's desktop app
 matches its web player, and the iPhone keeps native grammar
 ([decision](./decisions.md#d28--native-parity-with-the-web-at-spotifys-bar-the-mac-matches-the-web-resolved-2026-11-19)).
-The iOS parity matrix measures it. Web work under the split is unchanged.
-**Machines (owner, 2026-11-12):** temporary split by repo, the Neo on macOS/iOS and the Air on web
-([record](https://github.com/steven-crosby/ritmofit-ios/issues/113#issuecomment-6840223222)). The
-web priorities under this split (owner approved in the Air session, 2026-11-13): Spotify working end
+The iOS parity matrix measures it. The web priorities below are unchanged by it.
+**Machines (owner, 2026-11-19):** the Air is retired. The Neo does all dev work in both repos and holds
+the owner's own `wrangler login` ([record](https://github.com/steven-crosby/ritmofit-ios/issues/113#issuecomment-7032728249),
+[RF-229](./tasks/RF-229.json)), which ends the 2026-11-12 split by repo. The
+web priorities set under that split (owner approved in the Air session, 2026-11-13) still stand: Spotify working end
 to end, then Live polish, one RF per PR. Order: [RF-158](./tasks/RF-158.json) (scrub or pause during a
 Spotify start), [RF-74](./tasks/RF-74.json) (closes RF-92), [RF-218](./tasks/RF-218.json),
 [RF-136](./tasks/RF-136.json) (preflight groups), [RF-130](./tasks/RF-130.json) and
@@ -68,7 +70,7 @@ Spotify start), [RF-74](./tasks/RF-74.json) (closes RF-92), [RF-218](./tasks/RF-
 [RF-157](./tasks/RF-157.json) (Spotify library depth), then [RF-138](./tasks/RF-138.json) after a design
 pass. [RF-167](./tasks/RF-167.json) waits on a non-allowlisted Spotify account to probe. Owner checks
 alongside: RF-217, RF-205, RF-148, RF-155. Account security (RF-116, RF-140) is not in this order.
-**Next step:** deploys from the Air of the four merged PRs above (#767 separately: it is provider code, which
+**Next step:** once the owner has signed the Neo in to Cloudflare, deploys from the Neo of the four merged PRs above (#767 separately: it is provider code, which
 `AGENTS.md` deploys on its own), then the owner checks they need: [RF-211](./tasks/RF-211.json) on iPhone Safari,
 [RF-224](./tasks/RF-224.json) (preflight groups with a provider disconnected), and RF-217, which also covers
 RF-218. In the order above RF-158, RF-74, RF-218 and RF-136 are Done and RF-211 is For review; next to build
