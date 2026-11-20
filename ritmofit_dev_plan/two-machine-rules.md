@@ -6,10 +6,10 @@ https://github.com/steven-crosby/ritmofit-web/pull/718#issuecomment-6637458064 -
 dev work and holds the owner's wrangler login (§1, §2). -->
 
 This file holds the rules for how the owner works with agents on two machines. Since 2026-11-19
-there is one, the MacBook Neo (§1). **It is canonical in
-ritmofit-web.** ritmofit-ios vendors a read-only copy at `web-contract/two-machine-rules.md`, and
-its parity check fails when the copy drifts (iOS RF-1041 adds both). Change this file in a web PR
-first, then refresh the iOS copy in an iOS PR.
+there is one, the MacBook Neo (§1). **It is canonical in ritmofit-web.** ritmofit-ios vendors a
+read-only copy at `web-contract/two-machine-rules.md`, and its parity check fails when the copy
+drifts (iOS RF-1041 adds both). Change this file in a web PR first, then refresh the iOS copy in an
+iOS PR.
 
 This file is part of each repo's `AGENTS.md`, which points here. Each `AGENTS.md` keeps its own
 merge mechanics: labels, statuses, checks and the review level. Where this file names an exception
@@ -50,8 +50,8 @@ comment, and it lasts until the owner ends it. The Air's retirement ended the 20
 
 - **One machine on.** Its conductor works in both repos and may take any task, within §1. Since
   the Air's retirement this is the standing mode, on the Neo.
-- **Both machines on** (only if the owner adds a machine). The conductors have equal authority, and neither machine owns a repo.
-  Whichever conductor the owner is working with plans and decides with the owner, and works in
+- **Both machines on** (only if the owner adds a machine). The conductors have equal authority,
+  and neither machine owns a repo. Whichever conductor the owner is working with plans and decides with the owner, and works in
   either repo. It takes any unclaimed RF task in either repo, and finishes PRs under the usual owner
   permissions, without first asking the other.
   - **Claiming.** A task is claimed by its draft PR (web `AGENTS.md` › "Task sync"), not by a
