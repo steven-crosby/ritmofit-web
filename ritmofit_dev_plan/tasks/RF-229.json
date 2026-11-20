@@ -1,0 +1,42 @@
+{
+  "schemaVersion": 1,
+  "id": "RF-229",
+  "title": "Retire the Air: the Neo does all dev work and holds the owner's wrangler login",
+  "kind": "documentation",
+  "status": "done",
+  "priority": "P1",
+  "parent": null,
+  "dependsOn": [],
+  "acceptance": [
+    "two-machine-rules.md › 1 and › 2 say the owner retired the MacBook Air on 2026-11-19: the Neo is the only machine and does dev work in both repos, and only the Neo holds Cloudflare credentials, the owner's own wrangler login. A conductor never signs in to Cloudflare; which production steps need the owner's yes stays as web AGENTS.md and the deploy runbook set it; the CI-runner trade-off the owner accepted is stated; §3 and §5 still hold for any other session; and the 2026-11-12 split has ended.",
+    "deployment-runbook.md, AGENTS.md › Two-machine conductors, CLAUDE.md › Two conductors and start-session.md step 9 name the Neo, not the Air, as the machine that holds Cloudflare credentials.",
+    "DEVELOPMENT_PLAN.md › Now replaces the 2026-11-12 split line, keeps the web priority order unchanged, and its next step deploys from the Neo once the owner has signed it in.",
+    "The owner's words are linked from this record; ritmofit-ios refreshes its vendored copy of two-machine-rules.md and its own guides in an iOS PR after this merges."
+  ],
+  "nextAction": null,
+  "blocker": null,
+  "evidence": [
+    {
+      "kind": "observation",
+      "ref": "https://github.com/steven-crosby/ritmofit-ios/issues/113#issuecomment-7032728249",
+      "summary": "The owner's words (Neo session, 2026-11-19): \"we need to update the verbiage, instructions. Macbook Neo is doing dev work for web-app and macos/ios\"; asked whether the Air keeps any dev work, \"Retire the Air\"; asked how deploys work, \"wrangler login on Neo\" (the CI-runner trade-off was stated before the answer).",
+      "checkedOn": "2026-11-19"
+    },
+    {
+      "kind": "pr",
+      "ref": "https://github.com/steven-crosby/ritmofit-web/pull/776",
+      "summary": "The Air retired in two-machine-rules.md › 1 and › 2, the deploy runbook, AGENTS.md, CLAUDE.md, start-session step 9 and DEVELOPMENT_PLAN.md › Now; the Neo holds the owner's own wrangler login.",
+      "checkedOn": "2026-11-19"
+    },
+    {
+      "kind": "observation",
+      "ref": "https://github.com/steven-crosby/ritmofit-web/pull/776",
+      "summary": "Final review on a36c5e2 found one significant contradiction: §1 required the owner's yes for every production wrangler step while start-session step 9 runs the read-only deployments status without one. Fixed by leaving the yes to AGENTS.md's Never granted list and the runbook; three wording points fixed; the rest filed as RF-230.",
+      "checkedOn": "2026-11-20"
+    }
+  ],
+  "resolution": "The two-machine rules, deploy runbook, AGENTS.md, CLAUDE.md, start-session step 9 and DEVELOPMENT_PLAN.md › Now say the Air is retired and the Neo does all dev work and holds the owner's own wrangler login. Agents still never sign in to Cloudflare, and which production steps need the owner's yes is unchanged (AGENTS.md › Never granted, the runbook). §4 and the both-machines mode wait for a second machine; §3 and §5 still hold. Open for the owner: sign the Neo in with wrangler login. Follow-ups in RF-230; iOS refreshes its copy next.",
+  "followUps": [
+    "RF-230"
+  ]
+}

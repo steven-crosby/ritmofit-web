@@ -2,11 +2,14 @@
 
 <!-- Claude Code (Neo conductor), 2026-11-04, RF-193: written from the owner's decisions in
 https://github.com/steven-crosby/ritmofit-web/pull/718#issuecomment-6637458064 -->
+<!-- Claude Code (Neo conductor), 2026-11-19, RF-229: the owner retired the Air; the Neo does all
+dev work and holds the owner's wrangler login (§1, §2). -->
 
-This file holds the rules for how the owner works with agents on two machines. **It is canonical in
-ritmofit-web.** ritmofit-ios vendors a read-only copy at `web-contract/two-machine-rules.md`, and
-its parity check fails when the copy drifts (iOS RF-1041 adds both). Change this file in a web PR
-first, then refresh the iOS copy in an iOS PR.
+This file holds the rules for how the owner works with agents on two machines. Since 2026-11-19
+there is one, the MacBook Neo (§1). **It is canonical in ritmofit-web.** ritmofit-ios vendors a
+read-only copy at `web-contract/two-machine-rules.md`, and its parity check fails when the copy
+drifts (iOS RF-1041 adds both). Change this file in a web PR first, then refresh the iOS copy in an
+iOS PR.
 
 This file is part of each repo's `AGENTS.md`, which points here. Each `AGENTS.md` keeps its own
 merge mechanics: labels, statuses, checks and the review level. Where this file names an exception
@@ -15,33 +18,43 @@ owner-gated as agent rules.
 
 ## 1. Machines and their limits
 
-The owner runs at most one conductor session on each machine: "Ritmo - Air" on the MacBook Air and
-"Ritmo - Neo" on the MacBook Neo. A limit below is a machine capability, not a difference in
-authority.
+**The MacBook Air is retired** (owner, 2026-11-19,
+[record](https://github.com/steven-crosby/ritmofit-ios/issues/113#issuecomment-7032728249)). The
+MacBook Neo is the only machine, and its conductor session, "Ritmo - Neo", does dev work in both
+repos. The owner runs at most one conductor session on each machine, so there is one conductor. §2
+"Both machines on" and §4 apply again only if the owner adds a machine. §3 and §5 still hold for
+any other session (a subagent, a cloud session): only the owner's GitHub records cross, and a
+message is never permission. A limit below is a machine capability, not a difference in authority.
 
-- **Only the Air holds Cloudflare credentials.** Deploys and every wrangler step against production
-  (remote D1 migrations, secrets, rollback, tail, `wrangler deployments status`) run there. The Neo
-  holds none of any kind: no `wrangler login`, cached wrangler session or `CLOUDFLARE_API_TOKEN`.
-  While the Air is offline, the owner is the production backstop.
+- **Only the Neo holds Cloudflare credentials:** the owner's own `wrangler login`. Deploys and
+  every wrangler step against production (remote D1 migrations, secrets, rollback, tail,
+  `wrangler deployments status`) run there. Which of them need the owner's yes in the session is
+  set by web `AGENTS.md` ("Never granted": deploys, remote D1 migrations, secrets, production data)
+  and the deploy runbook; this file adds nothing to that. A conductor never runs `wrangler login`
+  or signs in to Cloudflare. If the session is missing or expired, it stops and asks the owner to
+  sign the Neo in. No other machine
+  holds Cloudflare credentials of any kind. While the Neo is off, the owner is the production
+  backstop.
+  - The owner accepted a trade-off: the ritmofit-ios CI runner runs as the same macOS user, so a
+    CI job could read that wrangler session.
 - **iOS simulator work runs only on the Neo.** That is building, running or testing the iOS app in a
-  simulator for development or verification. The Air has no iOS simulator.
+  simulator for development or verification.
 - **iOS CI runs only on the Neo.** The ritmofit-ios self-hosted runner (label `neo`, simulator
   `RitmoFit-CI`) is there. While the Neo sleeps or is off, no iOS PR can get its required check,
   so none merges.
-- Either machine may run signed-in checks of production in the RitmoFit app itself (never the
+- Any machine may run signed-in checks of production in the RitmoFit app itself (never the
   Cloudflare dashboard). Changing production data stays never granted (web `AGENTS.md`).
 
 ## 2. Modes
 
 There is no standing split by repo. The owner may set a temporary split, recorded as a GitHub
-comment, and it lasts until the owner ends it.
+comment, and it lasts until the owner ends it. The Air's retirement ended the 2026-11-12 split
+(native work on the Neo, web work on the Air).
 
-- **One machine on.** Its conductor works in both repos and may take any task, within §1:
-  - The Neo alone does no deploys or production wrangler steps.
-  - The Air alone may edit iOS code and open iOS PRs. Those PRs wait for the Neo's CI before they
-    merge. A step that needs a simulator goes to the Neo, or to the owner, in the RF record.
-- **Both machines on.** The conductors have equal authority, and neither machine owns a repo.
-  Whichever conductor the owner is working with plans and decides with the owner, and works in
+- **One machine on.** Its conductor works in both repos and may take any task, within §1. Since
+  the Air's retirement this is the standing mode, on the Neo.
+- **Both machines on** (only if the owner adds a machine). The conductors have equal authority,
+  and neither machine owns a repo. Whichever conductor the owner is working with plans and decides with the owner, and works in
   either repo. It takes any unclaimed RF task in either repo, and finishes PRs under the usual owner
   permissions, without first asking the other.
   - **Claiming.** A task is claimed by its draft PR (web `AGENTS.md` › "Task sync"), not by a
@@ -143,7 +156,7 @@ Paste this block into the issue and fill it in:
 ```markdown
 Owner pre-approval for one unattended night (ritmofit_dev_plan/two-machine-rules.md › 7).
 - **Owner's words:** <verbatim answers, one per line; they name every queued item and exception>
-- **Machine:** <Air|Neo> · **Repo:** <ritmofit-web|ritmofit-ios>
+- **Machine:** Neo · **Repo:** <ritmofit-web|ritmofit-ios>
 - **Window:** <start> to <end> (local and Z). No new PR after <end minus 1 hour>, except the handoff PR.
 - **Pre-approved queue, in merge order:** <RF-N: scope; eligibility checked (7.3)>
 - **Owner-named exceptions:** <none | RF-N may change <area>>

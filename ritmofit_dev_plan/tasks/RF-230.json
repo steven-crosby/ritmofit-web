@@ -1,0 +1,27 @@
+{
+  "schemaVersion": 1,
+  "id": "RF-230",
+  "title": "Follow-ups from the #776 review: open records that still name the Air, and iOS CI vs a running dev:api",
+  "kind": "task",
+  "status": "backlog",
+  "priority": "P3",
+  "parent": null,
+  "dependsOn": [],
+  "acceptance": [
+    "Open records that still give the Air a job are updated: RF-191's title (\"Air runs it\"), RF-224's next action (the next web deploy \"(the Air)\"), RF-183's signed-in checks by \"the Air conductor\" with the QA token (RF-155), including where that token now lives, and RF-179's \"next docs PR on the Air\".",
+    "two-machine-rules.md › 7.4 step 2 no longer cites the night's claim from §2's \"Both machines on\" bullet, which waits for a second machine; the claim rule sits where a one-machine night reads it.",
+    "A daytime rule, or a recorded owner decision not to add one: with web dev and the iOS CI runner on the same Neo, a pnpm dev:api left running from a web branch would serve iOS CI's localhost:8787 auth tests (two-machine-rules.md › 7.6 covers unattended nights only)."
+  ],
+  "nextAction": "Backlog until the owner sets it Ready.",
+  "blocker": null,
+  "evidence": [
+    {
+      "kind": "observation",
+      "ref": "https://github.com/steven-crosby/ritmofit-web/pull/776",
+      "summary": "Non-blocking findings from #776's final review on a36c5e2 (RF-229), filed here per AGENTS.md.",
+      "checkedOn": "2026-11-20"
+    }
+  ],
+  "resolution": null,
+  "followUps": []
+}

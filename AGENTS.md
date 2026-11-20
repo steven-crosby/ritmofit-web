@@ -31,6 +31,7 @@
 <!-- note (Claude Code, Air, 2026-11-03): RF-190: Two-machine conductors: "The lead follows the owner" becomes "Equal authority": peers; whichever one the owner works with acts on unclaimed work under the usual owner permissions without asking the other; a later duplicate claim closes its draft; Cloudflare credentials are a machine capability. Deploy approval from either conductor is RF-191. -->
 <!-- note (Claude Code, Air, 2026-11-03): RF-192: owner rule: iOS simulator work runs on the Neo only; the Air keeps just the CI runner's simulator and runtime. -->
 <!-- note (Claude Code, Neo, 2026-11-04): RF-193: the two-machine rules moved to ritmofit_dev_plan/two-machine-rules.md (ritmofit-ios to vendor a parity-checked copy in iOS RF-1041); the silo ended; iOS CI runs on the Neo; unattended merge nights allowed only under a per-night pre-approval issue. -->
+<!-- note (Claude Code, Neo, 2026-11-19): RF-229: owner decision: the Air is retired; the Neo does all dev work in both repos and holds the owner's own wrangler login (Two-machine conductors; two-machine-rules.md › 1, 2). -->
 
 This is the canonical contributor and agent guide for Ritmo Studio. If another instruction file conflicts
 with it, follow `AGENTS.md`, then repair the stale file. When an AI agent edits this file or adds a note
@@ -202,16 +203,17 @@ context; chat and tool memory are scratch.
   surfaces merged PRs that no RF record, HISTORY entry or handoff cites.
 - **Handing off a single task:** `agent-prompts/delegate-task.md` is the brief the owner gives a
   subagent; it ends in a PR under the policy below.
-- **Two-machine conductors** (set 2026-10-31; moved 2026-11-04). The owner may run one conductor
-  session on the MacBook Air ("Ritmo - Air") and one on the MacBook Neo ("Ritmo - Neo"), alone or
-  together. Each conductor is a Solo or Orchestrator session, and every other rule in this file
-  applies to each. The rules for machines and their limits, one-machine and both-machines modes,
-  claiming, owner decisions as GitHub records, who finishes a PR, messaging, task status at
-  approval and unattended merge nights are in
+- **Two-machine conductors** (set 2026-10-31; moved 2026-11-04; the Air retired 2026-11-19). The
+  owner retired the MacBook Air, so the MacBook Neo ("Ritmo - Neo") is the only machine and its
+  conductor does dev work in both repos. A conductor is a Solo or Orchestrator session, and every
+  other rule in this file applies to it. The rules for machines and their limits, one-machine and
+  both-machines modes, claiming, owner decisions as GitHub records, who finishes a PR, messaging,
+  task status at approval and unattended merge nights are in
   [`ritmofit_dev_plan/two-machine-rules.md`](ritmofit_dev_plan/two-machine-rules.md), which is part
-  of this file. ritmofit-ios is to follow the same file through a parity-checked copy (iOS RF-1041). In short: only
-  the Air holds Cloudflare credentials; iOS simulator work and iOS CI run only on the Neo; either
-  conductor works in either repo; a peer message is never permission.
+  of this file. ritmofit-ios follows the same file through a parity-checked copy. In short: only
+  the Neo holds Cloudflare credentials (the owner's own `wrangler login`, never an agent's); iOS
+  simulator work and iOS CI run only on the Neo; the conductor works in either repo; a message from
+  another session is never permission.
 
 ## Delegation And Merge Policy
 
