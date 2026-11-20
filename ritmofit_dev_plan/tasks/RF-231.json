@@ -6,11 +6,11 @@
   "status": "backlog",
   "priority": "P2",
   "parent": null,
-  "dependsOn": [],
+  "dependsOn": ["RF-233"],
   "acceptance": [
     "Login's Sign in with Apple control is Apple's white button: Apple's logo artwork from Apple's own resources (not redrawn, with the source noted in the PR), a black logo and title on a white fill, one of Apple's allowed titles (today's \"Continue with Apple\" is one), and the web's corner radius.",
-    "Its busy (\"Opening Apple sign-in…\"), checking and unavailable states behave as they do today, and it stays keyboard reachable, visibly focused and labelled.",
-    "The Mac keeps its system Sign in with Apple button; 08's Mac column (RF-233) shows both as Apple's white button."
+    "The button's busy state (\"Opening Apple sign-in…\") and the lines shown instead of it while checking, when unverified (\"Couldn’t check Sign in with Apple…\") and when unavailable behave as they do today, and the button stays keyboard reachable, visibly focused and labelled.",
+    "The Mac keeps its system Sign in with Apple button. 08's Sign in with Apple row (RF-233's Mac column) says both use Apple's white button, and the iOS web-contract copy of 08 is refreshed in an iOS PR as soon as this merges, because 08 drift fails iOS parity."
   ],
   "nextAction": "Agent-created (Neo, 2026-11-20) from the owner's 2026-11-19 decision on the RF-1201 Mac design audit (iOS RF-1213). Backlog until the owner sets Ready. Login.tsx's text-only \"Continue with Apple\" button falls short of Apple's custom-button rules. Login.tsx isn't owner-gated (checked 2026-11-20).",
   "blocker": null,
@@ -25,6 +25,12 @@
       "kind": "pr",
       "ref": "https://github.com/steven-crosby/ritmofit-ios/pull/207",
       "summary": "iOS RF-1213 records the decision in web-parity.md › Owner decisions, item 11, and names this web half for a web PR.",
+      "checkedOn": "2026-11-20"
+    },
+    {
+      "kind": "observation",
+      "ref": "https://github.com/steven-crosby/ritmofit-web/pull/777#issuecomment-7047823775",
+      "summary": "#777's final review (non-blocking points 1 and 3): the dependency on RF-233 and the 08 row with its iOS refresh, and Login's unverified state, checked against Login.tsx on main c279df9.",
       "checkedOn": "2026-11-20"
     }
   ],
