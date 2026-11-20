@@ -21,15 +21,18 @@ owner-gated as agent rules.
 **The MacBook Air is retired** (owner, 2026-11-19,
 [record](https://github.com/steven-crosby/ritmofit-ios/issues/113#issuecomment-7032728249)). The
 MacBook Neo is the only machine, and its conductor session, "Ritmo - Neo", does dev work in both
-repos. The owner runs at most one conductor session on each machine, so there is one conductor. The
-parts of this file about a second conductor (§2 "Both machines on", §3 to §5) apply again only if
-the owner adds a machine. A limit below is a machine capability, not a difference in authority.
+repos. The owner runs at most one conductor session on each machine, so there is one conductor. §2
+"Both machines on" and §4 apply again only if the owner adds a machine. §3 and §5 still hold for
+any other session (a subagent, a cloud session): only the owner's GitHub records cross, and a
+message is never permission. A limit below is a machine capability, not a difference in authority.
 
 - **Only the Neo holds Cloudflare credentials:** the owner's own `wrangler login`. Deploys and
   every wrangler step against production (remote D1 migrations, secrets, rollback, tail,
-  `wrangler deployments status`) run there, each only with the owner's yes in the session that runs
-  it (web `AGENTS.md`). A conductor never runs `wrangler login` or signs in to Cloudflare. If the
-  session is missing or expired, it stops and asks the owner to sign the Neo in. No other machine
+  `wrangler deployments status`) run there. Which of them need the owner's yes in the session is
+  set by web `AGENTS.md` ("Never granted": deploys, remote D1 migrations, secrets, production data)
+  and the deploy runbook; this file adds nothing to that. A conductor never runs `wrangler login`
+  or signs in to Cloudflare. If the session is missing or expired, it stops and asks the owner to
+  sign the Neo in. No other machine
   holds Cloudflare credentials of any kind. While the Neo is off, the owner is the production
   backstop.
   - The owner accepted a trade-off: the ritmofit-ios CI runner runs as the same macOS user, so a
@@ -153,7 +156,7 @@ Paste this block into the issue and fill it in:
 ```markdown
 Owner pre-approval for one unattended night (ritmofit_dev_plan/two-machine-rules.md › 7).
 - **Owner's words:** <verbatim answers, one per line; they name every queued item and exception>
-- **Machine:** <Air|Neo> · **Repo:** <ritmofit-web|ritmofit-ios>
+- **Machine:** Neo · **Repo:** <ritmofit-web|ritmofit-ios>
 - **Window:** <start> to <end> (local and Z). No new PR after <end minus 1 hour>, except the handoff PR.
 - **Pre-approved queue, in merge order:** <RF-N: scope; eligibility checked (7.3)>
 - **Owner-named exceptions:** <none | RF-N may change <area>>
