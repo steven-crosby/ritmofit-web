@@ -31,13 +31,14 @@ detail). Current focus and `main` vs production live in the "Now" block of
 > - **Deploy 3, `27071c2`** ([#766](https://github.com/steven-crosby/ritmofit-web/pull/766), RF-211, Live): Worker
 >   `a7db76fa-0dca-4521-b993-6cf43b46fa35`; rollback `ce938163`. SPA `assets/index-fYEUjvik.js`.
 > - **Deploy 4, `35b5e73`** ([#768](https://github.com/steven-crosby/ritmofit-web/pull/768), RF-136, Live preflight,
->   plus the docs and iOS-snapshot PRs #769 to #779): Worker `1fa79a87-f765-45a1-8ff5-f4f2e5d40e37` at 100%
+>   plus #769 to #779: docs, iOS snapshots and the design system's iOS token emitter, none of them runtime code):
+>   Worker `1fa79a87-f765-45a1-8ff5-f4f2e5d40e37` at 100%
 >   (created 2026-11-21T18:06:03Z); rollback `a7db76fa-0dca-4521-b993-6cf43b46fa35`. SPA `assets/index-BpJZWsjk.js`.
 > - **Checks, on each deploy:** the script's gates passed; no remote D1 migrations to apply; the served SPA matched
 >   the build on 3 of 3 propagation fetches; the status smoke (`/` 200, health 200, classes/explore/teams 401) and
->   the security headers passed. Each 5-minute `wrangler tail` saw 0 exceptions and no traffic but the agent's own
->   health requests (200). Deploy 1's tail saw none, so a 45-second tail then caught a health request to prove the
->   tail connects; the tails after deploys 2 to 4 each caught one at the start and one at the end.
+>   the security headers passed. Each 5-minute `wrangler tail` saw 0 exceptions. Deploy 1's tail saw no requests at
+>   all, so a 45-second tail then caught a health request to prove the tail connects. The tails after deploys 2 to 4
+>   saw no traffic but the agent's own health requests (200), one at the start and one at the end.
 > - **Not proven:** the authed production smoke did not run: `apps/api/.qa-beta-token` is not on the Neo, and the
 >   QA session had expired anyway ([RF-155](./tasks/RF-155.json)). Real provider behavior is the owner's:
 >   [RF-211](./tasks/RF-211.json) on iPhone Safari, [RF-224](./tasks/RF-224.json) (RF-136 with a provider

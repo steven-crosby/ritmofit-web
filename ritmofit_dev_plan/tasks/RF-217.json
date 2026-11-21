@@ -12,7 +12,7 @@
   "acceptance": [
     "On desktop Chrome with Spotify Premium, against a production build that includes RF-216: (1) leave Ritmo and Spotify unused for at least 65 minutes, then open a Spotify-only class: Music and Connections show Spotify Connected, Live preflight passes and Start class is audible within a few seconds with no Reconnect prompt; (2) run a class across the hour mark from the last Spotify use and confirm music keeps playing through it; (3) remove Ritmo in Spotify's account 'Manage apps', then Start a Spotify class: Ritmo asks to reconnect Spotify. Retryable failures (Spotify 5xx/429, network) are proved by tests only; they cannot be forced on production."
   ],
-  "nextAction": "RF-216 is deployed (main eaddb1da, Worker a12d0e73, 2026-11-12), and RF-218 too (2026-11-21; production is main 35b5e73, Worker 1fa79a87). Owner: run the three steps on desktop Chrome with Spotify Premium and record the result here. Step 3 removes Ritmo from Spotify's Manage apps, so reconnect Spotify afterwards.",
+  "nextAction": "RF-216 is deployed (main eaddb1da, Worker a12d0e73, 2026-11-12), and RF-218 too (2026-11-21; production is main 35b5e73, Worker 1fa79a87), so the steps also check that RF-218 left refresh and Reconnect working. Owner: run the three steps on desktop Chrome with Spotify Premium and record the result here. Step 3 removes Ritmo from Spotify's Manage apps, so reconnect Spotify afterwards.",
   "blocker": null,
   "evidence": [
     {
@@ -30,7 +30,7 @@
     {
       "kind": "document",
       "ref": "ritmofit_dev_plan/HISTORY.md",
-      "summary": "RF-218 deployed 2026-11-21 (Worker ce938163, main d4eff3f; production is now main 35b5e73, Worker 1fa79a87). The three steps now also check RF-218 on production: a refresh that fails with a token-endpoint 4xx other than invalid_grant is a retryable error, not Reconnect.",
+      "summary": "RF-218 deployed 2026-11-21 (Worker ce938163, main d4eff3f; production is now main 35b5e73, Worker 1fa79a87). The three steps now also serve as a regression check of RF-216 after RF-218: refresh still works past the hour and a revoked grant still shows Reconnect. RF-218 itself (a token-endpoint 4xx other than invalid_grant reads as retryable) is proved by tests only; none of the steps triggers that 4xx.",
       "checkedOn": "2026-11-21"
     }
   ],
