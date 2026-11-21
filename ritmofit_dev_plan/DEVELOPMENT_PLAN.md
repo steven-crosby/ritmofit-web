@@ -40,7 +40,7 @@ The order of work is [Phases](#phases) below; each phase lists RF records, not a
 SPA `assets/index-BpJZWsjk.js`; rollback `a7db76fa-0dca-4521-b993-6cf43b46fa35`). It was deployed from the Neo on
 2026-11-21 in four steps, one per change: #764 ([RF-74](./tasks/RF-74.json)), #767
 ([RF-218](./tasks/RF-218.json), provider code), #766 ([RF-211](./tasks/RF-211.json)) and #768
-([RF-136](./tasks/RF-136.json)), with the docs and iOS-snapshot PRs merged since 2026-11-13.
+([RF-136](./tasks/RF-136.json)), with the docs, iOS-snapshot and iOS token-emitter PRs merged since 2026-11-13.
 This records PR is not in the deployed tree. See [HISTORY](./HISTORY.md).
 **In flight:** [RF-183](./tasks/RF-183.json) is Blocked on the owner's checks: sign in again after
 sign-out (the rest of the native check passed on the simulator, #715), and on web two `expiresAt`
