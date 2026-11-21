@@ -259,3 +259,10 @@ enum RFGradient {
     ]
 }
 
+/// Glass navigation surfaces (dark theme). Planning headers are opaque, so content scrolling
+/// under them never muddies the boundary; the hairline under them is the glass border.
+enum RFGlass {
+    static let header = Color(hex: "050403")
+    static let border = Color(hex: "FBF7F0").opacity(0.12)
+}
+

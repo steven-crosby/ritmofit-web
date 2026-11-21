@@ -253,6 +253,16 @@ p("    ]");
 p("}");
 p("");
 
+// Glass — navigation surfaces only (tokens.surface.glass). The Mac's top bar is a planning
+// header, which the web draws opaque in glass.header with the glass hairline (iOS RF-1214).
+p("/// Glass navigation surfaces (dark theme). Planning headers are opaque, so content scrolling");
+p("/// under them never muddies the boundary; the hairline under them is the glass border.");
+p("enum RFGlass {");
+p(`    static let header = ${swiftColor(tokens.surface.glass.header)}`);
+p(`    static let border = ${swiftColor(tokens.surface.glass.border)}`);
+p("}");
+p("");
+
 function cap(s) {
   return s.charAt(0).toUpperCase() + s.slice(1);
 }
