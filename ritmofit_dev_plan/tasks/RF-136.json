@@ -45,6 +45,12 @@
       "ref": "docs/audits/preflight-groups-2026-11-13/after-blocked-1440.png",
       "summary": "Before and after renders of the blocked preflight at 1440 and 390 wide, in this folder. LivePreflight rendered alone with fixture tracks through the Vite dev server, not the signed-in app; ready, loading and error renders were byte-identical before and after and are not stored.",
       "checkedOn": "2026-11-13"
+    },
+    {
+      "kind": "document",
+      "ref": "ritmofit_dev_plan/HISTORY.md",
+      "summary": "Deploy 2026-11-21: RF-136 live on Worker 1fa79a87 (main 35b5e73), deploy 4 of 4 from the Neo. Deploy only; the check with a real provider disconnected is RF-224.",
+      "checkedOn": "2026-11-21"
     }
   ],
   "resolution": "Live preflight now shows failing tracks as one group per reason and provider, with a track count; a no-connection group names the linked provider (for example \"Apple Music is not connected\"); connection-fixable groups carry Manage connections themselves, and the standalone button stays only when no group has one. The unplayable selection carries display-only `providers`; provider selection, the reason, clip math and runtime are unchanged. Start basis, a flagged judgment call: the owner approved the web priority order in DEVELOPMENT_PLAN.md \"Now\" on 2026-11-13, and the conducting session took the owner’s \"what can we complete while I’m away\" as the go-ahead to start this task; it was never in Ready. Judgment calls: the group action is Manage connections (the acceptance allows it) because a direct per-provider connect button needs LiveMode.tsx, which was out of scope; the dialog primitive returns focus to a marked fallback when a fix removes the group that opened it. Not verified: the grouped screen against real Apple Music and Spotify connections in a browser (jsdom tests and a component render with fixtures only). Owner-gated (playback code): the PR needs owner-approved.",

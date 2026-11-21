@@ -12,7 +12,7 @@
     "The same holds when the banner goes away again, and for Start, Next, Previous and a timeline tap.",
     "A LiveMode test covers the banner appearing while the Full List is scrolled and fails before the fix."
   ],
-  "nextAction": "For review in PR #766 (owner-gated: LiveMode.tsx). Judgment call, flagged: the owner approved this web priority order on 2026-11-13 (DEVELOPMENT_PLAN.md Now), and the conducting session took the owner's \"what can we complete while I'm away\" as the go-ahead to start it; the owner did not set Ready. What remains before Done, after merge and a deploy: the owner's iPhone Safari check of acceptance 1 and 2 with real provider playback. In Live › Full List, scroll to a late track, tap a row so Waiting for music appears, and confirm the list stays put while the banner shows pinned under the header and after it goes; repeat with Next, Previous, a timeline tap and Start. Chromium keeps the rows still through scroll anchoring; if Safari does not, the rows shift down by the banner's height while it shows and back when it goes, which is expected and is not the jump to the top. Whether the banner should show for a normal 2-4 s start stays a separate question, not this task.",
+  "nextAction": "For review in PR #766 (owner-gated: LiveMode.tsx). Judgment call, flagged: the owner approved this web priority order on 2026-11-13 (DEVELOPMENT_PLAN.md Now), and the conducting session took the owner's \"what can we complete while I'm away\" as the go-ahead to start it; the owner did not set Ready. Merged (#766) and deployed 2026-11-21 (Worker a7db76fa, main 27071c2; production is now main 35b5e73). What remains before Done: the owner's iPhone Safari check of acceptance 1 and 2 with real provider playback. In Live › Full List, scroll to a late track, tap a row so Waiting for music appears, and confirm the list stays put while the banner shows pinned under the header and after it goes; repeat with Next, Previous, a timeline tap and Start. Chromium keeps the rows still through scroll anchoring; if Safari does not, the rows shift down by the banner's height while it shows and back when it goes, which is expected and is not the jump to the top. Whether the banner should show for a normal 2-4 s start stays a separate question, not this task.",
   "blocker": null,
   "evidence": [
     {
@@ -38,6 +38,12 @@
       "ref": "https://github.com/steven-crosby/ritmofit-web/pull/766",
       "summary": "Real-browser check with Playwright Chromium at 390x844 (touch), the built SPA on the local Worker with mock providers, a 15-track run payload and a stand-in SoundCloud widget script that delays its play acknowledgement by 6 s. Full List scrolled to rows 10-15, tapped row 14. Before the fix: shell scrollTop 1139 -> 0 when the banner showed (rows 1-5 visible) and still 0 after it went. After the fix: 1139 -> 1341 with the banner pinned under the header and rows 10-15 still visible (Chromium scroll anchoring added the banner's height), then 1139 with rows 10-15 after it went. Not checked: iPhone Safari, real provider playback, or Next, Previous, Start and a timeline tap in a browser (they reach the same reveal code).",
       "checkedOn": "2026-11-13"
+    },
+    {
+      "kind": "document",
+      "ref": "ritmofit_dev_plan/HISTORY.md",
+      "summary": "Deploy 2026-11-21: RF-211 live on Worker a7db76fa (main 27071c2), deploy 3 of 4 from the Neo. Deploy only; the iPhone Safari check is still owed.",
+      "checkedOn": "2026-11-21"
     }
   ],
   "resolution": null,

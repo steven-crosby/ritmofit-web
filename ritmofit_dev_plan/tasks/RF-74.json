@@ -43,6 +43,12 @@
       "ref": "https://github.com/steven-crosby/ritmofit-web/pull/764",
       "summary": "Mapping: PROVIDER_FORBIDDEN and PROVIDER_QUOTA_EXCEEDED show their sentence with no retry; REAUTH_REQUIRED/NOT_CONNECTED offer Manage connections; SPOTIFY_DEVELOPMENT_MODE keeps Try again because its sentence says to retry once the account is allowlisted; timeouts, 5xx and others keep Try again. Music tab PlaylistBrowserDialog and the builder saved-playlist index now follow it (the builder drill-in already did). Dashboard and TrackSearch tests cover each kind; 4 of the new tests fail on the old components. jsdom with mocked API only: not checked in a browser against real Spotify errors.",
       "checkedOn": "2026-11-13"
+    },
+    {
+      "kind": "document",
+      "ref": "ritmofit_dev_plan/HISTORY.md",
+      "summary": "Deploy 2026-11-21: RF-74 live on Worker ab2d9c4a (main 7e21356), deploy 1 of 4 from the Neo. Deploy only; the playlist dialog was not checked against real providers.",
+      "checkedOn": "2026-11-21"
     }
   ],
   "resolution": "The Music tab playlist dialog and the builder saved-playlist index offer Try again only for failures a retry can fix; forbidden and quota show their reason, and reauth offers Manage connections (#764). Catalog search has the same quota gap and moved to RF-219.",
