@@ -12,7 +12,7 @@
     "The group's Manage connections opens Music connections, and after connecting the group goes away and focus lands on a visible control.",
     "Run without music and the Blocked verdict read as before."
   ],
-  "nextAction": "Owed by the owner after the next web deploy (the Air). CI uses mock providers, and the PR's screenshots are the component alone with fixture tracks, so the signed-in screen with a real connection has not been seen. Agent-created: Backlog until the owner sets Ready.",
+  "nextAction": "Owed by the owner on production: RF-136 is deployed (Worker 1fa79a87, main 35b5e73, 2026-11-21). CI uses mock providers, and the PR's screenshots are the component alone with fixture tracks, so the signed-in screen with a real connection has not been seen. Agent-created: Backlog until the owner sets Ready.",
   "blocker": null,
   "evidence": [
     {
@@ -20,6 +20,12 @@
       "ref": "https://github.com/steven-crosby/ritmofit-web/pull/768",
       "summary": "RF-136 merged as d7231c4 on 2026-11-13; not deployed. The manual check named in the PR is this task.",
       "checkedOn": "2026-11-13"
+    },
+    {
+      "kind": "document",
+      "ref": "ritmofit_dev_plan/HISTORY.md",
+      "summary": "RF-136 deployed 2026-11-21 on Worker 1fa79a87 (main 35b5e73), so this check can run on production now.",
+      "checkedOn": "2026-11-21"
     }
   ],
   "resolution": null,

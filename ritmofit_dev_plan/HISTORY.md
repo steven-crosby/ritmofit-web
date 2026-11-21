@@ -12,6 +12,37 @@ detail). Current focus and `main` vs production live in the "Now" block of
 ---
 
 ## Deploy and session log (newest first)
+> **Deploy 2026-11-21: RF-74 (#764), RF-218 (#767), RF-211 (#766), RF-136 (#768), one deploy each, ending on main `35b5e73`**.
+> The first deploys from the Neo, after the owner signed it in to Cloudflare that day. Four deploys with
+> `scripts/deploy.sh <sha>`, one per change in merge order, because AGENTS.md keeps provider and playback changes on
+> their own. The script ran from a clean detached worktree: the checkout has untracked agent worktrees, which the
+> script refuses. The owner's approval ("Yes, deploy") was recorded before the deploys on
+> [#764](https://github.com/steven-crosby/ritmofit-web/pull/764#issuecomment-7066605231),
+> [#767](https://github.com/steven-crosby/ritmofit-web/pull/767#issuecomment-7066605626),
+> [#766](https://github.com/steven-crosby/ritmofit-web/pull/766#issuecomment-7066605946) and
+> [#768](https://github.com/steven-crosby/ritmofit-web/pull/768#issuecomment-7066606233).
+>
+> - **Deploy 1, `7e21356`** ([#764](https://github.com/steven-crosby/ritmofit-web/pull/764), RF-74, web only): Worker
+>   `ab2d9c4a-a88f-4792-aa24-08ee84af50f3`; rollback `78f9eb69-fc76-4db6-80e9-3fa57db58e29` (`579c5950`). SPA
+>   `assets/index-Ds9hP-Tt.js` (was `assets/index-B6p62-bR.js`).
+> - **Deploy 2, `d4eff3f`** ([#767](https://github.com/steven-crosby/ritmofit-web/pull/767), RF-218, provider API
+>   code): Worker `ce938163-752b-450c-b7ee-bb840ae7163c`; rollback `ab2d9c4a`. SPA unchanged at
+>   `assets/index-Ds9hP-Tt.js`.
+> - **Deploy 3, `27071c2`** ([#766](https://github.com/steven-crosby/ritmofit-web/pull/766), RF-211, Live): Worker
+>   `a7db76fa-0dca-4521-b993-6cf43b46fa35`; rollback `ce938163`. SPA `assets/index-fYEUjvik.js`.
+> - **Deploy 4, `35b5e73`** ([#768](https://github.com/steven-crosby/ritmofit-web/pull/768), RF-136, Live preflight,
+>   plus the docs and iOS-snapshot PRs #769 to #779): Worker `1fa79a87-f765-45a1-8ff5-f4f2e5d40e37` at 100%
+>   (created 2026-11-21T18:06:03Z); rollback `a7db76fa-0dca-4521-b993-6cf43b46fa35`. SPA `assets/index-BpJZWsjk.js`.
+> - **Checks, on each deploy:** the script's gates passed; no remote D1 migrations to apply; the served SPA matched
+>   the build on 3 of 3 propagation fetches; the status smoke (`/` 200, health 200, classes/explore/teams 401) and
+>   the security headers passed. Each 5-minute `wrangler tail` saw 0 exceptions and no traffic but the agent's own
+>   health requests (200). Deploy 1's tail saw none, so a 45-second tail then caught a health request to prove the
+>   tail connects; the tails after deploys 2 to 4 each caught one at the start and one at the end.
+> - **Not proven:** the authed production smoke did not run: `apps/api/.qa-beta-token` is not on the Neo, and the
+>   QA session had expired anyway ([RF-155](./tasks/RF-155.json)). Real provider behavior is the owner's:
+>   [RF-211](./tasks/RF-211.json) on iPhone Safari, [RF-224](./tasks/RF-224.json) (RF-136 with a provider
+>   disconnected) and [RF-217](./tasks/RF-217.json), which also covers RF-218. The gates use mock providers.
+
 > **Deploy 2026-11-13: Spotify waits for a cancelled start before the next one (#761, RF-158) on main `579c5950`**.
 > A standalone deploy from the Air with `scripts/deploy.sh`, because AGENTS.md keeps playback changes on their own. The
 > owner's approval ("Yes, deploy") was recorded before the deploy on

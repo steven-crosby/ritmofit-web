@@ -28,6 +28,7 @@
 <!-- Claude Code (third machine), 2026-11-13: Close: #764, #767, #766, #768 merged and not deployed; RF-218 and RF-136 Done, RF-211 For review; RF-221..RF-225 filed. -->
 <!-- Claude Code (Neo), 2026-11-19: D28 parity bar line (RF-227). -->
 <!-- Claude Code (Neo), 2026-11-19: Machines line: the Air retired, the Neo holds the owner's wrangler login (RF-229). -->
+<!-- Claude Code (Neo), 2026-11-21: Four deploys from the Neo up to 35b5e73 (#764, #767, #766, #768); owner checks next. -->
 
 **Focus (D26, 2026-11-07):** native iOS and macOS apps on TestFlight first, so the owner's wife uses
 them now: M0a iOS on TestFlight, M0b macOS, M1 Spotify in native Live, then native class building
@@ -35,15 +36,12 @@ them now: M0a iOS on TestFlight, M0b macOS, M1 Spotify in native Live, then nati
 work is tracked as iOS RF records). Web work below continues as maintenance and production checks.
 **Current actionable state:** [RF board](./tasks.md), backed by canonical [task records](./tasks/README.md).
 The order of work is [Phases](#phases) below; each phase lists RF records, not a second backlog.
-**Main vs production:** production is main `579c5950` (Worker `78f9eb69-fc76-4db6-80e9-3fa57db58e29`;
-SPA `assets/index-B6p62-bR.js`; rollback `a12d0e73-f429-41d8-a61f-d163790e8d10`). It was deployed from the Air on
-2026-11-13 on its own: Spotify waits for a cancelled start before the next one (#761, RF-158), on top of
-the 2026-11-12 deploys of #756 and #758 (RF-216) and the docs #759 and #760.
+**Main vs production:** production is main `35b5e73` (Worker `1fa79a87-f765-45a1-8ff5-f4f2e5d40e37`;
+SPA `assets/index-BpJZWsjk.js`; rollback `a7db76fa-0dca-4521-b993-6cf43b46fa35`). It was deployed from the Neo on
+2026-11-21 in four steps, one per change: #764 ([RF-74](./tasks/RF-74.json)), #767
+([RF-218](./tasks/RF-218.json), provider code), #766 ([RF-211](./tasks/RF-211.json)) and #768
+([RF-136](./tasks/RF-136.json)), with the docs and iOS-snapshot PRs merged since 2026-11-13.
 This records PR is not in the deployed tree. See [HISTORY](./HISTORY.md).
-**`main` is ahead of production** (observed 2026-11-13 from a machine with no Cloudflare login: the served SPA
-was still `assets/index-B6p62-bR.js` on three cache-busted fetches; the Worker version was not read).
-Merged and not deployed: #764 ([RF-74](./tasks/RF-74.json)), #767 ([RF-218](./tasks/RF-218.json), provider
-code), #766 ([RF-211](./tasks/RF-211.json)) and #768 ([RF-136](./tasks/RF-136.json)).
 **In flight:** [RF-183](./tasks/RF-183.json) is Blocked on the owner's checks: sign in again after
 sign-out (the rest of the native check passed on the simulator, #715), and on web two `expiresAt`
 readings from the app's own get-session at least 24 hours apart (first not yet taken). The signed-in
@@ -70,10 +68,10 @@ Spotify start), [RF-74](./tasks/RF-74.json) (closes RF-92), [RF-218](./tasks/RF-
 [RF-157](./tasks/RF-157.json) (Spotify library depth), then [RF-138](./tasks/RF-138.json) after a design
 pass. [RF-167](./tasks/RF-167.json) waits on a non-allowlisted Spotify account to probe. Owner checks
 alongside: RF-217, RF-205, RF-148, RF-155. Account security (RF-116, RF-140) is not in this order.
-**Next step:** once the owner has signed the Neo in to Cloudflare, deploys from the Neo of the four merged PRs above (#767 separately: it is provider code, which
-`AGENTS.md` deploys on its own), then the owner checks they need: [RF-211](./tasks/RF-211.json) on iPhone Safari,
-[RF-224](./tasks/RF-224.json) (preflight groups with a provider disconnected), and RF-217, which also covers
-RF-218. In the order above RF-158, RF-74, RF-218 and RF-136 are Done and RF-211 is For review; next to build
+**Next step:** the four merged PRs above are deployed (2026-11-21), so the owner checks they need are next:
+[RF-211](./tasks/RF-211.json) on iPhone Safari, [RF-224](./tasks/RF-224.json) (preflight groups with a
+provider disconnected), and RF-217, which also covers RF-218. In the order above RF-158, RF-74, RF-218 and
+RF-136 are Done and RF-211 is For review; next to build
 are [RF-130](./tasks/RF-130.json), then [RF-149](./tasks/RF-149.json) and [RF-157](./tasks/RF-157.json),
 then [RF-138](./tasks/RF-138.json) after a design pass.
 Follow-ups from the 2026-11-13 reviews are RF-221 to RF-225 (Backlog). Owner checks on production:
