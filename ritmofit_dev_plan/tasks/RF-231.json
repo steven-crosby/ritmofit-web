@@ -3,7 +3,7 @@
   "id": "RF-231",
   "title": "The web's Sign in with Apple uses Apple's white button, as the Mac does",
   "kind": "task",
-  "status": "in_progress",
+  "status": "backlog",
   "priority": "P2",
   "parent": null,
   "dependsOn": [
@@ -14,7 +14,7 @@
     "The button's busy state (\"Opening Apple sign-in…\") and the lines shown instead of it while checking, when unverified (\"Couldn’t check Sign in with Apple…\") and when unavailable behave as they do today, and the button stays keyboard reachable, visibly focused and labelled.",
     "The Mac keeps its system Sign in with Apple button. 08's Sign in with Apple row (RF-233's Mac column) says both use Apple's white button, and the iOS web-contract copy of 08 is refreshed in an iOS PR as soon as this merges, because 08 drift fails iOS parity."
   ],
-  "nextAction": "In progress (Claude Code, Neo, 2026-11-22) on branch feat/rf-231-apple-white-button, started on the owner's direct ask in session (\"Web: RF-233 chain\"). Restart: Apple's logo artwork comes from Apple Design Resources (Logo-Sign-in-with-Apple.dmg; the download needs the owner's OK), then Login.tsx's button becomes Apple's white button per the HIG's custom-button rules. This PR also corrects 08's three wording points from #782's final review (https://github.com/steven-crosby/ritmofit-web/pull/782#issuecomment-7083587029).",
+  "nextAction": "Parked at the 2026-11-22 close (Claude Code, Neo); no session is working on it. The owner started it by direct ask on 2026-11-22 (\"Web: RF-233 chain\"), not from the Ready queue. Draft PR #783 (branch feat/rf-231-apple-white-button) is open and holds no button code yet: only 08's three wording fixes from #782's final review and RF-232's matching acceptance wording. Blocked on one owner answer: may the agent download Apple's logo artwork, Logo-Sign-in-with-Apple.dmg (195 KB) from Apple Design Resources (devimages-cdn.apple.com)? Asked in session on 2026-11-22 and not answered. Apple's guidelines allow only that artwork in a custom button. Then: add the SVG, make Login.tsx's button Apple's white button (white fill, black logo and title, \"Continue with Apple\", the web's corner radius, the logo file at full button height with its padding kept, at least 30 px tall and 140 px wide), keep the four states and their tests, update 08's Sign in with Apple row, and refresh the iOS copy of 08 in an iOS PR after merge. Login.tsx isn't owner-gated (checked 2026-11-20).",
   "blocker": null,
   "evidence": [
     {
@@ -34,6 +34,24 @@
       "ref": "https://github.com/steven-crosby/ritmofit-web/pull/777#issuecomment-7047823775",
       "summary": "#777's final review (non-blocking points 1 and 3): the dependency on RF-233 and the 08 row with its iOS refresh, and Login's unverified state, checked against Login.tsx on main c279df9.",
       "checkedOn": "2026-11-20"
+    },
+    {
+      "kind": "pr",
+      "ref": "https://github.com/steven-crosby/ritmofit-web/pull/783",
+      "summary": "This task's draft PR, opened 2026-11-22 as the claim. At the 2026-11-22 close it holds 08's three wording fixes and no button code.",
+      "checkedOn": "2026-11-22"
+    },
+    {
+      "kind": "observation",
+      "ref": "https://developer.apple.com/design/human-interface-guidelines/sign-in-with-apple",
+      "summary": "Read 2026-11-22, Creating a custom Sign in with Apple button: use only the logo artwork from Apple Design Resources; match the logo file's height to the button's, don't crop it or add vertical padding; titles are Sign in with Apple, Sign up with Apple or Continue with Apple; logo and title both black or both white on a white or black fill; font, corner radius, bezel and shadow may change; minimum 140 pt wide and 30 pt tall, with a margin of a tenth of the height and at least 8% of the width right of the title.",
+      "checkedOn": "2026-11-22"
+    },
+    {
+      "kind": "observation",
+      "ref": "https://github.com/steven-crosby/ritmofit-web/pull/782#issuecomment-7083587029",
+      "summary": "#782's final review notes 1 to 3 on 08's Mac column (the view toggle's arrows, the main window's hidden title bar, the Back key ⌘[), corrected on this task's branch in 91e34bc.",
+      "checkedOn": "2026-11-22"
     }
   ],
   "resolution": null,
