@@ -12,7 +12,7 @@
     "DEVELOPMENT_PLAN.md › Now's \"Parity bar (D28)\" line says D26's TestFlight order is unchanged, as D28 itself does.",
     "docs/audits/spotify-parity-2026-11-19/README.md agrees with itself on desktop sign-in: §1 says native login, while the §4 table says native with a browser handoff. Source [2] is either cited or removed, and the gaps in the source numbering are noted or closed."
   ],
-  "nextAction": "Logged from the final review of #773 (Neo, 2026-11-19): non-blocking findings. Agent-created: Backlog until the owner sets Ready. The review's other findings went elsewhere. The shortcut question (D28 lets the Mac's shortcuts differ, but Spotify's are the same on web and desktop) went to iOS RF-1201's acceptance, and so did the Mac column for 08, which RF-1201 drafts. The iOS parity copy of 08 is refreshed by iOS #204.",
+  "nextAction": "Backlog until the owner sets Ready. Acceptance item 1's web half landed with RF-233 (#782, 2026-11-22): 08's D28 link and its web-ios-parity.md link (the relative link the item calls \"the design system README at line 56\"; it was 08's only other link out of the design-system folder) are absolute GitHub URLs. The iOS copy is refreshed by the iOS PR that follows #782. Items 2 and 3 remain. Earlier routing, from the #773 final review (Neo, 2026-11-19): the shortcut question and the Mac column went to iOS RF-1201.",
   "blocker": null,
   "evidence": [
     {
@@ -20,6 +20,12 @@
       "ref": "https://github.com/steven-crosby/ritmofit-web/pull/773",
       "summary": "Final review (/code-review medium, fresh context) of #773 at c30059e: 0 significant findings and 8 non-significant ones. This record holds the three web wording findings; the rest are routed in its next action, or need no action (the machine-split note is recorded in the owner's-words comment).",
       "checkedOn": "2026-11-19"
+    },
+    {
+      "kind": "pr",
+      "ref": "https://github.com/steven-crosby/ritmofit-web/pull/782",
+      "summary": "RF-233's PR makes 08's D28 and web-ios-parity.md links absolute (acceptance item 1, web half). Items 2 and 3 are untouched.",
+      "checkedOn": "2026-11-22"
     }
   ],
   "resolution": null,

@@ -3,7 +3,7 @@
   "id": "RF-233",
   "title": "08-ios-web-alignment.md gets its Mac column (D28)",
   "kind": "documentation",
-  "status": "backlog",
+  "status": "done",
   "priority": "P2",
   "parent": null,
   "dependsOn": [],
@@ -12,7 +12,7 @@
     "The Sign in with Apple and Live keys rows say what the web does today and name RF-231 and RF-232 until those land.",
     "The iOS web-contract/08-ios-web-alignment.md copy is refreshed in an iOS PR, with its README provenance line, as soon as this merges: 08 drift fails iOS parity, so iOS main is red until then."
   ],
-  "nextAction": "Agent-created (Neo, 2026-11-20) from the owner's 2026-11-19 decisions on the RF-1201 Mac design audit (iOS RF-1213). Backlog until the owner sets Ready. RF-228 also edits 08 (its D28 link), so the two can share a PR.",
+  "nextAction": null,
   "blocker": null,
   "evidence": [
     {
@@ -26,8 +26,28 @@
       "ref": "https://github.com/steven-crosby/ritmofit-ios/issues/113#issuecomment-7026089171",
       "summary": "The first of the owner's 2026-11-19 decisions recorded on #113 (accent, sheets, Sign in with Apple, right-click menus, the Mac top bar, Live keys); each answer has its own comment there.",
       "checkedOn": "2026-11-20"
+    },
+    {
+      "kind": "pr",
+      "ref": "https://github.com/steven-crosby/ritmofit-web/pull/782",
+      "summary": "This task's PR: 08's Mac column, the README glass wording, D28's open item, and the record changes.",
+      "checkedOn": "2026-11-22"
+    },
+    {
+      "kind": "observation",
+      "ref": "https://github.com/steven-crosby/ritmofit-web/pull/778#issuecomment-7048205680",
+      "summary": "#778's final review notes, folded in at this task's start as the owner decided (https://github.com/steven-crosby/ritmofit-web/pull/778#issuecomment-7048992389).",
+      "checkedOn": "2026-11-22"
+    },
+    {
+      "kind": "observation",
+      "ref": "https://github.com/steven-crosby/ritmofit-web/pull/779#issuecomment-7065306563",
+      "summary": "#779's final review notes 1 to 4, routed at this task's start: 3 and 4 in this PR, 1 and 2 to RF-234.",
+      "checkedOn": "2026-11-22"
     }
   ],
-  "resolution": null,
-  "followUps": []
+  "resolution": "08's \"What expresses differently\" table has its Mac column, written from the iOS RF-1201 audit's draft and the owner's 2026-11-19 decisions, and checked on 2026-11-22 against what has merged since: the opaque top bar (RFGlass, iOS RF-1214), Sora (iOS RF-1205) and the Mac's menu keys (⌘1 and ⌘2 replaced ⇧⌘M). The Sign in with Apple and Keyboard shortcuts rows say what the web does today and name RF-231 and RF-232. #778's notes went into RF-232 (1 to 4 and 6) and here (5: RF-231 and RF-232 wait on this task, now met). #779's notes: 3 and 4 landed here (the design-system README's emitter list and glass wording, 08's glass row), and 1 and 2 are RF-234. RF-228's 08 links landed here too. D28's open item on 08 in decisions.md is marked written. Not done by this PR, because it can only follow the merge: the iOS web-contract copies of 08 and the design-system README are refreshed in an iOS PR at once after merge, and iOS parity is red on iOS main until that PR merges.",
+  "followUps": [
+    "RF-234"
+  ]
 }

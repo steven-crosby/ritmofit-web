@@ -759,8 +759,9 @@ In short:
   top bar, not the sidebar. The owner answered "Web's top bar"
   ([record](https://github.com/steven-crosby/ritmofit-ios/pull/205#issuecomment-7022765864); iOS
   RF-1169, recorded by iOS RF-1202).
-- `08-ios-web-alignment.md` has no Mac column yet. Until one is written, D28's "Meaning" above is
-  the Mac rule.
+- ~~`08-ios-web-alignment.md` has no Mac column yet. Until one is written, D28's "Meaning" above is
+  the Mac rule.~~ **Written 2026-11-22:** 08's "What expresses differently" table has its Mac column
+  (RF-233), with the owner's 2026-11-19 decisions from the iOS RF-1201 audit.
 
 **Refines:** D26. Native-first stays, and the native apps now aim for parity with the web. The
 principle D18 set (every capability on both surfaces) is the goal again, but D28 does not bring
