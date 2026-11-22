@@ -3,16 +3,18 @@
   "id": "RF-231",
   "title": "The web's Sign in with Apple uses Apple's white button, as the Mac does",
   "kind": "task",
-  "status": "backlog",
+  "status": "in_progress",
   "priority": "P2",
   "parent": null,
-  "dependsOn": ["RF-233"],
+  "dependsOn": [
+    "RF-233"
+  ],
   "acceptance": [
     "Login's Sign in with Apple control is Apple's white button: Apple's logo artwork from Apple's own resources (not redrawn, with the source noted in the PR), a black logo and title on a white fill, one of Apple's allowed titles (today's \"Continue with Apple\" is one), and the web's corner radius.",
     "The button's busy state (\"Opening Apple sign-in…\") and the lines shown instead of it while checking, when unverified (\"Couldn’t check Sign in with Apple…\") and when unavailable behave as they do today, and the button stays keyboard reachable, visibly focused and labelled.",
     "The Mac keeps its system Sign in with Apple button. 08's Sign in with Apple row (RF-233's Mac column) says both use Apple's white button, and the iOS web-contract copy of 08 is refreshed in an iOS PR as soon as this merges, because 08 drift fails iOS parity."
   ],
-  "nextAction": "Agent-created (Neo, 2026-11-20) from the owner's 2026-11-19 decision on the RF-1201 Mac design audit (iOS RF-1213). Backlog until the owner sets Ready. Login.tsx's text-only \"Continue with Apple\" button falls short of Apple's custom-button rules. Login.tsx isn't owner-gated (checked 2026-11-20).",
+  "nextAction": "In progress (Claude Code, Neo, 2026-11-22) on branch feat/rf-231-apple-white-button, started on the owner's direct ask in session (\"Web: RF-233 chain\"). Restart: Apple's logo artwork comes from Apple Design Resources (Logo-Sign-in-with-Apple.dmg; the download needs the owner's OK), then Login.tsx's button becomes Apple's white button per the HIG's custom-button rules. This PR also corrects 08's three wording points from #782's final review (https://github.com/steven-crosby/ritmofit-web/pull/782#issuecomment-7083587029).",
   "blocker": null,
   "evidence": [
     {
