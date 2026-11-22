@@ -12,13 +12,13 @@ owner's queue: any agent may execute a Ready task. Publishing follows AGENTS.md 
 Evidence marked **recorded** is a carried-forward claim, not fresh verification.
 A checked PR proves its GitHub state, not product acceptance or production behavior.
 
-230 tasks. backlog: 82 · ready: 0 · in_progress: 0 · blocked: 2 · review: 10 · done: 134 · cancelled: 2.
+230 tasks. backlog: 81 · ready: 0 · in_progress: 1 · blocked: 2 · review: 10 · done: 134 · cancelled: 2.
 
 ## In progress
 
 | Task | Priority / kind | Relationships | Next action / resolution | Evidence |
 | --- | --- | --- | --- | --- |
-| — | — | — | — | — |
+| [RF-233](tasks/RF-233.json) 08-ios-web-alignment.md gets its Mac column (D28) | P2 / documentation | — | In progress (Claude Code, Neo, 2026-11-22) on branch docs/rf-233-08-mac-column, started on the owner's direct ask in session ("Web: RF-233 chain"). Restart: write 08's Mac column from the iOS RF-1201 audit draft, fold in the #778 and #779 review notes, then finish this record in the same PR. RF-231 and RF-232 wait on this task. | checked 2026-11-20 |
 
 ## Blocked / waiting
 
@@ -77,7 +77,6 @@ A checked PR proves its GitHub state, not product acceptance or production behav
 | [RF-205](tasks/RF-205.json) Music Songs: Spotify ▶ preview plays real audio on desktop | P2 / verification | needs RF-92 | After RF-92's Spotify expiry and playback triage, the owner runs the desktop ▶ check against production and records the result here. Created at the owner's request (split from RF-172); Backlog until the owner sets Ready. Follow-up of RF-172, with no parent, so it does not hold RF-138 open behind RF-92. | checked 2026-11-05; checked 2026-11-06 |
 | [RF-231](tasks/RF-231.json) The web's Sign in with Apple uses Apple's white button, as the Mac does | P2 / task | needs RF-233 | Agent-created (Neo, 2026-11-20) from the owner's 2026-11-19 decision on the RF-1201 Mac design audit (iOS RF-1213). Backlog until the owner sets Ready. Login.tsx's text-only "Continue with Apple" button falls short of Apple's custom-button rules. Login.tsx isn't owner-gated (checked 2026-11-20). | checked 2026-11-20 |
 | [RF-232](tasks/RF-232.json) Web Live gets the Mac's keys: Space, ←, → and Esc | P2 / task | needs RF-233 | Agent-created (Neo, 2026-11-20) from the owner's 2026-11-19 decision on the RF-1201 Mac design audit (iOS RF-1213; the Mac side is iOS RF-1212). Backlog until the owner sets Ready. LiveMode.tsx is owner-gated (playback), so the PR gets needs-owner. Two points to settle when it is set Ready: whether Space plays or pauses while a button has focus, or keeps the button's own Space (the view toggle uses Space and Enter today); and whether Esc exits a running class at once, as the web's Exit control does today with no confirmation, or asks first. An open dialog already keeps Esc to itself (Dialog.tsx stops its propagation). | checked 2026-11-20 |
-| [RF-233](tasks/RF-233.json) 08-ios-web-alignment.md gets its Mac column (D28) | P2 / documentation | — | Agent-created (Neo, 2026-11-20) from the owner's 2026-11-19 decisions on the RF-1201 Mac design audit (iOS RF-1213). Backlog until the owner sets Ready. RF-228 also edits 08 (its D28 link), so the two can share a PR. | checked 2026-11-20 |
 | [RF-101](tasks/RF-101.json) Owner-gate route authz call sites and CI-config files | P3 / task | needs RF-98 | Owner decides whether to gate route and CI-config files, given every merge already needs per-PR permission. | checked 2026-10-27; recorded |
 | [RF-102](tasks/RF-102.json) Owner approval binds only to a commit the owner actually saw | P3 / task | needs RF-98 | Owner decides whether to harden further (for example, bind to the reviewed SHA named in the approval) given per-PR merge permission is the backstop. | checked 2026-10-27 |
 | [RF-103](tasks/RF-103.json) Task claims stay visible from claim to merge | P3 / task | needs RF-98 | Design a claim signal that survives the draft-to-ready transition (for example, any open PR whose head changes the task record) and update start-session and delegate-task. | checked 2026-10-27 |

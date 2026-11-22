@@ -3,7 +3,7 @@
   "id": "RF-233",
   "title": "08-ios-web-alignment.md gets its Mac column (D28)",
   "kind": "documentation",
-  "status": "backlog",
+  "status": "in_progress",
   "priority": "P2",
   "parent": null,
   "dependsOn": [],
@@ -12,7 +12,7 @@
     "The Sign in with Apple and Live keys rows say what the web does today and name RF-231 and RF-232 until those land.",
     "The iOS web-contract/08-ios-web-alignment.md copy is refreshed in an iOS PR, with its README provenance line, as soon as this merges: 08 drift fails iOS parity, so iOS main is red until then."
   ],
-  "nextAction": "Agent-created (Neo, 2026-11-20) from the owner's 2026-11-19 decisions on the RF-1201 Mac design audit (iOS RF-1213). Backlog until the owner sets Ready. RF-228 also edits 08 (its D28 link), so the two can share a PR.",
+  "nextAction": "In progress (Claude Code, Neo, 2026-11-22) on branch docs/rf-233-08-mac-column, started on the owner's direct ask in session (\"Web: RF-233 chain\"). Restart: write 08's Mac column from the iOS RF-1201 audit draft, fold in the #778 and #779 review notes, then finish this record in the same PR. RF-231 and RF-232 wait on this task.",
   "blocker": null,
   "evidence": [
     {
