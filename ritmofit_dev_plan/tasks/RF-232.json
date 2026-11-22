@@ -6,14 +6,17 @@
   "status": "backlog",
   "priority": "P2",
   "parent": null,
-  "dependsOn": ["RF-233"],
+  "dependsOn": [
+    "RF-233"
+  ],
   "acceptance": [
     "In Live, Space plays or pauses, ← goes to the previous track, → goes to the next and Esc exits Live, as in the Mac's Live window.",
     "None of them fires while typing in a field (input, textarea, select or contenteditable).",
-    "While the seek strip (LiveTimeline: arrows seek 5 s) or the view toggle (arrows switch views) has focus, its keys do only what they do today, and the global ← and → do nothing. Neither handler stops propagation today, so a global handler must check focus itself.",
-    "The menu keys (⌘N, ⌘R, ⇧⌘M) stay Mac only, because browsers use ⌘N and ⌘R.",
-    "Tests cover each key and the typing and focused-control exceptions.",
-    "08's Live keys row (RF-233's Mac column) says the web has the keys, and the iOS web-contract copy of 08 is refreshed in an iOS PR as soon as this merges, because 08 drift fails iOS parity."
+    "While the seek strip (LiveTimeline: arrows seek 5 s) or the view toggle (arrows switch views) has focus, its ← and → do only what they do today, and the global ← and → do nothing. Neither handler stops propagation today, so the global handler must not act on those keys: it checks focus itself or, as a bubble-phase listener, checks defaultPrevented. Whether the view toggle keeps its own Space follows the owner's answer on Space (next action).",
+    "The menu keys (⌘N, ⌘R, ⌘1, ⌘2) stay Mac only, because browsers use them. (⇧⌘M, named in the 2026-11-19 decision, was replaced by ⌘1 and ⌘2 in iOS RF-1214.)",
+    "Tests cover each key, the typing and focused-control exceptions, Esc while a dialog is open, and Space and Enter on the view toggle.",
+    "The global handler listens in the bubble phase. An open dialog keeps Esc to itself only from a bubble-phase listener (Dialog.tsx stops the event's propagation), not from a capture-phase one.",
+    "08's Keyboard shortcuts row (written by RF-233) says the web has the keys, and the iOS web-contract copy of 08 is refreshed in an iOS PR as soon as this merges, because 08 drift fails iOS parity."
   ],
   "nextAction": "Agent-created (Neo, 2026-11-20) from the owner's 2026-11-19 decision on the RF-1201 Mac design audit (iOS RF-1213; the Mac side is iOS RF-1212). Backlog until the owner sets Ready. LiveMode.tsx is owner-gated (playback), so the PR gets needs-owner. Two points to settle when it is set Ready: whether Space plays or pauses while a button has focus, or keeps the button's own Space (the view toggle uses Space and Enter today); and whether Esc exits a running class at once, as the web's Exit control does today with no confirmation, or asks first. An open dialog already keeps Esc to itself (Dialog.tsx stops its propagation).",
   "blocker": null,
@@ -35,6 +38,12 @@
       "ref": "https://github.com/steven-crosby/ritmofit-web/pull/777#issuecomment-7047823775",
       "summary": "#777's final review (non-blocking points 2, 4 and 5): the 08 row with its iOS refresh, Esc on a running class, and the focused controls' unstopped propagation, checked against LiveTimeline.tsx and LiveMode.tsx on main c279df9.",
       "checkedOn": "2026-11-20"
+    },
+    {
+      "kind": "observation",
+      "ref": "https://github.com/steven-crosby/ritmofit-web/pull/778#issuecomment-7048205680",
+      "summary": "#778's final review, non-blocking notes 1 to 4 and 6, folded into this record's acceptance on 2026-11-22 as the owner decided (\"Fold in when RF-233 starts\", https://github.com/steven-crosby/ritmofit-web/pull/778#issuecomment-7048992389). The review checked Dialog.tsx, LiveTimeline.tsx and LiveMode.tsx on main c279df9; the code was not re-read on 2026-11-22. The menu-key wording was checked on 2026-11-22 against ritmofit-ios ShellCommands.swift on main aee50f6, which has no ⇧⌘M.",
+      "checkedOn": "2026-11-22"
     }
   ],
   "resolution": null,

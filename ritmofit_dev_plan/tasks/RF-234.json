@@ -1,0 +1,27 @@
+{
+  "schemaVersion": 1,
+  "id": "RF-234",
+  "title": "The iOS token emitter fails on a missing token, and its RFColorLight comment matches RFGlass",
+  "kind": "task",
+  "status": "backlog",
+  "priority": "P3",
+  "parent": null,
+  "dependsOn": [],
+  "acceptance": [
+    "build-tokens-ios.mjs stops with an error naming the token when a token it reads is missing or renamed, instead of emitting Color.clear (today swiftColor() does that for every token, so a renamed glass token would make the Mac's top bar see-through with no warning).",
+    "The generated RFColorLight comment no longer says glass has no light variant: RFGlass exists (dark only) and tokens.json has headerLight and borderLight. ios/RFTokens.swift is regenerated, and --check passes.",
+    "ritmofit-ios vendors the emitter's output through its own token build, so the iOS side is regenerated in an iOS PR if the generated Swift changes."
+  ],
+  "nextAction": "Agent-created (Neo, 2026-11-22) from notes 1 and 2 of #779's final review, routed here when RF-233 started. Backlog until the owner sets Ready. Notes 3 and 4 (the README's emitter list and glass wording, and 08's glass row) landed with RF-233.",
+  "blocker": null,
+  "evidence": [
+    {
+      "kind": "observation",
+      "ref": "https://github.com/steven-crosby/ritmofit-web/pull/779#issuecomment-7065306563",
+      "summary": "#779's final review (fresh context, head 62dc322): non-blocking notes 1 (build-tokens-ios.mjs:261-262, a missing glass token emits Color.clear) and 2 (the RFColorLight comment at build-tokens-ios.mjs:106). Recorded from the review; not re-read on 2026-11-22.",
+      "checkedOn": null
+    }
+  ],
+  "resolution": null,
+  "followUps": []
+}
