@@ -12,7 +12,7 @@
   "acceptance": [
     "In Live, Space plays or pauses, ← goes to the previous track, → goes to the next and Esc exits Live, as in the Mac's Live window.",
     "None of them fires while typing in a field (input, textarea, select or contenteditable).",
-    "While the seek strip (LiveTimeline: arrows seek 5 s) or the view toggle (arrows switch views) has focus, its ← and → do only what they do today, and the global ← and → do nothing. Neither handler stops propagation today, so the global handler must not act on those keys: it checks focus itself or, as a bubble-phase listener, checks defaultPrevented. Whether the view toggle keeps its own Space follows the owner's answer on Space (next action).",
+    "While the seek strip (LiveTimeline: arrows seek 5 s) or the view toggle (arrows, Home and End move focus between the views; Enter or Space selects) has focus, its ← and → do only what they do today, and the global ← and → do nothing. Neither handler stops propagation today, so the global handler must not act on those keys: it checks focus itself or, as a bubble-phase listener, checks defaultPrevented. Whether the view toggle keeps its own Space follows the owner's answer on Space (next action).",
     "The menu keys (⌘N, ⌘R, ⌘1, ⌘2) stay Mac only, because browsers use them. (⇧⌘M, named in the 2026-11-19 decision, was replaced by ⌘1 and ⌘2 in iOS RF-1214.)",
     "Tests cover each key, the typing and focused-control exceptions, Esc while a dialog is open, and Space and Enter on the view toggle.",
     "The global handler listens in the bubble phase. An open dialog keeps Esc to itself only from a bubble-phase listener (Dialog.tsx stops the event's propagation), not from a capture-phase one.",
