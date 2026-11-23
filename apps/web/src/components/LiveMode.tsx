@@ -335,6 +335,24 @@ export function followingTrackEvents(
   return null;
 }
 
+/**
+ * The song after the live one, once the live song has at most its last cue or move
+ * ahead (RF-130), so the Next row's "End of track" is not the only hint that the
+ * song is ending. Null mid-song, on the class's last song, and for an empty class.
+ */
+export function nextSongTitle(
+  payload: RunPayload,
+  events: TimelineEvent[],
+  liveIndex: number,
+  elapsedMs: number,
+): string | null {
+  if (liveIndex < 0) return null;
+  const nextEntry = payload.tracks[liveIndex + 1];
+  if (!nextEntry) return null;
+  const ahead = events.length - 1 - lastAtOrBefore(events, elapsedMs);
+  return ahead <= 1 ? nextEntry.track.title : null;
+}
+
 /** All cues + moves of a track as class-absolute events, time-ordered. */
 function eventsFor(entry: RunPayloadTrackEntry): TimelineEvent[] {
   const base = entry.startOffsetMs ?? 0;
@@ -1744,6 +1762,7 @@ function CueByCue({
   const trackElapsedMs = elapsedMs - (entry.startOffsetMs ?? 0);
   const hold = teachingHoldAt(entry.cues, trackElapsedMs);
   const upcoming = upcomingTeachingCues(entry.cues, trackElapsedMs);
+  const nextSong = nextSongTitle(payload, events, live.index, elapsedMs);
   // "The drop" (design system 10 §5): the one big motion spend, rationed to All-Out
   // tracks. On each cue advance there, a plasma glow blooms behind the focal cue and
   // the cue text cross-fades in. Reduced motion degrades both to an instant swap (CSS).
@@ -1929,6 +1948,23 @@ function CueByCue({
             </span>
           )}
         </div>
+        {/* The song after this one, once this song has at most its last action
+            ahead (RF-130). Without it the Next row can only say "End of track", or
+            name a later song's cue without saying a new song starts. A label and
+            text, no colour or motion; the cue announcements stay as they are. */}
+        {nextSong != null && (
+          <p
+            data-teaching="next-song"
+            className="relative mt-2 flex min-w-0 shrink-0 items-baseline gap-2 [@media(max-height:480px)]:mt-0.5"
+          >
+            <span className="shrink-0 rf-eyebrow text-text-tertiary">
+              Next song<span className="sr-only">: </span>
+            </span>
+            <span className="min-w-0 break-words font-ui text-base font-semibold text-text-secondary [@media(max-height:480px)]:text-sm">
+              {nextSong}
+            </span>
+          </p>
+        )}
         {/* Track tempo and zone stay the no-cue footer. A teaching cue carries its
             own BPM and effort, and does not borrow the track readout. */}
         {hold == null && <FocalVitals entry={entry} playing={playing} />}
