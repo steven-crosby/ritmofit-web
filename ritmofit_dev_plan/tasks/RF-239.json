@@ -1,0 +1,32 @@
+{
+  "schemaVersion": 1,
+  "id": "RF-239",
+  "title": "Live's Next row does not name a cue from a song past an unchoreographed next song",
+  "kind": "task",
+  "status": "backlog",
+  "priority": "untriaged",
+  "parent": null,
+  "dependsOn": [],
+  "acceptance": [
+    "After a song's last cue or move, when the next song has no choreography, Cue-by-Cue's Next row (and its 'Time to next cue' clock) no longer shows a cue from a later song as if it came next without saying which song it belongs to. Either the row stops at the next song, or it names the song the cue belongs to; the choice is the owner's.",
+    "The choreography queue's rows and the Next row agree on what comes next, and Live's tests cover a class whose second song has no cues and whose third song does."
+  ],
+  "nextAction": "Agent-created (Neo, 2026-11-23, round 1123 lane 1, from RF-130's review of #611). Backlog until the owner sets Ready. First decide the behaviour in the acceptance (stop at the next song, or name the cue's song); then a small web change in apps/web/src/components/LiveMode.tsx (followingTrackEvents and the nextEvent memo), with the same check for iOS Live (LiveRunState.swift).",
+  "blocker": null,
+  "evidence": [
+    {
+      "kind": "source",
+      "ref": "apps/web/src/components/LiveMode.tsx",
+      "summary": "On main 3d87b55, followingTrackEvents returns the first later song with any cue or move, skipping songs with none, and the nextEvent memo falls back to its first event (#611). With songs 1 and 3 choreographed and song 2 not, song 1's last cue shows song 3's first cue as Next, with a clock that runs through all of song 2. The choreography queue labels those rows 'cue · Track 3'; the focal card's Next row does not.",
+      "checkedOn": "2026-11-23"
+    },
+    {
+      "kind": "observation",
+      "ref": "ritmofit_dev_plan/tasks/RF-130.json",
+      "summary": "RF-130 adds 'Next song: <title>' under the Next row, naming the song right after this one. In the case above the line names song 2 while the Next row names song 3's cue: both true, but they read oddly together. RF-130 left the Next row's choice of cue unchanged.",
+      "checkedOn": "2026-11-23"
+    }
+  ],
+  "resolution": null,
+  "followUps": []
+}

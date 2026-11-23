@@ -27,6 +27,7 @@ import {
   LiveMode,
   lastAtOrBefore,
   liveSectionAt,
+  nextSongTitle,
   TEACHING_PHONE_WIDTH_PX,
   teachingCountdownContentPx,
   teachingHoldAt,
@@ -1671,6 +1672,10 @@ describe('LiveMode runtime composition', () => {
     expect(within(focal).queryByText('End of track')).toBeNull();
     expect(within(focal).getByText('Seated climb')).toBeTruthy();
     expect(within(focal).getByLabelText('Time to next cue').textContent).toBe('2:15');
+    // The next cue is on a new song, and the focal card says which (RF-130).
+    expect(focal.querySelector('[data-teaching="next-song"]')?.textContent).toBe(
+      'Next song: Second Track',
+    );
 
     const queue = screen.getByRole('list', { name: 'Choreography queue' });
     const rows = within(queue).getAllByRole('listitem');
@@ -1705,11 +1710,73 @@ describe('LiveMode runtime composition', () => {
       .getByText('Final push', { selector: '[data-teaching="hero-name"]' })
       .closest('[data-live-region="focal"]') as HTMLElement;
     expect(within(focal).getByText('End of track')).toBeTruthy();
+    // The class's last song has no next song to name (RF-130).
+    expect(focal.querySelector('[data-teaching="next-song"]')).toBeNull();
+    expect(within(focal).queryByText(/Next song/)).toBeNull();
     const queue = screen.getByRole('list', { name: 'Choreography queue' });
     expect(within(queue).getAllByRole('listitem')).toHaveLength(1);
     expect(within(queue).getByLabelText('Time left in this track').textContent).toMatch(
       /^\d+:\d{2} left$/,
     );
+  });
+
+  it("names the next song when this song's last cue is next (RF-130)", async () => {
+    const rollin = {
+      ...threeTrack,
+      tracks: [
+        threeTrack.tracks[0]!,
+        {
+          ...threeTrack.tracks[1]!,
+          track: { ...threeTrack.tracks[1]!.track, title: "Rollin'" },
+        },
+        threeTrack.tracks[2]!,
+      ],
+    } as RunPayload;
+    await renderLive(rollin);
+    const focalFor = (cue: string) =>
+      screen
+        .getByText(cue, { selector: '[data-teaching="hero-name"]' })
+        .closest('[data-live-region="focal"]') as HTMLElement;
+    const nextSongIn = (focal: HTMLElement) =>
+      focal.querySelector<HTMLElement>('[data-teaching="next-song"]');
+
+    // 0s: Settle in is current and Climb now, this song's last cue, is next.
+    let focal = focalFor('Settle in');
+    expect(within(focal).getByText('Climb now')).toBeTruthy();
+    expect(nextSongIn(focal)?.textContent).toBe("Next song: Rollin'");
+    // A visible label carries the meaning, not colour.
+    expect(within(nextSongIn(focal)!).getByText('Next song')).toBeTruthy();
+
+    // 60s: the last cue is current. Songs 2 and 3 have no cues, so the Next row says
+    // End of track; the next song's title stays with it, so that is not the only hint.
+    const slider = screen.getByRole('slider', { name: 'Seek class timeline' });
+    fireEvent.keyDown(slider, { key: 'PageUp' });
+    fireEvent.keyDown(slider, { key: 'PageUp' });
+    focal = focalFor('Climb now');
+    expect(within(focal).getByText('End of track')).toBeTruthy();
+    expect(nextSongIn(focal)?.textContent).toBe("Next song: Rollin'");
+  });
+
+  it('keeps the focal card to the next cue mid-song (RF-130)', async () => {
+    await renderLive({
+      ...threeTrack,
+      tracks: [
+        {
+          ...threeTrack.tracks[0]!,
+          cues: [...threeTrack.tracks[0]!.cues, teachingCue('c3', 'Sprint', 120000)],
+        },
+        threeTrack.tracks[1]!,
+        threeTrack.tracks[2]!,
+      ],
+    } as RunPayload);
+    // 0s: two cues are still ahead on this song, so nothing names the next one yet.
+    const focal = screen
+      .getByText('Settle in', { selector: '[data-teaching="hero-name"]' })
+      .closest('[data-live-region="focal"]') as HTMLElement;
+    expect(within(focal).getByText('Climb now')).toBeTruthy();
+    expect(focal.querySelector('[data-teaching="next-song"]')).toBeNull();
+    expect(within(focal).queryByText(/Next song/)).toBeNull();
+    expect(within(focal).queryByText('Second Track')).toBeNull();
   });
 
   it('wraps an unbroken class title and notes so the phone shell cannot scroll sideways', async () => {
@@ -2436,6 +2503,53 @@ describe('followingTrackEvents', () => {
       events: [cue(0, 'First')],
       trackEndMs: 180000,
     });
+  });
+});
+
+describe('nextSongTitle', () => {
+  const at = (atMs: number): TimelineEvent => ({
+    atMs,
+    kind: 'cue',
+    text: `cue ${atMs}`,
+    color: null,
+    intensity: null,
+    beat: null,
+    bar: null,
+  });
+  const songs = {
+    ...payload,
+    tracks: [
+      activeTrack,
+      {
+        ...activeTrack,
+        startOffsetMs: 180000,
+        track: { ...activeTrack.track, title: "Rollin'" },
+      },
+    ],
+  } satisfies RunPayload;
+  const song1 = [at(0), at(60000), at(120000)];
+
+  it('is null mid-song, with more than one cue or move ahead', () => {
+    expect(nextSongTitle(songs, song1, 0, 0)).toBeNull();
+    expect(nextSongTitle(songs, song1, 0, 30000)).toBeNull();
+  });
+
+  it("names the next song when this song's last cue or move is next", () => {
+    expect(nextSongTitle(songs, song1, 0, 60000)).toBe("Rollin'");
+    expect(nextSongTitle(songs, song1, 0, 90000)).toBe("Rollin'");
+    // A song with one action: it is the last one, even before it starts.
+    expect(nextSongTitle(songs, [at(60000)], 0, 0)).toBe("Rollin'");
+  });
+
+  it('keeps naming the next song after the last action and on a song without any', () => {
+    expect(nextSongTitle(songs, song1, 0, 120000)).toBe("Rollin'");
+    expect(nextSongTitle(songs, song1, 0, 170000)).toBe("Rollin'");
+    expect(nextSongTitle(songs, [], 0, 0)).toBe("Rollin'");
+  });
+
+  it('is null on the last song and for an empty class', () => {
+    expect(nextSongTitle(songs, [], 1, 200000)).toBeNull();
+    expect(nextSongTitle({ ...payload, tracks: [] }, [], -1, 0)).toBeNull();
   });
 });
 
