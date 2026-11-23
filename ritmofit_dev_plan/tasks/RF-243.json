@@ -1,22 +1,28 @@
 {
   "schemaVersion": 1,
   "id": "RF-243",
-  "title": "deploy-script.test.ts times out under heavy machine load",
+  "title": "Tests that time out under heavy machine load (deploy-script, Dashboard Apple search, LiveMode RF-185 timing, the RF-157 cap test)",
   "kind": "task",
   "status": "backlog",
   "priority": "P3",
   "parent": null,
   "dependsOn": [],
   "acceptance": [
-    "apps/api/src/lib/deploy-script.test.ts passes reliably on a loaded machine: the slow case gets an explicit timeout with headroom, or the work it waits on is made faster, without weakening what it checks."
+    "Under heavy local load (the Neo has hit load averages of 150 to 250 while an iOS lane builds), these pass reliably without weakening what they check: apps/api/src/lib/deploy-script.test.ts (5.9 s against 5 s), Dashboard.test.tsx's two Apple Music search tests (5 s and 15 s timeouts), LiveMode's RF-185 timing test (316 ms against a 200 ms limit) and Dashboard.test.tsx's RF-157 cap test (3.8 s at load 248, 875 ms in CI). Either give each slow case explicit headroom, make the work it waits on faster, or make a timing assertion independent of wall-clock load."
   ],
-  "nextAction": "Agent-created (Neo, 2026-11-23) at the close of round 1123 from web Lane 1's report. Backlog until the owner sets Ready. Seen once: 5.9 s against the 5 s default while the Neo's load average was 150 to 220; it passed on rerun. CI on #790 was green.",
+  "nextAction": "Agent-created (Neo, 2026-11-23) at the close of round 1123, widened at round 1123b's close from web Lane 1's reports. Backlog until the owner sets Ready. Each was seen once under load and passed on rerun; CI was green each time.",
   "blocker": null,
   "evidence": [
     {
       "kind": "pr",
       "ref": "https://github.com/steven-crosby/ritmofit-web/pull/790",
       "summary": "While verifying #790 locally, pnpm test failed once on a timeout in apps/api/src/lib/deploy-script.test.ts (5.9 s against 5 s) under heavy machine load; the rerun at load 29 passed (web 1827, API 698, music 30). #790 changes no API code.",
+      "checkedOn": "2026-11-23"
+    },
+    {
+      "kind": "pr",
+      "ref": "https://github.com/steven-crosby/ritmofit-web/pull/793",
+      "summary": "While verifying #793 locally at load 117 to 183, pnpm test failed 3 tests (two Dashboard Apple search timeouts at 5 s and 15 s; LiveMode RF-185 timing 316 ms against 200 ms) and passed on one rerun at load 84 to 39. #793's review measured its new cap test at 3.8 s at load 248 (875 ms in CI).",
       "checkedOn": "2026-11-23"
     }
   ],
