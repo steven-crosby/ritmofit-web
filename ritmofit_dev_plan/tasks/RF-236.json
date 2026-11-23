@@ -2,8 +2,8 @@
   "schemaVersion": 1,
   "id": "RF-236",
   "title": "05's button radius rule matches the web's buttons and the owner's pill decision",
-  "kind": "documentation",
-  "status": "backlog",
+  "kind": "task",
+  "status": "in_progress",
   "priority": "P3",
   "parent": null,
   "dependsOn": [],
@@ -11,7 +11,7 @@
     "05-components › Buttons states one radius rule for buttons that matches what the web ships and the owner's 2026-11-22 decision that the Mac's buttons take the shipped web's pill (iOS RF-1207). Today 05 says buttons take the input radius (12 px) and \"pills are reserved for chips and compact tags\".",
     "Where the rule and the web's buttons disagree, the web's buttons are brought into line in this task or in a named child task, and 08's rows still describe both platforms correctly."
   ],
-  "nextAction": "Agent-created (Neo, 2026-11-22) from the owner's 2026-11-22 Mac pill decision. Backlog until the owner sets Ready. Owner decision owed first: which radius the web's buttons take. On main dbc663c the copper primary (.rf-btn-primary) is drawn 51 times: 18 as rounded-pill, 22 as rounded-control below sm and rounded-pill from sm, 7 as rounded-control only (10 px) and 4 as rounded-input (12 px, Login's buttons among them), counted with git grep -n rf-btn-primary dbc663c -- 'apps/web/src/**/*.tsx' ':!*.test.tsx'. The Mac follows the pill (iOS RF-1224, iOS RF-1207). Then edit 05's Buttons paragraph, and the code if the rule changes any web button. 05 has no iOS web-contract copy, so iOS parity is unaffected.",
+  "nextAction": "In progress (Neo conductor, branch fix/rf-236-button-radius). The owner set the scope in session on 2026-11-23: buttons are pills from the sm width (640 px) up, as on the Mac, and keep the control radius (10 px) below it, as on the iPhone. Restart: edit 05 › Buttons to that rule; give the 11 copper primaries that break it (7 rounded-control only, 4 rounded-input) and Login's Apple button `rounded-control sm:rounded-pill`; update 08's Sign in with Apple row; file a child Backlog task for the secondary buttons; run the full gate; then ask the owner to merge. 08 changes, so an iOS web-contract refresh PR follows the merge.",
   "blocker": null,
   "evidence": [
     {
