@@ -60,7 +60,7 @@
     {
       "kind": "document",
       "ref": "ritmofit_dev_plan/HISTORY.md",
-      "summary": "The 2026-11-23 \"Authed production smoke\" entry, recorded with the b9e8141 deploy, says the smoke ran and passed.",
+      "summary": "The 2026-11-23 \"Authed production smoke\" entry, its own entry right after the b9e8141 deploy entry, says the smoke ran and passed.",
       "checkedOn": "2026-11-23"
     },
     {
