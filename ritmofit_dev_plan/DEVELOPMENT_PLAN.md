@@ -27,11 +27,11 @@
 <!-- Claude Code (Air), 2026-11-13: Deploy 579c5950 (#761, RF-158); RF-158 owner check passed. -->
 <!-- Claude Code (third machine), 2026-11-13: Close: #764, #767, #766, #768 merged and not deployed; RF-218 and RF-136 Done, RF-211 For review; RF-221..RF-225 filed. -->
 <!-- Claude Code (Neo), 2026-11-19: D28 parity bar line (RF-227). -->
-<!-- Claude Code (Neo), 2026-11-23: Round 1123 close: RF-130 (#789) and RF-149 (#790) merged, not deployed; production observed at b9e8141. -->
 <!-- Claude Code (Neo), 2026-11-19: Machines line: the Air retired, the Neo holds the owner's wrangler login (RF-229). -->
 <!-- Claude Code (Neo), 2026-11-21: Four deploys from the Neo up to 35b5e73 (#764, #767, #766, #768); owner checks next. -->
 <!-- Claude Code (Neo), 2026-11-22: Production observed at start-session; RF-231's button (#783) is the first undeployed runtime change. -->
 <!-- Claude Code (Neo), 2026-11-23: Deploy of b9e8141 from the Neo (#783 RF-231, #786 RF-236); RF-238 owner check. -->
+<!-- Claude Code (Neo), 2026-11-23: Round 1123 close: RF-130 (#789) and RF-149 (#790) merged, not deployed; production observed at b9e8141. -->
 
 **Focus (D26, 2026-11-07):** native iOS and macOS apps on TestFlight first, so the owner's wife uses
 them now: M0a iOS on TestFlight, M0b macOS, M1 Spotify in native Live, then native class building
@@ -74,7 +74,7 @@ Spotify start), [RF-74](./tasks/RF-74.json) (closes RF-92), [RF-218](./tasks/RF-
 [RF-157](./tasks/RF-157.json) (Spotify library depth), then [RF-138](./tasks/RF-138.json) after a design
 pass. [RF-167](./tasks/RF-167.json) waits on a non-allowlisted Spotify account to probe. Owner checks
 alongside: RF-217, RF-205, RF-148, RF-155. Account security (RF-116, RF-140) is not in this order.
-**Next step:** the four merged PRs above are deployed (2026-11-21), so the owner checks they need are next:
+**Next step:** #764, #767, #766 and #768 are deployed (2026-11-21), so the owner checks they need are next:
 [RF-211](./tasks/RF-211.json) on iPhone Safari, [RF-224](./tasks/RF-224.json) (preflight groups with a
 provider disconnected), and RF-217, which also covers RF-218. In the order above RF-158, RF-74, RF-218 and
 RF-136 are Done, RF-211 is For review, and RF-130 and RF-149 are Done (round 1123, not deployed); next to build
