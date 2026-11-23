@@ -100,6 +100,12 @@
       "ref": "ritmofit_dev_plan/HISTORY.md",
       "summary": "Deployed 2026-11-23 from the Neo in main b9e8141 with scripts/deploy.sh: Worker fedc7fbf-1bc2-46cd-a90a-3059505e0a7b at 100%, SPA assets/index-BXKJ3gK7.js (3 of 3 propagation fetches and 3 of 3 cache-busted fetches after). The real redirect to Apple from the new button is the owner's check, RF-238.",
       "checkedOn": "2026-11-23"
+    },
+    {
+      "kind": "observation",
+      "ref": "https://github.com/steven-crosby/ritmofit-web/pull/786",
+      "summary": "RF-236 (#786), deployed with this button in b9e8141, changed its radius from the input radius (12 px) this task's resolution names to `rounded-control sm:rounded-pill`: 10 px below 640 px and a pill from 640 px.",
+      "checkedOn": "2026-11-23"
     }
   ],
   "resolution": "Login's Sign in with Apple control is Apple's white button: Apple's own left-aligned black logo file (Medium, 31 × 44) from Apple Design Resources' Logo-Sign-in-with-Apple.dmg, committed unmodified at apps/web/public/sign-in-with-apple/ and drawn at the button's full 44 px height, a black \"Continue with Apple\" title on a white fill, and the web's input radius (12 px, as the Sign in button). The logo is served from public/ so the startup entry stays under its budget (178.64 kB gzip). The busy, checking, unverified and unavailable states are unchanged; the button keeps the global focus ring and its accessible name comes from the title. 08's Sign in with Apple row says so. iOS #223 (RF-1235) refreshed the iOS web-contract copy of 08.",

@@ -46,7 +46,7 @@ This records PR is not in the deployed tree. See [HISTORY](./HISTORY.md).
 **In flight:** [RF-183](./tasks/RF-183.json) is Blocked on the owner's checks: sign in again after
 sign-out (the rest of the native check passed on the simulator, #715), and on web two `expiresAt`
 readings from the app's own get-session at least 24 hours apart (first not yet taken). The signed-in
-`/auth/session` checks wait on a renewed QA token ([RF-155](./tasks/RF-155.json)).
+`/auth/session` checks no longer wait on a token: the owner renewed it on 2026-11-23 ([RF-155](./tasks/RF-155.json)).
 **Spotify first (D27, 2026-11-12):** Spotify working and optimized is the music priority; Apple
 Music work is parked and Apple Music stays in the app
 ([decision](./decisions.md#d27--spotify-first-apple-music-work-is-parked-resolved-2026-11-12)). The

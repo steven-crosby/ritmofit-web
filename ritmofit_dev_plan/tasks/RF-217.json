@@ -12,7 +12,7 @@
   "acceptance": [
     "On desktop Chrome with Spotify Premium, against a production build that includes RF-216: (1) leave Ritmo and Spotify unused for at least 65 minutes, then open a Spotify-only class: Music and Connections show Spotify Connected, Live preflight passes and Start class is audible within a few seconds with no Reconnect prompt; (2) run a class across the hour mark from the last Spotify use and confirm music keeps playing through it; (3) remove Ritmo in Spotify's account 'Manage apps', then Start a Spotify class: Ritmo asks to reconnect Spotify. Retryable failures (Spotify 5xx/429, network) are proved by tests only; they cannot be forced on production."
   ],
-  "nextAction": "RF-216 is deployed (main eaddb1da, Worker a12d0e73, 2026-11-12), and RF-218 too (2026-11-21; production is main 35b5e73, Worker 1fa79a87), so the steps also check that RF-218 left refresh and Reconnect working. Owner: run the three steps on desktop Chrome with Spotify Premium and record the result here. Step 3 removes Ritmo from Spotify's Manage apps, so reconnect Spotify afterwards.",
+  "nextAction": "RF-216 is deployed (main eaddb1da, Worker a12d0e73, 2026-11-12), and RF-218 too (2026-11-21, main 35b5e73; production is now main b9e8141, Worker fedc7fbf, since 2026-11-23), so the steps also check that RF-218 left refresh and Reconnect working. Owner: run the three steps on desktop Chrome with Spotify Premium and record the result here. Step 3 removes Ritmo from Spotify's Manage apps, so reconnect Spotify afterwards.",
   "blocker": null,
   "evidence": [
     {

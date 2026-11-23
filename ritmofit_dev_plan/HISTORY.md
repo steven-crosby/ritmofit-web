@@ -12,6 +12,17 @@ detail). Current focus and `main` vs production live in the "Now" block of
 ---
 
 ## Deploy and session log (newest first)
+> **Authed production smoke 2026-11-23 on main `b9e8141` (Worker `fedc7fbf`): passed, the first pass since 2026-10-26**.
+> At 2026-11-23T17:58Z, about 27 minutes after the upload below, `scripts/authed-production-smoke.ts` exited 0:
+> `GET /api/v1/classes` 200 and `GET /api/v1/providers/spotify/playlists` 200 ([RF-155](./tasks/RF-155.json)).
+>
+> - **Token:** the deploy entry below says `apps/api/.qa-beta-token` "is not on the Neo"; that was true at deploy time.
+>   The owner then saved a fresh session from their own account, which is the smoke account (owner, 2026-11-23). A
+>   first session's value was exposed in a screenshot, so the owner signed out (ending it) and saved a new one.
+> - **Shipping #783 with #786:** AGENTS.md deploys auth changes on their own. #783 changed only how the Sign in with
+>   Apple button looks in `Login.tsx`: its click handler is unchanged, and `scripts/owner-gate.mjs` does not count the
+>   file as auth code. So it was treated as a screen change, and the owner's "Yes deploy" named both PRs.
+
 > **Deploy 2026-11-23: Sign in with Apple's white button (#783, RF-231) and one button radius (#786, RF-236) on main `b9e8141`**.
 > One deploy from the Neo with `scripts/deploy.sh` (no SHA: a clean checkout whose HEAD was `origin/main`). Both changes are
 > web screens only, so they shipped together. The owner said "Yes deploy" in the Neo session; it was recorded on
