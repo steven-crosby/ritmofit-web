@@ -3,7 +3,7 @@
   "id": "RF-155",
   "title": "Post-deploy authed production smoke runs again with a renewed QA session",
   "kind": "task",
-  "status": "backlog",
+  "status": "done",
   "priority": "P2",
   "parent": null,
   "dependsOn": [],
@@ -12,7 +12,7 @@
     "pnpm --filter @ritmofit/api exec tsx scripts/authed-production-smoke.ts exits 0 against production, and the next deploy entry in HISTORY records that it ran.",
     "The runbook says what to do when the token has expired (who renews it, and that the deploy entry names the skip), so an expired token is not silently skipped deploy after deploy."
   ],
-  "nextAction": "The authed smoke has not passed since 2026-10-26 because the QA session expired: it failed with 401 on the c07bba3 and 7163d71 deploys (2026-10-26), on b6af93e (2026-10-28) and on 97f4454 (2026-10-31); it was not recorded on the 2026-10-27 deploys, and was skipped on 04e695f, d81c0fc, d888d28 and 0a77110 (2026-10-31) (HISTORY). Renewing the session needs the owner (a sign-in on the QA account; agents never enter passwords). The renewed token goes in apps/api/.qa-beta-token on the Neo, which has none (2026-11-21). Then run the script and update the runbook. Agent-created: Backlog until the owner sets Ready.",
+  "nextAction": null,
   "blocker": null,
   "evidence": [
     {
@@ -38,8 +38,38 @@
       "ref": "ritmofit_dev_plan/HISTORY.md",
       "summary": "The 2026-11-21 deploys were the first from the Neo. apps/api/.qa-beta-token is not on the Neo (the Air held it), so the authed smoke did not run on any of the four. A renewed QA session token has to be placed on the Neo.",
       "checkedOn": "2026-11-21"
+    },
+    {
+      "kind": "observation",
+      "ref": "https://github.com/steven-crosby/ritmofit-web/pull/788#issuecomment-7109483676",
+      "summary": "Owner, Neo session, 2026-11-23: \"my own account is the smoke account\". The owner signed in on ritmofit.studio, signed out once to end a session whose value had appeared in a screenshot, and saved a fresh session token to the gitignored apps/api/.qa-beta-token on the Neo (one line, 79 bytes, mode 600). No agent read the value.",
+      "checkedOn": "2026-11-23"
+    },
+    {
+      "kind": "test",
+      "ref": "apps/api/scripts/authed-production-smoke.ts",
+      "summary": "Against https://ritmofit.studio at 2026-11-23T17:58Z (main b9e8141, Worker fedc7fbf): GET /api/v1/classes 200, GET /api/v1/providers/spotify/playlists 200, exit 0.",
+      "checkedOn": "2026-11-23"
+    },
+    {
+      "kind": "document",
+      "ref": "ritmofit_dev_plan/deployment-runbook.md",
+      "summary": "Authed production smoke: the smoke account is the owner's own account; only the owner renews the token (with the pbpaste command); an exposed value means sign out and save a fresh one; a deploy with a missing or expired token names the skip in its HISTORY entry.",
+      "checkedOn": "2026-11-23"
+    },
+    {
+      "kind": "document",
+      "ref": "ritmofit_dev_plan/HISTORY.md",
+      "summary": "The 2026-11-23 \"Authed production smoke\" entry, its own entry right after the b9e8141 deploy entry, says the smoke ran and passed.",
+      "checkedOn": "2026-11-23"
+    },
+    {
+      "kind": "pr",
+      "ref": "https://github.com/steven-crosby/ritmofit-web/pull/788",
+      "summary": "This task's PR: the smoke result in HISTORY, the runbook's renewal steps, and RF-155 Done.",
+      "checkedOn": "2026-11-23"
     }
   ],
-  "resolution": null,
+  "resolution": "The owner renewed the smoke session on 2026-11-23 from their own account, which is the smoke account, and saved it only in the gitignored apps/api/.qa-beta-token on the Neo. The authed production smoke then passed against main b9e8141 (Worker fedc7fbf): classes 200 and Spotify playlists 200, the first pass since 2026-10-26, recorded in HISTORY in its own entry right after that deploy's entry. The runbook now says whose session it is, that only the owner renews it and how, and that a deploy with a missing or expired token names the skip in HISTORY.",
   "followUps": []
 }

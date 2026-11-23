@@ -209,15 +209,16 @@ shows requests that arrived while it was running.
 ## Authed production smoke
 
 The curls above are unauthenticated. They do not prove a session, an authed D1 read, or that the
-dedicated QA beta account can still use Spotify. After that public smoke, run this check. It does
+smoke account can still use Spotify. After that public smoke, run this check. It does
 not replace the deploy procedure.
 
 The session token for that account lives only in `apps/api/.qa-beta-token`. `.gitignore` lists
 `apps/api/.qa-beta-token`. Never commit the file, print the token, or paste it into a log. The file
 is one line: the session cookie value, or a single assignment. Production https uses
 `__Secure-better-auth.session_token`. `http` and `localhost` use `better-auth.session_token`.
-Either name is accepted in the file. Lines that start with `#` are comments. The account
-is an allowlisted beta user with a working Spotify connection, not a personal session.
+Either name is accepted in the file. Lines that start with `#` are comments. The smoke account
+is the owner's own Ritmo account (owner, 2026-11-23): an allowlisted beta user with a working
+Spotify connection.
 
 ```bash
 pnpm --filter @ritmofit/api exec tsx scripts/authed-production-smoke.ts
@@ -234,6 +235,21 @@ It exits non-zero unless both of these return 200:
 
 401 means the token is missing or expired. 409 on the Spotify check means that account needs to
 reconnect Spotify. A redirect is not followed and does not count as 200.
+
+**Renewing the token.** Only the owner renews it, because it is the owner's session; agents never
+sign in or handle the value. Sign in on ritmofit.studio in a browser, open DevTools › Application ›
+Cookies › `https://ritmofit.studio`, and copy the value of `__Secure-better-auth.session_token` as the
+last thing copied. Then, from the repo root:
+
+```bash
+(umask 077 && pbpaste > apps/api/.qa-beta-token) && chmod 600 apps/api/.qa-beta-token
+```
+
+The token is the owner's live browser session: signing out of that browser ends it, and the smoke
+then returns 401. Never use it for checks that sign out. Never screenshot or paste the value. If it
+is exposed, sign out on ritmofit.studio (that ends the session) and save a fresh one. When the token
+is missing or expired at a deploy, that deploy's HISTORY entry names the skipped authed smoke and
+the reason, so it is never skipped silently.
 
 `GET /api/v1/health` stays public. It runs D1 `SELECT 1` and includes `database` plus a `secrets`
 object of booleans for required-secret presence. It never returns secret values. A missing database
