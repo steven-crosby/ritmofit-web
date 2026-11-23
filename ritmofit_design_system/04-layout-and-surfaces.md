@@ -42,14 +42,14 @@ not cast shadows. Planning headers are opaque so scrolling content never bleeds 
 
 ## Radius scale (bigger containers, smaller controls)
 
-| Token     | px  | Applies to                             |
-| --------- | --- | -------------------------------------- |
-| `sheet`   | 24  | Major sheets, Live hero cards          |
-| `panel`   | 20  | Main panels, large overlays            |
-| `card`    | 16  | Cards and substantial contained groups |
-| `input`   | 12  | Fields, selects, ordinary buttons      |
-| `control` | 10  | Song rows and compact controls         |
-| `pill`    | 999 | Chips, toggles, and compact tags only  |
+| Token     | px  | Applies to                                                  |
+| --------- | --- | ----------------------------------------------------------- |
+| `sheet`   | 24  | Major sheets, Live hero cards                               |
+| `panel`   | 20  | Main panels, large overlays                                 |
+| `card`    | 16  | Cards and substantial contained groups                      |
+| `input`   | 12  | Fields and selects                                          |
+| `control` | 10  | Song rows, compact controls, and buttons below `sm` (640px) |
+| `pill`    | 999 | Chips, toggles, compact tags, and buttons from `sm` up      |
 
 Reads natural both on a desktop monitor and under iOS Liquid Glass, which favors large soft rounded
 panels — without looking toy-like on web.

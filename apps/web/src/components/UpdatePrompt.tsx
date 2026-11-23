@@ -85,7 +85,7 @@ export function UpdatePrompt() {
                 session: window.sessionStorage,
               });
             }}
-            className="min-h-11 shrink-0 rounded-input rf-btn-primary px-4 font-ui text-sm font-semibold text-text-on-accent"
+            className="min-h-11 shrink-0 rounded-control sm:rounded-pill rf-btn-primary px-4 font-ui text-sm font-semibold text-text-on-accent"
           >
             Reload now
           </button>

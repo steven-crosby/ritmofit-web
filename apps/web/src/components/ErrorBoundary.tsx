@@ -63,7 +63,7 @@ export class ErrorBoundary extends Component<Props, State> {
         ref={this.resetRef}
         type="button"
         onClick={this.handleReset}
-        className="min-h-11 rounded-input rf-btn-primary px-5 font-ui text-sm font-semibold text-text-on-accent"
+        className="min-h-11 rounded-control sm:rounded-pill rf-btn-primary px-5 font-ui text-sm font-semibold text-text-on-accent"
       >
         {this.props.resetLabel ?? 'Reload safely'}
       </button>

@@ -670,9 +670,9 @@ native iOS UI face; SF Pro Text preserves native expression there.
 | sheet   |  24 | major sheets               |
 | panel   |  20 | main panels                 |
 | card    |  16 | cards, contained groups       |
-| input   |  12 | fields, selects, buttons      |
-| control |  10 | track rows, compact controls  |
-| pill    | 999 | chips, toggles, compact tags  |
+| input   |  12 | fields, selects               |
+| control |  10 | track rows, compact controls, buttons below `sm` |
+| pill    | 999 | chips, toggles, compact tags, buttons from `sm` up |
 
 ### 8.2 Spacing
 
@@ -767,7 +767,8 @@ Variants:
 Rules:
 
 - Only one primary per surface.
-- Buttons use the 12px `input` radius; pills are tags/chips only.
+- Buttons use the 10px `control` radius below `sm` (640px) and `pill` from `sm` up; chips and tags
+  are pills at every width.
 - Focus ring always cyan.
 - Disabled state reduces opacity and removes hover.
 - Plasma is never a button.

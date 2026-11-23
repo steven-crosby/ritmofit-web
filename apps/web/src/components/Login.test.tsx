@@ -108,6 +108,23 @@ describe('Login accessible labels', () => {
     expect(logo?.className).toContain('h-11');
   });
 
+  it("gives Login's buttons 05's radius: 10 px on phones, a pill from sm (RF-236)", async () => {
+    vi.mocked(api.getAuthCapabilities).mockResolvedValue({
+      access: { mode: 'invite_only' },
+      socialProviders: { apple: true },
+    });
+
+    render(<Login />);
+
+    const apple = await screen.findByRole('button', { name: 'Continue with Apple' });
+    for (const button of [screen.getByRole('button', { name: 'Sign in' }), apple]) {
+      const classes = button.className.split(/\s+/);
+      expect(classes).toContain('rounded-control');
+      expect(classes).toContain('sm:rounded-pill');
+      expect(classes).not.toContain('rounded-input');
+    }
+  });
+
   it('keeps the Apple button labelled and busy while Apple sign-in opens', async () => {
     vi.mocked(api.getAuthCapabilities).mockResolvedValue({
       access: { mode: 'invite_only' },

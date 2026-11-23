@@ -286,7 +286,7 @@ export function CreateClassDialog({
           <button
             type="submit"
             disabled={busy}
-            className="min-h-11 rounded-control rf-btn-primary px-4 font-ui text-sm font-semibold text-text-on-accent disabled:opacity-40 motion-reduce:transition-none"
+            className="min-h-11 rounded-control sm:rounded-pill rf-btn-primary px-4 font-ui text-sm font-semibold text-text-on-accent disabled:opacity-40 motion-reduce:transition-none"
           >
             {busy ? 'Creating…' : emptyFirst ? 'Create empty class' : 'Create class'}
           </button>

@@ -320,7 +320,7 @@ export function Login({
               type="submit"
               disabled={busy || socialBusy}
               aria-busy={busy}
-              className="min-h-11 rounded-input rf-btn-primary px-5 font-ui font-semibold text-text-on-accent disabled:cursor-not-allowed disabled:opacity-50"
+              className="min-h-11 rounded-control sm:rounded-pill rf-btn-primary px-5 font-ui font-semibold text-text-on-accent disabled:cursor-not-allowed disabled:opacity-50"
             >
               {busy
                 ? pendingLabel
@@ -339,7 +339,7 @@ export function Login({
                 disabled={socialBusy || busy}
                 aria-busy={socialBusy}
                 onClick={signInWithApple}
-                className="flex h-11 min-w-[140px] items-center justify-center overflow-hidden whitespace-nowrap rounded-input bg-white pr-4 font-ui font-semibold text-black disabled:cursor-not-allowed disabled:opacity-50"
+                className="flex h-11 min-w-[140px] items-center justify-center overflow-hidden whitespace-nowrap rounded-control bg-white sm:rounded-pill pr-4 font-ui font-semibold text-black disabled:cursor-not-allowed disabled:opacity-50"
               >
                 <img
                   src={APPLE_LOGO_URL}
