@@ -3,13 +3,16 @@ import { expect, test, type Page } from '@playwright/test';
 
 // The signed-in core loop on a fresh local D1 with mock providers: sign up, create an empty
 // Cycle class, add two mock tracks, write cues, run it live without music, play, End Class.
-// Music › Songs pick mode also creates a class from two ticked liked songs (RF-151).
+// Music › Songs pick mode also creates a class from two ticked liked songs (RF-151), and a
+// second test runs the same pick mode on Spotify likes (RF-157).
 // Every destination is checked for sideways overflow (jsdom has no layout) and for WCAG 2.2
-// AA violations. Each viewport project signs up its own instructor.
+// AA violations. Each test, in each viewport project, signs up its own instructor.
 
 // A long title is what widened the phone Classes page before #615.
 const CLASS_TITLE = 'Sunrise Climb Intervals With A Deliberately Long Title For Phones';
 const PICKED_TITLE = 'Picked Songs Ride';
+const SPOTIFY_PICKED_TITLE = 'Spotify Picks Ride';
+const EMPTY_PICKS = 'Tick up to 15 songs to create a class.';
 const NAME = 'E2E Tester';
 const WCAG_22_AA = ['wcag2a', 'wcag2aa', 'wcag21a', 'wcag21aa', 'wcag22aa'];
 
@@ -162,11 +165,15 @@ async function openDestination(page: Page, name: 'Classes' | 'Account' | 'Music'
   await page.getByRole('button', { name, exact: true }).click();
 }
 
+async function openSongs(page: Page, service: 'Spotify' | 'SoundCloud') {
+  await page.getByRole('button', { name: new RegExp(`^${service},`) }).click();
+  await page.getByRole('button', { name: 'Songs', exact: true }).click();
+}
+
 // RF-151: tick liked songs on Music › Songs, then name the class in the sheet.
 async function createClassFromPickedSongs(page: Page) {
   await openDestination(page, 'Music');
-  await page.getByRole('button', { name: /^SoundCloud,/ }).click();
-  await page.getByRole('button', { name: 'Songs', exact: true }).click();
+  await openSongs(page, 'SoundCloud');
   await page.getByRole('button', { name: 'Connect SoundCloud' }).first().click();
   const list = page.getByRole('list', { name: 'Liked songs' });
   await list.getByText('Instinct').click();
@@ -237,4 +244,47 @@ test('signed-in core loop: build a class, run it live, End Class', async ({ page
   await page.reload();
   await expect(page.getByRole('heading', { name: CLASS_TITLE })).toBeVisible();
   await expect(page.getByRole('button', { name: /Run live/ })).toBeVisible();
+});
+
+// RF-157: Spotify likes get the same pick mode, at 1440 and on the emulated 390 phone. A
+// selection never follows a provider switch, so coming back to Spotify starts empty.
+test('Music › Songs pick mode works for Spotify likes (RF-157)', async ({ page }, testInfo) => {
+  await signUp(page, `e2e+${testInfo.project.name}-spotify-${Date.now()}@example.test`);
+  await openDestination(page, 'Music');
+  await openSongs(page, 'Spotify');
+  await page.getByRole('button', { name: 'Connect Spotify' }).first().click();
+  const list = page.getByRole('list', { name: 'Liked songs' });
+  const titanium = list.getByRole('checkbox', { name: /Titanium/ });
+  const levels = list.getByRole('checkbox', { name: /Levels/ });
+  await list.getByText('Titanium').click();
+  await list.getByText('Levels').click();
+  await expect(page.getByText('2 of 15 selected')).toBeVisible();
+  await expect(titanium).toBeChecked();
+  await expect(levels).toBeChecked();
+  await checkPage(page, 'Music songs Spotify');
+
+  await page.getByRole('button', { name: 'Create a class' }).click();
+  const sheet = page.getByRole('dialog', { name: 'Create a class' });
+  await expect(sheet.getByLabel('Class name')).toHaveValue('Spotify likes');
+  await expect(sheet.getByText('2 songs become the class blocks, in list order.')).toBeVisible();
+  await checkPage(page, 'Create a class sheet Spotify');
+  await sheet.getByRole('button', { name: 'Cancel' }).click();
+  await expect(sheet).toBeHidden();
+
+  await openSongs(page, 'SoundCloud');
+  await page.getByRole('button', { name: 'Connect SoundCloud' }).first().click();
+  await expect(list.getByText('Instinct')).toBeVisible();
+  await expect(page.getByText(EMPTY_PICKS)).toBeVisible();
+  await openSongs(page, 'Spotify');
+  await expect(list.getByText('Titanium')).toBeVisible();
+  await expect(titanium).not.toBeChecked();
+  await expect(levels).not.toBeChecked();
+  await expect(page.getByText(EMPTY_PICKS)).toBeVisible();
+
+  await list.getByText('Titanium').click();
+  await list.getByText('Levels').click();
+  await page.getByRole('button', { name: 'Create a class' }).click();
+  await sheet.getByLabel('Class name').fill(SPOTIFY_PICKED_TITLE);
+  await sheet.getByRole('button', { name: 'Create class' }).click();
+  await expect(page.getByRole('heading', { name: SPOTIFY_PICKED_TITLE })).toBeVisible();
 });

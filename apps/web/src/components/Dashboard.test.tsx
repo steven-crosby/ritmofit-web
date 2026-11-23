@@ -5972,6 +5972,40 @@ describe('Music Songs paging and search (RF-132)', () => {
     const box = (await screen.findByRole('checkbox', { name: /spotify song/ })) as HTMLInputElement;
     expect(box.checked).toBe(false);
   });
+
+  it('caps Spotify likes at 15, refuses a 16th by checkbox and row, and still unticks (RF-157)', async () => {
+    vi.mocked(api.listClasses).mockResolvedValue(page([]));
+    vi.mocked(api.listConnections).mockResolvedValue([spotifyConnection()]);
+    const title = (n: number) => `Pick ${String(n).padStart(2, '0')}`;
+    vi.mocked(api.listLikesPage).mockResolvedValue({
+      items: Array.from({ length: 16 }, (_, i) => song(`pick-${i + 1}`, title(i + 1))),
+      nextCursor: null,
+    });
+    const checkbox = (n: number) =>
+      screen.getByRole('checkbox', { name: new RegExp(title(n)) }) as HTMLInputElement;
+
+    await openSongs('Spotify');
+    await screen.findByRole('checkbox', { name: new RegExp(title(16)) });
+    for (let n = 1; n <= 15; n += 1) fireEvent.click(checkbox(n));
+    expect(screen.getByText('15 of 15 selected')).toBeTruthy();
+    expect(
+      screen.getByText('That’s the most a class takes. Untick a song to choose another.'),
+    ).toBeTruthy();
+
+    // The 16th song is refused by its checkbox and by a tap on its row text alike.
+    expect(checkbox(16).disabled).toBe(true);
+    fireEvent.click(checkbox(16));
+    fireEvent.click(screen.getByText(title(16)));
+    expect(checkbox(16).checked).toBe(false);
+    expect(screen.getByText('15 of 15 selected')).toBeTruthy();
+
+    // A ticked song still unticks at the cap, which frees a place.
+    expect(checkbox(1).disabled).toBe(false);
+    fireEvent.click(checkbox(1));
+    expect(checkbox(1).checked).toBe(false);
+    expect(screen.getByText('14 of 15 selected')).toBeTruthy();
+    expect(checkbox(16).disabled).toBe(false);
+  });
 });
 
 describe('Dashboard URLs (RF-129)', () => {

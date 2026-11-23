@@ -40,6 +40,12 @@
       "ref": "https://github.com/steven-crosby/ritmofit-ios/issues/113#issuecomment-7115094547",
       "checkedOn": "2026-11-23",
       "summary": "Owner Ready: in the Neo session on 2026-11-23 the conductor listed iOS RF-1237 and web RF-241 and RF-157 as the next tasks to set Ready, and the owner answered \"You're approved. Let's continue completing RF tickets\". The conductor recorded this as setting them Ready (RF-1237, then RF-241, then RF-157) with round 1123's method and permissions."
+    },
+    {
+      "kind": "pr",
+      "ref": "https://github.com/steven-crosby/ritmofit-web/pull/793",
+      "checkedOn": "2026-11-23",
+      "summary": "Draft PR claiming RF-157 in round 1123b (web Lane 1): tests and this record only. It adds an e2e test for Spotify likes in pick mode at 1440 and an emulated 390 phone (e2e/smoke.spec.ts) and a 15-song cap test with Spotify likes in apps/web/src/components/Dashboard.test.tsx."
     }
   ],
   "resolution": null,
