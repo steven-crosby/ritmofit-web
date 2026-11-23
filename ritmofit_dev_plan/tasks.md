@@ -12,13 +12,13 @@ owner's queue: any agent may execute a Ready task. Publishing follows AGENTS.md 
 Evidence marked **recorded** is a carried-forward claim, not fresh verification.
 A checked PR proves its GitHub state, not product acceptance or production behavior.
 
-240 tasks. backlog: 86 · ready: 0 · in_progress: 0 · blocked: 2 · review: 10 · done: 140 · cancelled: 2.
+240 tasks. backlog: 85 · ready: 0 · in_progress: 1 · blocked: 2 · review: 10 · done: 140 · cancelled: 2.
 
 ## In progress
 
 | Task | Priority / kind | Relationships | Next action / resolution | Evidence |
 | --- | --- | --- | --- | --- |
-| — | — | — | — | — |
+| [RF-241](tasks/RF-241.json) TrackSearch: a late My likes page overwrites Saved playlists | P2 / task | — | Round 1123b web Lane 1 (Neo), branch fix/rf-241-tracksearch-late-likes: the fetch effect in apps/web/src/components/TrackSearch.tsx bumps reqId and clears searching when Saved playlists opens, with three tests in TrackSearch.test.tsx (playlists list, reconnect after a failed list, a playlist still loading). Restart: check out the branch, run pnpm --filter @ritmofit/web exec vitest run src/components/TrackSearch.test.tsx, then the AGENTS.md gate. | checked 2026-11-23 |
 
 ## Blocked / waiting
 
@@ -75,7 +75,6 @@ A checked PR proves its GitHub state, not product acceptance or production behav
 | [RF-205](tasks/RF-205.json) Music Songs: Spotify ▶ preview plays real audio on desktop | P2 / verification | needs RF-92 | After RF-92's Spotify expiry and playback triage, the owner runs the desktop ▶ check against production and records the result here. Created at the owner's request (split from RF-172); Backlog until the owner sets Ready. Follow-up of RF-172, with no parent, so it does not hold RF-138 open behind RF-92. | checked 2026-11-05; checked 2026-11-06 |
 | [RF-232](tasks/RF-232.json) Web Live gets the Mac's keys: Space, ←, → and Esc | P2 / task | needs RF-233 | Agent-created (Neo, 2026-11-20) from the owner's 2026-11-19 decision on the RF-1201 Mac design audit (iOS RF-1213; the Mac side is iOS RF-1212). Backlog until the owner sets Ready. LiveMode.tsx is owner-gated (playback), so the PR gets needs-owner. Two points to settle when it is set Ready: whether Space plays or pauses while a button has focus, or keeps the button's own Space (the view toggle uses Space and Enter today); and whether Esc exits a running class at once, as the web's Exit control does today with no confirmation, or asks first. An open dialog already keeps Esc to itself (Dialog.tsx stops its propagation). | checked 2026-11-20; checked 2026-11-22 |
 | [RF-238](tasks/RF-238.json) On production, Continue with Apple on the sign-in page opens Apple's sign-in | P2 / verification | — | Agent-created (Neo, 2026-11-23) after the b9e8141 deploy. Backlog until the owner sets Ready. The owner's check: CI and the local look used placeholder Apple settings, so nothing has clicked the new button against real Apple. The click handler is unchanged from the button it replaced (#783). | checked 2026-11-23 |
-| [RF-241](tasks/RF-241.json) TrackSearch: a late My likes page overwrites Saved playlists | P2 / task | — | Agent-created (Neo, 2026-11-23) at the close of round 1123 from #790's final reviews. Pre-existing on main before #790 and not worsened by it. Backlog until the owner sets Ready. Likely a one-line fix: bump reqId before the saved_playlists early return in apps/web/src/components/TrackSearch.tsx (about line 450 on main ff651a1). | checked 2026-11-23 |
 | [RF-101](tasks/RF-101.json) Owner-gate route authz call sites and CI-config files | P3 / task | needs RF-98 | Owner decides whether to gate route and CI-config files, given every merge already needs per-PR permission. | checked 2026-10-27; recorded |
 | [RF-102](tasks/RF-102.json) Owner approval binds only to a commit the owner actually saw | P3 / task | needs RF-98 | Owner decides whether to harden further (for example, bind to the reviewed SHA named in the approval) given per-PR merge permission is the backstop. | checked 2026-10-27 |
 | [RF-103](tasks/RF-103.json) Task claims stay visible from claim to merge | P3 / task | needs RF-98 | Design a claim signal that survives the draft-to-ready transition (for example, any open PR whose head changes the task record) and update start-session and delegate-task. | checked 2026-10-27 |

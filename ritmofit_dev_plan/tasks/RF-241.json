@@ -3,7 +3,7 @@
   "id": "RF-241",
   "title": "TrackSearch: a late My likes page overwrites Saved playlists",
   "kind": "task",
-  "status": "backlog",
+  "status": "in_progress",
   "priority": "P2",
   "parent": null,
   "dependsOn": [],
@@ -11,7 +11,7 @@
     "Switching TrackSearch from My likes to Saved playlists (or opening a playlist) invalidates any likes request still in flight, so a late likes page cannot replace the playlists view's rows or clear its error, loading or reconnect state.",
     "A test starts a slow likes first page, switches to Saved playlists, resolves the page, and expects the playlists view unchanged."
   ],
-  "nextAction": "Agent-created (Neo, 2026-11-23) at the close of round 1123 from #790's final reviews. Pre-existing on main before #790 and not worsened by it. Backlog until the owner sets Ready. Likely a one-line fix: bump reqId before the saved_playlists early return in apps/web/src/components/TrackSearch.tsx (about line 450 on main ff651a1).",
+  "nextAction": "Round 1123b web Lane 1 (Neo), branch fix/rf-241-tracksearch-late-likes: the fetch effect in apps/web/src/components/TrackSearch.tsx bumps reqId and clears searching when Saved playlists opens, with three tests in TrackSearch.test.tsx (playlists list, reconnect after a failed list, a playlist still loading). Restart: check out the branch, run pnpm --filter @ritmofit/web exec vitest run src/components/TrackSearch.test.tsx, then the AGENTS.md gate.",
   "blocker": null,
   "evidence": [
     {
@@ -19,6 +19,12 @@
       "ref": "https://github.com/steven-crosby/ritmofit-web/pull/790#issuecomment-7114083063",
       "checkedOn": "2026-11-23",
       "summary": "#790's fresh-context final review at de859ea, note 1 (pre-existing): saved_playlists returns before ++reqId.current, so a likes first page still loading lands after the switch and writes liked songs into the playlists view, clearing error, libraryErrorCode and searching."
+    },
+    {
+      "kind": "observation",
+      "ref": "https://github.com/steven-crosby/ritmofit-ios/issues/113#issuecomment-7115094547",
+      "checkedOn": "2026-11-23",
+      "summary": "Owner Ready: in the Neo session on 2026-11-23 the conductor listed iOS RF-1237 and web RF-241 and RF-157 as the next tasks to set Ready, and the owner answered \"You're approved. Let's continue completing RF tickets\". The conductor recorded this as setting them Ready (RF-1237, then RF-241, then RF-157) with round 1123's method and permissions."
     }
   ],
   "resolution": null,
