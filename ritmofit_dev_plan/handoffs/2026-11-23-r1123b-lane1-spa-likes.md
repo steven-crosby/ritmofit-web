@@ -3,9 +3,9 @@ date: 2026-11-23
 tool: Claude Code (desktop, Neo), round 1123b web Lane 1
 lane: lane-1-spa-likes
 branch: test/rf-157-spotify-likes-pick-mode
-head: 7bd6454
-base: 891b1ca
-prs: ['#792 (ready, RF-241)', '#793 (this PR, RF-157)']
+head: 5ffa898
+base: 14a41c0
+prs: ['#792 (RF-241)', '#793 (RF-157)']
 status: open
 ---
 
@@ -17,25 +17,23 @@ status: open
   head `4b83ae9`): TrackSearch's fetch effect now bumps `reqId` and clears `searching` when Saved
   playlists opens, so a late My likes first page cannot replace an open playlist's rows or clear the
   playlists view's error, loading or reconnect state. Three new tests failed on the unfixed code and
-  pass with the fix. Marked ready after CI went green on `4b83ae9`. Not merged.
+  pass with the fix.
 - [#793](https://github.com/steven-crosby/ritmofit-web/pull/793) (this branch): tests and the record
   only, no app code. An e2e test runs Spotify likes in pick mode at 1440 and on the emulated 390
   phone, and a Dashboard test covers the 15-song cap with Spotify likes.
 
 ## Tasks
 
-- [RF-241](../tasks/RF-241.json) (in #792) and [RF-157](../tasks/RF-157.json) (in #793). The owner
-  set both Ready in the Neo session
-  ([record](https://github.com/steven-crosby/ritmofit-ios/issues/113#issuecomment-7115094547)).
+- [RF-241](../tasks/RF-241.json) ([#792](https://github.com/steven-crosby/ritmofit-web/pull/792))
+  and [RF-157](../tasks/RF-157.json) ([#793](https://github.com/steven-crosby/ritmofit-web/pull/793)).
+  Their status, evidence and the owner's Ready record are in the records.
 - [RF-242](../tasks/RF-242.json) (TrackSearch Load more notes) was not needed for RF-241 and is
   unchanged.
 
 ## In flight
 
-- #792 and #793 wait for the conductor's merge train and the owner's per-PR merge approval. They
-  touch different files (#792: `TrackSearch.tsx` and its test; #793: `e2e/smoke.spec.ts` and
-  `Dashboard.test.tsx`). Both change `ritmofit_dev_plan/tasks.md`, so the second to merge needs
-  `main` merged in and `pnpm tasks:render` rerun before its CI goes green again.
+- [#793](https://github.com/steven-crosby/ritmofit-web/pull/793) on
+  `test/rf-157-spotify-likes-pick-mode`; its review and merge state are on the PR.
 
 ## Restart context
 
@@ -53,12 +51,16 @@ status: open
   277, e2e 2 of 2), and CI's required job was green on `4b83ae9`.
 - #793 (RF-157): `vitest run src/components/Dashboard.test.tsx -t 'RF-151|RF-157'` passed 3 of 3.
   A local mutation (SongPicks rows never disabled) made the cap test fail; it was reverted and
-  never committed. `pnpm e2e` passed 4 of 4 (1440 and 390). The full AGENTS.md gate ran on the
-  tree committed with this handoff. Every step passed except the first `pnpm test`, which failed
+  never committed. `pnpm e2e` passed 4 of 4 (1440 and 390). The full AGENTS.md gate ran on
+  `d3ea4d4`'s tree. Every step passed except the first `pnpm test`, which failed
   3 tests while the Neo's load average was 117 to 183: two Dashboard Apple-search tests timed out
   (5 s and 15 s), and the LiveMode RF-185 timing test took 316 ms against 200 ms. None of them is
   new or touched here. The one rerun, at load 84 falling to 39, passed (web 1834, api 698,
   music 30). Integration 277 and e2e 4 of 4 also passed. This is RF-243's pattern under load.
+- #793 after merging `main` (`14a41c0`) and adding the review's e2e check that the picks survive
+  Cancel: the RF-151 and RF-157 Dashboard tests passed 3 of 3, `TrackSearch.test.tsx` passed 111 of
+  111, the e2e typecheck and `pnpm lint` passed, and `pnpm e2e` passed 4 of 4 at load 160 to 200.
+  `pnpm format:check` and `pnpm tasks:check` passed.
 - Skipped: none.
 
 ## Production as observed

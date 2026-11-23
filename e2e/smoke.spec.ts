@@ -270,6 +270,10 @@ test('Music › Songs pick mode works for Spotify likes (RF-157)', async ({ page
   await checkPage(page, 'Create a class sheet Spotify');
   await sheet.getByRole('button', { name: 'Cancel' }).click();
   await expect(sheet).toBeHidden();
+  // Cancel keeps the picks; only the provider switch below clears them.
+  await expect(page.getByText('2 of 15 selected')).toBeVisible();
+  await expect(titanium).toBeChecked();
+  await expect(levels).toBeChecked();
 
   await openSongs(page, 'SoundCloud');
   await page.getByRole('button', { name: 'Connect SoundCloud' }).first().click();
