@@ -254,7 +254,7 @@ export function LiveWorkspace({
 }
 
 const LIVE_QUEUE_PRIMARY_CLASS =
-  'min-h-11 rounded-control rf-btn-primary px-4 font-ui text-sm font-semibold text-text-on-accent rf-focus-ring';
+  'min-h-11 rounded-control sm:rounded-pill rf-btn-primary px-4 font-ui text-sm font-semibold text-text-on-accent rf-focus-ring';
 const LIVE_QUEUE_SECONDARY_CLASS =
   'min-h-11 rounded-control border border-interactive/35 px-4 font-ui text-sm font-semibold text-interactive hover:bg-interactive/10 rf-focus-ring';
 

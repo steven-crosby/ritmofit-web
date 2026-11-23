@@ -1281,7 +1281,7 @@ export function Dashboard({
                   });
                 }
               }}
-              className="min-h-11 rounded-control rf-btn-primary px-4 font-ui text-sm font-semibold text-text-on-accent rf-focus-ring"
+              className="min-h-11 rounded-control sm:rounded-pill rf-btn-primary px-4 font-ui text-sm font-semibold text-text-on-accent rf-focus-ring"
             >
               {refreshWarning.retrying ? 'Refreshing class details…' : 'Refresh class details'}
             </button>
@@ -1578,7 +1578,7 @@ function AddPlaylistControl({
         aria-describedby={note ? noteId : undefined}
         className={
           prominent
-            ? 'min-h-11 rounded-control rf-btn-primary px-3 font-ui text-sm font-semibold text-text-on-accent rf-focus-ring'
+            ? 'min-h-11 rounded-control sm:rounded-pill rf-btn-primary px-3 font-ui text-sm font-semibold text-text-on-accent rf-focus-ring'
             : 'min-h-11 rounded-control border border-interactive/50 px-3 font-ui text-sm font-semibold text-interactive rf-focus-ring'
         }
       >
@@ -1698,7 +1698,7 @@ export function LibraryRail({
           <button
             type="button"
             onClick={onStartClass}
-            className="min-h-11 rounded-control rf-btn-primary px-4 font-ui text-sm font-semibold text-text-on-accent rf-focus-ring"
+            className="min-h-11 rounded-control sm:rounded-pill rf-btn-primary px-4 font-ui text-sm font-semibold text-text-on-accent rf-focus-ring"
           >
             New class
           </button>

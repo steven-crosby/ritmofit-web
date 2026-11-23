@@ -22,11 +22,12 @@ it applies. Geometry from the radius scale; color from the channels in
 | Ghost              | `bg/overlay`               | bone                 | Cancel, tertiary                         |
 | Destructive        | transparent, no border     | ember + `error` icon | Remove/delete — icon mandatory           |
 
-Radius `input` (12px); pills are reserved for chips and compact tags. Hover: primary brightens;
+Radius: `control` (10px) below the `sm` breakpoint (640px) and `pill` from it up, written
+`rounded-control sm:rounded-pill` (owner, 2026-11-23, RF-236). The iPhone draws the narrow radius
+and the Mac the pill. Chips and compact tags are pills at every width. Hover: primary brightens;
 secondary/ghost controls lighten their neutral fill; destructive controls gain a subtle ember tint.
-Pressed: a subtle depress
-(`transform: translateY(1px)`). Disabled drops to 40% opacity and removes hover. Only one primary per
-surface. **Plasma is never a button fill.**
+Pressed: a subtle depress (`transform: translateY(1px)`). Disabled drops to 40% opacity and removes
+hover. Only one primary per surface. **Plasma is never a button fill.**
 
 ## Chips & toggles
 

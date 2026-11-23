@@ -176,7 +176,7 @@ export function ResetPassword() {
                 type="submit"
                 disabled={busy}
                 aria-busy={busy}
-                className="min-h-11 rounded-input rf-btn-primary px-5 font-ui font-semibold text-text-on-accent disabled:opacity-50"
+                className="min-h-11 rounded-control sm:rounded-pill rf-btn-primary px-5 font-ui font-semibold text-text-on-accent disabled:opacity-50"
               >
                 {busy ? 'Resetting password…' : 'Set password'}
               </button>

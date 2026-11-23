@@ -2,8 +2,8 @@
   "schemaVersion": 1,
   "id": "RF-236",
   "title": "05's button radius rule matches the web's buttons and the owner's pill decision",
-  "kind": "documentation",
-  "status": "backlog",
+  "kind": "task",
+  "status": "done",
   "priority": "P3",
   "parent": null,
   "dependsOn": [],
@@ -11,7 +11,7 @@
     "05-components › Buttons states one radius rule for buttons that matches what the web ships and the owner's 2026-11-22 decision that the Mac's buttons take the shipped web's pill (iOS RF-1207). Today 05 says buttons take the input radius (12 px) and \"pills are reserved for chips and compact tags\".",
     "Where the rule and the web's buttons disagree, the web's buttons are brought into line in this task or in a named child task, and 08's rows still describe both platforms correctly."
   ],
-  "nextAction": "Agent-created (Neo, 2026-11-22) from the owner's 2026-11-22 Mac pill decision. Backlog until the owner sets Ready. Owner decision owed first: which radius the web's buttons take. On main dbc663c the copper primary (.rf-btn-primary) is drawn 51 times: 18 as rounded-pill, 22 as rounded-control below sm and rounded-pill from sm, 7 as rounded-control only (10 px) and 4 as rounded-input (12 px, Login's buttons among them), counted with git grep -n rf-btn-primary dbc663c -- 'apps/web/src/**/*.tsx' ':!*.test.tsx'. The Mac follows the pill (iOS RF-1224, iOS RF-1207). Then edit 05's Buttons paragraph, and the code if the rule changes any web button. 05 has no iOS web-contract copy, so iOS parity is unaffected.",
+  "nextAction": null,
   "blocker": null,
   "evidence": [
     {
@@ -31,8 +31,46 @@
       "ref": "https://github.com/steven-crosby/ritmofit-web/pull/784#issuecomment-7090504549",
       "checkedOn": "2026-11-22",
       "summary": "#784's final review, notes 1, 2 and 5: #784 miscounted the primary button's radii (17 / 18 / 23 / 4, which made the 10 px control radius look the most common; it is 18 / 22 / 7 / 4 of 51 on dbc663c), the next action lacked its Backlog boundary, and the iOS task IDs were unmarked. Corrected here."
+    },
+    {
+      "kind": "observation",
+      "ref": "https://github.com/steven-crosby/ritmofit-web/pull/784#issuecomment-7092207068",
+      "summary": "Owner decision, Neo session, 2026-11-22: \"Lets stay with the pill\" for the web's buttons.",
+      "checkedOn": "2026-11-23"
+    },
+    {
+      "kind": "observation",
+      "ref": "https://github.com/steven-crosby/ritmofit-web/pull/786#issuecomment-7105681799",
+      "summary": "Owner decision, Neo session, 2026-11-23: asked \"Start RF-236 with phones kept at 10 px?\", the owner answered \"Yes approved\". Buttons are pills from 640 px up and 10 px below it.",
+      "checkedOn": "2026-11-23"
+    },
+    {
+      "kind": "observation",
+      "ref": "https://github.com/steven-crosby/ritmofit-ios/blob/94f6521a45bd802b950cd7a20a90eb75bdc96b6e/RitmoFit/RitmoFit/Core/DesignSystem/RFButtonStyle.swift",
+      "summary": "iOS main 94f6521: RFButtonStyle's pill is macOS only. The iPhone's copper buttons (Sign in, Go Live, New Class, Save note) and its Apple button use RFRadius.control (10 pt). LoginView is shared, so the Mac's Sign in and Apple buttons are 10 pt too, which iOS RF-1207's pill does not cover yet.",
+      "checkedOn": "2026-11-23"
+    },
+    {
+      "kind": "observation",
+      "ref": "https://github.com/steven-crosby/ritmofit-web/pull/171",
+      "summary": "#171 (68b0f74, 2026-07-01) moved phone buttons from the pill to 10 px with `rounded-control sm:rounded-pill`, because large pill actions crowded the first viewport on phones.",
+      "checkedOn": "2026-11-23"
+    },
+    {
+      "kind": "observation",
+      "ref": "https://github.com/steven-crosby/ritmofit-web/pull/785#issuecomment-7090590692",
+      "summary": "#785's final review on the earlier next action's count. On dbc663c, `git grep -n rf-btn-primary dbc663c -- 'apps/web/src/**/*.tsx' ':!*.test.tsx'` returns 52 lines, 17 with `rounded-pill`. The 51 primaries and 18 pills it cited drop MarketingPage.tsx:5 (a comment) and count SourceList.tsx:185, whose `rounded-pill` is on line 184. Of the 4 `rounded-input` primaries only Login's submit button (Login.tsx:323) is Login's; the others are in ErrorBoundary, ResetPassword and UpdatePrompt.",
+      "checkedOn": "2026-11-23"
+    },
+    {
+      "kind": "pr",
+      "ref": "https://github.com/steven-crosby/ritmofit-web/pull/786",
+      "summary": "This task's PR: 05 › Buttons, 04's radius scale and the implementation brief state the rule; 11 copper primaries (7 at 10 px and 4 at 12 px at every width) and Login's Apple button take `rounded-control sm:rounded-pill`; 08's Sign in with Apple row says so.",
+      "checkedOn": "2026-11-23"
     }
   ],
-  "resolution": null,
-  "followUps": []
+  "resolution": "05 › Buttons states one radius rule: `control` (10 px) below the `sm` breakpoint (640 px) and `pill` from it up, written `rounded-control sm:rounded-pill` (owner, 2026-11-23). The iPhone draws the narrow radius and the Mac the pill. 04's radius scale and the implementation brief say the same, and no longer reserve pills for chips. The web's 11 copper primaries that broke the rule from 640 px up (7 at 10 px and 4 at 12 px, Login's Sign in among them) and Login's Apple button now follow it, and 08's Sign in with Apple row says so. The 18 primaries that are pills at every width and the other button variants are RF-237's. 08 changed, so the iOS web-contract copy needs a refresh after this merges.",
+  "followUps": [
+    "RF-237"
+  ]
 }

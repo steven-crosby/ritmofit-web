@@ -515,7 +515,7 @@ export function ClassPlanBlocks({
               setActionError(null);
               setAdding(true);
             }}
-            className="min-h-11 self-start rounded-control rf-btn-primary px-4 font-ui text-sm font-semibold text-text-on-accent rf-focus-ring disabled:opacity-40"
+            className="min-h-11 self-start rounded-control sm:rounded-pill rf-btn-primary px-4 font-ui text-sm font-semibold text-text-on-accent rf-focus-ring disabled:opacity-40"
           >
             Add block
           </button>
@@ -1621,7 +1621,7 @@ function PlanBlockEditor({
         <button
           type="submit"
           disabled={saving}
-          className="min-h-11 rounded-control rf-btn-primary px-4 font-ui text-sm font-semibold text-text-on-accent disabled:opacity-40 motion-reduce:transition-none"
+          className="min-h-11 rounded-control sm:rounded-pill rf-btn-primary px-4 font-ui text-sm font-semibold text-text-on-accent disabled:opacity-40 motion-reduce:transition-none"
         >
           {saving ? 'Saving…' : block ? 'Save' : 'Add block'}
         </button>
