@@ -446,8 +446,16 @@ export function TrackSearch({
     }
     // Don't fire modes the provider cannot serve; reset effect switches to search.
     if (mode === 'likes' && !canUseLikes) return;
-    if (mode === 'saved_playlists' && !canBrowseSavedPlaylists) return;
-    if (mode === 'saved_playlists') return;
+    if (mode === 'saved_playlists') {
+      // Saved playlists load in their own effect below, but opening them still ends
+      // the read in flight: a late likes or search page would otherwise pass the
+      // `id === reqId.current` guard and land in the playlists view, replacing an
+      // open playlist's rows and clearing its error, loading or reconnect state
+      // (RF-241). That read's `finally` no longer clears `searching`, so do it here.
+      reqId.current++;
+      setSearching(false);
+      return;
+    }
     const id = ++reqId.current;
     if (mode === 'search') setResults(null);
     setSearching(true);

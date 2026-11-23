@@ -3,7 +3,7 @@
   "id": "RF-241",
   "title": "TrackSearch: a late My likes page overwrites Saved playlists",
   "kind": "task",
-  "status": "backlog",
+  "status": "done",
   "priority": "P2",
   "parent": null,
   "dependsOn": [],
@@ -11,7 +11,7 @@
     "Switching TrackSearch from My likes to Saved playlists (or opening a playlist) invalidates any likes request still in flight, so a late likes page cannot replace the playlists view's rows or clear its error, loading or reconnect state.",
     "A test starts a slow likes first page, switches to Saved playlists, resolves the page, and expects the playlists view unchanged."
   ],
-  "nextAction": "Agent-created (Neo, 2026-11-23) at the close of round 1123 from #790's final reviews. Pre-existing on main before #790 and not worsened by it. Backlog until the owner sets Ready. Likely a one-line fix: bump reqId before the saved_playlists early return in apps/web/src/components/TrackSearch.tsx (about line 450 on main ff651a1).",
+  "nextAction": null,
   "blocker": null,
   "evidence": [
     {
@@ -19,8 +19,26 @@
       "ref": "https://github.com/steven-crosby/ritmofit-web/pull/790#issuecomment-7114083063",
       "checkedOn": "2026-11-23",
       "summary": "#790's fresh-context final review at de859ea, note 1 (pre-existing): saved_playlists returns before ++reqId.current, so a likes first page still loading lands after the switch and writes liked songs into the playlists view, clearing error, libraryErrorCode and searching."
+    },
+    {
+      "kind": "observation",
+      "ref": "https://github.com/steven-crosby/ritmofit-ios/issues/113#issuecomment-7115094547",
+      "checkedOn": "2026-11-23",
+      "summary": "Owner Ready: in the Neo session on 2026-11-23 the conductor listed iOS RF-1237 and web RF-241 and RF-157 as the next tasks to set Ready, and the owner answered \"You're approved. Let's continue completing RF tickets\". The conductor recorded this as setting them Ready (RF-1237, then RF-241, then RF-157) with round 1123's method and permissions."
+    },
+    {
+      "kind": "pr",
+      "ref": "https://github.com/steven-crosby/ritmofit-web/pull/792",
+      "checkedOn": "2026-11-23",
+      "summary": "Draft PR claiming RF-241 in round 1123b (web Lane 1): the fix in apps/web/src/components/TrackSearch.tsx and three tests in TrackSearch.test.tsx."
+    },
+    {
+      "kind": "test",
+      "ref": "apps/web/src/components/TrackSearch.test.tsx",
+      "checkedOn": "2026-11-23",
+      "summary": "describe 'TrackSearch late My likes page after Saved playlists opens (RF-241)': each test starts a slow My likes first page, switches to Saved playlists, then resolves the page. They check that an open playlist keeps its rows, that a playlist still loading stays loading until its own songs arrive, and that the reconnect panel after a failed playlists list survives. All three failed on the unfixed code (f399ace: liked songs shown in the open playlist twice, and the reconnect alert replaced by 'Loading your Spotify playlists…'). With the fix, the file passed 111 of 111."
     }
   ],
-  "resolution": null,
+  "resolution": "Fixed in #792. TrackSearch's fetch effect returned for Saved playlists before bumping reqId, so a My likes first page still loading kept passing its `id === reqId.current` guard after the switch. When it landed, it replaced an open playlist's rows with liked songs, ended that playlist's loading state, and cleared the playlists view's error and reconnect state (a failed list fell back to a loading line that never ended). Opening Saved playlists now bumps reqId and clears `searching` (the dropped read's `finally` no longer does), so a late likes or search response is ignored there. Opening a playlist is covered too, because a likes read can only start in My likes. RF-242's Load more notes were not needed and stay in RF-242.",
   "followUps": []
 }
