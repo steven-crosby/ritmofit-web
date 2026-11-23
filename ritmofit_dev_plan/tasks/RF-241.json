@@ -3,7 +3,7 @@
   "id": "RF-241",
   "title": "TrackSearch: a late My likes page overwrites Saved playlists",
   "kind": "task",
-  "status": "in_progress",
+  "status": "done",
   "priority": "P2",
   "parent": null,
   "dependsOn": [],
@@ -11,7 +11,7 @@
     "Switching TrackSearch from My likes to Saved playlists (or opening a playlist) invalidates any likes request still in flight, so a late likes page cannot replace the playlists view's rows or clear its error, loading or reconnect state.",
     "A test starts a slow likes first page, switches to Saved playlists, resolves the page, and expects the playlists view unchanged."
   ],
-  "nextAction": "Round 1123b web Lane 1 (Neo), branch fix/rf-241-tracksearch-late-likes: the fetch effect in apps/web/src/components/TrackSearch.tsx bumps reqId and clears searching when Saved playlists opens, with three tests in TrackSearch.test.tsx (playlists list, reconnect after a failed list, a playlist still loading). Restart: check out the branch, run pnpm --filter @ritmofit/web exec vitest run src/components/TrackSearch.test.tsx, then the AGENTS.md gate.",
+  "nextAction": null,
   "blocker": null,
   "evidence": [
     {
@@ -31,8 +31,14 @@
       "ref": "https://github.com/steven-crosby/ritmofit-web/pull/792",
       "checkedOn": "2026-11-23",
       "summary": "Draft PR claiming RF-241 in round 1123b (web Lane 1): the fix in apps/web/src/components/TrackSearch.tsx and three tests in TrackSearch.test.tsx."
+    },
+    {
+      "kind": "test",
+      "ref": "apps/web/src/components/TrackSearch.test.tsx",
+      "checkedOn": "2026-11-23",
+      "summary": "describe 'TrackSearch late My likes page after Saved playlists opens (RF-241)': each test starts a slow My likes first page, switches to Saved playlists, then resolves the page. They check that an open playlist keeps its rows, that a playlist still loading stays loading until its own songs arrive, and that the reconnect panel after a failed playlists list survives. All three failed on the unfixed code (f399ace: liked songs shown in the open playlist twice, and the reconnect alert replaced by 'Loading your Spotify playlists…'). With the fix, the file passed 111 of 111."
     }
   ],
-  "resolution": null,
+  "resolution": "Fixed in #792. TrackSearch's fetch effect returned for Saved playlists before bumping reqId, so a My likes first page still loading kept passing its `id === reqId.current` guard after the switch. When it landed, it replaced an open playlist's rows with liked songs, ended that playlist's loading state, and cleared the playlists view's error and reconnect state (a failed list fell back to a loading line that never ended). Opening Saved playlists now bumps reqId and clears `searching` (the dropped read's `finally` no longer does), so a late likes or search response is ignored there. Opening a playlist is covered too, because a likes read can only start in My likes. RF-242's Load more notes were not needed and stay in RF-242.",
   "followUps": []
 }
