@@ -11,7 +11,7 @@
     "05-components › Buttons states one radius rule for buttons that matches what the web ships and the owner's 2026-11-22 decision that the Mac's buttons take the shipped web's pill (iOS RF-1207). Today 05 says buttons take the input radius (12 px) and \"pills are reserved for chips and compact tags\".",
     "Where the rule and the web's buttons disagree, the web's buttons are brought into line in this task or in a named child task, and 08's rows still describe both platforms correctly."
   ],
-  "nextAction": "Owner decision owed first: which radius the web's buttons take. On main dbc663c the copper primary (.rf-btn-primary) is drawn 17 times as rounded-pill, 18 times as rounded-control below sm and rounded-pill from sm, 23 times as rounded-control (10 px) and 4 times as rounded-input (12 px, Login's buttons among them). The Mac follows the pill (RF-1224, RF-1207). Then edit 05's Buttons paragraph, and the code if the rule changes any web button. 05 has no iOS web-contract copy, so iOS parity is unaffected.",
+  "nextAction": "Agent-created (Neo, 2026-11-22) from the owner's 2026-11-22 Mac pill decision. Backlog until the owner sets Ready. Owner decision owed first: which radius the web's buttons take. On main dbc663c the copper primary (.rf-btn-primary) is drawn 51 times: 18 as rounded-pill, 22 as rounded-control below sm and rounded-pill from sm, 7 as rounded-control only (10 px) and 4 as rounded-input (12 px, Login's buttons among them), counted with git grep -n rf-btn-primary dbc663c -- 'apps/web/src/**/*.tsx' ':!*.test.tsx'. The Mac follows the pill (iOS RF-1224, iOS RF-1207). Then edit 05's Buttons paragraph, and the code if the rule changes any web button. 05 has no iOS web-contract copy, so iOS parity is unaffected.",
   "blocker": null,
   "evidence": [
     {
@@ -25,6 +25,12 @@
       "ref": "ritmofit_design_system/05-components.md",
       "summary": "Buttons: \"Radius input (12px); pills are reserved for chips and compact tags.\" Read on main dbc663c.",
       "checkedOn": "2026-11-22"
+    },
+    {
+      "kind": "observation",
+      "ref": "https://github.com/steven-crosby/ritmofit-web/pull/784#issuecomment-7090504549",
+      "checkedOn": "2026-11-22",
+      "summary": "#784's final review, notes 1, 2 and 5: #784 miscounted the primary button's radii (17 / 18 / 23 / 4, which made the 10 px control radius look the most common; it is 18 / 22 / 7 / 4 of 51 on dbc663c), the next action lacked its Backlog boundary, and the iOS task IDs were unmarked. Corrected here."
     }
   ],
   "resolution": null,
