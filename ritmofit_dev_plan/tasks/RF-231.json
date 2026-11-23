@@ -36,9 +36,15 @@
       "checkedOn": "2026-11-20"
     },
     {
+      "kind": "observation",
+      "ref": "https://github.com/steven-crosby/ritmofit-web/pull/783/commits/6629304b2f36844755bcf5b77e6aa5bab1a8a4f4",
+      "summary": "The owner started this task by direct ask in the Neo session on 2026-11-22 (\"Web: RF-233 chain\"), not from the Ready queue; recorded in this record's next action at 6629304.",
+      "checkedOn": "2026-11-22"
+    },
+    {
       "kind": "pr",
       "ref": "https://github.com/steven-crosby/ritmofit-web/pull/783",
-      "summary": "This task's draft PR, opened 2026-11-22 as the claim. At the 2026-11-22 close it holds 08's three wording fixes and no button code.",
+      "summary": "This task's PR: opened 2026-11-22 as the draft claim and squash-merged the same day as dbc663c. It holds Apple's white button in Login.tsx, Apple's logo file in public/, two Login tests, 08's Sign in with Apple row and 08's three wording fixes.",
       "checkedOn": "2026-11-22"
     },
     {
@@ -76,8 +82,22 @@
       "ref": "apps/web/src/components/Login.tsx",
       "summary": "Local check on the built SPA under wrangler dev with placeholder Apple settings, so the capability reports Apple: at 800 px wide the button is 365 × 44 with the logo at 31 × 44, white fill, black title, 12 px radius; Tab reaches it with the 3 px cyan focus ring; at 375 px it is 335 × 44 with no horizontal scroll. Not a real Apple sign-in.",
       "checkedOn": "2026-11-22"
+    },
+    {
+      "kind": "pr",
+      "ref": "https://github.com/steven-crosby/ritmofit-ios/pull/223",
+      "summary": "Acceptance 3's iOS half: iOS RF-1235 refreshed the iOS web-contract copy of 08 from web dbc663c, squash-merged 2026-11-22 as 0ab4cc5, and iOS parity passed on it.",
+      "checkedOn": "2026-11-22"
+    },
+    {
+      "kind": "observation",
+      "ref": "https://github.com/steven-crosby/ritmofit-web/pull/783#issuecomment-7088707533",
+      "summary": "#783's final review at a778010: no significant findings. Note 1 became Backlog RF-235; note 2 is this record's corrected #783 summary and the owner's direct ask above.",
+      "checkedOn": "2026-11-22"
     }
   ],
-  "resolution": "Login's Sign in with Apple control is Apple's white button: Apple's own left-aligned black logo file (Medium, 31 × 44) from Apple Design Resources' Logo-Sign-in-with-Apple.dmg, committed unmodified at apps/web/public/sign-in-with-apple/ and drawn at the button's full 44 px height, a black \"Continue with Apple\" title on a white fill, and the web's input radius (12 px, as the Sign in button). The logo is served from public/ so the startup entry stays under its budget (178.64 kB gzip). The busy, checking, unverified and unavailable states are unchanged; the button keeps the global focus ring and its accessible name comes from the title. 08's Sign in with Apple row says so. The iOS web-contract copy of 08 is refreshed in an iOS PR once this merges.",
-  "followUps": []
+  "resolution": "Login's Sign in with Apple control is Apple's white button: Apple's own left-aligned black logo file (Medium, 31 × 44) from Apple Design Resources' Logo-Sign-in-with-Apple.dmg, committed unmodified at apps/web/public/sign-in-with-apple/ and drawn at the button's full 44 px height, a black \"Continue with Apple\" title on a white fill, and the web's input radius (12 px, as the Sign in button). The logo is served from public/ so the startup entry stays under its budget (178.64 kB gzip). The busy, checking, unverified and unavailable states are unchanged; the button keeps the global focus ring and its accessible name comes from the title. 08's Sign in with Apple row says so. iOS #223 (RF-1235) refreshed the iOS web-contract copy of 08.",
+  "followUps": [
+    "RF-235"
+  ]
 }
