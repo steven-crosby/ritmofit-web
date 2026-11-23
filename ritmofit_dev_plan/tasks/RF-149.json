@@ -3,7 +3,7 @@
   "id": "RF-149",
   "title": "Class editor TrackSearch likes mode reaches liked songs past the first 200",
   "kind": "task",
-  "status": "backlog",
+  "status": "in_progress",
   "priority": "P2",
   "parent": null,
   "dependsOn": [],
@@ -11,7 +11,7 @@
     "The class editor's TrackSearch \"likes\" mode shows a way to load liked songs past the first 200 (the X-RitmoFit-Next-Cursor page of GET /providers/:provider/likes), or searches them, instead of stopping at the first page.",
     "Its tests cover a second page for Apple Music and SoundCloud."
   ],
-  "nextAction": "RF-132 paged the Music workspace Songs list only; apps/web/src/components/TrackSearch.tsx still calls listLikes once and shows the first page (up to 200). Reuse listLikes({ cursor }) and the Apple server search (listLikes({ q })) from RF-132. Agent-created: Backlog until the owner sets Ready.",
+  "nextAction": "In progress: lane 1 of round 1123 (Neo), branch feat/rf-149-tracksearch-likes-paging. Restart: in apps/web/src/components/TrackSearch.tsx read likes with listLikesPage(provider) and add Load more songs (listLikesPage(provider, { cursor }), rows appended by appendSongPage), with tests in TrackSearch.test.tsx; then run the AGENTS.md gate and set the final state in this PR. RF-132's client is listLikesPage(provider, { cursor, q }) in apps/web/src/lib/api.ts; there is no listLikes({ cursor }).",
   "blocker": null,
   "evidence": [
     {
@@ -19,6 +19,18 @@
       "ref": "apps/web/src/components/TrackSearch.tsx",
       "summary": "TrackSearch likes mode reads one listLikes page and has no Load more. Checked on main 4206c8c.",
       "checkedOn": "2026-10-29"
+    },
+    {
+      "kind": "observation",
+      "ref": "https://github.com/steven-crosby/ritmofit-ios/issues/113#issuecomment-7112042391",
+      "summary": "Owner decision, Neo session, 2026-11-23 12:44 MST: \"Yes, your plan is approved and permissions approved\". The approved plan lists RF-149 as Ready (the owner's queue), round 1123's web lane's second PR after RF-130, with implementation, branch, commit, push and draft PRs; merging stays per PR.",
+      "checkedOn": "2026-11-23"
+    },
+    {
+      "kind": "source",
+      "ref": "apps/web/src/components/TrackSearch.tsx",
+      "summary": "Still true on main 3d87b55: likes mode calls listLikes(provider) once (first page, up to 200) and shows no Load more. Likes mode has no text field (the query input renders in search mode only).",
+      "checkedOn": "2026-11-23"
     }
   ],
   "resolution": null,
