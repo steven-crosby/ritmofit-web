@@ -1,0 +1,32 @@
+{
+  "schemaVersion": 1,
+  "id": "RF-238",
+  "title": "On production, Continue with Apple on the sign-in page opens Apple's sign-in",
+  "kind": "verification",
+  "status": "backlog",
+  "priority": "P2",
+  "parent": null,
+  "dependsOn": [],
+  "acceptance": [
+    "On ritmofit.studio/sign-in, with Sign in with Apple available, the owner taps \"Continue with Apple\" (Apple's white button, RF-231) and reaches Apple's own sign-in page.",
+    "The result, with the date and the production Worker, is recorded here as evidence."
+  ],
+  "nextAction": "Agent-created (Neo, 2026-11-23) after the b9e8141 deploy. Backlog until the owner sets Ready. The owner's check: CI and the local look used placeholder Apple settings, so nothing has clicked the new button against real Apple. The click handler is unchanged from the button it replaced (#783).",
+  "blocker": null,
+  "evidence": [
+    {
+      "kind": "pr",
+      "ref": "https://github.com/steven-crosby/ritmofit-web/pull/783",
+      "summary": "#783's \"What CI cannot prove\" names this check: on ritmofit.studio/sign-in, the owner taps Continue with Apple and reaches Apple's sign-in page.",
+      "checkedOn": "2026-11-23"
+    },
+    {
+      "kind": "observation",
+      "ref": "ritmofit_dev_plan/HISTORY.md",
+      "summary": "Deployed 2026-11-23 from the Neo in main b9e8141 with scripts/deploy.sh: Worker fedc7fbf-1bc2-46cd-a90a-3059505e0a7b at 100%, SPA assets/index-BXKJ3gK7.js (3 of 3 propagation fetches and 3 of 3 cache-busted fetches after). The button is live from this deploy.",
+      "checkedOn": "2026-11-23"
+    }
+  ],
+  "resolution": null,
+  "followUps": []
+}

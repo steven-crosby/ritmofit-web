@@ -67,6 +67,12 @@
       "ref": "https://github.com/steven-crosby/ritmofit-web/pull/786",
       "summary": "This task's PR: 05 › Buttons, 04's radius scale and the implementation brief state the rule; 11 copper primaries (7 at 10 px and 4 at 12 px at every width) and Login's Apple button take `rounded-control sm:rounded-pill`; 08's Sign in with Apple row says so.",
       "checkedOn": "2026-11-23"
+    },
+    {
+      "kind": "observation",
+      "ref": "ritmofit_dev_plan/HISTORY.md",
+      "summary": "Deployed 2026-11-23 from the Neo in main b9e8141 with scripts/deploy.sh: Worker fedc7fbf-1bc2-46cd-a90a-3059505e0a7b at 100%, SPA assets/index-BXKJ3gK7.js (3 of 3 propagation fetches and 3 of 3 cache-busted fetches after). The button radius rule is live: pills from 640 px, 10 px below.",
+      "checkedOn": "2026-11-23"
     }
   ],
   "resolution": "05 › Buttons states one radius rule: `control` (10 px) below the `sm` breakpoint (640 px) and `pill` from it up, written `rounded-control sm:rounded-pill` (owner, 2026-11-23). The iPhone draws the narrow radius and the Mac the pill. 04's radius scale and the implementation brief say the same, and no longer reserve pills for chips. The web's 11 copper primaries that broke the rule from 640 px up (7 at 10 px and 4 at 12 px, Login's Sign in among them) and Login's Apple button now follow it, and 08's Sign in with Apple row says so. The 18 primaries that are pills at every width and the other button variants are RF-237's. 08 changed, so the iOS web-contract copy needs a refresh after this merges.",

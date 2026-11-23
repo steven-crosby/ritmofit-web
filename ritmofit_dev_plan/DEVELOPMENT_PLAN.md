@@ -30,6 +30,7 @@
 <!-- Claude Code (Neo), 2026-11-19: Machines line: the Air retired, the Neo holds the owner's wrangler login (RF-229). -->
 <!-- Claude Code (Neo), 2026-11-21: Four deploys from the Neo up to 35b5e73 (#764, #767, #766, #768); owner checks next. -->
 <!-- Claude Code (Neo), 2026-11-22: Production observed at start-session; RF-231's button (#783) is the first undeployed runtime change. -->
+<!-- Claude Code (Neo), 2026-11-23: Deploy of b9e8141 from the Neo (#783 RF-231, #786 RF-236); RF-238 owner check. -->
 
 **Focus (D26, 2026-11-07):** native iOS and macOS apps on TestFlight first, so the owner's wife uses
 them now: M0a iOS on TestFlight, M0b macOS, M1 Spotify in native Live, then native class building
@@ -37,14 +38,11 @@ them now: M0a iOS on TestFlight, M0b macOS, M1 Spotify in native Live, then nati
 work is tracked as iOS RF records). Web work below continues as maintenance and production checks.
 **Current actionable state:** [RF board](./tasks.md), backed by canonical [task records](./tasks/README.md).
 The order of work is [Phases](#phases) below; each phase lists RF records, not a second backlog.
-**Main vs production:** production is main `35b5e73` (Worker `1fa79a87-f765-45a1-8ff5-f4f2e5d40e37`;
-SPA `assets/index-BpJZWsjk.js`; rollback `a7db76fa-0dca-4521-b993-6cf43b46fa35`). It was deployed from the Neo on
-2026-11-21 in four steps, one per change: #764 ([RF-74](./tasks/RF-74.json)), #767
-([RF-218](./tasks/RF-218.json), provider code), #766 ([RF-211](./tasks/RF-211.json)) and #768
-([RF-136](./tasks/RF-136.json)), with the docs, iOS-snapshot and iOS token-emitter PRs merged since 2026-11-13.
-This records PR is not in the deployed tree. See [HISTORY](./HISTORY.md). Observed again on 2026-11-22 from the Neo:
-unchanged (Worker at 100%, SPA on 3 of 3 cache-busted fetches). `main` is ahead by docs #780 to #782 and, once
-it merges, [RF-231](./tasks/RF-231.json)'s Sign in with Apple button (#783), the first runtime change since that deploy.
+**Main vs production:** production is main `b9e8141` (Worker `fedc7fbf-1bc2-46cd-a90a-3059505e0a7b`;
+SPA `assets/index-BXKJ3gK7.js`; rollback `1fa79a87-f765-45a1-8ff5-f4f2e5d40e37`, main `35b5e73`). It was deployed
+from the Neo on 2026-11-23 in one step: [RF-231](./tasks/RF-231.json)'s Sign in with Apple white button (#783) and
+[RF-236](./tasks/RF-236.json)'s button radius (#786), both web screens only, with docs #780 to #782, #784 and #785.
+This records PR is not in the deployed tree. See [HISTORY](./HISTORY.md).
 **In flight:** [RF-183](./tasks/RF-183.json) is Blocked on the owner's checks: sign in again after
 sign-out (the rest of the native check passed on the simulator, #715), and on web two `expiresAt`
 readings from the app's own get-session at least 24 hours apart (first not yet taken). The signed-in
@@ -78,6 +76,7 @@ RF-136 are Done and RF-211 is For review; next to build
 are [RF-130](./tasks/RF-130.json), then [RF-149](./tasks/RF-149.json) and [RF-157](./tasks/RF-157.json),
 then [RF-138](./tasks/RF-138.json) after a design pass.
 Follow-ups from the 2026-11-13 reviews are RF-221 to RF-225 (Backlog). Owner checks on production:
+[RF-238](./tasks/RF-238.json): Continue with Apple on ritmofit.studio/sign-in reaches Apple's sign-in page.
 [RF-217](./tasks/RF-217.json): Spotify stays playable past the
 hour and asks to reconnect only for a dead grant (desktop Chrome, three steps). iPhone feel pass on a Spotify class: the Live
 timeline [RF-188](./tasks/RF-188.json) (tap to track start, drag then lift, a long still hold).

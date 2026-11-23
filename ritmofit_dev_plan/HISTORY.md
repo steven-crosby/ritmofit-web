@@ -12,6 +12,26 @@ detail). Current focus and `main` vs production live in the "Now" block of
 ---
 
 ## Deploy and session log (newest first)
+> **Deploy 2026-11-23: Sign in with Apple's white button (#783, RF-231) and one button radius (#786, RF-236) on main `b9e8141`**.
+> One deploy from the Neo with `scripts/deploy.sh` (no SHA: a clean checkout whose HEAD was `origin/main`). Both changes are
+> web screens only, so they shipped together. The owner said "Yes deploy" in the Neo session; it was recorded on
+> [#786](https://github.com/steven-crosby/ritmofit-web/pull/786#issuecomment-7108717747) and
+> [#783](https://github.com/steven-crosby/ritmofit-web/pull/783#issuecomment-7108718272) as the script started,
+> before the upload.
+>
+> - **Tree:** [#783](https://github.com/steven-crosby/ritmofit-web/pull/783) (RF-231) and
+>   [#786](https://github.com/steven-crosby/ritmofit-web/pull/786) (RF-236), plus docs #780 to #782, #784 and #785.
+>   Worker `fedc7fbf-1bc2-46cd-a90a-3059505e0a7b` at 100% (created 2026-11-23T17:30:46Z); rollback
+>   `1fa79a87-f765-45a1-8ff5-f4f2e5d40e37` (`35b5e73`). SPA `assets/index-BXKJ3gK7.js` (was `assets/index-BpJZWsjk.js`).
+> - **Checks:** the script's gates passed; every required secret name was present; no remote D1 migrations to apply;
+>   the served SPA matched the build on 3 of 3 propagation fetches, and on 3 of 3 cache-busted fetches afterwards;
+>   `wrangler deployments status` showed `fedc7fbf` at 100%; the status smoke (`/` 200, health 200,
+>   classes/explore/teams 401) and the security headers passed. A 5-minute `wrangler tail` saw 2 requests, the agent's
+>   own health checks at the start and end (200 both), and 0 exceptions.
+> - **Not proven:** the authed production smoke was skipped: `apps/api/.qa-beta-token` is not on the Neo
+>   ([RF-155](./tasks/RF-155.json)). Nothing has clicked the new Apple button against real Apple: that is the owner's
+>   check, [RF-238](./tasks/RF-238.json).
+
 > **Deploy 2026-11-21: RF-74 (#764), RF-218 (#767), RF-211 (#766), RF-136 (#768), one deploy each, ending on main `35b5e73`**.
 > The first deploys from the Neo, after the owner signed it in to Cloudflare that day. Four deploys with
 > `scripts/deploy.sh <sha>`, one per change in merge order, because AGENTS.md keeps provider and playback changes on
