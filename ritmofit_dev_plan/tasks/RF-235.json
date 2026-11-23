@@ -8,11 +8,11 @@
   "parent": null,
   "dependsOn": [],
   "acceptance": [
-    "With Login's form column narrower than about 220 px (for example 175% page zoom on a 375 px phone), the Apple button clips neither its title, \"Opening Apple sign-in…\" included, nor the logo's left edge, and it still follows Apple's rules: Apple's logo file at the button's full height, never cropped or padded, one of Apple's titles, and at least 140 px wide.",
+    "With Login's form column narrower than about 220 px (for example 175% page zoom on a 375 px phone), the Apple button clips neither its title nor the logo's left edge, and it still follows Apple's rules: Apple's logo file at the button's full height, never cropped or padded, at least 140 px wide, and one of Apple's titles at rest (\"Continue with Apple\"). While busy it either keeps today's \"Opening Apple sign-in…\", unclipped, or keeps \"Continue with Apple\" and shows the busy state through aria-busy, disabled and an indicator outside the title.",
     "Where the light theme is on ([data-theme=\"light\"]), the white Apple button has a visible outline against the light page, as Apple's white-with-outline style does; the dark default is unchanged.",
     "Login.test.tsx's busy-state test leaves no never-resolving signInSocial stub for later tests (mockReturnValueOnce, or a reset the shared afterEach runs), and the file still passes."
   ],
-  "nextAction": "Unstarted. The test fix is a one-line change. The narrow-width fix needs a look in browser viewport emulation at 175% zoom on 375 px. The outline matters only once something turns the light theme on: tokens.css has [data-theme=\"light\"] overrides, but nothing in the app sets data-theme today (checked on main dbc663c).",
+  "nextAction": "Agent-created (Neo, 2026-11-22) from note 1 of #783's final review. Backlog until the owner sets Ready. Unstarted. The test fix is a one-line change. The narrow-width fix needs a look in browser viewport emulation about 214 px wide (375 px at 175% zoom; emulation sets the width, not the zoom). The outline matters only once something turns the light theme on: tokens.css has [data-theme=\"light\"] overrides, but nothing in the app sets data-theme today (checked on main dbc663c).",
   "blocker": null,
   "evidence": [
     {
@@ -20,6 +20,12 @@
       "ref": "https://github.com/steven-crosby/ritmofit-web/pull/783#issuecomment-7088707533",
       "checkedOn": "2026-11-22",
       "summary": "#783's final review, non-significant note 1: (a) Login.tsx:342, with a form column under about 220 px the fixed-height, no-wrap button clips \"Opening Apple sign-in…\" and the logo's left edge; (b) no outline on the white button if a light theme is turned on; (c) the busy-state test's never-resolving signInSocial stub is not reset by vi.clearAllMocks(), so a later Apple-click test would hang."
+    },
+    {
+      "kind": "observation",
+      "ref": "https://github.com/steven-crosby/ritmofit-web/pull/784#issuecomment-7090504549",
+      "checkedOn": "2026-11-22",
+      "summary": "#784's final review, notes 2 to 4: the next action lacked its Backlog boundary; acceptance 1 asked for the busy title unclipped and for one of Apple's titles, which the busy title is not; viewport emulation sets the width, not the page zoom. Corrected here."
     }
   ],
   "resolution": null,
