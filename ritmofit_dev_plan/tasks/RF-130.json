@@ -3,14 +3,16 @@
   "id": "RF-130",
   "title": "Live shows the next song, not only the next cue, in Cue-by-Cue",
   "kind": "task",
-  "status": "backlog",
+  "status": "in_progress",
   "priority": "P3",
   "parent": null,
   "dependsOn": [],
   "acceptance": [
-    "When the current song's last cue is next, Cue-by-Cue shows the next song's title (for example 'Next song: Rollin''), so 'End of track' is not the only hint."
+    "When the current song's last cue is next, Cue-by-Cue shows the next song's title (for example 'Next song: Rollin''), so 'End of track' is not the only hint.",
+    "The next song's title stays in the focal card after the song's last cue, whether the Next row then says 'End of track' or names the first cue of a later song. Mid-song, with more than one cue or move still ahead, and on the class's last song, the focal card is unchanged.",
+    "The line is text with a visible label (no meaning by colour alone, no motion), and Live's playback, seeking, transport and screen-reader cue announcements are unchanged."
   ],
-  "nextAction": "Design copy for the Next row with the ux-copy guidance; small web change in Live Mode.",
+  "nextAction": "In progress: lane 1 of round 1123 (Neo), branch feat/rf-130-live-next-song. Restart: in apps/web/src/components/LiveMode.tsx add the pure nextSongTitle helper and the 'Next song' line under Cue-by-Cue's Next row, with tests in LiveMode.test.tsx; then run the AGENTS.md gate and set the final state in this PR.",
   "blocker": null,
   "evidence": [
     {
@@ -18,8 +20,22 @@
       "ref": "ritmofit_dev_plan/tasks/RF-29.json",
       "checkedOn": "2026-10-29",
       "summary": "Owner noticed during the 2026-10-29 iPhone probe."
+    },
+    {
+      "kind": "observation",
+      "ref": "https://github.com/steven-crosby/ritmofit-ios/issues/113#issuecomment-7112042391",
+      "summary": "Owner decision, Neo session, 2026-11-23 12:44 MST: \"Yes, your plan is approved and permissions approved\". The approved plan lists RF-130 as Ready (the owner's queue) for round 1123's web lane, with implementation, branch, commit, push and draft PRs; merging stays per PR.",
+      "checkedOn": "2026-11-23"
+    },
+    {
+      "kind": "source",
+      "ref": "apps/web/src/components/LiveMode.tsx",
+      "summary": "On main 3d87b55, Cue-by-Cue's Next row shows the next cue or move, or 'End of track'. After a song's last action it shows the first action of the next song that has any choreography (#611), with nothing saying it belongs to another song. The next song's title is only in the rail's Up next list, below the focal card.",
+      "checkedOn": "2026-11-23"
     }
   ],
   "resolution": null,
-  "followUps": []
+  "followUps": [
+    "RF-239"
+  ]
 }
