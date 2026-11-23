@@ -32,6 +32,12 @@
       "ref": "apps/web/src/components/LiveMode.tsx",
       "summary": "On main 3d87b55, Cue-by-Cue's Next row shows the next cue or move, or 'End of track'. After a song's last action it shows the first action of the next song that has any choreography (#611), with nothing saying it belongs to another song. The next song's title is only in the rail's Up next list, below the focal card.",
       "checkedOn": "2026-11-23"
+    },
+    {
+      "kind": "pr",
+      "ref": "https://github.com/steven-crosby/ritmofit-web/pull/789",
+      "summary": "This task's PR (draft claim, owner-gated: LiveMode.tsx is provider / playback code).",
+      "checkedOn": "2026-11-23"
     }
   ],
   "resolution": null,
