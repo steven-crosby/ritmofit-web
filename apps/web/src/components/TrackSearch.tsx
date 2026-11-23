@@ -36,12 +36,16 @@ import {
   listPlaylists,
   importTrack,
   listConnections,
-  listLikes,
+  listLikesPage,
   searchProvider,
   ApiError,
 } from '../lib/api.js';
 import { errMessage } from '../lib/errors.js';
-import { PROVIDER_QUOTA_CODE, libraryFailureExplainsItself } from '../lib/music-library.js';
+import {
+  PROVIDER_QUOTA_CODE,
+  appendSongPage,
+  libraryFailureExplainsItself,
+} from '../lib/music-library.js';
 import {
   PLAYLIST_LINK_PLACEHOLDER,
   playlistProviderFromUrl,
@@ -288,6 +292,15 @@ export function TrackSearch({
   const [reloadKey, setReloadKey] = useState(0);
   // Guards against a stale async fetch overwriting a newer one's results.
   const reqId = useRef(0);
+  // "My likes" paging (RF-149, reusing RF-132's client): the next page's cursor
+  // (null on the last page), a Load more in flight, and a Load more failure that
+  // keeps the rows already loaded. A Load more belongs to the generation of the
+  // first page it continues, so a provider, mode or class switch drops it.
+  const [likesNext, setLikesNext] = useState<string | null>(null);
+  const [loadingMoreLikes, setLoadingMoreLikes] = useState(false);
+  const [loadMoreLikesError, setLoadMoreLikesError] = useState<string | null>(null);
+  const loadingMoreLikesRef = useRef(false);
+  const likesPageGeneration = useRef(0);
   // Provider connection readiness — surfaced proactively so "search my Spotify"
   // reflects an expired/absent account *before* a failed likes fetch (audit #7,
   // cross-surface provider coherence). Best-effort: a failed fetch just hides it.
@@ -323,6 +336,12 @@ export function TrackSearch({
     setSearching(false);
     setBulkImportAttempted(false);
     setError(null);
+    // The likes paging belonged to the rows just cleared (RF-149).
+    likesPageGeneration.current++;
+    loadingMoreLikesRef.current = false;
+    setLikesNext(null);
+    setLoadingMoreLikes(false);
+    setLoadMoreLikesError(null);
   }, [classId, planBlockId]);
   useEffect(() => {
     const gen = ++connectionFetchGen.current;
@@ -407,6 +426,13 @@ export function TrackSearch({
   // empty query; "My likes" fetches the caller's liked tracks (spends their token).
   useEffect(() => {
     const q = query.trim();
+    // Any new read (mode, provider, query or retry) ends the likes paging that
+    // belonged to the rows on screen (RF-149).
+    likesPageGeneration.current++;
+    loadingMoreLikesRef.current = false;
+    setLikesNext(null);
+    setLoadingMoreLikes(false);
+    setLoadMoreLikesError(null);
     if (mode === 'search' && q === '') {
       // Invalidate any in-flight request: bumping the generation makes a late
       // response fail its `id === reqId.current` guard, so a search that resolves
@@ -428,10 +454,14 @@ export function TrackSearch({
     setError(null);
     const run = async () => {
       try {
-        const found =
-          mode === 'likes' ? await listLikes(provider) : await searchProvider(provider, q);
+        // Likes arrive in pages (RF-132); the first page carries the next cursor.
+        const page =
+          mode === 'likes'
+            ? await listLikesPage(provider)
+            : { items: await searchProvider(provider, q), nextCursor: null };
         if (id === reqId.current) {
-          setResults(found);
+          setResults(page.items);
+          setLikesNext(page.nextCursor);
           setError(null);
           setLibraryErrorCode(undefined);
           if (mode === 'likes') {
@@ -472,6 +502,32 @@ export function TrackSearch({
       return () => clearTimeout(t);
     }
   }, [mode, query, provider, canUseLikes, canBrowseSavedPlaylists, searchRetryKey]);
+
+  // Load more liked songs (RF-149): the next page of the same likes read, appended
+  // without duplicates. A failure keeps the rows already loaded and says so.
+  const loadMoreLikes = async () => {
+    const cursor = likesNext;
+    if (mode !== 'likes' || cursor == null || loadingMoreLikesRef.current) return;
+    const generation = likesPageGeneration.current;
+    const current = () => mounted.current && generation === likesPageGeneration.current;
+    loadingMoreLikesRef.current = true;
+    setLoadingMoreLikes(true);
+    setLoadMoreLikesError(null);
+    try {
+      const page = await listLikesPage(provider, { cursor });
+      if (!current()) return;
+      setResults((loaded) => appendSongPage(loaded ?? [], page.items));
+      setLikesNext(page.nextCursor);
+    } catch (e) {
+      if (!current()) return;
+      setLoadMoreLikesError(errMessage(e));
+    } finally {
+      if (current()) {
+        loadingMoreLikesRef.current = false;
+        setLoadingMoreLikes(false);
+      }
+    }
+  };
 
   useEffect(() => {
     if (mode !== 'saved_playlists') return;
@@ -1358,6 +1414,32 @@ export function TrackSearch({
       ) : (
         results && renderTrackList(results)
       )}
+      {/* Liked songs past the first page (RF-149). Same copy and control as the
+          Music workspace's Songs list (RF-132). */}
+      {mode === 'likes' &&
+        !searching &&
+        results &&
+        results.length > 0 &&
+        (likesNext != null || loadMoreLikesError) && (
+          <div className="flex flex-col items-start gap-2">
+            {loadMoreLikesError && (
+              <p role="alert" className="font-ui text-xs text-state-danger">
+                Couldn’t load more songs: {loadMoreLikesError}
+              </p>
+            )}
+            {likesNext != null && (
+              <button
+                type="button"
+                onClick={() => void loadMoreLikes()}
+                disabled={loadingMoreLikes}
+                aria-busy={loadingMoreLikes}
+                className="min-h-11 rounded-control border border-interactive/35 px-3 font-ui text-sm font-semibold text-interactive rf-focus-ring disabled:opacity-50"
+              >
+                {loadingMoreLikes ? 'Loading more songs…' : 'Load more songs'}
+              </button>
+            )}
+          </div>
+        )}
       {savedSongPicker && playlistImport.current && !planBlockId && (
         <PlaylistSongPicker
           mode="import"

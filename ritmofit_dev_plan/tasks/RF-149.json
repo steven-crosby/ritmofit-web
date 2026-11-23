@@ -31,6 +31,12 @@
       "ref": "apps/web/src/components/TrackSearch.tsx",
       "summary": "Still true on main 3d87b55: likes mode calls listLikes(provider) once (first page, up to 200) and shows no Load more. Likes mode has no text field (the query input renders in search mode only).",
       "checkedOn": "2026-11-23"
+    },
+    {
+      "kind": "pr",
+      "ref": "https://github.com/steven-crosby/ritmofit-web/pull/790",
+      "summary": "This task's PR (draft claim; not owner-gated).",
+      "checkedOn": "2026-11-23"
     }
   ],
   "resolution": null,
