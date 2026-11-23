@@ -2092,3 +2092,95 @@ describe('TrackSearch likes paging (RF-149)', () => {
     expect(screen.queryByRole('button', { name: 'Loading more songs…' })).toBeNull();
   });
 });
+
+describe('TrackSearch late My likes page after Saved playlists opens (RF-241)', () => {
+  const lateLike: TrackSearchResult = {
+    provider: 'spotify',
+    providerTrackId: 'late-like',
+    providerUri: null,
+    title: 'Late Like',
+    artist: 'Liked Artist',
+    albumArtUrl: null,
+    durationMs: 180000,
+  };
+  const warmupRide = {
+    provider: 'spotify' as const,
+    playlistId: 'pl-1',
+    providerUri: 'https://open.spotify.com/playlist/abc123',
+    name: 'Warmup Ride',
+    ownerName: 'Coach',
+    trackCount: 2,
+    coverImageUrl: null,
+  };
+
+  beforeEach(() => {
+    vi.mocked(api.listConnections).mockResolvedValue([]);
+  });
+
+  /** My likes starts a first page that is still loading when Saved playlists opens. */
+  function leaveSlowLikesForSavedPlaylists() {
+    const late = deferred<api.LikesPage>();
+    vi.mocked(api.listLikesPage).mockReturnValueOnce(late.promise);
+    render(<TrackSearch classId="c1" onAdded={() => {}} onOpenConnections={() => {}} />);
+    fireEvent.click(screen.getByRole('button', { name: 'Spotify' }));
+    fireEvent.click(screen.getByRole('button', { name: 'My likes' }));
+    expect(api.listLikesPage).toHaveBeenCalledWith('spotify');
+    fireEvent.click(screen.getByRole('button', { name: 'Saved playlists' }));
+    return async () => {
+      await act(async () => {
+        late.resolve({ items: [lateLike], nextCursor: 'cursor-2' });
+        await late.promise;
+      });
+    };
+  }
+
+  it("keeps an open playlist's songs when the likes page lands", async () => {
+    vi.mocked(api.listPlaylists).mockResolvedValue([warmupRide]);
+    vi.mocked(api.listPlaylistTracks).mockResolvedValue(PLAYLIST_TRACKS);
+    const landLikes = leaveSlowLikesForSavedPlaylists();
+    fireEvent.click(await screen.findByRole('button', { name: 'Open' }));
+    await screen.findByRole('button', { name: 'Import all 2 tracks from Warmup Ride' });
+
+    await landLikes();
+    expect(screen.queryByText('Late Like')).toBeNull();
+    expect(
+      screen.getByRole('button', { name: 'Import all 2 tracks from Warmup Ride' }),
+    ).toBeTruthy();
+    expect(screen.getAllByText('Song One').length).toBeGreaterThan(0);
+    expect(browseStatus().textContent).toBe('2 tracks in this playlist.');
+  });
+
+  it('keeps an opened playlist loading until its own songs arrive', async () => {
+    const tracks = deferred<TrackSearchResult[]>();
+    vi.mocked(api.listPlaylists).mockResolvedValue([warmupRide]);
+    vi.mocked(api.listPlaylistTracks).mockReturnValueOnce(tracks.promise);
+    const landLikes = leaveSlowLikesForSavedPlaylists();
+    fireEvent.click(await screen.findByRole('button', { name: 'Open' }));
+    expect(screen.getAllByText('Loading tracks from Warmup Ride…').length).toBeGreaterThan(0);
+
+    await landLikes();
+    expect(screen.queryByText('Late Like')).toBeNull();
+    expect(screen.getAllByText('Loading tracks from Warmup Ride…').length).toBeGreaterThan(0);
+
+    await act(async () => {
+      tracks.resolve(PLAYLIST_TRACKS);
+      await tracks.promise;
+    });
+    expect((await screen.findAllByText('Song One')).length).toBeGreaterThan(0);
+    expect(screen.queryByText('Late Like')).toBeNull();
+  });
+
+  it('keeps the Saved playlists reconnect when the likes page lands', async () => {
+    vi.mocked(api.listPlaylists).mockRejectedValue(new Error('Reconnect your Spotify account.'));
+    const landLikes = leaveSlowLikesForSavedPlaylists();
+    expect((await screen.findByRole('alert')).textContent).toMatch(/Session expired/i);
+
+    await landLikes();
+    const alert = screen.getByRole('alert');
+    expect(alert.textContent).toMatch(/Session expired/i);
+    expect(alert.textContent).toMatch(/Reconnect your Spotify account/i);
+    expect(screen.getByRole('button', { name: 'Manage connections' })).toBeTruthy();
+    expect(screen.queryByText('Loading your Spotify playlists…')).toBeNull();
+    expect(screen.queryByText('Late Like')).toBeNull();
+  });
+});

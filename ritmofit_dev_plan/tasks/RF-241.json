@@ -25,6 +25,12 @@
       "ref": "https://github.com/steven-crosby/ritmofit-ios/issues/113#issuecomment-7115094547",
       "checkedOn": "2026-11-23",
       "summary": "Owner Ready: in the Neo session on 2026-11-23 the conductor listed iOS RF-1237 and web RF-241 and RF-157 as the next tasks to set Ready, and the owner answered \"You're approved. Let's continue completing RF tickets\". The conductor recorded this as setting them Ready (RF-1237, then RF-241, then RF-157) with round 1123's method and permissions."
+    },
+    {
+      "kind": "pr",
+      "ref": "https://github.com/steven-crosby/ritmofit-web/pull/792",
+      "checkedOn": "2026-11-23",
+      "summary": "Draft PR claiming RF-241 in round 1123b (web Lane 1): the fix in apps/web/src/components/TrackSearch.tsx and three tests in TrackSearch.test.tsx."
     }
   ],
   "resolution": null,
