@@ -3,7 +3,7 @@
   "id": "RF-157",
   "title": "Song selection on Music › Songs works for Spotify likes",
   "kind": "task",
-  "status": "backlog",
+  "status": "in_progress",
   "priority": "P3",
   "parent": null,
   "dependsOn": [
@@ -14,7 +14,7 @@
     "Ticking Spotify songs and then switching to another provider clears the selection, and switching back to Spotify starts empty.",
     "A component or e2e test covers the Spotify likes list in pick mode with the mock provider."
   ],
-  "nextAction": "Rescoped on 2026-11-01 (owner: \"Yes rescope\", given in the Air session and relayed by the Air) to the three checks that remain now that Spotify likes reach pick mode on production (desktop check, 2026-10-31): Spotify at phone width, tick then switch provider, and a mock-provider test. No longer waits on RF-92; still starts after RF-151 is Done. No parent on purpose: an open child would block RF-151 from Done. Agent-created: Backlog until the owner sets Ready.",
+  "nextAction": "Round 1123b web Lane 1 (Neo), branch test/rf-157-spotify-likes-pick-mode: tests and this record only, no app code. A Phase-1 probe at an emulated 390 px and at 1440 with mock providers found pick mode already works for Spotify likes. Adds an e2e test (e2e/smoke.spec.ts, own instructor, both viewports) and a 15-song cap test with Spotify likes in apps/web/src/components/Dashboard.test.tsx. Restart: check out the branch, run pnpm e2e and the AGENTS.md gate.",
   "blocker": null,
   "evidence": [
     {
@@ -34,6 +34,12 @@
       "ref": "https://github.com/steven-crosby/ritmofit-web/pull/695",
       "summary": "Rescope: dropped the RF-92 dependency and cut acceptance to Spotify at phone width, tick-then-switch-provider, and a mock-provider test. Owner decision \"Yes rescope\" was given in the Air session and relayed by the Air.",
       "checkedOn": "2026-11-01"
+    },
+    {
+      "kind": "observation",
+      "ref": "https://github.com/steven-crosby/ritmofit-ios/issues/113#issuecomment-7115094547",
+      "checkedOn": "2026-11-23",
+      "summary": "Owner Ready: in the Neo session on 2026-11-23 the conductor listed iOS RF-1237 and web RF-241 and RF-157 as the next tasks to set Ready, and the owner answered \"You're approved. Let's continue completing RF tickets\". The conductor recorded this as setting them Ready (RF-1237, then RF-241, then RF-157) with round 1123's method and permissions."
     }
   ],
   "resolution": null,
