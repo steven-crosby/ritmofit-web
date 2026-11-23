@@ -1,0 +1,26 @@
+{
+  "schemaVersion": 1,
+  "id": "RF-240",
+  "title": "Live's Next song line: a tied final time, and songs with zero or one action",
+  "kind": "task",
+  "status": "backlog",
+  "priority": "P3",
+  "parent": null,
+  "dependsOn": [],
+  "acceptance": [
+    "When a song's last time holds two actions (a cue and a move at the same anchor), 'Next song: <title>' shows while they are next, not only after they fire: nextSongTitle in apps/web/src/components/LiveMode.tsx counts actions ahead by anchor time, not by event index.",
+    "On a song with no cues or moves, or with one, the line does not show from the song's first second as if the song were ending; the owner chooses the rule (for example, only in the song's last part, or only once an action has passed), and the tests that assert today's behaviour change with it."
+  ],
+  "nextAction": "Agent-created (Neo, 2026-11-23) at the close of round 1123 from #789's final review, notes 1 and 2 (neither significant). Backlog until the owner sets Ready. Owner-gated path (LiveMode.tsx). iOS RF-1240 should follow whatever rule this lands.",
+  "blocker": null,
+  "evidence": [
+    {
+      "kind": "observation",
+      "ref": "https://github.com/steven-crosby/ritmofit-web/pull/789#issuecomment-7112980270",
+      "checkedOn": "2026-11-23",
+      "summary": "#789's fresh-context final review at d6fdfda: no significant findings. Note 1: with cue@0, cue@60000 and move@60000, lastAtOrBefore takes the last of the equal run, so the count goes from 2 to 0 and the line first shows at 1:00. Note 2: a song with no actions counts 0 ahead, so the line shows for the whole song (a unit test asserts it)."
+    }
+  ],
+  "resolution": null,
+  "followUps": []
+}

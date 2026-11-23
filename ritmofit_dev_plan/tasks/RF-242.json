@@ -1,0 +1,28 @@
+{
+  "schemaVersion": 1,
+  "id": "RF-242",
+  "title": "TrackSearch Load more follow-ups from RF-149's review",
+  "kind": "task",
+  "status": "backlog",
+  "priority": "P3",
+  "parent": null,
+  "dependsOn": [],
+  "acceptance": [
+    "A My likes first page that is empty but has a next cursor shows Load more songs, as the Music workspace's Songs footer does.",
+    "A Load more that fails with REAUTH_REQUIRED shows the provider's Reconnect, not only 'Couldn't load more songs', and a cursor the API rejects (422) offers a way to start the list again instead of retrying the same cursor.",
+    "The screen-reader status doesn't read a partial count as the whole library while more pages remain.",
+    "Tests cover a late Load more page after a mode switch and after a class switch, as RF-149's resolution states."
+  ],
+  "nextAction": "Agent-created (Neo, 2026-11-23) at the close of round 1123 from #790's final reviews, notes 2 to 6 (none significant). Backlog until the owner sets Ready. apps/web/src/components/TrackSearch.tsx and its test only.",
+  "blocker": null,
+  "evidence": [
+    {
+      "kind": "observation",
+      "ref": "https://github.com/steven-crosby/ritmofit-web/pull/790#issuecomment-7114083063",
+      "checkedOn": "2026-11-23",
+      "summary": "#790's fresh-context final review at de859ea: no significant findings. Notes 2 to 6: the results.length > 0 gate on Load more, REAUTH_REQUIRED on Load more not setting the reconnect state, only the provider-switch late page tested, a rejected cursor retried forever, and '200 liked tracks on X.' read while more pages remain."
+    }
+  ],
+  "resolution": null,
+  "followUps": []
+}

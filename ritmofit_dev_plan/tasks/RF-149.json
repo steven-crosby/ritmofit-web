@@ -52,5 +52,7 @@
     }
   ],
   "resolution": "The class editor's TrackSearch My likes mode no longer stops at the first page: while GET /providers/:provider/likes returns a next cursor, Load more songs fetches the next page with RF-132's listLikesPage(provider, { cursor }) and appends it without duplicates, for every provider with likes (Apple Music, SoundCloud and Spotify alike). A failed Load more keeps the loaded rows and says why; a late page after a provider, mode or class switch is dropped. Tests cover a second page for Apple Music and SoundCloud. Not used: the Apple server search (listLikesPage({ q })), because likes mode has no text field; adding one would be a new control. No API change. Not checked against real providers: CI uses mock providers.",
-  "followUps": []
+  "followUps": [
+    "RF-242"
+  ]
 }
