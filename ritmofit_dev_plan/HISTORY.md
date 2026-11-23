@@ -21,7 +21,8 @@ detail). Current focus and `main` vs production live in the "Now" block of
 >   first session's value was exposed in a screenshot, so the owner signed out (ending it) and saved a new one.
 > - **Shipping #783 with #786:** AGENTS.md deploys auth changes on their own. #783 changed only how the Sign in with
 >   Apple button looks in `Login.tsx`: its click handler is unchanged, and `scripts/owner-gate.mjs` does not count the
->   file as auth code. So it was treated as a screen change, and the owner's "Yes deploy" named both PRs.
+>   file as auth code. So the agent treated it as a screen change. The owner's "Yes deploy" answered "Deploy web main
+>   b9e8141 to production now?", after the agent had said that main carried #783 and #786.
 
 > **Deploy 2026-11-23: Sign in with Apple's white button (#783, RF-231) and one button radius (#786, RF-236) on main `b9e8141`**.
 > One deploy from the Neo with `scripts/deploy.sh` (no SHA: a clean checkout whose HEAD was `origin/main`). Both changes are

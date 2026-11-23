@@ -70,6 +70,6 @@
       "checkedOn": "2026-11-23"
     }
   ],
-  "resolution": "The owner renewed the smoke session on 2026-11-23 from their own account, which is the smoke account, and saved it only in the gitignored apps/api/.qa-beta-token on the Neo. The authed production smoke then passed against main b9e8141 (Worker fedc7fbf): classes 200 and Spotify playlists 200, the first pass since 2026-10-26, recorded in HISTORY with that deploy. The runbook now says whose session it is, that only the owner renews it and how, and that a deploy with a missing or expired token names the skip in HISTORY.",
+  "resolution": "The owner renewed the smoke session on 2026-11-23 from their own account, which is the smoke account, and saved it only in the gitignored apps/api/.qa-beta-token on the Neo. The authed production smoke then passed against main b9e8141 (Worker fedc7fbf): classes 200 and Spotify playlists 200, the first pass since 2026-10-26, recorded in HISTORY in its own entry right after that deploy's entry. The runbook now says whose session it is, that only the owner renews it and how, and that a deploy with a missing or expired token names the skip in HISTORY.",
   "followUps": []
 }

@@ -242,12 +242,14 @@ Cookies › `https://ritmofit.studio`, and copy the value of `__Secure-better-au
 last thing copied. Then, from the repo root:
 
 ```bash
-pbpaste > apps/api/.qa-beta-token && chmod 600 apps/api/.qa-beta-token
+(umask 077 && pbpaste > apps/api/.qa-beta-token) && chmod 600 apps/api/.qa-beta-token
 ```
 
-Never screenshot or paste the value. If it is exposed, sign out on ritmofit.studio (that ends the
-session) and save a fresh one. When the token is missing or expired at a deploy, that deploy's
-HISTORY entry names the skipped authed smoke and the reason, so it is never skipped silently.
+The token is the owner's live browser session: signing out of that browser ends it, and the smoke
+then returns 401. Never use it for checks that sign out. Never screenshot or paste the value. If it
+is exposed, sign out on ritmofit.studio (that ends the session) and save a fresh one. When the token
+is missing or expired at a deploy, that deploy's HISTORY entry names the skipped authed smoke and
+the reason, so it is never skipped silently.
 
 `GET /api/v1/health` stays public. It runs D1 `SELECT 1` and includes `database` plus a `secrets`
 object of booleans for required-secret presence. It never returns secret values. A missing database
