@@ -3,16 +3,18 @@
   "id": "RF-231",
   "title": "The web's Sign in with Apple uses Apple's white button, as the Mac does",
   "kind": "task",
-  "status": "backlog",
+  "status": "done",
   "priority": "P2",
   "parent": null,
-  "dependsOn": ["RF-233"],
+  "dependsOn": [
+    "RF-233"
+  ],
   "acceptance": [
     "Login's Sign in with Apple control is Apple's white button: Apple's logo artwork from Apple's own resources (not redrawn, with the source noted in the PR), a black logo and title on a white fill, one of Apple's allowed titles (today's \"Continue with Apple\" is one), and the web's corner radius.",
     "The button's busy state (\"Opening Apple sign-in…\") and the lines shown instead of it while checking, when unverified (\"Couldn’t check Sign in with Apple…\") and when unavailable behave as they do today, and the button stays keyboard reachable, visibly focused and labelled.",
     "The Mac keeps its system Sign in with Apple button. 08's Sign in with Apple row (RF-233's Mac column) says both use Apple's white button, and the iOS web-contract copy of 08 is refreshed in an iOS PR as soon as this merges, because 08 drift fails iOS parity."
   ],
-  "nextAction": "Agent-created (Neo, 2026-11-20) from the owner's 2026-11-19 decision on the RF-1201 Mac design audit (iOS RF-1213). Backlog until the owner sets Ready. Login.tsx's text-only \"Continue with Apple\" button falls short of Apple's custom-button rules. Login.tsx isn't owner-gated (checked 2026-11-20).",
+  "nextAction": null,
   "blocker": null,
   "evidence": [
     {
@@ -32,8 +34,50 @@
       "ref": "https://github.com/steven-crosby/ritmofit-web/pull/777#issuecomment-7047823775",
       "summary": "#777's final review (non-blocking points 1 and 3): the dependency on RF-233 and the 08 row with its iOS refresh, and Login's unverified state, checked against Login.tsx on main c279df9.",
       "checkedOn": "2026-11-20"
+    },
+    {
+      "kind": "pr",
+      "ref": "https://github.com/steven-crosby/ritmofit-web/pull/783",
+      "summary": "This task's draft PR, opened 2026-11-22 as the claim. At the 2026-11-22 close it holds 08's three wording fixes and no button code.",
+      "checkedOn": "2026-11-22"
+    },
+    {
+      "kind": "observation",
+      "ref": "https://developer.apple.com/design/human-interface-guidelines/sign-in-with-apple",
+      "summary": "Read 2026-11-22, Creating a custom Sign in with Apple button: use only the logo artwork from Apple Design Resources; match the logo file's height to the button's, don't crop it or add vertical padding; titles are Sign in with Apple, Sign up with Apple or Continue with Apple; logo and title both black or both white on a white or black fill; font, corner radius, bezel and shadow may change; minimum 140 pt wide and 30 pt tall, with a margin of a tenth of the height and at least 8% of the width right of the title.",
+      "checkedOn": "2026-11-22"
+    },
+    {
+      "kind": "observation",
+      "ref": "https://github.com/steven-crosby/ritmofit-web/pull/782#issuecomment-7083587029",
+      "summary": "#782's final review notes 1 to 3 on 08's Mac column (the view toggle's arrows, the main window's hidden title bar, the Back key ⌘[), corrected on this task's branch in 91e34bc.",
+      "checkedOn": "2026-11-22"
+    },
+    {
+      "kind": "observation",
+      "ref": "https://github.com/steven-crosby/ritmofit-web/pull/783#issuecomment-7088382344",
+      "summary": "Owner decision, Neo session, 2026-11-22: \"RF-231: yes, you may download Apple's Sign in with Apple logo artwork for web #783.\"",
+      "checkedOn": "2026-11-22"
+    },
+    {
+      "kind": "observation",
+      "ref": "https://github.com/steven-crosby/ritmofit-web/pull/783#issuecomment-7088480183",
+      "summary": "The DMG opens only after agreeing to Apple's Developer Artwork License Agreement for Sign in with Apple; owner decision, Neo session, 2026-11-22: \"Yes, accept it\".",
+      "checkedOn": "2026-11-22"
+    },
+    {
+      "kind": "document",
+      "ref": "apps/web/public/sign-in-with-apple/logo-left-aligned-black-medium.svg",
+      "summary": "Apple's \"Logo - SIWA - Left-aligned - Black - Medium.svg\" from https://devimages-cdn.apple.com/design/resources/download/Logo-Sign-in-with-Apple.dmg (195,405 bytes, last modified 2025-01-04, SHA-256 99fba5c8…699af6), byte-identical (SHA-256 0f56330a…77f380).",
+      "checkedOn": "2026-11-22"
+    },
+    {
+      "kind": "observation",
+      "ref": "apps/web/src/components/Login.tsx",
+      "summary": "Local check on the built SPA under wrangler dev with placeholder Apple settings, so the capability reports Apple: at 800 px wide the button is 365 × 44 with the logo at 31 × 44, white fill, black title, 12 px radius; Tab reaches it with the 3 px cyan focus ring; at 375 px it is 335 × 44 with no horizontal scroll. Not a real Apple sign-in.",
+      "checkedOn": "2026-11-22"
     }
   ],
-  "resolution": null,
+  "resolution": "Login's Sign in with Apple control is Apple's white button: Apple's own left-aligned black logo file (Medium, 31 × 44) from Apple Design Resources' Logo-Sign-in-with-Apple.dmg, committed unmodified at apps/web/public/sign-in-with-apple/ and drawn at the button's full 44 px height, a black \"Continue with Apple\" title on a white fill, and the web's input radius (12 px, as the Sign in button). The logo is served from public/ so the startup entry stays under its budget (178.64 kB gzip). The busy, checking, unverified and unavailable states are unchanged; the button keeps the global focus ring and its accessible name comes from the title. 08's Sign in with Apple row says so. The iOS web-contract copy of 08 is refreshed in an iOS PR once this merges.",
   "followUps": []
 }

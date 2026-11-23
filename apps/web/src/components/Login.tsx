@@ -5,6 +5,12 @@ import { getAuthCapabilities } from '../lib/api.js';
 import { CreatorLoopProof } from './CreatorLoopProof.js';
 import { PasswordField } from './PasswordField.js';
 
+/**
+ * Apple's own artwork from Apple Design Resources (Logo-Sign-in-with-Apple.dmg), served unmodified
+ * from `public/` so it stays out of the startup bundle (RF-231).
+ */
+const APPLE_LOGO_URL = '/sign-in-with-apple/logo-left-aligned-black-medium.svg';
+
 interface LoginProps {
   /** Acquisition intent selected on marketing. Defaults to returning-user sign-in. */
   initialMode?: 'signin' | 'signup';
@@ -326,14 +332,24 @@ export function Login({
             </button>
 
             {mode === 'signin' && appleAvailability === 'available' && (
+              // Apple's white custom button (RF-231): Apple's own left-aligned logo file at the
+              // button's full height (never cropped or padded), black title on a white fill.
               <button
                 type="button"
                 disabled={socialBusy || busy}
                 aria-busy={socialBusy}
                 onClick={signInWithApple}
-                className="min-h-11 rounded-input border border-border bg-bg-sunken px-5 font-ui font-semibold text-text-primary disabled:cursor-not-allowed disabled:opacity-50"
+                className="flex h-11 min-w-[140px] items-center justify-center overflow-hidden whitespace-nowrap rounded-input bg-white pr-4 font-ui font-semibold text-black disabled:cursor-not-allowed disabled:opacity-50"
               >
-                {socialBusy ? 'Opening Apple sign-in…' : 'Continue with Apple'}
+                <img
+                  src={APPLE_LOGO_URL}
+                  alt=""
+                  aria-hidden="true"
+                  width={31}
+                  height={44}
+                  className="h-11 w-auto shrink-0"
+                />
+                <span>{socialBusy ? 'Opening Apple sign-in…' : 'Continue with Apple'}</span>
               </button>
             )}
 

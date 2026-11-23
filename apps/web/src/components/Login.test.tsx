@@ -88,6 +88,44 @@ describe('Login accessible labels', () => {
     expect(await screen.findByRole('button', { name: 'Continue with Apple' })).toBeTruthy();
   });
 
+  it("draws Apple's white button with Apple's logo file at full height (RF-231)", async () => {
+    vi.mocked(api.getAuthCapabilities).mockResolvedValue({
+      access: { mode: 'invite_only' },
+      socialProviders: { apple: true },
+    });
+
+    render(<Login />);
+
+    const button = await screen.findByRole('button', { name: 'Continue with Apple' });
+    expect(button.className).toContain('bg-white');
+    expect(button.className).toContain('text-black');
+    expect(button.className).toContain('h-11');
+    const logo = button.querySelector('img');
+    expect(logo).not.toBeNull();
+    // Decorative: the title names the button, so the logo stays out of its accessible name.
+    expect(logo?.getAttribute('alt')).toBe('');
+    expect(logo?.getAttribute('src')).toMatch(/svg/);
+    expect(logo?.className).toContain('h-11');
+  });
+
+  it('keeps the Apple button labelled and busy while Apple sign-in opens', async () => {
+    vi.mocked(api.getAuthCapabilities).mockResolvedValue({
+      access: { mode: 'invite_only' },
+      socialProviders: { apple: true },
+    });
+    authMocks.signInSocial.mockReturnValue(new Promise(() => {}));
+
+    render(<Login />);
+    fireEvent.click(await screen.findByRole('button', { name: 'Continue with Apple' }));
+
+    const busy = await screen.findByRole('button', { name: 'Opening Apple sign-in…' });
+    expect(busy.getAttribute('aria-busy')).toBe('true');
+    expect(busy).toHaveProperty('disabled', true);
+    expect(authMocks.signInSocial).toHaveBeenCalledWith(
+      expect.objectContaining({ provider: 'apple' }),
+    );
+  });
+
   it('states the private-beta boundary and explains invited signup', async () => {
     render(<Login />);
 
