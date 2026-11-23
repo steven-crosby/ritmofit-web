@@ -3,7 +3,7 @@
   "id": "RF-149",
   "title": "Class editor TrackSearch likes mode reaches liked songs past the first 200",
   "kind": "task",
-  "status": "backlog",
+  "status": "done",
   "priority": "P2",
   "parent": null,
   "dependsOn": [],
@@ -11,7 +11,7 @@
     "The class editor's TrackSearch \"likes\" mode shows a way to load liked songs past the first 200 (the X-RitmoFit-Next-Cursor page of GET /providers/:provider/likes), or searches them, instead of stopping at the first page.",
     "Its tests cover a second page for Apple Music and SoundCloud."
   ],
-  "nextAction": "RF-132 paged the Music workspace Songs list only; apps/web/src/components/TrackSearch.tsx still calls listLikes once and shows the first page (up to 200). Reuse listLikes({ cursor }) and the Apple server search (listLikes({ q })) from RF-132. Agent-created: Backlog until the owner sets Ready.",
+  "nextAction": null,
   "blocker": null,
   "evidence": [
     {
@@ -19,8 +19,38 @@
       "ref": "apps/web/src/components/TrackSearch.tsx",
       "summary": "TrackSearch likes mode reads one listLikes page and has no Load more. Checked on main 4206c8c.",
       "checkedOn": "2026-10-29"
+    },
+    {
+      "kind": "observation",
+      "ref": "https://github.com/steven-crosby/ritmofit-ios/issues/113#issuecomment-7112042391",
+      "summary": "Owner decision, Neo session, 2026-11-23 12:44 MST: \"Yes, your plan is approved and permissions approved\". The approved plan lists RF-149 as Ready (the owner's queue), round 1123's web lane's second PR after RF-130, with implementation, branch, commit, push and draft PRs; merging stays per PR.",
+      "checkedOn": "2026-11-23"
+    },
+    {
+      "kind": "source",
+      "ref": "apps/web/src/components/TrackSearch.tsx",
+      "summary": "Still true on main 3d87b55: likes mode calls listLikes(provider) once (first page, up to 200) and shows no Load more. Likes mode has no text field (the query input renders in search mode only).",
+      "checkedOn": "2026-11-23"
+    },
+    {
+      "kind": "pr",
+      "ref": "https://github.com/steven-crosby/ritmofit-web/pull/790",
+      "summary": "This task's PR (not owner-gated). TrackSearch's My likes reads listLikesPage(provider) and, while a next cursor remains, shows Load more songs, which appends listLikesPage(provider, { cursor }) without duplicates (appendSongPage). A failed Load more keeps the loaded rows with 'Couldn’t load more songs: <reason>' and can be retried; a page that lands after a provider, mode or class switch is dropped. Same copy and control as the Music workspace's Songs list (RF-132).",
+      "checkedOn": "2026-11-23"
+    },
+    {
+      "kind": "test",
+      "ref": "apps/web/src/components/TrackSearch.test.tsx",
+      "summary": "On the Neo, branch head 1640ae4: 'loads apple_music / soundcloud liked songs past the first 200 with Load more' (a 200-song first page with a cursor, then a second page that overlaps by one: 202 rows, the overlap once, the second call carries the cursor, no Load more after the last page); a failed Load more keeps the rows and retries the same cursor; a late page after switching provider is dropped (that test fails with the generation check removed). TrackSearch tests 117/117 with the recovery suite; web suite 1827/1827.",
+      "checkedOn": "2026-11-23"
+    },
+    {
+      "kind": "test",
+      "ref": "e2e/smoke.spec.ts",
+      "summary": "Full AGENTS.md gate on the Neo at 1640ae4: 17 of 18 steps exit 0 (integration 277, build with bundle budget, Playwright smoke 2/2, OpenAPI no diff, contract parity, audit). pnpm test failed once on a timeout in apps/api deploy-script.test.ts (5.9 s against 5 s, at load average 150 to 220 from concurrent work; this PR changes no API code); rerun at load 29: web 1827, API 698, music 30, all passed.",
+      "checkedOn": "2026-11-23"
     }
   ],
-  "resolution": null,
+  "resolution": "The class editor's TrackSearch My likes mode no longer stops at the first page: while GET /providers/:provider/likes returns a next cursor, Load more songs fetches the next page with RF-132's listLikesPage(provider, { cursor }) and appends it without duplicates, for every provider with likes (Apple Music, SoundCloud and Spotify alike). A failed Load more keeps the loaded rows and says why; a late page after a provider, mode or class switch is dropped. Tests cover a second page for Apple Music and SoundCloud. Not used: the Apple server search (listLikesPage({ q })), because likes mode has no text field; adding one would be a new control. No API change. Not checked against real providers: CI uses mock providers.",
   "followUps": []
 }

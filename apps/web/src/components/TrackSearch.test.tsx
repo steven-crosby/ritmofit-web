@@ -19,6 +19,7 @@ import * as api from '../lib/api.js';
 
 vi.mock('../lib/api.js', async (original) => {
   const actual = await original<typeof import('../lib/api.js')>();
+  const listLikes = vi.fn();
   return {
     ...actual,
     addTrack: vi.fn(),
@@ -27,7 +28,14 @@ vi.mock('../lib/api.js', async (original) => {
     importTrack: vi.fn(),
     listClassTracks: vi.fn(),
     listConnections: vi.fn(),
-    listLikes: vi.fn(),
+    listLikes,
+    // Likes load in pages (RF-149, RF-132's client). A test that stubs `listLikes`
+    // with one array gets it as a single last page; paging tests stub
+    // `listLikesPage` itself. vi.fn(impl) keeps this default across mock resets.
+    listLikesPage: vi.fn(async (provider: Provider) => {
+      const rows: unknown = await listLikes(provider);
+      return { items: Array.isArray(rows) ? (rows as TrackSearchResult[]) : [], nextCursor: null };
+    }),
     listPlaylistTracks: vi.fn(),
     listPlaylists: vi.fn(),
     searchProvider: vi.fn(),
@@ -1966,5 +1974,121 @@ describe('TrackSearch Spotify paste session snapshot', () => {
 
     await waitFor(() => expect(api.importClassTracks).toHaveBeenCalledTimes(1));
     expect(api.listConnections).toHaveBeenCalledTimes(1);
+  });
+});
+
+describe('TrackSearch likes paging (RF-149)', () => {
+  const liked = (provider: Provider, id: string, title: string): TrackSearchResult => ({
+    provider,
+    providerTrackId: id,
+    providerUri: null,
+    title,
+    artist: 'Liked Artist',
+    albumArtUrl: null,
+    durationMs: 180000,
+  });
+  const addButton = (title: string) => `Add ${title} by Liked Artist`;
+
+  beforeEach(() => {
+    vi.mocked(api.listConnections).mockResolvedValue([]);
+  });
+
+  it.each([
+    ['apple_music', 'Apple Music'],
+    ['soundcloud', 'SoundCloud'],
+  ] as const)(
+    'loads %s liked songs past the first 200 with Load more',
+    async (provider: Provider, label: string) => {
+      const firstPage = Array.from({ length: 200 }, (_, i) =>
+        liked(provider, `first-${i + 1}`, `First ${i + 1}`),
+      );
+      // The second page overlaps the first by one song, which is not shown twice.
+      const secondPage = [
+        liked(provider, 'first-200', 'First 200'),
+        liked(provider, 'second-1', 'Second 1'),
+        liked(provider, 'second-2', 'Second 2'),
+      ];
+      vi.mocked(api.listLikesPage)
+        .mockResolvedValueOnce({ items: firstPage, nextCursor: 'cursor-2' })
+        .mockResolvedValueOnce({ items: secondPage, nextCursor: null });
+      render(<TrackSearch classId="c1" onAdded={() => {}} />);
+      fireEvent.click(screen.getByRole('button', { name: label }));
+      fireEvent.click(screen.getByRole('button', { name: 'My likes' }));
+
+      await screen.findByRole('button', { name: addButton('First 200') });
+      expect(api.listLikesPage).toHaveBeenCalledWith(provider);
+      expect(screen.queryByRole('button', { name: addButton('Second 1') })).toBeNull();
+      expect(browseStatus().textContent).toBe(`200 liked tracks on ${label}.`);
+
+      fireEvent.click(screen.getByRole('button', { name: 'Load more songs' }));
+      await screen.findByRole('button', { name: addButton('Second 1') });
+      expect(api.listLikesPage).toHaveBeenLastCalledWith(provider, { cursor: 'cursor-2' });
+      expect(screen.getByRole('button', { name: addButton('Second 2') })).toBeTruthy();
+      expect(screen.getAllByRole('button', { name: addButton('First 200') })).toHaveLength(1);
+      expect(screen.getByRole('button', { name: addButton('First 1') })).toBeTruthy();
+      expect(browseStatus().textContent).toBe(`202 liked tracks on ${label}.`);
+      // The last page has no cursor, so there is nothing more to load.
+      expect(screen.queryByRole('button', { name: 'Load more songs' })).toBeNull();
+      expect(api.listLikesPage).toHaveBeenCalledTimes(2);
+    },
+  );
+
+  it('keeps the loaded likes when Load more fails, and retries the same page', async () => {
+    vi.mocked(api.listLikesPage)
+      .mockResolvedValueOnce({ items: [liked('soundcloud', 'a', 'Kept')], nextCursor: 'cursor-2' })
+      .mockRejectedValueOnce(new Error('SoundCloud is temporarily unavailable.'))
+      .mockResolvedValueOnce({ items: [liked('soundcloud', 'b', 'Later')], nextCursor: null });
+    render(<TrackSearch classId="c1" onAdded={() => {}} />);
+    fireEvent.click(screen.getByRole('button', { name: 'SoundCloud' }));
+    fireEvent.click(screen.getByRole('button', { name: 'My likes' }));
+    await screen.findByRole('button', { name: addButton('Kept') });
+
+    fireEvent.click(screen.getByRole('button', { name: 'Load more songs' }));
+    const alert = await screen.findByText(
+      'Couldn’t load more songs: SoundCloud is temporarily unavailable.',
+    );
+    expect(alert.getAttribute('role')).toBe('alert');
+    expect(screen.getByRole('button', { name: addButton('Kept') })).toBeTruthy();
+
+    fireEvent.click(screen.getByRole('button', { name: 'Load more songs' }));
+    await screen.findByRole('button', { name: addButton('Later') });
+    expect(vi.mocked(api.listLikesPage).mock.calls.slice(1)).toEqual([
+      ['soundcloud', { cursor: 'cursor-2' }],
+      ['soundcloud', { cursor: 'cursor-2' }],
+    ]);
+    expect(screen.queryByText(/Couldn’t load more songs/)).toBeNull();
+    expect(screen.getByRole('button', { name: addButton('Kept') })).toBeTruthy();
+  });
+
+  it('drops a Load more page that lands after the provider changes', async () => {
+    const late = deferred<api.LikesPage>();
+    vi.mocked(api.listLikesPage)
+      .mockResolvedValueOnce({
+        items: [liked('soundcloud', 'a', 'SoundCloud Like')],
+        nextCursor: 'cursor-2',
+      })
+      .mockReturnValueOnce(late.promise)
+      .mockResolvedValueOnce({
+        items: [liked('apple_music', 'x', 'Apple Like')],
+        nextCursor: null,
+      });
+    render(<TrackSearch classId="c1" onAdded={() => {}} />);
+    fireEvent.click(screen.getByRole('button', { name: 'SoundCloud' }));
+    fireEvent.click(screen.getByRole('button', { name: 'My likes' }));
+    await screen.findByRole('button', { name: addButton('SoundCloud Like') });
+    fireEvent.click(screen.getByRole('button', { name: 'Load more songs' }));
+
+    fireEvent.click(screen.getByRole('button', { name: 'Apple Music' }));
+    await screen.findByRole('button', { name: addButton('Apple Like') });
+    await act(async () => {
+      late.resolve({
+        items: [liked('soundcloud', 'b', 'Late SoundCloud')],
+        nextCursor: 'cursor-3',
+      });
+      await late.promise;
+    });
+    expect(screen.queryByRole('button', { name: addButton('Late SoundCloud') })).toBeNull();
+    expect(screen.queryByRole('button', { name: 'Load more songs' })).toBeNull();
+    expect(screen.queryByRole('button', { name: 'Loading more songs…' })).toBeNull();
   });
 });
