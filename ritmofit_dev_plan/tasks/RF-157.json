@@ -3,7 +3,7 @@
   "id": "RF-157",
   "title": "Song selection on Music › Songs works for Spotify likes",
   "kind": "task",
-  "status": "backlog",
+  "status": "done",
   "priority": "P3",
   "parent": null,
   "dependsOn": [
@@ -14,7 +14,7 @@
     "Ticking Spotify songs and then switching to another provider clears the selection, and switching back to Spotify starts empty.",
     "A component or e2e test covers the Spotify likes list in pick mode with the mock provider."
   ],
-  "nextAction": "Rescoped on 2026-11-01 (owner: \"Yes rescope\", given in the Air session and relayed by the Air) to the three checks that remain now that Spotify likes reach pick mode on production (desktop check, 2026-10-31): Spotify at phone width, tick then switch provider, and a mock-provider test. No longer waits on RF-92; still starts after RF-151 is Done. No parent on purpose: an open child would block RF-151 from Done. Agent-created: Backlog until the owner sets Ready.",
+  "nextAction": null,
   "blocker": null,
   "evidence": [
     {
@@ -34,8 +34,38 @@
       "ref": "https://github.com/steven-crosby/ritmofit-web/pull/695",
       "summary": "Rescope: dropped the RF-92 dependency and cut acceptance to Spotify at phone width, tick-then-switch-provider, and a mock-provider test. Owner decision \"Yes rescope\" was given in the Air session and relayed by the Air.",
       "checkedOn": "2026-11-01"
+    },
+    {
+      "kind": "observation",
+      "ref": "https://github.com/steven-crosby/ritmofit-ios/issues/113#issuecomment-7115094547",
+      "checkedOn": "2026-11-23",
+      "summary": "Owner Ready: in the Neo session on 2026-11-23 the conductor listed iOS RF-1237 and web RF-241 and RF-157 as the next tasks to set Ready, and the owner answered \"You're approved. Let's continue completing RF tickets\". The conductor recorded this as setting them Ready (RF-1237, then RF-241, then RF-157) with round 1123's method and permissions."
+    },
+    {
+      "kind": "pr",
+      "ref": "https://github.com/steven-crosby/ritmofit-web/pull/793",
+      "checkedOn": "2026-11-23",
+      "summary": "Draft PR claiming RF-157 in round 1123b (web Lane 1): tests and this record only. It adds an e2e test for Spotify likes in pick mode at 1440 and an emulated 390 phone (e2e/smoke.spec.ts) and a 15-song cap test with Spotify likes in apps/web/src/components/Dashboard.test.tsx."
+    },
+    {
+      "kind": "observation",
+      "ref": "https://github.com/steven-crosby/ritmofit-web/pull/793",
+      "checkedOn": "2026-11-23",
+      "summary": "Before any test was written, a scratch Playwright probe (not committed) ran on the Neo against the local e2e Worker (e2e/serve.mjs, MOCK_PROVIDERS, fresh local D1, a SPA build containing all of the current Songs pick-mode code) at an emulated 390x844 phone (isMobile, hasTouch) and at 1440. In both it connected Spotify and ticked Titanium and Levels, and the bar read \"2 of 15 selected\". The sheet defaulted to \"Spotify likes\" and said \"2 songs become the class blocks\". There was no sideways overflow on Songs or the sheet, and axe WCAG 2.2 AA found no violations. SoundCloud then showed \"Tick up to 15 songs to create a class.\", both Spotify boxes were unticked on return, and creating a class from the Spotify picks opened its builder. Mock providers only; real Spotify was not exercised."
+    },
+    {
+      "kind": "test",
+      "ref": "e2e/smoke.spec.ts",
+      "checkedOn": "2026-11-23",
+      "summary": "'Music › Songs pick mode works for Spotify likes (RF-157)' runs in both projects, desktop-1440 and phone-390 (viewport emulation at 390x844, isMobile, hasTouch), with mock providers. Each signs up its own instructor and ticks two Spotify likes, checking the bar and checkboxes. checkPage runs on Songs and on the Create a class sheet (screenshot, sideways overflow, field zoom, axe WCAG 2.2 AA). It then switches to SoundCloud (selection cleared), switches back to Spotify (starts empty) and creates a class from the picks. pnpm e2e on 2026-11-23: 4 of 4 passed."
+    },
+    {
+      "kind": "test",
+      "ref": "apps/web/src/components/Dashboard.test.tsx",
+      "checkedOn": "2026-11-23",
+      "summary": "'caps Spotify likes at 15, refuses a 16th by checkbox and row, and still unticks (RF-157)': 16 mocked Spotify likes reach '15 of 15 selected' with the cap note. The 16th is disabled and refused by its checkbox and by a tap on its row text, and unticking a picked song gives '14 of 15 selected' and re-enables the 16th. Checked against a local mutation (SongPicks rows never disabled, reverted, never committed): the test failed. RF-151's Spotify tests in the same describe already cover the selection surviving search and Load more, creating in list order, and Spotify to Apple Music and back starting empty."
     }
   ],
-  "resolution": null,
+  "resolution": "Done in #793 with tests only: no app code changed, because Music › Songs pick mode already worked for Spotify likes. Selection is scoped to the provider plus the connected account (lib/song-picks.ts), and Dashboard and SongPicks have no Spotify-specific branch. A Phase-1 probe at an emulated 390 px phone and at 1440 (mock providers) showed the checkboxes, the selection bar, the Create a class sheet and class creation working for Spotify likes with no overflow or axe violations, and showed the selection cleared on a switch to SoundCloud and empty on return to Spotify. The new e2e test now keeps that proof in CI at both widths. The 15-song cap with Spotify likes is covered by a Dashboard component test, because the mock catalog holds only two Spotify songs. Real Spotify accounts are not exercised by CI; production listed Spotify likes in pick mode on desktop on 2026-10-31 (evidence above).",
   "followUps": []
 }
