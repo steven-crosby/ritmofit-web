@@ -1,16 +1,16 @@
 {
   "schemaVersion": 1,
   "id": "RF-243",
-  "title": "Tests that time out under heavy machine load (deploy-script, Dashboard Apple search, LiveMode RF-185 timing, the RF-157 cap test)",
+  "title": "Tests that time out or run close to their limit under heavy machine load (deploy-script, Dashboard Apple search, LiveMode RF-185 timing, the RF-157 cap test)",
   "kind": "task",
   "status": "backlog",
   "priority": "P3",
   "parent": null,
   "dependsOn": [],
   "acceptance": [
-    "Under heavy local load (the Neo has hit load averages of 150 to 250 while an iOS lane builds), these pass reliably without weakening what they check: apps/api/src/lib/deploy-script.test.ts (5.9 s against 5 s), Dashboard.test.tsx's two Apple Music search tests (5 s and 15 s timeouts), LiveMode's RF-185 timing test (316 ms against a 200 ms limit) and Dashboard.test.tsx's RF-157 cap test (3.8 s at load 248, 875 ms in CI). Either give each slow case explicit headroom, make the work it waits on faster, or make a timing assertion independent of wall-clock load."
+    "Under heavy local load (the Neo has hit load averages of 150 to 250 while an iOS lane builds), these pass reliably without weakening what they check: apps/api/src/lib/deploy-script.test.ts (5.9 s against 5 s), Dashboard.test.tsx's two Apple Music search tests (5 s and 15 s timeouts), LiveMode's RF-185 timing test (316 ms against a 200 ms limit) and Dashboard.test.tsx's RF-157 cap test, which didn't fail but ran 3.8 s at load 248 against its 5 s default (875 ms in CI). Either give each slow case explicit headroom, make the work it waits on faster, or make a timing assertion independent of wall-clock load."
   ],
-  "nextAction": "Agent-created (Neo, 2026-11-23) at the close of round 1123, widened at round 1123b's close from web Lane 1's reports. Backlog until the owner sets Ready. Each was seen once under load and passed on rerun; CI was green each time.",
+  "nextAction": "Agent-created (Neo, 2026-11-23) at the close of round 1123, widened at round 1123b's close from web Lane 1's reports and #793's final review. Backlog until the owner sets Ready. The first three each timed out once under load and passed on rerun; the cap test ran close to its limit. CI was green each time.",
   "blocker": null,
   "evidence": [
     {

@@ -46,7 +46,7 @@ from the Neo on 2026-11-23 in one step: [RF-231](./tasks/RF-231.json)'s Sign in 
 [RF-236](./tasks/RF-236.json)'s button radius (#786), both web screens only, with docs #780 to #782, #784 and #785.
 See [HISTORY](./HISTORY.md). Observed again at the 2026-11-23 start-session (Worker `fedc7fbf` at 100%, SPA entry on 3 of 3
 cache-busted fetches). `main` is ahead, undeployed: [RF-130](./tasks/RF-130.json) (#789, `f87c728`: Live names the
-next song; owner-gated, the owner's glance at Cue-by-Cue is its check) and [RF-149](./tasks/RF-149.json) (#790,
+next song; owner-gated, the owner's glance at Cue-by-Cue is its check), [RF-149](./tasks/RF-149.json) (#790,
 `ff651a1`: the class editor's likes load past 200), [RF-241](./tasks/RF-241.json) (#792, `14a41c0`: a late My likes
 page no longer lands in Saved playlists) and [RF-157](./tasks/RF-157.json) (#793, `7c631c2`: tests only), plus docs.
 **In flight:** [RF-183](./tasks/RF-183.json) is Blocked on the owner's checks: sign in again after
