@@ -178,12 +178,12 @@ const PUBLISH = {
             type: 'string',
             enum: [
               'fixed here',
-              'P1/P2 task for the conductor to file',
-              'polish record line',
+              'P1/P2 task filed in this PR',
+              'polish note for the conductor',
               'dropped',
             ],
           },
-          detail: text('Round it was fixed in, the task or polish line to record, or the reason'),
+          detail: text('Round it was fixed in, the new task ID, the polish note, or the reason'),
         },
         required: ['finding', 'handling', 'detail'],
       },
@@ -483,9 +483,10 @@ const published = await agent(
   `${ticket(build)}\n\nPublish (agent-prompts/rf-pipeline.md stage 6). The head above passed verify and review. ` +
     'Fill .github/pull_request_template.md with a Pipeline section from the results below: the head SHA they all checked, ' +
     "the verifier's verdict, each reviewer's summary, how every finding was handled (Findings: fix or drop), and the owner checks left. " +
+    'File each finding worth a P1/P2 task as a Backlog RF record in one records-only commit that changes nothing else (use an ID the conductor reserved; it keeps the review); list polish notes in the Pipeline section for the conductor. ' +
     (batchIssue
       ? `Open the PR (not a draft): the batch issue #${batchIssue} was the claim. Then cite it as ${rf}'s pr evidence in one records-only push (ritmofit_dev_plan/two-machine-rules.md › 7.4 step 3). `
-      : `The draft PR and its pr evidence already exist from stage 2: edit its body, then mark it ready for review. Push nothing; if the pr evidence is missing, add it in one records-only commit and say so. `) +
+      : `The draft PR and its pr evidence already exist from stage 2: edit its body, then mark it ready for review. Push nothing beyond the finding records above; if the pr evidence is missing, add it in that same records-only commit and say so. `) +
     'Run the owner-gate check on the final diff and add needs-owner if it lists gated paths. ' +
     `Do not ask for the merge: the conductor does that at stage 7. ${NEVER}\n\nResults:\n${JSON.stringify(results, null, 2)}`,
   { label: `publish ${rf}`, phase: 'Publish', agentType: 'rf-builder', schema: PUBLISH },
@@ -506,7 +507,7 @@ if (!sameSha(published.headSha, build.headSha)) {
     `${rf}: the head moved from ${short(build.headSha)} to ${short(published.headSha)} at publish` +
       (batchIssue
         ? ' (the pr evidence push, 7.4 step 3)'
-        : '; per AGENTS.md the new head needs review before any merge ask'),
+        : '; a records-only push (finding records or pr evidence) keeps the review per AGENTS.md; anything else needs a new review before any merge ask'),
   );
 }
 log(`${rf}: published ${published.prUrl}${published.needsOwner ? ' (needs-owner)' : ''}`);

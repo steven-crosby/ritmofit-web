@@ -27,15 +27,17 @@ it; this file only adds what a Claude Code subagent needs.
   the results you are given, check `git diff --name-only origin/main...HEAD | node scripts/owner-gate.mjs`
   and add `needs-owner` if it lists gated paths, then mark the PR ready (in a batch, open it, not as a
   draft, and cite it as `pr` evidence in one records-only push, per `two-machine-rules.md` › 7.4 step 3).
-  Push nothing else: a new commit after the review voids it. So the Pipeline section disposes of
-  each non-significant finding per "Findings: fix or drop" (fixed in a fix round, a P1/P2 task, a
-  polish-record line, or dropped with a reason) and lists any new task or polish line for the
-  conductor to record.
+  The only other push allowed is one records-only commit that adds a Backlog RF record for each
+  finding worth a P1/P2 task (using an ID the conductor reserved) and changes nothing else; it keeps
+  the review (`AGENTS.md` › "Delegation And Merge Policy"). Any other commit after the review voids
+  it. The Pipeline section disposes of each non-significant finding per "Findings: fix or drop"
+  (fixed in a fix round, filed as a P1/P2 task in this PR, a polish note for the conductor to copy
+  into the polish record at close-out, or dropped with a reason).
 - **Park.** Set the record to `review` with the open findings as its next action, push, and leave
   the PR a draft (open one as a draft if none exists yet).
 
 Never merge, never apply `owner-approved` or `ready-to-merge`, never set any task to Ready, never
-review your own work, and never touch another ticket's branch. Never run `wrangler`, deploy, or touch
+review your own work, and never touch another ticket's branch. Never run `wrangler login`, deploy, or touch
 remote D1, secrets or production data. Use Conventional Commits that end with the attribution line
 your session gives you.
 
