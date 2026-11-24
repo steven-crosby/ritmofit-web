@@ -3,14 +3,14 @@
   "id": "RF-127",
   "title": "Playback CSP docs describe iOS native HLS under media-src",
   "kind": "documentation",
-  "status": "backlog",
+  "status": "cancelled",
   "priority": "P3",
   "parent": null,
   "dependsOn": [],
   "acceptance": [
     "The media-src comment in apps/web/public/_headers says iPhone Safari fetches Apple's HLS manifest, sub-playlists and segments under media-src (not connect-src as on desktop)."
   ],
-  "nextAction": "One-line comment fix in _headers; owner-gated path (security headers), so batch it with the next _headers change. The planning doc was fixed in the follow-up docs PR.",
+  "nextAction": null,
   "blocker": null,
   "evidence": [
     {
@@ -18,8 +18,20 @@
       "ref": "https://github.com/steven-crosby/ritmofit-web/pull/652",
       "summary": "Final review of #652 on 18dec10 noted the comment still says segments go over connect-src; non-blocking.",
       "checkedOn": "2026-10-28"
+    },
+    {
+      "kind": "source",
+      "ref": "apps/web/public/_headers",
+      "summary": "Lines 23 to 29 on main cd92e49: media-src allows https://*.itunes.apple.com; desktop MusicKit plays through Media Source Extensions with segment bytes over connect-src, and iPhone Safari gives the <audio> element Apple's HLS manifest directly, which media-src governs (RF-122). Sub-playlists and segments are not named. scripts/owner-gate.mjs reports the file as owner-gated (CI / deploy / infrastructure). The owner chose \"Clear ones only (Recommended)\" in the live triage session, 2026-11-24, which cancels RF-127.",
+      "checkedOn": "2026-11-24"
+    },
+    {
+      "kind": "document",
+      "ref": "ritmofit_dev_plan/decisions.md#d27--spotify-first-apple-music-work-is-parked-resolved-2026-11-12",
+      "summary": "D27 (2026-11-12): Apple Music work is parked, not removed, and Apple Music stays in the app as shipped. RF-127 is not in D27's list of parked records, but its scope is Apple Music playback only.",
+      "checkedOn": "2026-11-24"
     }
   ],
-  "resolution": null,
+  "resolution": "Largely done, and Apple Music-only. The media-src comment in apps/web/public/_headers already says iPhone Safari gives the audio element Apple's HLS manifest directly, which media-src governs, while desktop segment bytes go over connect-src (RF-122, #652). Only naming the sub-playlists and segments was left: a one-comment change on an owner-gated path (security headers), about Apple Music playback, which D27 parks. Cancelled under the owner's prune decision of 2026-11-24 (\"Clear ones only (Recommended)\").",
   "followUps": []
 }

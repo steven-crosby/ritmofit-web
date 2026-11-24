@@ -3,7 +3,7 @@
   "id": "RF-118",
   "title": "The 2026-10-28 audit intake records route every disposition and keep historical notes intact",
   "kind": "task",
-  "status": "backlog",
+  "status": "cancelled",
   "priority": "P3",
   "parent": null,
   "dependsOn": [],
@@ -13,7 +13,7 @@
     "The 2026-10-27 Cursor-attributed 'Legacy focus context' block in DEVELOPMENT_PLAN.md no longer mixes in 2026-10-28 facts; the Spotify reopen lives only in the current sections.",
     "RF-117's status and the #646 PR description agree on whether it is For review or Backlog, and RF-117's nextAction names the owner review it needs."
   ],
-  "nextAction": "One docs-only PR editing RF-92, RF-117 (or a new record for AUD-017) and DEVELOPMENT_PLAN.md; run pnpm tasks:render and pnpm tasks:check.",
+  "nextAction": null,
   "blocker": null,
   "evidence": [
     {
@@ -21,8 +21,20 @@
       "ref": "https://github.com/steven-crosby/ritmofit-web/pull/646",
       "summary": "Final review of #646 on c827f4d: non-significant record findings logged 2026-10-28 under the significance rule (RF-117 routing gaps for AUD-006 and AUD-017, a historical DEVELOPMENT_PLAN block edited under its old byline, RF-117 status vs PR text). RF-90's fail-before-fix requirement goes in Lane B's brief instead.",
       "checkedOn": "2026-10-28"
+    },
+    {
+      "kind": "document",
+      "ref": "ritmofit_dev_plan/tasks/RF-117.json",
+      "summary": "On main cd92e49, RF-117 (plan, Backlog, P3) still holds the AUD-006 and AUD-017 dispositions for the owner's review (acceptance 1 and 4), requires each to be recorded there with any new implementation in its own Backlog record (acceptance 5), and its next action names the owner review. RF-92, which acceptance 1 here wanted to carry AUD-006, is Done (resolution: packet 3 as RF-216, #758; RF-74, #764). The owner chose \"Clear ones only (Recommended)\" in the live triage session, 2026-11-24, which cancels RF-118.",
+      "checkedOn": "2026-11-24"
+    },
+    {
+      "kind": "document",
+      "ref": "ritmofit_dev_plan/DEVELOPMENT_PLAN.md",
+      "summary": "On main cd92e49, the Legacy focus context block (from line 130) opens \"Retained for RF-96 reconciliation\" as historical input, not a second execution queue, and still mentions the 2026-10-28 Spotify reopen twice. That header predates this record (#640, 2026-10-27; this record was filed by #646 on 2026-10-28).",
+      "checkedOn": "2026-11-24"
     }
   ],
-  "resolution": null,
+  "resolution": "Obsolete premise. Acceptance 1 asked RF-92 to carry AUD-006, but RF-92 closed Done without it (packet 3 shipped as RF-216, #758, and RF-74, #764), so routing AUD-006 rests with RF-117's owner review; RF-117's acceptance 1 still names RF-92 and needs the owner's new disposition there. Acceptance 2 is already RF-117's acceptance 5 (each disposition recorded there, new implementation in its own Backlog record). Acceptance 4 holds: RF-117 is Backlog and its next action names the owner review. Acceptance 3 was not done: DEVELOPMENT_PLAN.md › Legacy focus context still mentions the 2026-10-28 Spotify reopen twice, but that block is kept as historical input for RF-96's reconciliation, so it is left to RF-96. Cancelled under the owner's prune decision of 2026-11-24 (\"Clear ones only (Recommended)\").",
   "followUps": []
 }

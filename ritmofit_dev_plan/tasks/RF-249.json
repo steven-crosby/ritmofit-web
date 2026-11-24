@@ -11,7 +11,18 @@
   "priority": "P3",
   "dependsOn": [],
   "acceptance": [
-    "Every note listed in the later acceptance lines of this record is fixed in one PR, or dropped with the owner's reason in this record's evidence. Each note names its area and the PR whose review found it. A new rolling polish record starts when this one closes, and agent-prompts/rf-pipeline.md › Findings is updated to point at it."
+    "Every note listed in the later acceptance lines of this record is fixed in one PR, or dropped with the owner's reason in this record's evidence. Each note names its area and the PR whose review found it. A new rolling polish record starts when this one closes, and agent-prompts/rf-pipeline.md › Findings is updated to point at it.",
+    "AGENTS.md › Delegation And Merge Policy, the sentence on pushes that keep the review: add a serial comma, and say that status and acceptance edits are excluded (from https://github.com/steven-crosby/ritmofit-web/pull/798 review).",
+    ".github/pull_request_template.md, the Owner gate comment: it stacks two parentheticals (from https://github.com/steven-crosby/ritmofit-web/pull/798 review).",
+    "Section references: agent-prompts/rf-pipeline.md writes \"§ 7.4\" with a space, while AGENTS.md, two-machine-rules.md and close-session.md write \"§7.4\"; use one form (from https://github.com/steven-crosby/ritmofit-web/pull/798 review).",
+    "ritmofit_dev_plan/two-machine-rules.md › 7.4 step 2: name the unchanged-diff update from main alongside the records case among the pushes that keep the review (from https://github.com/steven-crosby/ritmofit-web/pull/798 review).",
+    "AGENTS.md › Delegation And Merge Policy, the unchanged-diff test (git patch-id): exclude the generated board ritmofit_dev_plan/tasks.md, whose hunk context changes when main's records change (from https://github.com/steven-crosby/ritmofit-web/pull/798 review).",
+    "ritmofit_dev_plan/two-machine-rules.md › 7.3: the owner-gate command uses git diff --name-only without --no-renames, so a file moved out of a gated path passes; the iOS pipeline's own grep already adds --no-renames (from https://github.com/steven-crosby/ritmofit-web/pull/798 review 2; the https://github.com/steven-crosby/ritmofit-ios/pull/231 review found the same gap).",
+    ".claude/agents (rf-verifier, rf-reviewer, rf-acceptance-auditor): the read-only RF agents keep Bash, so \"cannot edit\" holds only by instruction; a PreToolUse hook would enforce it (from https://github.com/steven-crosby/ritmofit-web/pull/799 review).",
+    "scripts/tasks.mjs, tasks eligible: the owner-only patterns misfire both ways; RF-230 is excluded by \"signed in to\", while \"desktop Safari\" and \"real Spotify playback\" wording passes (from https://github.com/steven-crosby/ritmofit-web/pull/799 review).",
+    "scripts/tasks.mjs, tasks stats: it counts records later deleted as created, and doesn't document that (from https://github.com/steven-crosby/ritmofit-web/pull/799 review).",
+    ".claude/workflows/rf-ticket.js: guard changedSinceReview with || [] where it is read unguarded (published.changedSinceReview.length, about line 536) (from https://github.com/steven-crosby/ritmofit-web/pull/799 review).",
+    "agent-prompts/rf-pipeline.md: document rf-ticket's needs-review status (from https://github.com/steven-crosby/ritmofit-web/pull/799 review)."
   ],
   "nextAction": "Collects P3 review notes under agent-prompts/rf-pipeline.md › Findings: fix or drop (RF-248). Triage proposes it for a batch once its notes are worth a PR. Backlog until the owner sets Ready.",
   "evidence": []
