@@ -3,7 +3,7 @@
   "id": "RF-244",
   "title": "Deploys tag the commit they shipped; pnpm release:status says what is due; deploy.sh enforces the deploy-alone rule",
   "kind": "task",
-  "status": "in_progress",
+  "status": "done",
   "priority": "P2",
   "parent": null,
   "dependsOn": [],
@@ -14,17 +14,47 @@
     "deployment-runbook.md, start-session.md, close-session.md and AGENTS.md describe the tag, the guard, --allow-batch (passed only when the owner says to batch in the session, and recorded in HISTORY) and release:status.",
     "deploy.sh --self-check covers the tag name and message, the tag push and a failed push, the guard refusal, --allow-batch and the no-tag case. scripts/release-status.test.mjs covers the classifier, the step planner and the CLI on a fixture repo, and runs in CI and the AGENTS.md gate as pnpm release-status:test."
   ],
-  "nextAction": "Round 1124 web Lane 1, branch feat/rf-244-release-marker: implement the tag, release:status, the guard, their tests and docs per the confirmed plan, then set Done in this PR. Restart from ritmofit_dev_plan/handoffs/2026-11-24-r1124-lane1-release-marker.md once it exists on the branch.",
+  "nextAction": null,
   "blocker": null,
   "evidence": [
     {
       "kind": "observation",
       "ref": "https://github.com/steven-crosby/ritmofit-ios/issues/113#issuecomment-7140700356",
       "checkedOn": "2026-11-24",
-      "summary": "Owner decision, Neo conductor session, recorded on iOS #113: on 2026-11-23 the owner asked for \"a dependable marker to trigger deploy and TestFlight updates\" and chose \"Ask at every close\"; on 2026-11-24 the owner answered the conductor's plan with \"go\". Approved: deploy.sh tags the commit it deployed (Worker version, SPA entry and rollback target in the message), pnpm release:status compares main with the newest tag and says \"deploy due\" or \"nothing to ship\", start-session reports it, and close-session asks the owner once when anything is due. Item 2, making the deploy-alone rule mechanical in deploy.sh, is the conductor's recommendation, not yet an owner decision: the owner approves it or not at this PR's merge."
+      "summary": "Owner decision, Neo conductor session, recorded on iOS #113: on 2026-11-23 the owner asked for \"a dependable marker to trigger deploy and TestFlight updates\" and chose \"Ask at every close\"; on 2026-11-24 the owner answered the conductor's plan with \"go\". Approved: deploy.sh tags the commit it deployed (Worker version, SPA entry and rollback target in the message), pnpm release:status compares main with the newest tag and says \"deploy due\" or \"nothing to ship\", start-session reports it, and close-session asks the owner once when anything is due. Item 2 there, making the deploy-alone rule mechanical, was the conductor's recommendation; the owner approved it on 2026-11-24 (comment 7141036009)."
+    },
+    {
+      "kind": "observation",
+      "ref": "https://github.com/steven-crosby/ritmofit-ios/issues/113#issuecomment-7141036009",
+      "checkedOn": "2026-11-24",
+      "summary": "Owner decision, Neo conductor session, 2026-11-24, recorded on iOS #113: the owner said \"your \\\"recommendation on deploying changes alone\\\" are approved\". That approves keeping AGENTS.md's deploy-alone rule and making it mechanical: pnpm release:status splits undeployed PRs into deploy steps with each provider/playback, auth, migration or deploy-infrastructure PR alone, and scripts/deploy.sh refuses a range that mixes such a PR with other shipped changes unless the owner says to batch in the session (--allow-batch, recorded in HISTORY). This PR stays owner-gated, so the owner still approves its merge."
+    },
+    {
+      "kind": "pr",
+      "ref": "https://github.com/steven-crosby/ritmofit-web/pull/796",
+      "checkedOn": "2026-11-24",
+      "summary": "Round 1124 web Lane 1 PR (owner-gated, needs-owner): the deploy tag and its push in scripts/deploy.sh, the deploy-alone guard and --allow-batch, scripts/release-status.mjs (pnpm release:status) and its test, the CI step, and the runbook, start-session, close-session and AGENTS.md text. It also files RF-245 and RF-246. Not merged by the lane; no tag was created or pushed and nothing was deployed."
+    },
+    {
+      "kind": "test",
+      "ref": "scripts/deploy.sh",
+      "checkedOn": "2026-11-24",
+      "summary": "bash scripts/deploy.sh --self-check passed on the Neo (macOS bash 3.2) with nine new cases: the tag name and message, reading the Worker and rollback versions (unknown when unreadable), the guard warning and skipping with no tag, letting a deploy-alone change ship alone, refusing a deploy-alone batch with the steps, --allow-batch recording the batch, the tag push sending only its own ref to a local bare origin, a failed push keeping the local tag and exiting 3, and a failed tag creation printing the message and exiting 3. Mutations (guard always ok, push --tags, exit 1 instead of 3, tests counted as shipped, no step split) each turned a case red. apps/api/src/lib/deploy-script.test.ts asserts all nine and now has a 60 s timeout."
+    },
+    {
+      "kind": "test",
+      "ref": "scripts/release-status.test.mjs",
+      "checkedOn": "2026-11-24",
+      "summary": "pnpm release-status:test passed 6 of 6: the shipped-path table, deploy-alone versus the owner-gate classes (agent rules never ship), the four 2026-11-23 PRs (#789 deploy-alone provider / playback, #790 and #792 shipped, #793 not shipped), PR-number parsing, the step planner, and the CLI on a fixture repo with a bare origin (fetch with tags, the report lines and verdicts, guard exit codes, --allow-batch, a redeploy, a rename out of the shipped roots, a local-only tag warning, ignored non-deploy tag names, usage errors). Removing --no-renames, the local-only warning, the tag-name filter or the fetch each turned it red."
+    },
+    {
+      "kind": "observation",
+      "ref": "ritmofit_dev_plan/handoffs/2026-11-24-r1124-lane1-release-marker.md",
+      "checkedOn": "2026-11-24",
+      "summary": "Rehearsed in a scratch clone of this repo with local tags only (nothing pushed): with a tag on b9e8141, release:status for the 2026-11-23 range gave two steps, scripts/deploy.sh f87c728 (#789 alone, provider / playback) then scripts/deploy.sh 1eed288 (#790, #792), and --guard 1eed288 refused with exit 1. With a tag on 1eed288, the verdict for ddc811d was \"nothing to ship\". On the real repo, which has no tags yet, pnpm release:status reported no deploy tag and an unknown verdict."
     }
   ],
-  "resolution": null,
+  "resolution": "Built in #796. scripts/deploy.sh now fetches origin main with tags and runs the deploy-alone guard (node scripts/release-status.mjs --guard) before it builds anything. The guard refuses a range from the newest deploy/* tag that mixes a deploy-alone change with any other shipped change, prints the steps, and lets the deploy through only with --allow-batch. After the propagation loop, status smoke and security headers pass, the script tags the deployed commit deploy/<UTC YYYY-MM-DDTHHMMZ>-<sha7>. The message carries the commit, the UTC time, the Worker version (from WRANGLER_OUTPUT_FILE_PATH), the rollback version (from the pre-deploy wrangler deployments status), the SPA entry, the previous tag and any allowed batch. It pushes only that ref, and exits 3 with the push command if the tag cannot be created or pushed (the deploy stands). pnpm release:status reports the newest tag, the merges since with shipped and owner-gate classes, and \"deploy due\" with steps or \"nothing to ship\". Shipped means apps/api, apps/web, packages and five root build inputs, minus tests, Markdown and repo tools. Deploy-alone means a shipped file matched by owner-gate GATES, imported unchanged. The runbook, start-session steps 5 and 9, close-session §5 and AGENTS.md describe it. Post-merge acceptance (backfilling the 1eed288 tag, the first real tagged deploy) is RF-245. The owner-gate coverage gap for scripts/release-status.mjs is RF-246.",
   "followUps": [
     "RF-245",
     "RF-246"
