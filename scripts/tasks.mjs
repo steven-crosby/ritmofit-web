@@ -328,7 +328,8 @@ export function eligibleTasks(tasks) {
 }
 
 // `tasks stats` reads one `git log -p` of the records. Each commit starts with this marker, its SHA
-// and its committer date (YYYY-MM-DD), so no diff line can be mistaken for a commit header.
+// and its committer time in epoch seconds (bucketed by UTC date), so no diff line can be mistaken
+// for a commit header.
 const commitMarker = '\x1e';
 export const historyLogArgs = [
   'log',
@@ -338,7 +339,7 @@ export const historyLogArgs = [
   '--no-ext-diff',
   '--src-prefix=a/',
   '--dst-prefix=b/',
-  '--format=%x1e%H %cs',
+  '--format=%x1e%H %ct',
   '-p',
   '--',
   `${taskDirectory}/RF-*.json`,
@@ -371,7 +372,9 @@ export function taskHistory(log) {
   let header = false;
   for (const line of log.split('\n')) {
     if (line.startsWith(commitMarker)) {
-      week = isoWeek(line.slice(1).trim().split(' ')[1] ?? '');
+      const seconds = Number(line.slice(1).trim().split(' ')[1]);
+      if (!Number.isInteger(seconds)) throw new Error(`Not a commit time: ${line.slice(1)}`);
+      week = isoWeek(new Date(seconds * 1000).toISOString().slice(0, 10));
       id = null;
     } else if (line.startsWith('diff --git ')) {
       id =
@@ -494,6 +497,16 @@ export async function main(args, root = repoRoot) {
   } else if (command === 'stats') {
     if (rest.length) throw new Error('Usage: tasks stats');
     // Read-only: like every command here, stats never stages, commits, pushes or changes status.
+    // A shallow clone (cloud sessions fetch a few dozen commits) would silently miscount.
+    const shallow = spawnSync('git', ['rev-parse', '--is-shallow-repository'], {
+      cwd: root,
+      encoding: 'utf8',
+    });
+    if (shallow.error || shallow.status !== 0 || shallow.stdout.trim() !== 'false') {
+      throw new Error(
+        'tasks stats needs the full history: run it in a full clone (git fetch --unshallow).',
+      );
+    }
     const git = spawnSync('git', historyLogArgs, {
       cwd: root,
       encoding: 'utf8',
@@ -506,7 +519,9 @@ export async function main(args, root = repoRoot) {
     for (const row of taskHistory(git.stdout)) {
       console.log(`${row.week}\t${row.created}\t${row.finished}`);
     }
-    console.log(`Now: ${tasks.length} tasks. ${statusCounts(tasks)}.`);
+    console.log(
+      `Now: ${tasks.length} task${tasks.length === 1 ? '' : 's'}. ${statusCounts(tasks)}.`,
+    );
   } else {
     throw new Error('Usage: tasks <list|show|create|update|render|check|eligible|stats>');
   }

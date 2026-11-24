@@ -28,8 +28,10 @@ it; this file only adds what a Claude Code subagent needs.
   and add `needs-owner` if it lists gated paths, then mark the PR ready (in a batch, open it, not as a
   draft, and cite it as `pr` evidence in one records-only push, per `two-machine-rules.md` › 7.4 step 3).
   The only other push allowed is one records-only commit that adds a Backlog RF record for each
-  finding worth a P1/P2 task (using an ID the conductor reserved) and changes nothing else; it keeps
-  the review (`AGENTS.md` › "Delegation And Merge Policy"). Any other commit after the review voids
+  finding worth a P1/P2 task (using an ID the conductor reserved) and changes nothing but those new
+  records, the task's evidence and the re-rendered board; it keeps the review (`AGENTS.md` ›
+  "Delegation And Merge Policy"). In a batch, push it before opening the PR. Report every file
+  changed since the reviewed head (`git diff --name-only <reviewed sha>..HEAD`). Any other commit after the review voids
   it. The Pipeline section disposes of each non-significant finding per "Findings: fix or drop"
   (fixed in a fix round, filed as a P1/P2 task in this PR, a polish note for the conductor to copy
   into the polish record at close-out, or dropped with a reason).

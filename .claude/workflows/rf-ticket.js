@@ -189,9 +189,23 @@ const PUBLISH = {
       },
     },
     ownerChecks: { type: 'array', items: text('Task, what to do, where, and what result counts') },
+    changedSinceReview: {
+      type: 'array',
+      items: text('A path from git diff --name-only <reviewed head SHA>..HEAD'),
+      description: 'Every file changed between the reviewed head and the published head',
+    },
     summary: text('One line'),
   },
-  required: ['prUrl', 'headSha', 'ready', 'needsOwner', 'dispositions', 'ownerChecks', 'summary'],
+  required: [
+    'prUrl',
+    'headSha',
+    'ready',
+    'needsOwner',
+    'dispositions',
+    'ownerChecks',
+    'changedSinceReview',
+    'summary',
+  ],
 };
 
 const PARK = {
@@ -236,8 +250,13 @@ function sortChecks(verify, review, audit) {
   if (verify) {
     const before = blocking.length;
     for (const step of verify.gate) {
-      if (step.result === 'fail')
-        blocking.push({ from: 'verifier', kind: 'gate step failed', ...step });
+      // The verifier is told never to skip a gate step, so a skipped step blocks like a failure.
+      if (step.result === 'fail' || step.result === 'skipped')
+        blocking.push({
+          from: 'verifier',
+          kind: `gate step ${step.result === 'fail' ? 'failed' : 'skipped'}`,
+          ...step,
+        });
     }
     for (const line of verify.acceptance) {
       if (line.failing || line.result === 'failing') {
@@ -483,11 +502,12 @@ const published = await agent(
   `${ticket(build)}\n\nPublish (agent-prompts/rf-pipeline.md stage 6). The head above passed verify and review. ` +
     'Fill .github/pull_request_template.md with a Pipeline section from the results below: the head SHA they all checked, ' +
     "the verifier's verdict, each reviewer's summary, how every finding was handled (Findings: fix or drop), and the owner checks left. " +
-    'File each finding worth a P1/P2 task as a Backlog RF record in one records-only commit that changes nothing else (use an ID the conductor reserved; it keeps the review); list polish notes in the Pipeline section for the conductor. ' +
+    "File each finding worth a P1/P2 task as a Backlog RF record (use an ID the conductor reserved) in one records-only commit that changes nothing but those new records, the task's evidence and the re-rendered board; that push keeps the review (AGENTS.md). List polish notes in the Pipeline section for the conductor. " +
     (batchIssue
-      ? `Open the PR (not a draft): the batch issue #${batchIssue} was the claim. Then cite it as ${rf}'s pr evidence in one records-only push (ritmofit_dev_plan/two-machine-rules.md › 7.4 step 3). `
+      ? `Commit and push those records first. Then open the PR (not a draft): the batch issue #${batchIssue} was the claim. Then cite it as ${rf}'s pr evidence in one push that changes only the evidence and the board (ritmofit_dev_plan/two-machine-rules.md › 7.4 step 3). `
       : `The draft PR and its pr evidence already exist from stage 2: edit its body, then mark it ready for review. Push nothing beyond the finding records above; if the pr evidence is missing, add it in that same records-only commit and say so. `) +
     'Run the owner-gate check on the final diff and add needs-owner if it lists gated paths. ' +
+    `Report changedSinceReview from git diff --name-only ${build.headSha}..HEAD. ` +
     `Do not ask for the merge: the conductor does that at stage 7. ${NEVER}\n\nResults:\n${JSON.stringify(results, null, 2)}`,
   { label: `publish ${rf}`, phase: 'Publish', agentType: 'rf-builder', schema: PUBLISH },
 );
@@ -502,13 +522,30 @@ if (!published) {
       'Publish returned no result; check the PR body and draft state before re-running publish.',
   };
 }
+// A push after the review keeps it only if it touches records and the board (AGENTS.md).
+const RECORDS_ONLY = /^ritmofit_dev_plan\/(tasks\/RF-[1-9]\d*\.json|tasks\.md)$/;
+const unreviewed = (published.changedSinceReview || []).filter((file) => !RECORDS_ONLY.test(file));
 if (!sameSha(published.headSha, build.headSha)) {
   log(
     `${rf}: the head moved from ${short(build.headSha)} to ${short(published.headSha)} at publish` +
-      (batchIssue
-        ? ' (the pr evidence push, 7.4 step 3)'
-        : '; a records-only push (finding records or pr evidence) keeps the review per AGENTS.md; anything else needs a new review before any merge ask'),
+      ` (${(published.changedSinceReview || []).length} file(s) changed since the review)`,
   );
+}
+if (
+  unreviewed.length ||
+  (!sameSha(published.headSha, build.headSha) && !published.changedSinceReview.length)
+) {
+  log(`${rf}: files outside the records changed after the review; the PR needs a new review`);
+  return {
+    status: 'needs-review',
+    rf,
+    prUrl: published.prUrl,
+    headSha: published.headSha,
+    reviewedHeadSha: build.headSha,
+    unreviewedFiles: unreviewed,
+    reason:
+      'Files other than RF records and the board changed after the review (or the change list was empty although the head moved); run verify and review again on the new head before any merge ask.',
+  };
 }
 log(`${rf}: published ${published.prUrl}${published.needsOwner ? ' (needs-owner)' : ''}`);
 return {

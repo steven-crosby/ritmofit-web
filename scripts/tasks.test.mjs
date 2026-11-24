@@ -363,7 +363,7 @@ test('stats counts records created and first finished per ISO week from a synthe
   const record = (id) => `ritmofit_dev_plan/tasks/${id}.json`;
   const diff = (id, ...lines) => [`diff --git a/${record(id)} b/${record(id)}`, ...lines];
   const log = [
-    '\x1eaaaaaaa 2026-11-03',
+    '\x1eaaaaaaa 1793707200', // 2026-11-03T12:00Z
     '',
     ...diff(
       'RF-1',
@@ -390,7 +390,7 @@ test('stats counts records created and first finished per ISO week from a synthe
     ),
     'diff --git a/ritmofit_dev_plan/tasks.md b/ritmofit_dev_plan/tasks.md',
     '+  "status": "done",',
-    '\x1ebbbbbbb 2026-11-10',
+    '\x1ebbbbbbb 1794312000', // 2026-11-10T12:00Z
     '',
     ...diff(
       'RF-1',
@@ -410,12 +410,12 @@ test('stats counts records created and first finished per ISO week from a synthe
       '+  "status": "backlog",',
       '+  "resolution": "Not \\"status\\": \\"done\\" yet",',
     ),
-    '\x1eccccccc 2026-11-17',
+    '\x1eccccccc 1794916800', // 2026-11-17T12:00Z
     '',
     // Reopened and finished again: only the first finish counts. Cancelled counts as finished.
     ...diff('RF-1', '@@ -2 +2 @@', '-  "status": "done",', '+  "status": "in_progress",'),
     ...diff('RF-3', '@@ -2 +2 @@', '-  "status": "backlog",', '+  "status": "cancelled",'),
-    '\x1eddddddd 2026-11-18',
+    '\x1eddddddd 1795003200', // 2026-11-18T12:00Z
     '',
     ...diff('RF-1', '@@ -2 +2 @@', '-  "status": "in_progress",', '+  "status": "done",'),
     ...diff('RF-4', 'deleted file mode 100644', `--- a/${record('RF-4')}`, '+++ /dev/null'),
@@ -426,6 +426,14 @@ test('stats counts records created and first finished per ISO week from a synthe
     { week: '2026-11-16', created: 0, finished: 1 },
   ]);
   assert.deepEqual(taskHistory(''), []);
+  // Weeks are UTC: 03:00Z on Monday 2026-11-23 is still Sunday evening in the Americas.
+  const late = [
+    '\x1eeeeeeee 1795402800',
+    '',
+    ...diff('RF-9', 'new file mode 100644', '+  "status": "backlog",'),
+  ];
+  assert.deepEqual(taskHistory(late.join('\n')), [{ week: '2026-11-23', created: 1, finished: 0 }]);
+  assert.throws(() => taskHistory('\x1efffffff 2026-11-03'), /Not a commit time/);
 });
 
 test('stats reads the checkout history through git and leaves the tree unchanged', async (t) => {
@@ -471,8 +479,12 @@ test('stats reads the checkout history through git and leaves the tree unchanged
     'week\tcreated\tfinished',
     '2026-11-02\t1\t0',
     '2026-11-09\t0\t1',
-    'Now: 1 tasks. backlog: 0 · ready: 0 · in_progress: 0 · blocked: 0 · review: 0 · done: 1 · cancelled: 0.',
+    'Now: 1 task. backlog: 0 · ready: 0 · in_progress: 0 · blocked: 0 · review: 0 · done: 1 · cancelled: 0.',
   ]);
   assert.equal(git(['status', '--porcelain']), '');
   await assert.rejects(main(['stats', 'extra'], root), /Usage: tasks stats/);
+  // A shallow clone would miscount, so stats refuses it.
+  const shallow = path.join(root, 'shallow');
+  git(['clone', '-q', '--depth', '1', `file://${root}`, shallow]);
+  await assert.rejects(main(['stats'], shallow), /needs the full history/);
 });
