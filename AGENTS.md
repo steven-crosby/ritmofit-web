@@ -33,6 +33,7 @@
 <!-- note (Claude Code, Neo, 2026-11-04): RF-193: the two-machine rules moved to ritmofit_dev_plan/two-machine-rules.md (ritmofit-ios to vendor a parity-checked copy in iOS RF-1041); the silo ended; iOS CI runs on the Neo; unattended merge nights allowed only under a per-night pre-approval issue. -->
 <!-- note (Claude Code, Neo, 2026-11-19): RF-229: owner decision: the Air is retired; the Neo does all dev work in both repos and holds the owner's own wrangler login (Two-machine conductors; two-machine-rules.md › 1, 2). -->
 <!-- note (Claude Code, Neo, 2026-11-24): RF-244: owner decisions on iOS #113: deploy.sh tags each deploy, `pnpm release:status` says what is due, and deploy.sh enforces deploy-alone unless the owner says to batch (`--allow-batch`); a live Worker that is not the newest tag's needs the owner's `--accept-live`. -->
+<!-- note (Claude Code, Neo, 2026-11-24): RF-248: owner decisions of 2026-11-24: the RF pipeline (agent-prompts/rf-pipeline.md) is the default way to work a ticket; web builders run in cloud sessions; review and verification come before the owner is asked, by agents that did not build the change; review findings are fixed or dropped rather than filed by default; unattended merge nights become pre-approved batches (two-machine-rules.md › 7). -->
 
 This is the canonical contributor and agent guide for Ritmo Studio. If another instruction file conflicts
 with it, follow `AGENTS.md`, then repair the stale file. When an AI agent edits this file or adds a note
@@ -171,13 +172,14 @@ plan (owner confirms substantial work) → execute on a branch + PR → `agent-p
 The durable output is `main` (RF records included), plus a handoff only when a successor needs restart
 context; chat and tool memory are scratch.
 
-- **Roles.** _Solo_: one session owns its PRs and, once each is green and the owner gives that PR's
-  merge permission, runs the final review and squash-merges it under "Delegation And Merge Policy"
-  below; neither the role nor a task status grants anything beyond it. _Lane_: one
+- **Roles.** _Solo_: one session owns its PRs and, once each is green and reviewed and the owner
+  gives that PR's merge permission, squash-merges it under "Delegation And Merge Policy" below; neither the role nor a task status grants anything beyond it. _Lane_: one
   builder in a parallel round (`agent-prompts/orchestrate-parallel-round.md`); edits only the files its
   brief assigns, opens its PR, writes its handoff, and **never merges**. _Orchestrator_: partitions the
   round, writes untracked lane briefs from `agent-prompts/templates/lane-brief.md`, reconciles plans,
   and runs the merge train under "Delegation And Merge Policy"; writes no product code.
+  _Builder_: one session per ticket in the RF pipeline (`agent-prompts/rf-pipeline.md`); like a
+  Lane it builds, opens its PR and **never merges**, and it writes a handoff only when it parks.
 - **Handoffs are restart notes.** The RF record owns the next action, owner decisions and evidence;
   `DEVELOPMENT_PLAN.md` owns `main` vs production. A session writes
   `ritmofit_dev_plan/handoffs/YYYY-MM-DD-<slug>.md` from `agent-prompts/templates/handoff.md` only
@@ -189,7 +191,7 @@ context; chat and tool memory are scratch.
   comparing upstream and in-flight changes. Orientation stays read-only; after scope approval,
   select/create the task, confirm prerequisites, record In progress and a concrete restart action,
   render/validate, then push the branch and open a **draft PR** at once so the claim is visible to
-  other sessions (on an unattended night the pre-approval issue's queue is the claim instead:
+  other sessions (in a pre-approved batch the pre-approval issue's queue is the claim instead:
   `ritmofit_dev_plan/two-machine-rules.md` › 7.4); add that PR's URL to the record's evidence. The task reaches its final state (usually Done) inside the same
   PR, and merging it is what publishes Done. Use a follow-up PR only for facts unknowable before
   merge, such as a deploy. At close, finish all task/evidence/handoff/docs edits,
@@ -202,6 +204,13 @@ context; chat and tool memory are scratch.
   for product changes). A deploy is recorded in HISTORY, and `DEVELOPMENT_PLAN.md`'s `main` vs
   production line is refreshed with it or whenever a session observes production. Start-session
   surfaces merged PRs that no RF record, HISTORY entry or handoff cites.
+- **RF pipeline (default for RF tickets):** `agent-prompts/rf-pipeline.md`. One builder per ticket;
+  a fresh-context verifier and two fresh-context reviewers check its head before anyone asks the
+  owner; the conductor runs the merge train. Web tickets build in cloud sessions, one per ticket,
+  so the Neo keeps the conductor, production steps and iOS work. A cloud session never runs
+  `wrangler login`, deploys, or uses remote D1, secrets or production data; local wrangler (the e2e
+  server, local D1) is fine. The owner approves each PR's head, or a whole batch once
+  (`ritmofit_dev_plan/two-machine-rules.md` › 7); the same head is never reviewed twice.
 - **Handing off a single task:** `agent-prompts/delegate-task.md` is the brief the owner gives a
   subagent; it ends in a PR under the policy below.
 - **Two-machine conductors** (set 2026-10-31; moved 2026-11-04; the Air retired 2026-11-19). The
@@ -209,7 +218,7 @@ context; chat and tool memory are scratch.
   conductor does dev work in both repos. A conductor is a Solo or Orchestrator session, and every
   other rule in this file applies to it. The rules for machines and their limits, one-machine and
   both-machines modes, claiming, owner decisions as GitHub records, who finishes a PR, messaging,
-  task status at approval and unattended merge nights are in
+  task status at approval and pre-approved batches are in
   [`ritmofit_dev_plan/two-machine-rules.md`](ritmofit_dev_plan/two-machine-rules.md), which is part
   of this file. ritmofit-ios follows the same file through a parity-checked copy. In short: only
   the Neo holds Cloudflare credentials (the owner's own `wrangler login`, never an agent's); iOS
@@ -223,7 +232,7 @@ manual smoke testing. This section is the owner's **standing grant** (set 2026-1
 "permission already granted" that the daily prompts and RF workflow refer to, for any tool and session.
 
 **Granted without asking**, for work inside an owner-assigned scope: create a branch, commit, push
-that branch, open a PR (draft first, as the claim, except on an unattended night; see "Task sync"), update the branch from `main`, and retire handoff
+that branch, open a PR (draft first, as the claim, except in a pre-approved batch; see "Task sync"), update the branch from `main`, and retire handoff
 files whose items are done or routed.
 
 **Merging needs the owner's permission for each PR.** A PR is ready to merge when:
@@ -239,43 +248,60 @@ files whose items are done or routed.
    child, and the parent closes with the last one, so the board never shows false completion.
 3. The PR body carries the evidence sections in `.github/pull_request_template.md`.
 
-Then the agent **asks**: "PR #N is green on `<sha>` — may I run the final review and squash-merge?"
-In a live session it asks in chat. A background agent comments that question on the PR, adds the
+It has also passed the **final review** below, run before the ask on that head. Then the agent
+**asks**: "PR #N is green and reviewed on `<sha>` — may I squash-merge?" In a live session it asks
+in chat. A background agent comments that question on the PR, adds the
 `ready-to-merge` label and stops. Permission is the owner saying so in a session, the owner
-adding `owner-approved` to the PR, or, on an unattended night, the owner's pre-approval issue that
+adding `owner-approved` to the PR, or, in a pre-approved batch, the owner's pre-approval issue that
 covers the PR (`ritmofit_dev_plan/two-machine-rules.md` › 7.1). That issue is permission only for
-the night's own conductor, only while the issue is open and its window lasts, and only through
+the batch's own conductor, only while the issue is open and its window lasts, and only through
 §7.4 of that file; no other session may merge on it. An `owner-approved` label whose PR comment cites a
 pre-approval issue instead of quoting the owner is never the owner's own permission outside that
-night (§7.1 of that file). Once a PR has the owner's own permission, any
-Solo or Orchestrator session may finish it: run the final review below and merge, even though another session opened it. Between
+batch (§7.1 of that file). Once a PR has the owner's own permission, any
+Solo or Orchestrator session may finish it and merge, even though another session opened it. Between
 the two conductors, `ritmofit_dev_plan/two-machine-rules.md` › "Who finishes a PR" decides which
-one does. A Lane session never merges, even an approved PR. Agents never apply `owner-approved` on
-their own judgment, and never merge unattended except on a night the owner pre-approves under
-`ritmofit_dev_plan/two-machine-rules.md` › "Unattended merge nights". Standing owner rule
+one does. A Lane or Builder session never merges, even an approved PR. Agents never apply `owner-approved` on
+their own judgment, and never merge without that PR's own permission except in a batch the owner
+pre-approves under `ritmofit_dev_plan/two-machine-rules.md` › "Pre-approved batches". Standing owner rule
 (2026-11-02): once the owner approves a PR's merge in a live session
 (for example "yes, merge #N", or telling it to apply the label), that Solo or Orchestrator session,
 on either conductor, records the owner's words as a PR comment and then applies `owner-approved` to
-the PR's current head; no separate instruction to apply the label is needed. The approval covers
-only that PR and that head.
+the PR's current head, only if that head is still the `<sha>` the owner was asked about (otherwise
+it asks again); no separate instruction to apply the label is needed. The approval covers only that
+PR and that head.
 
-With permission, the agent runs its tool's code-review pass on the final PR diff at a
-confidence-over-recall setting (for example `/code-review medium` in Claude Code, `/review` in
-Codex, or Cursor's review). A finding is **significant** only if it is:
+**The final review runs before the ask** (owner, 2026-11-24). A fresh-context reviewer, an agent
+that did not build the change and never saw its builder's reasoning, runs its tool's code-review
+pass on the PR's head diff (`/code-review high` in Claude Code, `/review` in Codex, or Cursor's
+review). In the RF pipeline this is stage 4 of `agent-prompts/rf-pipeline.md`, beside its verifier
+and acceptance audit. The review summary names the head it reviewed and goes in the PR body or a
+PR comment. Outside a batch, an evidence-only PR (`ritmofit_dev_plan/two-machine-rules.md` › 6)
+needs no review; in a batch, §7.4 step 2 reviews every PR. A push after the review keeps the review
+when it changes nothing but Backlog records it adds for the review's findings, the task's evidence
+and the re-rendered board, or when it is an update from `main` that leaves the PR's own diff
+unchanged (the same `git diff origin/main...HEAD | git patch-id --verbatim` before and after); the
+ask then names the new head. Any other push needs a new review first. A finding is **significant** only if it is:
 
 - (a) a correctness bug in executable code (app code, scripts, CI workflow), including security,
   data loss and missing authz; or
 - (b) a contradiction about who grants permission, sets Ready, or merges.
 
-Everything else (wording, coverage gaps, design trade-offs, ideas) is logged as Backlog RF tasks
-cited in a PR comment, and does not block. Then:
+Significant findings are fixed before the ask, and each fix gets a fresh pass on the new diff (the
+RF pipeline parks a ticket after two fix rounds).
+Everything else (wording, coverage gaps, design trade-offs, ideas) follows "Findings: fix or drop"
+in `agent-prompts/rf-pipeline.md`: fixed in the same PR when small and inside the task, filed as a
+Backlog RF task only at P1 or P2, otherwise one line in the rolling polish record or dropped with a
+reason in the review comment. None of it blocks. Then:
 
-- **No significant findings:** log the rest, squash-merge with
-  `gh pr merge <n> --squash --match-head-commit <reviewed sha>` and remove `ready-to-merge`.
-- **Significant findings:** do not merge. Comment them on the PR, remove `ready-to-merge`, and stop. A fix is a
-  new push, so it needs green CI again and a fresh permission. Any push after permission voids it:
-  approval counts only for the commit it was given on. The one exception is a night's pre-approval
-  issue, which covers its queued PRs for the window while the night's merge bar passes again on
+- **Permission for the head asked about** (the reviewed head, or one that differs from it only by
+  a push the review keeps): squash-merge with
+  `gh pr merge <n> --squash --match-head-commit <approved sha>` and remove `ready-to-merge`. The
+  same head is never reviewed twice.
+- **Any push after the ask** needs a new review first unless it is a push the review keeps
+  (above), and every push needs green CI again and a fresh permission. Any push after permission
+  voids it:
+  approval counts only for the commit it was given on. The one exception is a batch's pre-approval
+  issue, which covers its queued PRs for the window while the batch's merge bar passes again on
   each new head (`two-machine-rules.md` › 7.1). When the owner adds `owner-approved`, the
   `Owner gate` workflow records an `owner-approval` commit status on that exact head, and the gate
   requires both the label and that status on the current head. After new commits the workflow
@@ -286,7 +312,7 @@ cited in a PR comment, and does not block. Then:
   Agents never create the `owner-approval` or `owner-gate` status by hand.
 
 Auto-merge is off and branches must be current, so concurrent agents merge **one at a time**: update
-the branch, wait for CI on the new head, ask, review, merge, then the next.
+the branch, wait for CI on the new head, ask, merge, then the next.
 
 **Owner-gated** — the `owner-gate` status fails until `owner-approved` is present. Only the `Owner
 gate` workflow writes it, on every PR event (new commits, label changes, and edits such as a base
@@ -302,7 +328,8 @@ open PR is the review, so a rejected PR never reaches `main`. The authoritative 
 - auth and authz (Better Auth, sessions, `requireAccess` helpers, their tests)
 - provider and playback code — CI uses mock providers and cannot prove real playback
 - CI, deploy scripts, Worker config, security headers, workspace overrides
-- agent rules (`AGENTS.md`, `CLAUDE.md`, `agent-prompts/`, `ritmofit_dev_plan/two-machine-rules.md`)
+- agent rules (`AGENTS.md`, `CLAUDE.md`, `agent-prompts/`, `.claude/`,
+  `ritmofit_dev_plan/two-machine-rules.md`)
 
 **The owner gate is a guardrail, not a security boundary.** It catches an agent misjudging its own
 change. It cannot stop a deliberate bypass: every agent pushes as the owner's account, and a
@@ -317,13 +344,13 @@ the owner's permission for every merge; agents never edit the gate to get a PR t
 
 **Never granted:** deploys, remote D1 migrations, secrets, production data, repository settings or
 rulesets, applying `owner-approved` except on the owner's in-session approval of that PR or under a
-night's pre-approval issue that covers it, at that night's merge-bar step 6 (`two-machine-rules.md`
+batch's pre-approval issue that covers it, at that batch's merge-bar step 6 (`two-machine-rules.md`
 › 7.4: steps 1–5 passed on the PR's final head, the issue re-check succeeded, and a comment cites the
 issue and that head SHA), merging
 any PR without that PR's permission, force-pushing another session's branch, merging another
 session's PR except in the orchestrator's merge train, when relaying a subagent's ask, or when a
 Solo or Orchestrator session finishes a PR that already has the owner's permission (between the two
-conductors, as `two-machine-rules.md` › "Who finishes a PR" decides; a Lane never merges), and branch deletion. Those keep
+conductors, as `two-machine-rules.md` › "Who finishes a PR" decides; a Lane or Builder never merges), and branch deletion. Those keep
 their separate explicit permission.
 
 **What CI proves:** the required job runs format, task, owner-gate self-test, RF-trace and release-status checks, typecheck, lint,
@@ -467,7 +494,7 @@ shared-contract, config, secret and deployment impacts, and what CI cannot prove
 
 Solo project, multiple AI tools across local and remote sessions: `main` must carry the published
 source of truth between sessions. Publish finished work under "Delegation And Merge Policy" without
-re-asking for what it grants; ask once per PR for the final review and merge. For anything it does not grant, leave the concrete next
+re-asking for what it grants; ask once per PR head (or once per batch) for the merge. For anything it does not grant, leave the concrete next
 step in the RF record and handoff rather than inferring approval. See
 `agent-prompts/daily/close-session.md` for ordering.
 

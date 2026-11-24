@@ -3,6 +3,7 @@
 <!-- Codex, 2026-10-27: Made RF orientation mandatory in every mode and defined revision, failure and execution transitions. -->
 <!-- Claude Code, 2026-10-27: Ready as the owner's queue, draft-PR claims, RF-cited merges count as recorded. -->
 <!-- Claude Code, 2026-11-24: RF-244: steps 5 and 9 read `pnpm release:status` (the newest deploy tag is production's record). -->
+<!-- Claude Code, 2026-11-24: RF-248: Builder mode for the RF pipeline. -->
 
 > **INTERACTIVE.** Use this whenever Steven starts a work session in `ritmofit-web` — any tool
 > (Codex, Claude Code, Cursor), local or cloud, solo or as one lane of a parallel round, even the
@@ -30,6 +31,13 @@ Pick one before deep reads; every mode still ends with **one** recommended next 
    skip production (step 9) unless the brief asks;
    check every file in your plan against the brief's ownership table and list any shared-zone
    request explicitly. Return the plan the brief asks for, not a broad baseline.
+5. **Builder** — you were started for one RF ticket under
+   [`../rf-pipeline.md`](../rf-pipeline.md) (stage 2). The RF record is your brief and its Ready
+   status (or a batch issue's queue) is your scope approval. Do steps 1–2 and step 6 for that one
+   record only, skip production (step 9), confirm `dependsOn` is Done and no open PR claims it, then
+   go straight to "After approval". Plan in a few lines in the PR, not in chat. In a pre-approved
+   batch, skip the draft PR in "After approval" step 4: the batch issue's queue is the claim, and the PR opens at
+   pipeline stage 6.
 
 ## Workflow
 

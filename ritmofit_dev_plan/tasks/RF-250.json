@@ -1,0 +1,22 @@
+{
+  "schemaVersion": 1,
+  "parent": null,
+  "blocker": null,
+  "resolution": null,
+  "followUps": [],
+  "id": "RF-250",
+  "title": "RF pipeline tooling: Claude Code agent definitions, a saved rf-ticket workflow, and pnpm tasks eligible and stats",
+  "kind": "task",
+  "status": "backlog",
+  "priority": "P1",
+  "dependsOn": [
+    "RF-248"
+  ],
+  "acceptance": [
+    ".claude/agents/ defines the pipeline's builder, verifier, correctness reviewer and acceptance auditor (reviewers and the verifier cannot edit product code), and .claude/workflows/rf-ticket runs one ticket through agent-prompts/rf-pipeline.md stages 2–6 with at most two fix rounds; .claude/worktrees/ is git-ignored.",
+    "pnpm tasks eligible lists Backlog and Ready tasks whose dependsOn are Done, whose kind is task, and whose acceptance names no owner-only check, and prints the owner-gate result for files a caller supplies; pnpm tasks stats reports RF records created and finished per week. Both have cases in scripts/tasks.test.mjs.",
+    "agent-prompts/rf-pipeline.md and CLAUDE.md name the new commands and agents."
+  ],
+  "nextAction": "The owner asked for this work in the 2026-11-24 Neo conductor session (quoted in #798's body); that direct ask is its scope approval, and it does not make this task Ready. Build it on a branch stacked on RF-248's PR; it merges only after RF-248, since .claude/ is owner-gated from RF-248.",
+  "evidence": []
+}

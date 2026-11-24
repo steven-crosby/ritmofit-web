@@ -1,0 +1,44 @@
+{
+  "schemaVersion": 1,
+  "parent": null,
+  "blocker": null,
+  "resolution": "PR #798 adds agent-prompts/rf-pipeline.md, moves the final review before the owner's ask in AGENTS.md and the session prompts, turns two-machine-rules.md › 7 into pre-approved batches, and gates .claude/ as agent rules. Tooling follows in RF-250, the cloud environment in RF-251, and the iOS mirror in iOS RF-1243.",
+  "followUps": [
+    "RF-249",
+    "RF-250",
+    "RF-251"
+  ],
+  "id": "RF-248",
+  "title": "RF pipeline: one builder per ticket, fresh-context verify and review before the owner's ask, fix-or-drop findings, pre-approved batches",
+  "kind": "task",
+  "status": "done",
+  "priority": "P1",
+  "dependsOn": [],
+  "acceptance": [
+    "agent-prompts/rf-pipeline.md defines the conductor, builder, verifier, two reviewers and triage roles; where web and iOS work runs; the per-ticket stages with at most two fix rounds before a ticket parks; the fix-or-drop findings rule; the owner's batch loop; the owner-check list; and the batch measures.",
+    "AGENTS.md › Session Workflow and Delegation And Merge Policy make the pipeline the default for RF tickets and run the final review before the owner is asked, by an agent that did not build the change, so a reviewed head is never reviewed again; delegate-task.md, orchestrate-parallel-round.md, close-session.md, start-session.md (Builder mode), CLAUDE.md, the prompts index and the PR template agree.",
+    "two-machine-rules.md › 7 becomes Pre-approved batches: attended or unattended, a window of at most seven days, a named conductor that alone merges, and the pipeline's verify and review as the merge bar's review step; every other reference to merge nights in the rules matches.",
+    "scripts/owner-gate.mjs counts .claude/ as agent rules, with cases in scripts/owner-gate.test.mjs, so agent definitions and saved workflows need owner-approved like AGENTS.md."
+  ],
+  "nextAction": null,
+  "evidence": [
+    {
+      "kind": "observation",
+      "ref": "ritmofit_dev_plan/two-machine-rules.md",
+      "summary": "Baseline measured 2026-11-24 before this change: Ready empty in both repos; 108 of 200 web and 86 of 181 iOS PRs merged since 2026-10-25 were docs or records only; since 2026-11-02 web created 72 RF records and finished 43, iOS 209 and 110.",
+      "checkedOn": "2026-11-24"
+    },
+    {
+      "kind": "pr",
+      "ref": "https://github.com/steven-crosby/ritmofit-web/pull/798",
+      "summary": "This task's PR; its body quotes the owner's four answers of 2026-11-24 (batch pre-approval, cloud sessions for web, fix-or-drop plus prune, both repos at once).",
+      "checkedOn": "2026-11-24"
+    },
+    {
+      "kind": "test",
+      "ref": "scripts/owner-gate.test.mjs",
+      "summary": "pnpm owner-gate:test passes with cases that put .claude/agents/, .claude/workflows/ and .claude/settings.json in the agent rules class.",
+      "checkedOn": "2026-11-24"
+    }
+  ]
+}

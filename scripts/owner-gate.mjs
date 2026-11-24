@@ -82,6 +82,8 @@ export const GATES = [
       p === 'AGENTS.md' ||
       p === 'CLAUDE.md' ||
       p.startsWith('agent-prompts/') ||
+      // Claude Code agent definitions, saved workflows, commands, skills and settings (RF-248).
+      p.startsWith('.claude/') ||
       p === 'ritmofit_dev_plan/tasks/README.md' ||
       p === 'ritmofit_dev_plan/handoffs/README.md' ||
       p === 'ritmofit_dev_plan/two-machine-rules.md',

@@ -230,7 +230,9 @@ verification is visible.
 
 Before merging, present the PR list, combined risk, dependency-aware merge order, and current CI state.
 This plans the train; it does not authorize any merge. Merges follow `AGENTS.md` › "Delegation And
-Merge Policy": each PR needs the owner's permission at its final head, then a final review. Re-read the repository's live merge settings and rules rather than
+Merge Policy": each PR gets its final review (a fresh-context reviewer, before the ask), then
+needs the owner's permission at that head, or a pre-approved batch covers it
+(`ritmofit_dev_plan/two-machine-rules.md` › 7). Re-read the repository's live merge settings and rules rather than
 treating historical GitHub policy as immutable. The project convention is **squash merge** (matches
 `close-session.md` and `main`'s history); confirm it is still allowed before the train.
 
@@ -244,13 +246,14 @@ For each authorized PR, sequentially:
    An update push voids any earlier permission for that PR (the `Owner gate` workflow also drops a stale `owner-approved`).
 5. If the CI check fails, return the PR to its owning lane (a failed `owner-gate` status only
    means it awaits the owner's approval).
-6. When it is ready (see the policy, including owner-gated PRs), ask the owner for this PR at this
-   head: "PR #N is ready on `<sha>` — may I run the final review and squash-merge?" One approval covers
-   one PR at one head; never carry a batch approval across an update.
-7. With permission, run the final review as the policy defines it (including what counts as
-   significant). No significant findings: squash-merge
-   with `--match-head-commit <reviewed sha>`. Significant findings: stop, comment them, and return the PR to its
-   lane.
+6. Confirm the PR's final review covers this head: a fresh-context review of the lane's diff,
+   which the orchestrator starts once the lane reports done, with no open significant finding. An update from `main` that leaves the PR's own diff unchanged
+   keeps the review; any other change needs a new one, and significant findings return the PR to
+   its lane.
+7. When it is ready (see the policy, including owner-gated PRs), ask the owner for this PR at this
+   head: "PR #N is green and reviewed on `<sha>` — may I squash-merge?" One approval covers one PR
+   at one head; never carry an approval across an update. With permission, squash-merge with
+   `--match-head-commit <approved sha>`.
 
 The last green PR checks the combined merged tree, but still perform a post-merge sanity check on
 `main`. Surface semantic surprises even when Git reports no textual conflict.
