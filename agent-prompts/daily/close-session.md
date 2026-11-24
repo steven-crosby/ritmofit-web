@@ -150,8 +150,9 @@ work should reach main; ungranted publication actions remain explicit rather tha
   due, ask the owner once, naming each step: the `scripts/deploy.sh <sha>` deploys in order (a
   deploy-alone change on its own) and the iOS uploads it lists. Never deploy or upload without the
   owner's yes in this session. "Nothing to ship" needs no question. Batching a deploy-alone change
-  with others (`scripts/deploy.sh --allow-batch`) needs the owner to say so in the session, and
-  HISTORY records it. A Lane skips this; its orchestrator asks.
+  with others (`scripts/deploy.sh --allow-batch`), or deploying over a live Worker that is not the
+  newest tag's (`--accept-live <version-id>`), needs the owner to say so in the session, and HISTORY
+  records it. A Lane skips this; its orchestrator asks.
 - [ ] Merging is not deploying. Deploy only with the owner's applicable explicit permission, using
   `ritmofit_dev_plan/deployment-runbook.md` end to end. Do not infer deploy authority from urgency,
   task priority, an implementation approval or this prompt. Remote migrations, secrets and data

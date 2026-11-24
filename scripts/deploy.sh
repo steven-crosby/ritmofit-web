@@ -7,6 +7,7 @@ set -euo pipefail
 #   scripts/deploy.sh              # clean tree whose HEAD is origin/main
 #   scripts/deploy.sh <sha>        # clean tree; HEAD may differ from origin/main
 #   scripts/deploy.sh --allow-batch [sha]  # owner said, in the session, to batch
+#   scripts/deploy.sh --accept-live <version-id> [sha]  # owner accepted the live Worker
 #   scripts/deploy.sh --self-check # local guards only; does not deploy
 #
 # A dirty tree always refuses, including when a sha is passed. The sha only
@@ -15,9 +16,13 @@ set -euo pipefail
 # Before building, the deploy-alone guard (scripts/release-status.mjs --guard)
 # refuses a range from the newest deploy/* tag to the commit that mixes a
 # deploy-alone change with other shipped changes, and prints the steps. It also
-# refuses when there is no deploy tag yet, and when production's live Worker is
-# not the newest tag's (a rollback). --allow-batch lets these through; pass it
-# only when the owner said, in the session, to batch.
+# refuses when there is no deploy tag yet. --allow-batch lets these through;
+# pass it only when the owner said, in the session, to batch.
+#
+# Before the gates, it refuses when production's live Worker is not the newest
+# tag's (a rollback, a secret change or a dashboard edit). Only
+# --accept-live <the live version id>, on the owner's word, lets that through;
+# --allow-batch does not.
 #
 # The script checks out a detached worktree under /tmp and builds there.
 # ritmofit_design_system has no lockfile and no dependencies: do not npm ci.
@@ -39,11 +44,15 @@ TAG_FAILED_EXIT=3
 DEPLOY_SINCE="none"
 DEPLOY_SINCE_WORKER="unknown"
 DEPLOY_BATCH=""
-# "allow" when --allow-batch was passed.
+# "allow" when --allow-batch was passed. It never clears the live version check.
 DEPLOY_ALLOW=""
+# The version id passed with --accept-live, and the tag-message line it adds.
+DEPLOY_ACCEPT_LIVE=""
+DEPLOY_LIVE_NOTE=""
 # Read by on_deploy_exit: after an upload whose later check failed, it prints
 # how to tag the deploy if the owner keeps it.
 DEPLOY_SHA=""
+DEPLOY_UPLOADING=0
 DEPLOY_UPLOADED=0
 DEPLOY_TAGGING=0
 DEPLOY_TAG_NAME=""
@@ -56,12 +65,14 @@ RELEASE_STATUS="${SCRIPT_DIR}/release-status.mjs"
 
 usage() {
   printf '%s\n' \
-    "usage: scripts/deploy.sh [--allow-batch] [sha]" \
+    "usage: scripts/deploy.sh [--allow-batch] [--accept-live <version-id>] [sha]" \
     "       scripts/deploy.sh --self-check" \
     "git status --porcelain must be empty. A dirty tree always refuses." \
     "With no sha, HEAD must equal origin/main. A sha deploys that commit anyway." \
-    "--allow-batch lets a deploy-alone change ship with other changes; pass it only" \
-    "when the owner said, in this session, to batch them, and record it in HISTORY."
+    "--allow-batch lets a deploy-alone change ship with other changes, or a deploy go" \
+    "ahead with no deploy tag yet. --accept-live <version-id> accepts a live Worker" \
+    "that is not the newest tag's; it must be the version at 100%. Pass either only" \
+    "when the owner said so in this session, and record the owner's words in HISTORY."
 }
 
 nvmrc_major() {
@@ -427,7 +438,7 @@ deploy_tag_name() {
 }
 
 # deploy_tag_message <sha> <deployed UTC> <worker version> <rollback version>
-#   <SPA entry> <since tag> [batch]
+#   <SPA entry> <since tag> [batch] [live line]
 deploy_tag_message() {
   printf '%s\n' \
     "deploy ${1:0:7} to production" \
@@ -440,6 +451,9 @@ deploy_tag_message() {
     "since: ${6}"
   if [[ -n "${7:-}" ]]; then
     printf '%s\n' "batch: ${7}"
+  fi
+  if [[ -n "${8:-}" ]]; then
+    printf '%s\n' "${8}"
   fi
 }
 
@@ -525,16 +539,46 @@ tag_push_command() {
   printf 'git push --no-follow-tags origin refs/tags/%s:refs/tags/%s\n' "$1" "$1"
 }
 
-# check_live_version <live versions from rollback_version_from_status>
+# Prints the deployment-level `Source:` line(s) of a captured
+# `wrangler deployments status` (Upload, Secret Change, Rollback, Dashboard...),
+# colour codes removed, or nothing.
+live_sources_from_status() {
+  node -e '
+    const fs = require("fs");
+    let text = "";
+    try {
+      text = fs.readFileSync(process.argv[1], "utf8");
+    } catch {}
+    text = text.replace(/\u001b\[[0-9;]*m/g, "");
+    for (const line of text.split("\n")) {
+      if (/^\s*Source:/.test(line)) process.stdout.write(line.trim() + "\n");
+    }
+  ' "$1"
+}
+
+# check_live_version <live versions from rollback_version_from_status> [status log]
 # Production should run the newest deploy tag's Worker. When the live version
 # read before the gates and the tag's `worker version:` are both known and
-# differ (a rollback, or a change outside this script), the guard's range
-# understates what this deploy changes. Refuses unless --allow-batch; with it,
-# adds the difference to DEPLOY_BATCH for the tag message.
+# differ (a rollback, a secret change or a dashboard edit), the guard's range
+# does not describe what this deploy changes. Refuses unless --accept-live
+# names the live version, which must be the single version at 100%; that sets
+# DEPLOY_LIVE_NOTE for the tag message. --allow-batch does not clear it.
 check_live_version() {
   local live="$1"
+  local status_log="${2:-}"
   local uuid_re='^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$'
-  local note
+  local single_re='^([0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}) \(100%\)$'
+  local note live_id=""
+  DEPLOY_LIVE_NOTE=""
+  if [[ "$live" =~ $single_re ]]; then
+    live_id="${BASH_REMATCH[1]}"
+  fi
+  if [[ -n "$DEPLOY_ACCEPT_LIVE" && "$DEPLOY_ACCEPT_LIVE" != "$live_id" ]]; then
+    printf '%s\n' \
+      "refusing to deploy: --accept-live ${DEPLOY_ACCEPT_LIVE} is not the single live version" \
+      "at 100% (wrangler deployments status shows: ${live}). Nothing was built or uploaded." >&2
+    return 1
+  fi
   if [[ "$DEPLOY_SINCE" == "none" ]]; then
     return 0
   fi
@@ -546,32 +590,36 @@ check_live_version() {
     printf '%s\n' "live version check: production runs ${DEPLOY_SINCE}'s Worker ${DEPLOY_SINCE_WORKER}"
     return 0
   fi
-  note="production ran ${live}, not ${DEPLOY_SINCE}'s Worker ${DEPLOY_SINCE_WORKER}"
-  if [[ "$DEPLOY_ALLOW" == "allow" ]]; then
-    printf '%s\n' "live version check: ${note}; going ahead under --allow-batch"
-    if [[ -n "$DEPLOY_BATCH" ]]; then
-      DEPLOY_BATCH="${DEPLOY_BATCH}; ${note}"
-    else
-      DEPLOY_BATCH="allowed by --allow-batch (${note})"
-    fi
+  note="production runs ${live}, not ${DEPLOY_SINCE}'s Worker ${DEPLOY_SINCE_WORKER}"
+  if [[ -n "$DEPLOY_ACCEPT_LIVE" ]]; then
+    printf '%s\n' "live version check: ${note}; accepted with --accept-live ${DEPLOY_ACCEPT_LIVE}"
+    DEPLOY_LIVE_NOTE="live: accepted ${DEPLOY_ACCEPT_LIVE} (owner, in session)"
     return 0
   fi
-  printf '%s\n' \
-    "refusing to deploy: ${note}." \
-    "Production is not ${DEPLOY_SINCE} (a rollback, or a change outside scripts/deploy.sh), so this" \
-    "deploy re-ships everything between production's code and this commit, not only the range the" \
-    "deploy-alone guard checked. Ask the owner; pass --allow-batch only on the owner's word, and" \
-    "record it in HISTORY. Nothing was built or uploaded." >&2
+  {
+    printf '%s\n' \
+      "refusing to deploy: ${note}." \
+      "A rollback, a secret change or a dashboard edit made a new live version, so this deploy" \
+      "replaces more than the range the deploy-alone guard checked. The live deployment's source:"
+    if [[ -n "$status_log" ]]; then
+      live_sources_from_status "$status_log" | sed 's/^/  /'
+    fi
+    printf '%s\n' \
+      "Ask the owner. Only on the owner's word in this session, pass" \
+      "--accept-live <the live version id> and record the owner's words in HISTORY;" \
+      "--allow-batch does not clear this. Nothing was built or uploaded."
+  } >&2
   return 1
 }
 
 # keep_and_tag_hint <tag name> <sha> <message file>
-# For an upload whose later check failed: the runbook decides between rolling
-# back and keeping the deploy; a kept deploy still gets its tag.
+# For an upload the script did not finish checking: the runbook decides between
+# rolling back and keeping the deploy; a kept deploy still gets its tag.
 keep_and_tag_hint() {
   local name="${1:-deploy/<UTC YYYY-MM-DDTHHMMZ>-<sha7>}"
   printf '%s\n' \
-    "UPLOADED ${2:0:7}, but a post-deploy check failed, so it was not tagged." \
+    "UPLOADED ${2:0:7}, but the script stopped after the upload (a check failed or it was" \
+    "interrupted), so it was not tagged." \
     "Follow the runbook: roll back, or, if the owner keeps this deploy, tag it from the repo root:" \
     "  git tag -a ${name} ${2} -F ${3} && $(tag_push_command "$name")" \
     "Tag message (${3}):"
@@ -583,11 +631,24 @@ keep_and_tag_hint() {
 on_deploy_exit() {
   local status=$?
   cd /
+  if [[ "$status" -ne 0 && "$DEPLOY_UPLOADING" == "1" && "$DEPLOY_UPLOADED" == "0" ]]; then
+    printf '%s\n' \
+      "wrangler deploy failed; run pnpm --filter @ritmofit/api exec wrangler deployments status." \
+      "If a new version is at 100%, production changed without a tag. Follow the runbook." >&2
+  fi
   if [[ "$status" -ne 0 && "$DEPLOY_UPLOADED" == "1" && "$DEPLOY_TAGGING" == "0" ]]; then
     keep_and_tag_hint "$DEPLOY_TAG_NAME" "$DEPLOY_SHA" "$DEPLOY_TAG_MSG" >&2
   fi
   git -C "$DEPLOY_REPO" worktree remove --force "$DEPLOY_WT" >/dev/null 2>&1 || true
   exit "$status"
+}
+
+# bash 3.2 runs no EXIT trap when SIGTERM or SIGHUP kills it, so turn those into
+# exits: the worktree is removed and an untagged upload is still reported.
+install_deploy_traps() {
+  trap on_deploy_exit EXIT
+  trap 'exit 143' TERM
+  trap 'exit 129' HUP
 }
 
 deploy_tree() {
@@ -602,7 +663,7 @@ deploy_tree() {
   wt="$(create_deploy_worktree "$sha")"
   DEPLOY_WT="$wt"
   printf '%s\n' "worktree: ${wt}"
-  trap on_deploy_exit EXIT
+  install_deploy_traps
 
   cd "$wt"
   pnpm install --frozen-lockfile
@@ -633,13 +694,16 @@ deploy_tree() {
   status_log="$(mktemp)"
   pnpm --filter @ritmofit/api exec wrangler deployments status | tee "$status_log"
   rollback="$(rollback_version_from_status "$status_log")"
-  rm -f "$status_log"
   printf '%s\n' "rollback version for the deploy tag: ${rollback}"
   if [[ "$rollback" == "unknown" ]]; then
     printf '%s\n' "warning: could not read the live Worker version; the deploy tag will say unknown." \
       "Read it with wrangler deployments status and put it in HISTORY." >&2
   fi
-  check_live_version "$rollback"
+  if ! check_live_version "$rollback" "$status_log"; then
+    rm -f "$status_log"
+    exit 1
+  fi
+  rm -f "$status_log"
 
   run_gates
   pnpm --filter @ritmofit/web build
@@ -654,6 +718,7 @@ deploy_tree() {
   # wrangler appends one JSON object per line to this file, including the new
   # version ID. Reading it leaves the upload's own output and prompts as they are.
   deploy_out="$(mktemp)"
+  DEPLOY_UPLOADING=1
   WRANGLER_OUTPUT_FILE_PATH="$deploy_out" \
     pnpm --filter @ritmofit/api exec wrangler deploy --message "$short"
   deployed_at="$(date -u +%Y-%m-%dT%H:%M:%SZ)"
@@ -668,7 +733,7 @@ deploy_tree() {
   DEPLOY_UPLOADED=1
   DEPLOY_TAG_MSG="$(mktemp)"
   deploy_tag_message "$sha" "$deployed_at" "$worker" "$rollback" "$expected" "$DEPLOY_SINCE" \
-    "$DEPLOY_BATCH" >"$DEPLOY_TAG_MSG"
+    "$DEPLOY_BATCH" "$DEPLOY_LIVE_NOTE" >"$DEPLOY_TAG_MSG"
   DEPLOY_TAG_NAME="$(deploy_tag_name "$sha" "$deployed_at")" || DEPLOY_TAG_NAME=""
 
   propagation_loop "$expected" "$PROPAGATION_TRIES" "$PROPAGATION_SLEEP_SECONDS" \
@@ -1126,43 +1191,66 @@ EOF
   fi
 
   # The live version read before the gates against the newest tag's Worker.
-  local live_a live_b live_out
+  local live_a live_b live_out live_log live_tag
   live_a="515bc8fb-24fd-4ff7-b8be-6f7c28aa1e85"
   live_b="fedc7fbf-1bc2-46cd-a90a-3059505e0a7b"
+  live_tag="deploy/2026-11-24T0237Z-1eed288"
   live_out="$(mktemp)"
-  if (DEPLOY_SINCE="deploy/2026-11-24T0237Z-1eed288" DEPLOY_SINCE_WORKER="$live_a" DEPLOY_ALLOW="" \
-    DEPLOY_BATCH="" && check_live_version "${live_a} (100%)") >"$live_out" 2>&1 \
-    && grep -q "production runs deploy/2026-11-24T0237Z-1eed288's Worker ${live_a}" "$live_out" \
-    && (DEPLOY_SINCE="none" DEPLOY_SINCE_WORKER="unknown" DEPLOY_ALLOW="" \
-      && check_live_version "${live_b} (100%)") >"$live_out" 2>&1 \
-    && (DEPLOY_SINCE="deploy/2026-11-24T0237Z-1eed288" DEPLOY_SINCE_WORKER="unknown" DEPLOY_ALLOW="" \
-      && check_live_version "${live_b} (100%)") >"$live_out" 2>&1 \
+  live_log="$(mktemp)"
+  printf 'Created:  2026-11-25T01:00:00.000Z\n\033[2mSource:\033[22m  Secret Change\nVersion(s):  (100%%) %s\n' \
+    "$live_b" >"$live_log"
+  # check_with <since> <since worker> <allow> <accept-live> <live>: prints DEPLOY_LIVE_NOTE on success.
+  check_with() {
+    (DEPLOY_SINCE="$1" DEPLOY_SINCE_WORKER="$2" DEPLOY_ALLOW="$3" DEPLOY_ACCEPT_LIVE="$4" \
+      DEPLOY_BATCH="" && check_live_version "$5" "$live_log" \
+      && printf 'NOTE=%s\n' "$DEPLOY_LIVE_NOTE")
+  }
+  if check_with "$live_tag" "$live_a" "" "" "${live_a} (100%)" >"$live_out" 2>&1 \
+    && grep -q "production runs ${live_tag}'s Worker ${live_a}" "$live_out" \
+    && grep -qx "NOTE=" "$live_out" \
+    && check_with none unknown "" "" "${live_b} (100%)" >"$live_out" 2>&1 \
+    && check_with "$live_tag" unknown "" "" "${live_b} (100%)" >"$live_out" 2>&1 \
     && grep -q "live version check: skipped" "$live_out" \
-    && (DEPLOY_SINCE="deploy/2026-11-24T0237Z-1eed288" DEPLOY_SINCE_WORKER="$live_a" DEPLOY_ALLOW="" \
-      && check_live_version "unknown") >"$live_out" 2>&1 \
+    && check_with "$live_tag" "$live_a" "" "" unknown >"$live_out" 2>&1 \
     && grep -q "live version check: skipped" "$live_out"; then
     pass "live version check passes a matching, unknown or untagged production"
   else
     fail "live version check pass cases: $(cat "$live_out")"
   fi
-  if (DEPLOY_SINCE="deploy/2026-11-24T0237Z-1eed288" DEPLOY_SINCE_WORKER="$live_a" DEPLOY_ALLOW="" \
-    DEPLOY_BATCH="" && check_live_version "${live_b} (100%)") >"$live_out" 2>&1; then
+  if check_with "$live_tag" "$live_a" "" "" "${live_b} (100%)" >"$live_out" 2>&1; then
     fail "a production Worker that is not the newest tag's should be refused"
-  elif grep -q "refusing to deploy: production ran ${live_b} (100%), not deploy/2026-11-24T0237Z-1eed288's Worker ${live_a}" "$live_out" \
-    && grep -q "re-ships everything between production's code and this commit" "$live_out" \
-    && (DEPLOY_SINCE="deploy/2026-11-24T0237Z-1eed288" DEPLOY_SINCE_WORKER="$live_a" DEPLOY_ALLOW="allow" \
-      DEPLOY_BATCH="" && check_live_version "${live_b} (60%), ${live_a} (40%)" \
-      && printf 'BATCH=%s\n' "$DEPLOY_BATCH") >"$live_out" 2>&1 \
-    && grep -qx "BATCH=allowed by --allow-batch (production ran ${live_b} (60%), ${live_a} (40%), not deploy/2026-11-24T0237Z-1eed288's Worker ${live_a})" "$live_out" \
-    && (DEPLOY_SINCE="deploy/2026-11-24T0237Z-1eed288" DEPLOY_SINCE_WORKER="$live_a" DEPLOY_ALLOW="allow" \
-      DEPLOY_BATCH="allowed by --allow-batch (#789 with #790)" && check_live_version "${live_b} (100%)" \
-      && printf 'BATCH=%s\n' "$DEPLOY_BATCH") >"$live_out" 2>&1 \
-    && grep -qx "BATCH=allowed by --allow-batch (#789 with #790); production ran ${live_b} (100%), not deploy/2026-11-24T0237Z-1eed288's Worker ${live_a}" "$live_out"; then
-    pass "live version check refuses a rolled-back production unless --allow-batch"
+  elif grep -q "refusing to deploy: production runs ${live_b} (100%), not ${live_tag}'s Worker ${live_a}" "$live_out" \
+    && grep -qx "  Source:  Secret Change" "$live_out" \
+    && grep -q -- "--accept-live <the live version id>" "$live_out" \
+    && grep -q -- "--allow-batch does not clear this" "$live_out"; then
+    pass "live version check refuses a mismatch and shows the live source"
   else
-    fail "live version check refusal: $(cat "$live_out")"
+    fail "live version mismatch: $(cat "$live_out")"
   fi
-  rm -f "$live_out"
+  if check_with "$live_tag" "$live_a" "" "$live_b" "${live_b} (100%)" >"$live_out" 2>&1 \
+    && grep -qx "NOTE=live: accepted ${live_b} (owner, in session)" "$live_out"; then
+    pass "--accept-live with the live version id passes and is recorded"
+  else
+    fail "--accept-live with the right id: $(cat "$live_out")"
+  fi
+  if check_with "$live_tag" "$live_a" "" "$live_a" "${live_b} (100%)" >"$live_out" 2>&1; then
+    fail "--accept-live with a version that is not live should be refused"
+  elif grep -q "refusing to deploy: --accept-live ${live_a} is not the single live version" "$live_out" \
+    && ! check_with "$live_tag" "$live_a" "" "$live_b" "${live_b} (60%), ${live_a} (40%)" \
+      >"$live_out" 2>&1 \
+    && grep -q "is not the single live version" "$live_out"; then
+    pass "--accept-live with a wrong or split version is refused"
+  else
+    fail "--accept-live with a wrong id: $(cat "$live_out")"
+  fi
+  if check_with "$live_tag" "$live_a" allow "" "${live_b} (100%)" >"$live_out" 2>&1; then
+    fail "--allow-batch alone must not clear a live version mismatch"
+  elif grep -q "refusing to deploy: production runs ${live_b} (100%)" "$live_out"; then
+    pass "--allow-batch alone does not clear a live version mismatch"
+  else
+    fail "--allow-batch and a live mismatch: $(cat "$live_out")"
+  fi
+  rm -f "$live_out" "$live_log"
 
   # A fixture main: #786 (deployed and tagged), docs, #789 (provider / playback,
   # deploys alone), #790 (an ordinary screen change), #793 (tests only).
@@ -1288,29 +1376,57 @@ EOF
     fail "failed tag creation (status ${gstatus}): $(cat "$gout" "$gerr")"
   fi
 
-  # An upload whose later check failed: the EXIT trap says how to tag it if kept.
-  local trap_upload=0 trap_before=0 trap_tagging=0 trap_out2 trap_out3
+  # The EXIT trap: an upload the script did not finish checking, a failed
+  # upload, and a SIGTERM after the upload (bash 3.2 runs no EXIT trap on it
+  # unless TERM is trapped).
+  local trap_upload=0 trap_before=0 trap_tagging=0 trap_failed=0 trap_term=0
+  local trap_out2 trap_out3 trap_out4 trap_out5
   trap_out2="$(mktemp)"
   trap_out3="$(mktemp)"
+  trap_out4="$(mktemp)"
+  trap_out5="$(mktemp)"
   run_exit_trap() {
-    # run_exit_trap <uploaded> <tagging> <exit status>, in a subshell with on_deploy_exit as EXIT.
+    # run_exit_trap <uploading> <uploaded> <tagging> <exit status | term>, in a subshell.
     (DEPLOY_REPO="$gtmp" DEPLOY_WT="${gtmp}/no-such-worktree" DEPLOY_SHA="$g_tip" \
-      DEPLOY_UPLOADED="$1" DEPLOY_TAGGING="$2" DEPLOY_TAG_NAME="$gname2" DEPLOY_TAG_MSG="$gmsg" \
-      && trap on_deploy_exit EXIT && exit "$3")
+      DEPLOY_UPLOADING="$1" DEPLOY_UPLOADED="$2" DEPLOY_TAGGING="$3" DEPLOY_TAG_NAME="$gname2" \
+      DEPLOY_TAG_MSG="$gmsg" && install_deploy_traps \
+      && if [[ "$4" == "term" ]]; then
+        sh -c 'kill -TERM $PPID'
+        # wait returns as soon as the trapped TERM arrives; sleep alone would not.
+        sleep 5 >/dev/null 2>&1 &
+        wait $!
+        exit 0
+      else
+        exit "$4"
+      fi)
   }
-  run_exit_trap 1 0 1 >"$gout" 2>"$gerr" || trap_upload=$?
-  run_exit_trap 0 0 1 >"$trap_out2" 2>&1 || trap_before=$?
-  run_exit_trap 1 1 3 >"$trap_out3" 2>&1 || trap_tagging=$?
+  run_exit_trap 1 1 0 1 >"$gout" 2>"$gerr" || trap_upload=$?
+  run_exit_trap 0 0 0 1 >"$trap_out2" 2>&1 || trap_before=$?
+  run_exit_trap 1 1 1 3 >"$trap_out3" 2>&1 || trap_tagging=$?
+  run_exit_trap 1 0 0 1 >"$trap_out4" 2>&1 || trap_failed=$?
+  run_exit_trap 1 1 0 term >"$trap_out5" 2>&1 || trap_term=$?
   if [[ "$trap_upload" -eq 1 && "$trap_before" -eq 1 && "$trap_tagging" -eq 3 ]] \
-    && grep -q "UPLOADED ${g_tip:0:7}, but a post-deploy check failed, so it was not tagged" "$gerr" \
+    && grep -q "UPLOADED ${g_tip:0:7}, but the script stopped after the upload (a check failed or it was" "$gerr" \
     && grep -qF "git tag -a ${gname2} ${g_tip} -F ${gmsg} && git push --no-follow-tags origin refs/tags/${gname2}:refs/tags/${gname2}" "$gerr" \
     && grep -q "worker version: 515bc8fb" "$gerr" \
-    && ! grep -q "UPLOADED" "$trap_out2" "$trap_out3"; then
-    pass "a failed check after the upload prints how to tag a kept deploy"
+    && ! grep -q "UPLOADED\|wrangler deploy failed" "$trap_out2" "$trap_out3"; then
+    pass "a stop after the upload prints how to tag a kept deploy"
   else
     fail "upload kept, check failed (${trap_upload}/${trap_before}/${trap_tagging}): $(cat "$gerr" "$trap_out2" "$trap_out3")"
   fi
-  rm -f "$trap_out2" "$trap_out3"
+  if [[ "$trap_failed" -eq 1 ]] && grep -q "wrangler deploy failed; run" "$trap_out4" \
+    && grep -q "If a new version is at 100%, production changed without a tag" "$trap_out4" \
+    && ! grep -q "UPLOADED" "$trap_out4"; then
+    pass "a failed upload says to check wrangler deployments status"
+  else
+    fail "failed upload (${trap_failed}): $(cat "$trap_out4")"
+  fi
+  if [[ "$trap_term" -eq 143 ]] && grep -q "UPLOADED ${g_tip:0:7}, but the script stopped" "$trap_out5"; then
+    pass "SIGTERM after the upload still runs the EXIT trap"
+  else
+    fail "SIGTERM after the upload (${trap_term}): $(cat "$trap_out5")"
+  fi
+  rm -f "$trap_out2" "$trap_out3" "$trap_out4" "$trap_out5"
   rm -rf "$gtmp" "$gorigin"
   rm -f "$gout" "$gerr" "$gmsg"
 
@@ -1325,7 +1441,8 @@ EOF
 }
 
 main() {
-  local allow_batch="" target="" arg
+  local allow_batch="" accept_live="" target="" arg
+  local uuid_re='^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$'
   if [[ "${1:-}" == "-h" || "${1:-}" == "--help" ]]; then
     usage
     exit 0
@@ -1338,10 +1455,21 @@ main() {
     self_check
     exit 0
   fi
-  for arg in "$@"; do
+  while [[ $# -gt 0 ]]; do
+    arg="$1"
+    shift
     case "$arg" in
       --allow-batch)
         allow_batch="allow"
+        ;;
+      --accept-live)
+        if [[ $# -eq 0 || ! "$1" =~ $uuid_re ]]; then
+          printf '%s\n' "--accept-live needs the live Worker version id (a lowercase UUID)" >&2
+          usage >&2
+          exit 2
+        fi
+        accept_live="$1"
+        shift
         ;;
       -*)
         usage >&2
@@ -1373,6 +1501,7 @@ main() {
   nvmrc="$(git show "${sha}:.nvmrc")"
   assert_node_major "$nvmrc" "$(node -v)"
   DEPLOY_ALLOW="$allow_batch"
+  DEPLOY_ACCEPT_LIVE="$accept_live"
   deploy_guard "$sha" "$allow_batch"
   deploy_tree "$sha"
 }

@@ -353,6 +353,15 @@ function guard(ref, allowBatch) {
       `deploy guard: ok, ${shipped.length} shipped change${shipped.length === 1 ? '' : 's'} ` +
         `since ${tag.name}${note}.`,
     );
+    if (sha !== tag.sha && commits.length === 0) {
+      const takenBack = commitsBetween(sha, tag.sha).filter((c) => c.shipped);
+      if (takenBack.length) {
+        console.log('deploy guard: shipped changes this deploy takes back out of production:');
+        for (const c of takenBack) console.log(formatCommit(c).join('\n'));
+      } else {
+        console.log('deploy guard: it takes back no shipped change.');
+      }
+    }
     return 0;
   }
   const others = shipped.filter((c) => !alone.includes(c));

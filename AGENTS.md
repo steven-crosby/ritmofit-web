@@ -32,7 +32,7 @@
 <!-- note (Claude Code, Air, 2026-11-03): RF-192: owner rule: iOS simulator work runs on the Neo only; the Air keeps just the CI runner's simulator and runtime. -->
 <!-- note (Claude Code, Neo, 2026-11-04): RF-193: the two-machine rules moved to ritmofit_dev_plan/two-machine-rules.md (ritmofit-ios to vendor a parity-checked copy in iOS RF-1041); the silo ended; iOS CI runs on the Neo; unattended merge nights allowed only under a per-night pre-approval issue. -->
 <!-- note (Claude Code, Neo, 2026-11-19): RF-229: owner decision: the Air is retired; the Neo does all dev work in both repos and holds the owner's own wrangler login (Two-machine conductors; two-machine-rules.md › 1, 2). -->
-<!-- note (Claude Code, Neo, 2026-11-24): RF-244: owner decisions on iOS #113: deploy.sh tags each deploy, `pnpm release:status` says what is due, and deploy.sh enforces deploy-alone unless the owner says to batch (`--allow-batch`). -->
+<!-- note (Claude Code, Neo, 2026-11-24): RF-244: owner decisions on iOS #113: deploy.sh tags each deploy, `pnpm release:status` says what is due, and deploy.sh enforces deploy-alone unless the owner says to batch (`--allow-batch`); a live Worker that is not the newest tag's needs the owner's `--accept-live`. -->
 
 This is the canonical contributor and agent guide for Ritmo Studio. If another instruction file conflicts
 with it, follow `AGENTS.md`, then repair the stale file. When an AI agent edits this file or adds a note
@@ -484,10 +484,12 @@ own; apply required remote D1 migrations before code. `scripts/deploy.sh` enforc
 deploy that mixes such a change with other shipped changes unless the owner says, in the session, to
 batch them (`--allow-batch`, recorded in HISTORY). Each deploy tags its commit
 `deploy/<UTC time>-<sha7>`; that tag is production's record, and `pnpm release:status` reads it to
-say what is due. With no deploy tag yet, or when production's Worker is not the newest tag's (a
-rollback), the script also refuses unless the owner says to pass `--allow-batch`; the conductor
-backfills the first tag (RF-245) before any deploy. The Worker deploy command does not build the
-SPA; build `apps/web/dist` before deploying the Worker that serves it.
+say what is due. With no deploy tag yet it also refuses unless the owner says to pass
+`--allow-batch`; the conductor backfills the first tag (RF-245) before any deploy. When production's
+Worker is not the newest tag's (a rollback, secret change or dashboard edit), it refuses unless the
+owner, in the session, accepts that live version (`--accept-live <version-id>`, recorded in HISTORY;
+`--allow-batch` does not clear it). The Worker deploy command does not build the SPA; build
+`apps/web/dist` before deploying the Worker that serves it.
 
 For deploys and rollback, follow `ritmofit_dev_plan/deployment-runbook.md`. After deployment, smoke-test
 the SPA, health endpoint, a protected endpoint, relevant assets/headers, and report the Worker version

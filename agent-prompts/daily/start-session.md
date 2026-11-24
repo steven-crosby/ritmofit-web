@@ -49,11 +49,11 @@ Pick one before deep reads; every mode still ends with **one** recommended next 
    note its next action, owner decisions, and touched shared zones, and whether it bears on this
    session. Flag as **stale** any handoff older than 14 days whose PR or branch is closed. Do not
    edit or delete handoffs during orientation. Rules: `ritmofit_dev_plan/handoffs/README.md`.
-5. **Unrecorded merges** — run `pnpm release:status`. It fetches `origin main` and the tags, names
-   the newest `deploy/*` tag (production's record: `scripts/deploy.sh` tags each deploy), and lists
-   every `origin/main` commit since with its PR, whether it ships and its owner-gate classes. Only
-   when it reports no deploy tag, list the commits since the newest `HISTORY.md` deploy entry
-   instead. For each code commit, find its PR (GitHub's commit → pull-request lookup; a squash
+5. **Unrecorded merges** — run `pnpm release:status`. It fetches `origin main` and the deploy tags
+   (force-updated), names the newest `deploy/*` tag (production's record: `scripts/deploy.sh` tags
+   each deploy), and lists every `origin/main` commit since with its PR, whether it ships and its
+   owner-gate classes. Only when it reports no deploy tag, list the commits since the newest
+   `HISTORY.md` deploy entry instead. For each code commit, find its PR (GitHub's commit → pull-request lookup; a squash
    subject may omit `(#N)`). A merge is recorded when an RF record's evidence cites that PR (CI's
    RF-trace step requires this for product changes), or HISTORY or a handoff names it. Surface the
    rest. Report `release:status`'s verdict as `main` vs production: "deploy due" with its steps

@@ -25,7 +25,10 @@ describe('scripts/deploy.sh guards', () => {
       'deploy tag name and message',
       'Worker and rollback versions for the tag message',
       'live version check passes a matching, unknown or untagged production',
-      'live version check refuses a rolled-back production unless --allow-batch',
+      'live version check refuses a mismatch and shows the live source',
+      '--accept-live with the live version id passes and is recorded',
+      '--accept-live with a wrong or split version is refused',
+      '--allow-batch alone does not clear a live version mismatch',
       'deploy guard refuses with no deploy tag unless --allow-batch',
       'deploy guard lets a deploy-alone change ship alone',
       'deploy guard refuses a deploy-alone batch and prints the steps',
@@ -33,7 +36,9 @@ describe('scripts/deploy.sh guards', () => {
       'deploy tag pushes only its own ref',
       'failed tag push keeps the local tag and exits 3',
       'failed tag creation prints the message and exits 3',
-      'a failed check after the upload prints how to tag a kept deploy',
+      'a stop after the upload prints how to tag a kept deploy',
+      'a failed upload says to check wrangler deployments status',
+      'SIGTERM after the upload still runs the EXIT trap',
     ]) {
       expect(output).toContain(`self-check ok: ${check}`);
     }

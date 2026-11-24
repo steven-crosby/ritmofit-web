@@ -435,6 +435,13 @@ test('CLI: report and guard on a fixture repo with an origin', () => {
       r.stdout,
     );
     assert.doesNotMatch(r.stdout, /a redeploy/);
+    // It lists the shipped changes it takes back: #790, not the tests-only #793 or the docs.
+    assert.match(r.stdout, /shipped changes this deploy takes back out of production:/);
+    assert.ok(r.stdout.includes(`  #790 ${s7(screen)} feat(web): likes past 200`), r.stdout);
+    assert.doesNotMatch(r.stdout, /#793 \S+ test\(web\)/);
+    r = run(work, '--guard', `${direct}~1`);
+    assert.equal(r.status, 0, r.stderr);
+    assert.match(r.stdout, /deploy guard: it takes back no shipped change\./);
 
     g('push', '-q', 'origin', `refs/tags/${local}`);
     add('docs: close the round (#795)', ['ritmofit_dev_plan/handoffs/x.md']);
