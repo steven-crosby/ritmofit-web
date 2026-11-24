@@ -49,7 +49,7 @@
     },
     {
       "kind": "observation",
-      "ref": "ritmofit_dev_plan/handoffs/2026-11-24-r1124-lane1-release-marker.md",
+      "ref": "https://github.com/steven-crosby/ritmofit-web/blob/4b08cfec8b1efaf94be61a90d5e5e92b93966910/ritmofit_dev_plan/handoffs/2026-11-24-r1124-lane1-release-marker.md",
       "checkedOn": "2026-11-24",
       "summary": "Rehearsed in a scratch clone of this repo with local tags only (nothing pushed): with a tag on b9e8141, release:status for the 2026-11-23 range gave two steps, scripts/deploy.sh f87c728 (#789 alone, provider / playback) then scripts/deploy.sh 1eed288 (#790, #792), and --guard 1eed288 refused with exit 1. With a tag on 1eed288, the verdict for ddc811d was \"nothing to ship\". On the real repo, which has no tags yet, pnpm release:status reported no deploy tag and an unknown verdict."
     },
