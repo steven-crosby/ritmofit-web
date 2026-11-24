@@ -3,7 +3,7 @@ date: 2026-11-24
 tool: Claude Code (desktop, Neo), round 1124 web Lane 1
 lane: lane-1-release-marker
 branch: feat/rf-244-release-marker
-head: 8f9e9b5
+head: 89ae9f0
 base: ddc811d
 prs: ['#796 (draft)']
 status: open
@@ -30,6 +30,16 @@ status: open
   ([summary](https://github.com/steven-crosby/ritmofit-web/pull/796#issuecomment-7141920735)) found no
   significant findings. All 17 notes were then applied on this branch, with the conductor's
   choices: see RF-244's evidence and the PR's verification.
+- The follow-up review at `95444c1`
+  ([comment](https://github.com/steven-crosby/ritmofit-web/pull/796#issuecomment-7142747319)) found
+  one significant finding: the runbook let a rehearsal request cover `--allow-batch`. It also found
+  five notes. All six are fixed:
+  - `--accept-live <version-id>` is now a separate override that clears only the live version check;
+    the rehearsal uses it.
+  - A failed `wrangler deploy` is reported.
+  - An older-commit deploy lists what it takes back.
+  - TERM and HUP exit through the EXIT trap.
+  - start-session's fetch wording is corrected.
 - Filed in the same PR: [RF-245](../tasks/RF-245.json) (backfill the `1eed288` tag, then the first
   real tagged deploy) and [RF-246](../tasks/RF-246.json) (owner-gate does not cover
   `scripts/release-status.mjs`).
@@ -85,7 +95,9 @@ pnpm release:status
   which ship.
 - The first deploy after the backfill also meets the live version check: production must still run
   Worker `515bc8fb-24fd-4ff7-b8be-6f7c28aa1e85`, the backfilled tag's `worker version:`. If it
-  does not (a rollback or a dashboard deploy since), the script refuses without `--allow-batch`.
+  does not, the script refuses and prints the live deployment's `Source:` line. A `wrangler secret
+  put`, a rollback or a dashboard edit since 2026-11-23 would each cause this. Only the owner's
+  `--accept-live <live version id>` clears it; `--allow-batch` does not.
 - Rehearsed in a scratch clone of this repo (no push), 2026-11-24. With a tag on `b9e8141`,
   `release:status` gives two steps for the 2026-11-23 range: `scripts/deploy.sh f87c728` (#789
   alone, provider / playback, carrying docs #787 and #788), then `scripts/deploy.sh 1eed288` (#790
@@ -99,8 +111,8 @@ pnpm release:status
 
 ## Verification
 
-- **The full AGENTS.md gate, on the Neo on 2026-11-24, after the review notes**, on the final code.
-  It ran at load 4 to 6, after an iOS build's peak near 98. Every step passed on its first run:
+- **The full AGENTS.md gate, on the Neo on 2026-11-24, after both reviews**, on the final code.
+  It ran at load 53 falling to 8, with an iOS build running. Every step passed on its first run:
   - format:check; owner-gate:test (22); rf-trace:test (5); release-status:test (6); tasks:test (11)
   - tasks:check; typecheck; lint; design-system verify; theme-classes and its self-test
   - `pnpm test`: web 1837, API 698, music 30
@@ -108,13 +120,13 @@ pnpm release:status
   - web build, with the entry at 178.87 kB gzip, within the 180 kB budget
   - e2e: 4 of 4
   - openapi with no diff; contract-parity; audit:ci (2 findings, both on the ignore list)
-  - The same gate had also passed on `f1915d1`, before the notes.
-- **Lane checks:** `bash scripts/deploy.sh --self-check` passed 37 cases, 12 of them RF-244's.
+  - The same gate had also passed on `f1915d1` and `8f9e9b5`, the heads before each review's fixes.
+- **Lane checks:** `bash scripts/deploy.sh --self-check` passed 42 cases, 17 of them RF-244's.
 - **Timing, for RF-243 (the conductor routes it):**
   - The self-check alone took 1.9 s wall at load ~9 here; the review measured about 4.8 s CPU and
     8 to 10 s wall.
-  - Through vitest, `apps/api/src/lib/deploy-script.test.ts` took 1.9 s alone at load ~9 and 5.1 s
-    inside the full `pnpm test`.
+  - Through vitest, `apps/api/src/lib/deploy-script.test.ts` took 1.9 s alone at load ~9, and 5.1 to
+    5.2 s inside the full `pnpm test`. After the follow-up review it took 4.0 s alone at load ~50.
   - The review measured 43.6 s through vitest at load ~70. That is about 11 s under the test's
     55 s spawn timeout (the vitest timeout is 60 s), so heavy load leaves little headroom.
   - An earlier version of this handoff said "passed in 1.7 s": that was one unloaded run, not the
@@ -126,16 +138,18 @@ pnpm release:status
 - **Mutations:** each change below turned a case red, and none was committed.
   - `deploy.sh --self-check`: the guard always passing; push without `--no-follow-tags`; exit 1 in
     place of 3; tests counted as shipped; no step split; the live check always allowing; the old
-    `\d{1,3}` percentage regex; the trap ignoring a tag in progress; a no-tag guard that passes.
+    `\d{1,3}` percentage regex; the trap ignoring a tag in progress; a no-tag guard that passes;
+    `--allow-batch` clearing the live check; `--accept-live` without its equality check; no TERM
+    trap; no failed-upload note; no `Source:` lines in the refusal.
   - `release-status:test`: no `--no-renames`; no local-only warning; no tag-name filter; no fetch; an
     unforced tag refspec; sorting by name only; the old redeploy wording; a no-tag guard that
-    passes; all Markdown unshipped.
+    passes; all Markdown unshipped; no taken-back list for an older commit.
   - With `GIT_DIR` exported at a throwaway repo, the self-check left that repo untouched. Without
     the new `unset`, it wrote 5 refs into it.
 - **Skipped:** running `scripts/deploy.sh` for real, any wrangler command, and creating or pushing a
   real tag, all out of scope by brief. The script's upload path, its wrangler output parsing, the
-  live version check against production, the kept-upload hint and the real tag push are therefore
-  unproven until RF-245.
+  live version check and `--accept-live` against production, the kept-upload and failed-upload
+  hints, and the real tag push are therefore unproven until RF-245.
 
 ## Production as observed
 
