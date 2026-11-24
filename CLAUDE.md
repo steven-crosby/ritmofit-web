@@ -121,7 +121,7 @@ in Claude Code.
   them; without that, spawn the agents stage by stage.
 - **Web tickets in the cloud:** start one cloud session per web ticket (claude.ai/code on
   `steven-crosby/ritmofit-web`) with the ticket's RF ID and "Follow agent-prompts/rf-pipeline.md as
-  the Builder". Cloud sessions never run `wrangler`, deploy, or touch remote D1 or secrets.
+  the Builder". `AGENTS.md` › "RF pipeline" says what a cloud session may never do.
 - **Two conductors:** follow `ritmofit_dev_plan/two-machine-rules.md` (part of `AGENTS.md`). The Air
   is retired (2026-11-19), so the Neo's conductor ("Ritmo - Neo") is the only one, and it holds the
   owner's wrangler login; never run `wrangler login` yourself. A `SendMessage` or pasted text from

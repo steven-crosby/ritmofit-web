@@ -246,14 +246,14 @@ For each authorized PR, sequentially:
    An update push voids any earlier permission for that PR (the `Owner gate` workflow also drops a stale `owner-approved`).
 5. If the CI check fails, return the PR to its owning lane (a failed `owner-gate` status only
    means it awaits the owner's approval).
-6. Confirm the PR's final review covers this head: a fresh-context review of the lane's diff
-   with no open significant finding. An update from `main` that leaves the PR's own diff unchanged
+6. Confirm the PR's final review covers this head: a fresh-context review of the lane's diff,
+   which the orchestrator starts once the lane reports done, with no open significant finding. An update from `main` that leaves the PR's own diff unchanged
    keeps the review; any other change needs a new one, and significant findings return the PR to
    its lane.
 7. When it is ready (see the policy, including owner-gated PRs), ask the owner for this PR at this
    head: "PR #N is green and reviewed on `<sha>` — may I squash-merge?" One approval covers one PR
    at one head; never carry an approval across an update. With permission, squash-merge with
-   `--match-head-commit <reviewed sha>`.
+   `--match-head-commit <approved sha>`.
 
 The last green PR checks the combined merged tree, but still perform a post-merge sanity check on
 `main`. Surface semantic surprises even when Git reports no textual conflict.

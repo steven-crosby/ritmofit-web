@@ -88,7 +88,8 @@ they need the owner in the session that performs them (web RF-191 tracks a recor
 
 ## 4. Who finishes a PR
 
-The conductor the owner gives the merge permission to runs the final review and the merge, whichever
+The conductor the owner gives the merge permission to runs the merge (its final review ran before
+the ask, web `AGENTS.md` › "Delegation And Merge Policy"), whichever
 conductor opened the PR. When a PR's approval is a GitHub record (§3), either conductor may finish
 it: the conductor that opened the PR goes first unless the owner names the other, and the other
 checks for a merge notice before starting. A batch's pre-approval issue is not such a record: only
@@ -128,7 +129,7 @@ over a window the owner sets of at most seven days. Builder sessions in a batch 
 web `agent-prompts/rf-pipeline.md`) build and open PRs; only the batch's conductor merges. Everything else in each repo's merge gate still applies. This section applies in
 a repo only once that repo's `AGENTS.md` names the exception: ritmofit-web from RF-193, ritmofit-ios
 from RF-1041 for unattended nights. Attended and multi-day batches apply in ritmofit-web from RF-248
-and in ritmofit-ios once its `AGENTS.md` names them (iOS RF-1243). Until a repo's `AGENTS.md` names
+and in ritmofit-ios once its `AGENTS.md` names them (iOS RF-1243, filed with that change). Until a repo's `AGENTS.md` names
 a form of batch, a batch of that form opens PRs there for the owner's review and merges nothing.
 
 ### 7.1 The pre-approval issue
@@ -153,7 +154,7 @@ is the merge permission for each PR it covers, and for nothing else:
   must be empty. If it isn't, merging stops for the batch. A mistake in the issue is fixed by the
   owner in a session, never by editing it. Comments don't count as edits.
 - **ritmofit-ios:** the merge comment cites the issue and the merged head SHA.
-- **ritmofit-web:** at §7.4 step 6, the agent applies `owner-approved` to the PR's final head with a
+- **ritmofit-web:** at §7.4 step 6, the batch's conductor (never a builder) applies `owner-approved` to the PR's final head with a
   comment citing the issue and the head SHA, then merges once `owner-gate` succeeds on that head.
 
 The permission covers each queued PR for the whole window, not one head. A push that §7.4 step 4
@@ -168,8 +169,8 @@ Owner pre-approval for one batch (ritmofit_dev_plan/two-machine-rules.md › 7).
 - **Conductor:** <session name> on the Neo · **Repo:** <ritmofit-web|ritmofit-ios>
 - **Builders:** <cloud sessions | the Neo>, at most <N> at once
 - **Attended:** <yes | no (unattended)>
-- **Window:** <start> to <end> (local and Z). No new PR after <end minus 1 hour>, except the handoff PR.
-- **Pre-approved queue, in priority order (each merges once it passes 7.4):** <RF-N: scope; eligibility checked (7.3)>
+- **Window:** <start> to <end> (local and Z). No new PR after <end minus 1 hour>, except the close-out PR.
+- **Pre-approved queue, in priority order (each merges once it passes 7.4):** <RF-N: scope; eligibility checked (7.3)>; last: close-out PR, if needed (§7.8)
 - **Owner-named exceptions:** <none | RF-N may change <area>>
 - **Not pre-approved (opened for the owner's review only):** <RF-N: why>
 - **Merge bar:** 7.4, unchanged | <owner's changes>
@@ -231,7 +232,8 @@ This replaces the repo's usual final review for the batch's PRs.
    copy once it has one, and until then a fresh-context reviewer subagent runs `/code-review high`
    on the branch diff). Each reviewer is a fresh-context agent that did not build the change. A finding that the repo's merge policy calls significant (in web `AGENTS.md`: a correctness bug in
    executable code, or a contradiction about who grants permission, sets Ready or merges) is fixed,
-   or it stops this PR. Every other finding is fixed, or filed as an RF task with the reason. The
+   or it stops this PR. Every other finding follows web `agent-prompts/rf-pipeline.md` ›
+   "Findings: fix or drop". The
    review summary goes in the PR body. The pre-approval issue's queue is the batch's claim (§2),
    so the PR isn't opened early as a draft.
 3. **Open and cite.** Open the PR, then add its URL as the record's `pr` evidence and push at once,
@@ -242,13 +244,13 @@ This replaces the repo's usual final review for the batch's PRs.
    - a conflict resolution, changing only the conflict;
    - an update from `main` with no other change.
 
-   Anything more stops this PR. After a push that changes the PR's own diff, the review in step 2
-   runs again on the whole diff. An update from `main` that leaves that diff unchanged needs no
+   Anything more stops this PR. After a push that changes the PR's own diff, the verify and review
+   in step 2 run again on the whole diff. An update from `main` that leaves that diff unchanged needs no
    re-review.
 5. **Checks.** Every check `gh pr checks` lists for the final head is green: in ritmofit-ios at least
    `ios build · test` and `parity`, in ritmofit-web the required CI job. Pending isn't green. In
    ritmofit-web, re-run the §7.3 `owner-gate` check on the final head.
-6. **Approval record.** First re-check the issue (§7.1): still open, never edited, and the window
+6. **Approval record** (the batch's conductor only). First re-check the issue (§7.1): still open, never edited, and the window
    still open. The owner closing the issue revokes the batch. In
    ritmofit-ios, comment the issue and the final head SHA on the PR. In ritmofit-web, apply
    `owner-approved` at least two minutes after the final push, with that comment, and wait for
@@ -270,12 +272,12 @@ This replaces the repo's usual final review for the batch's PRs.
   that, the PR stays open.
 - **Merging stops** if the CI runner goes offline, or if parity turns red from drift in the other
   repo.
-- **Timing:** no new PR in the window's last hour, except the handoff PR (§7.8). Everything stops
+- **Timing:** no new PR in the window's last hour, except the close-out PR (§7.8). Everything stops
   at the window's end.
 
 ### 7.6 CI hygiene on the Neo
 
-- **Never cancel a CI run by hand.** A cancelled run may break the next one (iOS RF-1040). Push a branch only once it's reviewed, so that concurrency cancels are rare.
+- **Never cancel a CI run by hand.** A cancelled run may break the next one (iOS RF-1040). Open a PR only once its branch is reviewed, so that concurrency cancels are rare.
 - **No local simulator runs during iOS CI.** Don't build, run or test in a local simulator while an
   iOS CI job is running.
 - **Local `pnpm dev:api` only when needed.** Run it only for a PR that touches auth, networking or
@@ -294,11 +296,13 @@ This replaces the repo's usual final review for the batch's PRs.
 
 ### 7.8 Close-out
 
-1. **Handoff PR, only if needed.** Each PR sets its own task's final state, so most batches need
-   none. When a successor needs restart context a record cannot hold, open one last docs PR that
-   only adds the batch's handoff and updates RF records. The pre-approval issue of the repo it
-   lives in lists it as the queue's last item when the batch plans one. It merges under §7.4 like
-   the rest. If it can't merge, it stays open for the owner, and the close-out comment says so.
+1. **Close-out PR, only if needed.** Each PR sets its own task's final state, so many batches need
+   none. When the batch's PRs listed polish notes (web `agent-prompts/rf-pipeline.md` › "Findings:
+   fix or drop"), or a successor needs restart context a record cannot hold, open one last docs PR
+   that only copies those notes into the polish record, adds the batch's handoff and updates RF
+   records. It merges under §7.4 only if the pre-approval issue of the repo it lives in lists it as
+   the queue's last item (the issue may list it as "close-out PR, if needed"). Otherwise, or if it
+   can't merge, it stays open for the owner, and the close-out comment says so.
 2. **Close-out comment.** Comment on each pre-approval issue: what merged (PR, RF ID, head SHA),
    what is open and why, hard stops hit, flakes and re-runs, any correction, and the measures in
    web `agent-prompts/rf-pipeline.md` › "Measures".

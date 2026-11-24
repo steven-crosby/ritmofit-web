@@ -155,8 +155,9 @@ migrations **before** the code that depends on them.
 - [`docs/onboarding/ritmofit-tutorial-video-cuts.md`](docs/onboarding/ritmofit-tutorial-video-cuts.md) —
   caption/cut specs for the landing-hero and onboarding tutorial videos.
 - [`agent-prompts/delegate-task.md`](agent-prompts/delegate-task.md) — how to hand one task to an
-  agent; it opens a PR and, once CI is green, asks your permission before its final review and
-  squash-merge (see `AGENTS.md` › "Delegation And Merge Policy").
+  agent; it opens a PR, gets a fresh-context review and, once CI is green, asks your permission to
+  squash-merge (see `AGENTS.md` › "Delegation And Merge Policy"). RF tickets normally go through
+  [`agent-prompts/rf-pipeline.md`](agent-prompts/rf-pipeline.md).
 - [`agent-prompts/`](agent-prompts/README.md) — the session workflow (start/close-session, parallel
   lanes, handoff and lane-brief templates) plus attended audit packs, including the agent-agnostic
   [design-audit pack](agent-prompts/design-audit/README.md).
