@@ -170,7 +170,7 @@ Owner pre-approval for one batch (ritmofit_dev_plan/two-machine-rules.md › 7).
 - **Builders:** <cloud sessions | the Neo>, at most <N> at once
 - **Attended:** <yes | no (unattended)>
 - **Window:** <start> to <end> (local and Z). No new PR after <end minus 1 hour>, except the close-out PR.
-- **Pre-approved queue, in priority order (each merges once it passes 7.4):** <RF-N: scope; eligibility checked (7.3)>; last: close-out PR, if needed (§7.8)
+- **Pre-approved queue, in priority order (each merges once it passes 7.4):** <RF-N: scope; eligibility checked (7.3)>; last, only if the owner's words name it: close-out PR, if needed (§7.8)
 - **Owner-named exceptions:** <none | RF-N may change <area>>
 - **Not pre-approved (opened for the owner's review only):** <RF-N: why>
 - **Merge bar:** 7.4, unchanged | <owner's changes>
@@ -233,7 +233,8 @@ This replaces the repo's usual final review for the batch's PRs.
    on the branch diff). Each reviewer is a fresh-context agent that did not build the change. A finding that the repo's merge policy calls significant (in web `AGENTS.md`: a correctness bug in
    executable code, or a contradiction about who grants permission, sets Ready or merges) is fixed,
    or it stops this PR. Every other finding follows web `agent-prompts/rf-pipeline.md` ›
-   "Findings: fix or drop". The
+   "Findings: fix or drop". A push that web `AGENTS.md` says keeps the review (only adding the
+   findings' Backlog records, or only the task's evidence, with the board) needs no new one. The
    review summary goes in the PR body. The pre-approval issue's queue is the batch's claim (§2),
    so the PR isn't opened early as a draft.
 3. **Open and cite.** Open the PR, then add its URL as the record's `pr` evidence and push at once,

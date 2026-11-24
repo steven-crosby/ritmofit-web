@@ -6,7 +6,7 @@ enforces this for apps/, packages/ and e2e/ changes. -->
 
 ## Owner gate
 
-<!-- Every PR except an evidence-only one: a fresh-context review of the head runs first (AGENTS.md › "Delegation And Merge
+<!-- Every PR: a fresh-context review of the head runs first (not needed for an evidence-only PR outside a batch) (AGENTS.md › "Delegation And Merge
 Policy"); when the required CI check is green, the agent asks the owner before the squash-merge (PR
 comment + `ready-to-merge` if the owner is not in the session). If the
 `owner-gate` status fails because owner-gated paths changed, also add `needs-owner`.
