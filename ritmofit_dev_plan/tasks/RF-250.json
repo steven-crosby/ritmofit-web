@@ -42,6 +42,12 @@
       "ref": "package.json",
       "summary": "pnpm format:check, owner-gate:test (22 of 22), rf-trace:test (5 of 5), lint and git diff --check passed on this branch. No app or package code changed, so the rest of the gate was not run.",
       "checkedOn": "2026-11-24"
+    },
+    {
+      "kind": "pr",
+      "ref": "https://github.com/steven-crosby/ritmofit-web/pull/799",
+      "summary": "Draft PR stacked on #798 (base feat/rf-248-rf-pipeline), labeled needs-owner; opened 2026-11-24, not merged.",
+      "checkedOn": "2026-11-24"
     }
   ]
 }
