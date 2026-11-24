@@ -53,7 +53,7 @@
     {
       "kind": "observation",
       "ref": "ritmofit_dev_plan/HISTORY.md",
-      "summary": "Deployed 2026-11-23 from the Neo in main 1eed288 with scripts/deploy.sh: Worker 515bc8fb-24fd-4ff7-b8be-6f7c28aa1e85 at 100%, SPA assets/index-CFKeSijz.js (3 of 3 propagation fetches). The class editor's My likes loads past the first 200 is live; real paging past 200 likes is still the owner's check.",
+      "summary": "Deployed 2026-11-23 from the Neo in main 1eed288 with scripts/deploy.sh: Worker 515bc8fb-24fd-4ff7-b8be-6f7c28aa1e85 at 100%, SPA assets/index-CFKeSijz.js (3 of 3 propagation fetches). Load more past the first 200 likes in the class editor is live; real paging past 200 likes is still the owner's check.",
       "checkedOn": "2026-11-23"
     }
   ],

@@ -78,10 +78,12 @@ alongside: RF-217, RF-205, RF-148, RF-155. Account security (RF-116, RF-140) is 
 **Next step:** #764, #767, #766 and #768 are deployed (2026-11-21), so the owner checks they need are next:
 [RF-211](./tasks/RF-211.json) on iPhone Safari, [RF-224](./tasks/RF-224.json) (preflight groups with a
 provider disconnected), and RF-217, which also covers RF-218. In the order above RF-158, RF-74, RF-218 and
-RF-136 are Done, RF-211 is For review, and RF-130, RF-149 and RF-157 are Done (rounds 1123 and 1123b, not
-deployed); next to build is [RF-138](./tasks/RF-138.json) after a design pass. The rounds' follow-ups are
+RF-136 are Done, RF-211 is For review, and RF-130, RF-149 and RF-157 are Done (rounds 1123 and 1123b, deployed
+2026-11-23 in `1eed288`); next to build is [RF-138](./tasks/RF-138.json) after a design pass. The rounds' follow-ups are
 RF-239, RF-240, RF-242 and RF-243 (Backlog).
 Follow-ups from the 2026-11-13 reviews are RF-221 to RF-225 (Backlog). Owner checks on production:
+[RF-130](./tasks/RF-130.json): a glance at Cue-by-Cue's Next song line at a song's last cue.
+[RF-149](./tasks/RF-149.json): Load more past 200 real likes in the class editor.
 [RF-238](./tasks/RF-238.json): Continue with Apple on ritmofit.studio/sign-in reaches Apple's sign-in page.
 [RF-217](./tasks/RF-217.json): Spotify stays playable past the
 hour and asks to reconnect only for a dead grant (desktop Chrome, three steps). iPhone feel pass on a Spotify class: the Live
