@@ -1,0 +1,30 @@
+{
+  "schemaVersion": 1,
+  "id": "RF-247",
+  "title": "deploy.sh follow-ups from #796's last review: trap wording and second signals, the --accept-live record and repeat, and owner-word wording",
+  "kind": "task",
+  "status": "backlog",
+  "priority": "P3",
+  "parent": null,
+  "dependsOn": [],
+  "acceptance": [
+    "scripts/deploy.sh's comment at the TERM/HUP traps and the self-check's name give the right reason: bash 3.2 runs the EXIT trap on SIGTERM/SIGHUP with $? set to the last command's status, so on_deploy_exit could skip the hint; the traps turn the signals into exits 143/129.",
+    "The failed-upload hint says \"wrangler deploy failed or was interrupted (exit N); it may have uploaded. Run … wrangler deployments status.\" (a signal that reaches only bash while wrangler runs can fire before DEPLOY_UPLOADED=1).",
+    "on_deploy_exit starts with trap '' TERM HUP INT, so a second signal can't cut the hint and the worktree removal short.",
+    "--accept-live is recorded in the tag (DEPLOY_LIVE_NOTE) whenever it was passed and matched, including the no-tag and unknown-tag-Worker paths; a repeated --accept-live exits 2.",
+    "Every mention of --allow-batch and --accept-live (deploy.sh :10 and :24 comments, runbook :108 and :126, AGENTS.md's no-tag sentence, release-status.mjs :258 and :330) names both the owner's word in the session and HISTORY; runbook :156 says the rehearsal ask that names <previous-version-id> meets the 'owner has seen the live version' condition.",
+    "Optional, the record says which were done: N3 also lists what a diverged (not only an older) commit takes back; the live refusal omits an empty 'source:' line; the two long unwrapped lines in start-session.md and the runbook are wrapped; DEPLOY_ALLOW is kept only as the self-check's regression case."
+  ],
+  "nextAction": "Agent-created (Neo, 2026-11-24) from #796's last review pass at da723d5 (no significant findings; notes 1-3 and 5-9). Backlog until the owner sets Ready. Note 4 (RF-244's wording) was fixed in #796.",
+  "blocker": null,
+  "evidence": [
+    {
+      "kind": "observation",
+      "ref": "https://github.com/steven-crosby/ritmofit-web/pull/796",
+      "summary": "#796's fresh-context review of the delta 95444c1..da723d5: S1 resolved, no significant findings; these are its non-significant notes 1-3 and 5-9, each reproduced on /bin/bash 3.2.57 where it concerns behaviour.",
+      "checkedOn": "2026-11-24"
+    }
+  ],
+  "resolution": null,
+  "followUps": []
+}
