@@ -484,8 +484,10 @@ own; apply required remote D1 migrations before code. `scripts/deploy.sh` enforc
 deploy that mixes such a change with other shipped changes unless the owner says, in the session, to
 batch them (`--allow-batch`, recorded in HISTORY). Each deploy tags its commit
 `deploy/<UTC time>-<sha7>`; that tag is production's record, and `pnpm release:status` reads it to
-say what is due. The Worker deploy command does not build the SPA; build `apps/web/dist` before
-deploying the Worker that serves it.
+say what is due. With no deploy tag yet, or when production's Worker is not the newest tag's (a
+rollback), the script also refuses unless the owner says to pass `--allow-batch`; the conductor
+backfills the first tag (RF-245) before any deploy. The Worker deploy command does not build the
+SPA; build `apps/web/dist` before deploying the Worker that serves it.
 
 For deploys and rollback, follow `ritmofit_dev_plan/deployment-runbook.md`. After deployment, smoke-test
 the SPA, health endpoint, a protected endpoint, relevant assets/headers, and report the Worker version

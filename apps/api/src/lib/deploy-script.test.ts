@@ -20,17 +20,20 @@ describe('scripts/deploy.sh guards', () => {
     expect(output).toContain('bracketed log line fails without printing the payload');
     expect(output).toContain('bad smoke line fails before the request');
     expect(output).toContain('git guard and /tmp worktree');
-    // RF-244: the deploy tag, its push, and the deploy-alone guard.
+    // RF-244: the deploy tag, its push, the deploy-alone guard and the live version check.
     for (const check of [
       'deploy tag name and message',
       'Worker and rollback versions for the tag message',
-      'deploy guard warns and skips with no deploy tag',
+      'live version check passes a matching, unknown or untagged production',
+      'live version check refuses a rolled-back production unless --allow-batch',
+      'deploy guard refuses with no deploy tag unless --allow-batch',
       'deploy guard lets a deploy-alone change ship alone',
       'deploy guard refuses a deploy-alone batch and prints the steps',
       'deploy guard --allow-batch records the batch',
       'deploy tag pushes only its own ref',
       'failed tag push keeps the local tag and exits 3',
       'failed tag creation prints the message and exits 3',
+      'a failed check after the upload prints how to tag a kept deploy',
     ]) {
       expect(output).toContain(`self-check ok: ${check}`);
     }

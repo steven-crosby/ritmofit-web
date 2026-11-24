@@ -23,6 +23,14 @@ const ENV = Object.fromEntries(Object.entries(process.env).filter(([k]) => !k.st
 
 const git = (cwd, ...args) =>
   execFileSync('git', args, { cwd, env: ENV, encoding: 'utf8', stdio: 'pipe' }).trim();
+/** git with GIT_COMMITTER_DATE set, which is an annotated tag's creation date. */
+const gitAt = (date, cwd, ...args) =>
+  execFileSync('git', args, {
+    cwd,
+    env: { ...ENV, GIT_COMMITTER_DATE: date },
+    encoding: 'utf8',
+    stdio: 'pipe',
+  }).trim();
 
 const run = (cwd, ...args) => {
   const r = spawnSync(process.execPath, [SCRIPT, ...args], { cwd, env: ENV, encoding: 'utf8' });
@@ -66,9 +74,10 @@ const commit = (sha, pr, files) => ({ sha, pr, title: `change ${sha}`, files, ..
 test('shipped paths are what the Worker, the SPA build or remote D1 use', () => {
   const shipped = [
     'apps/web/src/components/LiveMode.tsx',
-    'apps/web/src/lib/energy-hold.fixture.ts',
     'apps/web/index.html',
     'apps/web/public/_headers',
+    // The SPA serves apps/web/public/ as-is, Markdown included.
+    'apps/web/public/legal/privacy.md',
     'apps/web/vite.config.ts',
     'apps/web/package.json',
     'apps/web/scripts/generate-tokens.mjs',
@@ -83,6 +92,7 @@ test('shipped paths are what the Worker, the SPA build or remote D1 use', () => 
   ];
   const notShipped = [
     'apps/web/src/components/LiveMode.test.tsx',
+    'apps/web/src/lib/energy-hold.fixture.ts',
     'apps/api/src/lib/authz.test.ts',
     'apps/api/test/authz.integration.test.ts',
     'apps/api/test/apply-migrations.ts',
@@ -101,7 +111,6 @@ test('shipped paths are what the Worker, the SPA build or remote D1 use', () => 
     'scripts/release-status.mjs',
     '.github/workflows/ci.yml',
     'package.json',
-    '.nvmrc',
     'eslint.config.js',
     'AGENTS.md',
     'CLAUDE.md',
@@ -303,13 +312,20 @@ test('CLI: report and guard on a fixture repo with an origin', () => {
 
     let r = run(work);
     assert.equal(r.status, 0, r.stderr);
-    assert.match(r.stdout, /^Fetched origin main and tags\./m);
+    assert.match(r.stdout, /^Fetched origin main and the deploy tags\./m);
     assert.match(r.stdout, /No deploy\/\* tag yet/);
     assert.match(r.stdout, /Verdict: unknown \(no deploy tag to compare with\)\./);
+    // No tag yet: refuse until the backfill (RF-245), or the owner's --allow-batch.
     r = run(work, '--guard', 'HEAD');
-    assert.equal(r.status, 0, r.stderr);
-    assert.match(r.stdout, /no deploy\/\* tag yet, so the deploy-alone guard is skipped/);
+    assert.equal(r.status, 1);
     assert.match(r.stdout, /^since: none$/m);
+    assert.match(
+      r.stderr,
+      /no deploy\/\* tag yet: the conductor backfills it \(RF-245\) before any deploy, or pass --allow-batch on the owner's word/,
+    );
+    r = run(work, '--guard', 'HEAD', '--allow-batch');
+    assert.equal(r.status, 0, r.stderr);
+    assert.match(r.stdout, /^batch: allowed by --allow-batch \(no deploy tag to compare with\)$/m);
 
     const tag = `deploy/2026-11-23T1730Z-${base.slice(0, 7)}`;
     g(
@@ -334,9 +350,22 @@ test('CLI: report and guard on a fixture repo with an origin', () => {
     g('push', '-q', 'origin', 'HEAD:main');
     // A tag that is not a deploy/<time>-<sha7> name is ignored.
     g('tag', 'deploy/latest', direct);
-    // Only the fetch can bring back origin/main and the deploy tag.
+    // Only the fetch can bring back origin/main, and it must force-update a stale local copy of
+    // the deploy tag.
     g('update-ref', '-d', 'refs/remotes/origin/main');
     g('tag', '-d', tag);
+    g('tag', '-a', tag, direct, '-m', 'a stale local copy');
+    // Newest is by creation date: a later name created earlier is not the newest tag.
+    gitAt(
+      '2020-01-01T00:00:00Z',
+      work,
+      'tag',
+      '-a',
+      `deploy/2026-12-31T2359Z-${base.slice(0, 7)}`,
+      base,
+      '-m',
+      'old',
+    );
 
     r = run(work);
     assert.equal(r.status, 0, r.stderr);
@@ -365,6 +394,7 @@ test('CLI: report and guard on a fixture repo with an origin', () => {
     r = run(work, '--guard', direct);
     assert.equal(r.status, 1);
     assert.match(r.stdout, new RegExp(`^since: ${tag}$`, 'm'));
+    assert.match(r.stdout, /^since-worker: fedc7fbf-1bc2-46cd-a90a-3059505e0a7b$/m);
     assert.match(r.stderr, /mixes a deploy-alone change with other shipped changes/);
     assert.match(r.stderr, new RegExp(`#789 ${s7(alone)} deploys alone \\(provider / playback\\)`));
     assert.match(r.stderr, new RegExp(`also shipped: #790 ${s7(screen)}`));
@@ -390,8 +420,21 @@ test('CLI: report and guard on a fixture repo with an origin', () => {
     assert.equal(r.status, 0, r.stderr);
     assert.match(r.stdout, new RegExp(`Production \\(newest deploy tag\\): ${local}`));
     assert.match(r.stdout, /this tag is only local; its deploy did not push it/);
-    assert.ok(r.stdout.includes(`    git push origin refs/tags/${local}`), r.stdout);
+    assert.ok(
+      r.stdout.includes(
+        `    git push --no-follow-tags origin refs/tags/${local}:refs/tags/${local}`,
+      ),
+      r.stdout,
+    );
     assert.match(r.stdout, /Verdict: nothing to ship \(production has origin\/main\)\./);
+    // Deploying a commit older than the newest tag takes changes back out of production.
+    r = run(work, '--guard', alone);
+    assert.equal(r.status, 0, r.stderr);
+    assert.ok(
+      r.stdout.includes(`(an older commit: this deploy takes back ${s7(alone)}..${s7(direct)})`),
+      r.stdout,
+    );
+    assert.doesNotMatch(r.stdout, /a redeploy/);
 
     g('push', '-q', 'origin', `refs/tags/${local}`);
     add('docs: close the round (#795)', ['ritmofit_dev_plan/handoffs/x.md']);
@@ -400,7 +443,7 @@ test('CLI: report and guard on a fixture repo with an origin', () => {
     assert.equal(r.status, 0, r.stderr);
     assert.doesNotMatch(r.stdout, /only local/);
     assert.match(r.stdout, /1 commit after the tag/);
-    assert.match(r.stdout, /Verdict: nothing to ship \(docs, records and tests only\)\./);
+    assert.match(r.stdout, /Verdict: nothing to ship \(no commit changes shipped code\)\./);
     r = run(work, '--no-fetch');
     assert.equal(r.status, 0, r.stderr);
     assert.match(r.stdout, /^Skipped the fetch \(--no-fetch\)/m);

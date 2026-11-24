@@ -146,7 +146,7 @@ work should reach main; ungranted publication actions remain explicit rather tha
 ## 5. Production and post-publication facts
 
 - [ ] **Release check.** After this session's merges, run `pnpm release:status`, and in an iOS
-  checkout when one is at hand, `node scripts/release-status.mjs`. When either says something is
+  checkout once iOS #229 has merged, `node scripts/release-status.mjs`. When either says something is
   due, ask the owner once, naming each step: the `scripts/deploy.sh <sha>` deploys in order (a
   deploy-alone change on its own) and the iOS uploads it lists. Never deploy or upload without the
   owner's yes in this session. "Nothing to ship" needs no question. Batching a deploy-alone change

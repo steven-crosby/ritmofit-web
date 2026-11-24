@@ -14,8 +14,10 @@ set -euo pipefail
 #
 # Before building, the deploy-alone guard (scripts/release-status.mjs --guard)
 # refuses a range from the newest deploy/* tag to the commit that mixes a
-# deploy-alone change with other shipped changes, and prints the steps.
-# --allow-batch lets it through; pass it only when the owner said to batch.
+# deploy-alone change with other shipped changes, and prints the steps. It also
+# refuses when there is no deploy tag yet, and when production's live Worker is
+# not the newest tag's (a rollback). --allow-batch lets these through; pass it
+# only when the owner said, in the session, to batch.
 #
 # The script checks out a detached worktree under /tmp and builds there.
 # ritmofit_design_system has no lockfile and no dependencies: do not npm ci.
@@ -33,9 +35,19 @@ TAG_PUSH_SLEEP_SECONDS=5
 # Exit status when the deploy went out but its tag was not created or pushed.
 TAG_FAILED_EXIT=3
 
-# Set by deploy_guard for the tag message.
+# Set by deploy_guard for the live-version check and the tag message.
 DEPLOY_SINCE="none"
+DEPLOY_SINCE_WORKER="unknown"
 DEPLOY_BATCH=""
+# "allow" when --allow-batch was passed.
+DEPLOY_ALLOW=""
+# Read by on_deploy_exit: after an upload whose later check failed, it prints
+# how to tag the deploy if the owner keeps it.
+DEPLOY_SHA=""
+DEPLOY_UPLOADED=0
+DEPLOY_TAGGING=0
+DEPLOY_TAG_NAME=""
+DEPLOY_TAG_MSG=""
 
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 REQUIRED_SECRETS_FILE="${SCRIPT_DIR}/required-secrets.txt"
@@ -363,9 +375,10 @@ run_gates() {
 
 # Runs the deploy-alone guard (scripts/release-status.mjs --guard) for sha in the
 # current repo and prints its report. Sets DEPLOY_SINCE (the newest deploy tag,
-# or "none") and DEPLOY_BATCH (set only for an --allow-batch batch) for the tag
-# message. Returns 1 when the range must not ship as one deploy, or when the
-# guard could not decide; nothing has been built or uploaded at that point.
+# or "none"), DEPLOY_SINCE_WORKER (that tag's Worker version) and DEPLOY_BATCH
+# (set only for an --allow-batch batch). Returns 1 when the range must not ship
+# as one deploy, when there is no deploy tag yet, or when the guard could not
+# decide; nothing has been built or uploaded at that point.
 deploy_guard() {
   local sha="$1"
   local allow="${2:-}"
@@ -377,11 +390,13 @@ deploy_guard() {
     node "$RELEASE_STATUS" --guard "$sha" >"$out" || status=$?
   fi
   DEPLOY_SINCE="none"
+  DEPLOY_SINCE_WORKER="unknown"
   DEPLOY_BATCH=""
   while IFS= read -r line || [[ -n "$line" ]]; do
     printf '%s\n' "$line"
     case "$line" in
       "since: "*) DEPLOY_SINCE="${line#since: }" ;;
+      "since-worker: "*) DEPLOY_SINCE_WORKER="${line#since-worker: }" ;;
       "batch: "*) DEPLOY_BATCH="${line#batch: }" ;;
     esac
   done <"$out"
@@ -460,7 +475,7 @@ rollback_version_from_status() {
       text = fs.readFileSync(process.argv[1], "utf8");
     } catch {}
     text = text.replace(/\u001b\[[0-9;]*m/g, "");
-    const re = /\((\d{1,3})%\)\s+([0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12})/g;
+    const re = /\(([\d.]+)%\)\s+([0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12})/g;
     const found = [...text.matchAll(re)].map((m) => m[2] + " (" + m[1] + "%)");
     process.stdout.write((found.length ? found.join(", ") : "unknown") + "\n");
   ' "$1"
@@ -481,14 +496,15 @@ tag_deploy() {
       "DEPLOYED ${sha:0:7}, but creating the deploy tag ${name} failed." \
       "The deploy stands; do not roll back for this. From the repo root, save the message below" \
       "to a file, then run:" \
-      "  git tag -a ${name} ${sha} -F <that file> && git push origin refs/tags/${name}" \
+      "  git tag -a ${name} ${sha} -F <that file> && $(tag_push_command "$name")" \
       "and record the deploy in HISTORY as usual. Tag message:" >&2
     cat "$msg" >&2
     return "$TAG_FAILED_EXIT"
   fi
   printf '%s\n' "tagged ${sha:0:7} as ${name}"
   for ((try = 1; try <= TAG_PUSH_TRIES; try++)); do
-    if git -C "$repo" push origin "refs/tags/${name}:refs/tags/${name}"; then
+    # --no-follow-tags: push.followTags must not send any other tag with it.
+    if git -C "$repo" push --no-follow-tags origin "refs/tags/${name}:refs/tags/${name}"; then
       printf '%s\n' "pushed ${name} to origin"
       return 0
     fi
@@ -499,25 +515,94 @@ tag_deploy() {
   printf '%s\n' \
     "DEPLOYED ${sha:0:7}, but pushing ${name} to origin failed ${TAG_PUSH_TRIES} times." \
     "The deploy stands; do not roll back for this. The tag exists locally. From the repo root:" \
-    "  git push origin refs/tags/${name}" \
+    "  $(tag_push_command "$name")" \
     "and record the deploy in HISTORY as usual." >&2
   return "$TAG_FAILED_EXIT"
+}
+
+# The one command that pushes a deploy tag and nothing else.
+tag_push_command() {
+  printf 'git push --no-follow-tags origin refs/tags/%s:refs/tags/%s\n' "$1" "$1"
+}
+
+# check_live_version <live versions from rollback_version_from_status>
+# Production should run the newest deploy tag's Worker. When the live version
+# read before the gates and the tag's `worker version:` are both known and
+# differ (a rollback, or a change outside this script), the guard's range
+# understates what this deploy changes. Refuses unless --allow-batch; with it,
+# adds the difference to DEPLOY_BATCH for the tag message.
+check_live_version() {
+  local live="$1"
+  local uuid_re='^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$'
+  local note
+  if [[ "$DEPLOY_SINCE" == "none" ]]; then
+    return 0
+  fi
+  if [[ ! "$DEPLOY_SINCE_WORKER" =~ $uuid_re || "$live" == "unknown" ]]; then
+    printf '%s\n' "live version check: skipped (production ${live}; ${DEPLOY_SINCE} records ${DEPLOY_SINCE_WORKER})"
+    return 0
+  fi
+  if [[ "$live" == "${DEPLOY_SINCE_WORKER} (100%)" ]]; then
+    printf '%s\n' "live version check: production runs ${DEPLOY_SINCE}'s Worker ${DEPLOY_SINCE_WORKER}"
+    return 0
+  fi
+  note="production ran ${live}, not ${DEPLOY_SINCE}'s Worker ${DEPLOY_SINCE_WORKER}"
+  if [[ "$DEPLOY_ALLOW" == "allow" ]]; then
+    printf '%s\n' "live version check: ${note}; going ahead under --allow-batch"
+    if [[ -n "$DEPLOY_BATCH" ]]; then
+      DEPLOY_BATCH="${DEPLOY_BATCH}; ${note}"
+    else
+      DEPLOY_BATCH="allowed by --allow-batch (${note})"
+    fi
+    return 0
+  fi
+  printf '%s\n' \
+    "refusing to deploy: ${note}." \
+    "Production is not ${DEPLOY_SINCE} (a rollback, or a change outside scripts/deploy.sh), so this" \
+    "deploy re-ships everything between production's code and this commit, not only the range the" \
+    "deploy-alone guard checked. Ask the owner; pass --allow-batch only on the owner's word, and" \
+    "record it in HISTORY. Nothing was built or uploaded." >&2
+  return 1
+}
+
+# keep_and_tag_hint <tag name> <sha> <message file>
+# For an upload whose later check failed: the runbook decides between rolling
+# back and keeping the deploy; a kept deploy still gets its tag.
+keep_and_tag_hint() {
+  local name="${1:-deploy/<UTC YYYY-MM-DDTHHMMZ>-<sha7>}"
+  printf '%s\n' \
+    "UPLOADED ${2:0:7}, but a post-deploy check failed, so it was not tagged." \
+    "Follow the runbook: roll back, or, if the owner keeps this deploy, tag it from the repo root:" \
+    "  git tag -a ${name} ${2} -F ${3} && $(tag_push_command "$name")" \
+    "Tag message (${3}):"
+  cat "$3" 2>/dev/null || true
+}
+
+# The EXIT trap for a deploy. EXIT runs in the shell, so state is in globals.
+# --force drops the untracked install and build in the detached worktree.
+on_deploy_exit() {
+  local status=$?
+  cd /
+  if [[ "$status" -ne 0 && "$DEPLOY_UPLOADED" == "1" && "$DEPLOY_TAGGING" == "0" ]]; then
+    keep_and_tag_hint "$DEPLOY_TAG_NAME" "$DEPLOY_SHA" "$DEPLOY_TAG_MSG" >&2
+  fi
+  git -C "$DEPLOY_REPO" worktree remove --force "$DEPLOY_WT" >/dev/null 2>&1 || true
+  exit "$status"
 }
 
 deploy_tree() {
   local sha="$1"
   local short wt names_file mig_out expected count status_log rollback deploy_out deployed_at
-  local worker tag_name msg_file tag_status=0
+  local worker tag_status=0
   short="$(git rev-parse --short "$sha")"
   printf '%s\n' "deploying ${sha} (${short})"
 
+  DEPLOY_SHA="$sha"
   DEPLOY_REPO="$(git rev-parse --show-toplevel)"
   wt="$(create_deploy_worktree "$sha")"
   DEPLOY_WT="$wt"
   printf '%s\n' "worktree: ${wt}"
-  # EXIT runs in the shell, so keep the paths in globals. --force drops the
-  # untracked install and build in the detached worktree.
-  trap 'status=$?; cd /; git -C "$DEPLOY_REPO" worktree remove --force "$DEPLOY_WT" >/dev/null 2>&1 || true; exit $status' EXIT
+  trap on_deploy_exit EXIT
 
   cd "$wt"
   pnpm install --frozen-lockfile
@@ -550,6 +635,11 @@ deploy_tree() {
   rollback="$(rollback_version_from_status "$status_log")"
   rm -f "$status_log"
   printf '%s\n' "rollback version for the deploy tag: ${rollback}"
+  if [[ "$rollback" == "unknown" ]]; then
+    printf '%s\n' "warning: could not read the live Worker version; the deploy tag will say unknown." \
+      "Read it with wrangler deployments status and put it in HISTORY." >&2
+  fi
+  check_live_version "$rollback"
 
   run_gates
   pnpm --filter @ritmofit/web build
@@ -574,6 +664,12 @@ deploy_tree() {
     printf '%s\n' "warning: could not read the new Worker version; the deploy tag will say unknown." \
       "Read it with wrangler deployments status and put it in HISTORY." >&2
   fi
+  # From here a failed check leaves an untagged upload; on_deploy_exit says how to tag it.
+  DEPLOY_UPLOADED=1
+  DEPLOY_TAG_MSG="$(mktemp)"
+  deploy_tag_message "$sha" "$deployed_at" "$worker" "$rollback" "$expected" "$DEPLOY_SINCE" \
+    "$DEPLOY_BATCH" >"$DEPLOY_TAG_MSG"
+  DEPLOY_TAG_NAME="$(deploy_tag_name "$sha" "$deployed_at")" || DEPLOY_TAG_NAME=""
 
   propagation_loop "$expected" "$PROPAGATION_TRIES" "$PROPAGATION_SLEEP_SECONDS" \
     "$PROPAGATION_CONSECUTIVE" fetch_entry_hash
@@ -581,24 +677,26 @@ deploy_tree() {
   security_headers_ok "$(fetch_security_headers)"
 
   # Every post-deploy check passed: record what production now runs.
-  msg_file="$(mktemp)"
-  deploy_tag_message "$sha" "$deployed_at" "$worker" "$rollback" "$expected" "$DEPLOY_SINCE" \
-    "$DEPLOY_BATCH" >"$msg_file"
-  if tag_name="$(deploy_tag_name "$sha" "$deployed_at")"; then
-    tag_deploy "$DEPLOY_REPO" "$tag_name" "$sha" "$msg_file" || tag_status=$?
+  DEPLOY_TAGGING=1
+  if [[ -n "$DEPLOY_TAG_NAME" ]]; then
+    tag_deploy "$DEPLOY_REPO" "$DEPLOY_TAG_NAME" "$sha" "$DEPLOY_TAG_MSG" || tag_status=$?
   else
     printf '%s\n' "DEPLOYED ${short}, but no deploy tag name could be built. The deploy stands." \
       "Tag message:" >&2
-    cat "$msg_file" >&2
+    cat "$DEPLOY_TAG_MSG" >&2
     tag_status="$TAG_FAILED_EXIT"
   fi
-  rm -f "$msg_file"
+  rm -f "$DEPLOY_TAG_MSG"
   if [[ "$tag_status" -ne 0 ]]; then
     exit "$tag_status"
   fi
 }
 
 self_check() {
+  # Every git command below runs in throwaway repos; an exported GIT_DIR or
+  # GIT_WORK_TREE must not point them at the caller's repository.
+  unset GIT_DIR GIT_WORK_TREE GIT_INDEX_FILE GIT_COMMON_DIR GIT_OBJECT_DIRECTORY \
+    GIT_ALTERNATE_OBJECT_DIRECTORIES
   local fails=0
   local out status
   fail() {
@@ -1002,7 +1100,7 @@ EOF
     >"$vfile"
   out="$(worker_version_from_output "$vfile")"
   printf '%s\n' 'not json' '{"type":"deploy","version_id":"SUPER_SECRET_DO_NOT_PRINT"}' >"$vfile"
-  local out_bad out_missing status_one status_split status_none
+  local out_bad out_missing status_one status_split status_decimal status_none
   out_bad="$(worker_version_from_output "$vfile")"
   out_missing="$(worker_version_from_output "${vfile}.missing")"
   printf 'Created:  2026-11-23T17:30:46.000Z\nSource:  Upload\nVersion(s):  \033[36m(100%%)\033[39m fedc7fbf-1bc2-46cd-a90a-3059505e0a7b\n      Created:  2026-11-23T17:30:46.000Z\n' >"$vfile"
@@ -1010,6 +1108,9 @@ EOF
   printf '%s\n' 'Version(s):  (60%) aaaaaaaa-1111-2222-3333-444444444444' '' \
     '             (40%) bbbbbbbb-1111-2222-3333-444444444444' >"$vfile"
   status_split="$(rollback_version_from_status "$vfile")"
+  printf '%s\n' 'Version(s):  (33.3%) aaaaaaaa-1111-2222-3333-444444444444' '' \
+    '             (66.7%) bbbbbbbb-1111-2222-3333-444444444444' >"$vfile"
+  status_decimal="$(rollback_version_from_status "$vfile")"
   printf '%s\n' 'wrangler: not authenticated' >"$vfile"
   status_none="$(rollback_version_from_status "$vfile")"
   rm -f "$vfile"
@@ -1017,11 +1118,51 @@ EOF
     && "$out_missing" == "unknown" \
     && "$status_one" == "fedc7fbf-1bc2-46cd-a90a-3059505e0a7b (100%)" \
     && "$status_split" == "aaaaaaaa-1111-2222-3333-444444444444 (60%), bbbbbbbb-1111-2222-3333-444444444444 (40%)" \
+    && "$status_decimal" == "aaaaaaaa-1111-2222-3333-444444444444 (33.3%), bbbbbbbb-1111-2222-3333-444444444444 (66.7%)" \
     && "$status_none" == "unknown" ]]; then
     pass "Worker and rollback versions for the tag message"
   else
-    fail "version parsing: $out / $out_bad / $out_missing / $status_one / $status_split / $status_none"
+    fail "version parsing: $out / $out_bad / $out_missing / $status_one / $status_split / $status_decimal / $status_none"
   fi
+
+  # The live version read before the gates against the newest tag's Worker.
+  local live_a live_b live_out
+  live_a="515bc8fb-24fd-4ff7-b8be-6f7c28aa1e85"
+  live_b="fedc7fbf-1bc2-46cd-a90a-3059505e0a7b"
+  live_out="$(mktemp)"
+  if (DEPLOY_SINCE="deploy/2026-11-24T0237Z-1eed288" DEPLOY_SINCE_WORKER="$live_a" DEPLOY_ALLOW="" \
+    DEPLOY_BATCH="" && check_live_version "${live_a} (100%)") >"$live_out" 2>&1 \
+    && grep -q "production runs deploy/2026-11-24T0237Z-1eed288's Worker ${live_a}" "$live_out" \
+    && (DEPLOY_SINCE="none" DEPLOY_SINCE_WORKER="unknown" DEPLOY_ALLOW="" \
+      && check_live_version "${live_b} (100%)") >"$live_out" 2>&1 \
+    && (DEPLOY_SINCE="deploy/2026-11-24T0237Z-1eed288" DEPLOY_SINCE_WORKER="unknown" DEPLOY_ALLOW="" \
+      && check_live_version "${live_b} (100%)") >"$live_out" 2>&1 \
+    && grep -q "live version check: skipped" "$live_out" \
+    && (DEPLOY_SINCE="deploy/2026-11-24T0237Z-1eed288" DEPLOY_SINCE_WORKER="$live_a" DEPLOY_ALLOW="" \
+      && check_live_version "unknown") >"$live_out" 2>&1 \
+    && grep -q "live version check: skipped" "$live_out"; then
+    pass "live version check passes a matching, unknown or untagged production"
+  else
+    fail "live version check pass cases: $(cat "$live_out")"
+  fi
+  if (DEPLOY_SINCE="deploy/2026-11-24T0237Z-1eed288" DEPLOY_SINCE_WORKER="$live_a" DEPLOY_ALLOW="" \
+    DEPLOY_BATCH="" && check_live_version "${live_b} (100%)") >"$live_out" 2>&1; then
+    fail "a production Worker that is not the newest tag's should be refused"
+  elif grep -q "refusing to deploy: production ran ${live_b} (100%), not deploy/2026-11-24T0237Z-1eed288's Worker ${live_a}" "$live_out" \
+    && grep -q "re-ships everything between production's code and this commit" "$live_out" \
+    && (DEPLOY_SINCE="deploy/2026-11-24T0237Z-1eed288" DEPLOY_SINCE_WORKER="$live_a" DEPLOY_ALLOW="allow" \
+      DEPLOY_BATCH="" && check_live_version "${live_b} (60%), ${live_a} (40%)" \
+      && printf 'BATCH=%s\n' "$DEPLOY_BATCH") >"$live_out" 2>&1 \
+    && grep -qx "BATCH=allowed by --allow-batch (production ran ${live_b} (60%), ${live_a} (40%), not deploy/2026-11-24T0237Z-1eed288's Worker ${live_a})" "$live_out" \
+    && (DEPLOY_SINCE="deploy/2026-11-24T0237Z-1eed288" DEPLOY_SINCE_WORKER="$live_a" DEPLOY_ALLOW="allow" \
+      DEPLOY_BATCH="allowed by --allow-batch (#789 with #790)" && check_live_version "${live_b} (100%)" \
+      && printf 'BATCH=%s\n' "$DEPLOY_BATCH") >"$live_out" 2>&1 \
+    && grep -qx "BATCH=allowed by --allow-batch (#789 with #790); production ran ${live_b} (100%), not deploy/2026-11-24T0237Z-1eed288's Worker ${live_a}" "$live_out"; then
+    pass "live version check refuses a rolled-back production unless --allow-batch"
+  else
+    fail "live version check refusal: $(cat "$live_out")"
+  fi
+  rm -f "$live_out"
 
   # A fixture main: #786 (deployed and tagged), docs, #789 (provider / playback,
   # deploys alone), #790 (an ordinary screen change), #793 (tests only).
@@ -1050,14 +1191,20 @@ EOF
   git -C "$gtmp" config tag.gpgSign false
   g_base="$(fixture_commit 'fix(web): one button radius (#786)' apps/web/src/components/Button.tsx)"
 
-  if (cd "$gtmp" && deploy_guard "$g_base" && printf 'SINCE=%s\n' "$DEPLOY_SINCE") \
-    >"$gout" 2>"$gerr" && grep -q "no deploy/\* tag yet" "$gout" && grep -qx "SINCE=none" "$gout"; then
-    pass "deploy guard warns and skips with no deploy tag"
+  if (cd "$gtmp" && deploy_guard "$g_base") >"$gout" 2>"$gerr"; then
+    fail "with no deploy tag the guard should refuse"
+  elif grep -q "no deploy/\* tag yet: the conductor backfills it (RF-245) before any deploy, or pass --allow-batch on the owner's word" "$gerr" \
+    && (cd "$gtmp" && deploy_guard "$g_base" allow \
+      && printf 'SINCE=%s\nBATCH=%s\n' "$DEPLOY_SINCE" "$DEPLOY_BATCH") >"$gout" 2>"$gerr" \
+    && grep -qx "SINCE=none" "$gout" \
+    && grep -qx "BATCH=allowed by --allow-batch (no deploy tag to compare with)" "$gout"; then
+    pass "deploy guard refuses with no deploy tag unless --allow-batch"
   else
     fail "no-tag guard: $(cat "$gout" "$gerr")"
   fi
 
-  git -C "$gtmp" tag -a "deploy/2026-11-23T1730Z-${g_base:0:7}" -m "deploy ${g_base:0:7}" "$g_base"
+  git -C "$gtmp" tag -a "deploy/2026-11-23T1730Z-${g_base:0:7}" -m "deploy ${g_base:0:7}" \
+    -m "worker version: 515bc8fb-24fd-4ff7-b8be-6f7c28aa1e85" "$g_base"
   fixture_commit 'docs: record a deploy (#788)' ritmofit_dev_plan/HISTORY.md >/dev/null
   g_alone="$(fixture_commit 'feat(web): Live names the next song (#789)' \
     apps/web/src/components/LiveMode.tsx apps/web/src/components/LiveMode.test.tsx)"
@@ -1065,9 +1212,11 @@ EOF
   g_tip="$(fixture_commit 'test(web): likes in pick mode (#793)' \
     apps/web/src/components/Dashboard.test.tsx e2e/smoke.spec.ts)"
 
-  if (cd "$gtmp" && deploy_guard "$g_alone" && printf 'SINCE=%s\nBATCH=%s\n' "$DEPLOY_SINCE" "$DEPLOY_BATCH") \
+  if (cd "$gtmp" && deploy_guard "$g_alone" \
+    && printf 'SINCE=%s\nWORKER=%s\nBATCH=%s\n' "$DEPLOY_SINCE" "$DEPLOY_SINCE_WORKER" "$DEPLOY_BATCH") \
     >"$gout" 2>"$gerr" && grep -q "deploy guard: ok, 1 shipped change" "$gout" \
-    && grep -qx "SINCE=deploy/2026-11-23T1730Z-${g_base:0:7}" "$gout" && grep -qx "BATCH=" "$gout"; then
+    && grep -qx "SINCE=deploy/2026-11-23T1730Z-${g_base:0:7}" "$gout" \
+    && grep -qx "WORKER=515bc8fb-24fd-4ff7-b8be-6f7c28aa1e85" "$gout" && grep -qx "BATCH=" "$gout"; then
     pass "deploy guard lets a deploy-alone change ship alone"
   else
     fail "deploy-alone change alone: $(cat "$gout" "$gerr")"
@@ -1096,7 +1245,9 @@ EOF
 
   git init -q --bare "${gorigin}/origin.git"
   git -C "$gtmp" remote add origin "${gorigin}/origin.git"
-  git -C "$gtmp" tag not-a-deploy-tag "$g_base"
+  # push.followTags would also send this annotated tag unless the push says --no-follow-tags.
+  git -C "$gtmp" config push.followTags true
+  git -C "$gtmp" tag -a not-a-deploy-tag -m "another annotated tag" "$g_base"
   gname="deploy/2026-11-24T0237Z-${g_tip:0:7}"
   deploy_tag_message "$g_tip" 2026-11-24T02:37:16Z 515bc8fb-24fd-4ff7-b8be-6f7c28aa1e85 \
     "fedc7fbf-1bc2-46cd-a90a-3059505e0a7b (100%)" assets/index-CFKeSijz.js \
@@ -1122,7 +1273,7 @@ EOF
     && git -C "$gtmp" rev-parse -q --verify "refs/tags/${gname2}" >/dev/null \
     && grep -q "DEPLOYED ${g_tip:0:7}, but pushing ${gname2} to origin failed 3 times" "$gerr" \
     && grep -q "do not roll back" "$gerr" \
-    && grep -q "git push origin refs/tags/${gname2}" "$gerr"; then
+    && grep -qF "git push --no-follow-tags origin refs/tags/${gname2}:refs/tags/${gname2}" "$gerr"; then
     pass "failed tag push keeps the local tag and exits 3"
   else
     fail "failed tag push (status ${gstatus}): $(cat "$gout" "$gerr")"
@@ -1136,6 +1287,30 @@ EOF
   else
     fail "failed tag creation (status ${gstatus}): $(cat "$gout" "$gerr")"
   fi
+
+  # An upload whose later check failed: the EXIT trap says how to tag it if kept.
+  local trap_upload=0 trap_before=0 trap_tagging=0 trap_out2 trap_out3
+  trap_out2="$(mktemp)"
+  trap_out3="$(mktemp)"
+  run_exit_trap() {
+    # run_exit_trap <uploaded> <tagging> <exit status>, in a subshell with on_deploy_exit as EXIT.
+    (DEPLOY_REPO="$gtmp" DEPLOY_WT="${gtmp}/no-such-worktree" DEPLOY_SHA="$g_tip" \
+      DEPLOY_UPLOADED="$1" DEPLOY_TAGGING="$2" DEPLOY_TAG_NAME="$gname2" DEPLOY_TAG_MSG="$gmsg" \
+      && trap on_deploy_exit EXIT && exit "$3")
+  }
+  run_exit_trap 1 0 1 >"$gout" 2>"$gerr" || trap_upload=$?
+  run_exit_trap 0 0 1 >"$trap_out2" 2>&1 || trap_before=$?
+  run_exit_trap 1 1 3 >"$trap_out3" 2>&1 || trap_tagging=$?
+  if [[ "$trap_upload" -eq 1 && "$trap_before" -eq 1 && "$trap_tagging" -eq 3 ]] \
+    && grep -q "UPLOADED ${g_tip:0:7}, but a post-deploy check failed, so it was not tagged" "$gerr" \
+    && grep -qF "git tag -a ${gname2} ${g_tip} -F ${gmsg} && git push --no-follow-tags origin refs/tags/${gname2}:refs/tags/${gname2}" "$gerr" \
+    && grep -q "worker version: 515bc8fb" "$gerr" \
+    && ! grep -q "UPLOADED" "$trap_out2" "$trap_out3"; then
+    pass "a failed check after the upload prints how to tag a kept deploy"
+  else
+    fail "upload kept, check failed (${trap_upload}/${trap_before}/${trap_tagging}): $(cat "$gerr" "$trap_out2" "$trap_out3")"
+  fi
+  rm -f "$trap_out2" "$trap_out3"
   rm -rf "$gtmp" "$gorigin"
   rm -f "$gout" "$gerr" "$gmsg"
 
@@ -1185,8 +1360,9 @@ main() {
   local repo sha nvmrc
   repo="$(git rev-parse --show-toplevel)"
   cd "$repo"
-  # Tags too: the newest deploy/* tag is where the deploy-alone guard starts.
-  git fetch origin main --tags
+  # Deploy tags too, force-updated so one stale local tag cannot block a
+  # deploy: the newest deploy/* tag is where the deploy-alone guard starts.
+  git fetch origin main '+refs/tags/deploy/*:refs/tags/deploy/*'
 
   if [[ -n "$target" ]]; then
     sha="$(resolve_deploy_sha "$target")"
@@ -1196,6 +1372,7 @@ main() {
 
   nvmrc="$(git show "${sha}:.nvmrc")"
   assert_node_major "$nvmrc" "$(node -v)"
+  DEPLOY_ALLOW="$allow_batch"
   deploy_guard "$sha" "$allow_batch"
   deploy_tree "$sha"
 }

@@ -5,8 +5,8 @@
 // production's record. This script compares `origin/main` with the newest one and lists each commit
 // merged since, whether it changes shipped code, and its owner-gate classes. It ends with
 // "deploy due" and the deploy steps in merge order, or "nothing to ship". It runs local git only
-// after `git fetch origin main --tags` (plus one `git ls-remote` for the tag), and never calls
-// Cloudflare. See ritmofit_dev_plan/deployment-runbook.md.
+// after fetching origin main and the deploy tags (plus one `git ls-remote` for the tag), and never
+// calls Cloudflare. See ritmofit_dev_plan/deployment-runbook.md.
 //
 //   pnpm release:status                                   # fetch, then report
 //   node scripts/release-status.mjs --no-fetch           # report from refs already fetched
@@ -14,8 +14,9 @@
 //
 // --guard is scripts/deploy.sh's deploy-alone guard (AGENTS.md › "Security And Deployment"). It
 // exits 0 when the deploy may go ahead, 1 when the range from the newest deploy tag to <sha> mixes
-// a deploy-alone change with any other shipped change (it prints the steps), and 2 on a usage or
-// git error. With --allow-batch it reports the batch and exits 0. It prints `since: <tag>` and, for
+// a deploy-alone change with any other shipped change (it prints the steps) or when there is no
+// deploy tag yet, and 2 on a usage or git error. With --allow-batch it reports the batch and exits
+// 0. For deploy.sh it prints `since: <tag>`, `since-worker: <the tag's Worker version>` and, for
 // an allowed batch, a `batch: ...` line for the deploy tag's message.
 //
 // Run from the repository whose history should be read (deploy.sh and pnpm run it at the root).
@@ -26,6 +27,14 @@ import { fileURLToPath } from 'node:url';
 import { GATES } from './owner-gate.mjs';
 
 export const TAG_GLOB = 'deploy/*';
+/** Fetches main and force-updates deploy tags, so one stale local tag cannot block a deploy. */
+export const FETCH_ARGS = [
+  'fetch',
+  '--quiet',
+  'origin',
+  'main',
+  '+refs/tags/deploy/*:refs/tags/deploy/*',
+];
 /** deploy/2026-11-24T0237Z-1eed288: the UTC minute of the upload, then the deployed commit. */
 export const TAG_PATTERN = /^deploy\/(\d{4}-\d{2}-\d{2})T(\d{2})(\d{2})Z-([0-9a-f]{7})$/;
 
@@ -37,17 +46,21 @@ export const SHIPPED_ROOT_FILES = [
   'pnpm-lock.yaml',
   'pnpm-workspace.yaml',
   '.pnpmfile.cjs',
+  '.npmrc',
+  // The deploy builds with this Node major (deploy.sh checks it).
+  '.nvmrc',
   'tsconfig.base.json',
   // apps/web/scripts/generate-tokens.mjs turns it into the SPA's tokens.css.
   'ritmofit_design_system/tokens.json',
 ];
 const NOT_SHIPPED = [
-  // Tests and their snapshots and configs.
+  // Tests and their snapshots, fixtures and configs.
   /\.(test|spec)\.[cm]?[jt]sx?$/,
+  /\.fixture\.[^/]+$/,
   /(^|\/)(test|tests|__tests__|__snapshots__)\//,
   /(^|\/)vitest[^/]*\.config\.[cm]?[jt]s$/,
-  // Docs.
-  /\.md$/i,
+  // Docs, except files the SPA serves from apps/web/public/.
+  /^(?!apps\/web\/public\/).*\.md$/i,
   // Repo tools under the shipped roots that never reach production.
   /^apps\/api\/(scripts|openapi)\//,
   /^apps\/api\/drizzle\.config\.ts$/,
@@ -154,6 +167,11 @@ function formatCommit(commit) {
   ];
 }
 
+/** Pushes one tag and nothing else, even with push.followTags set. */
+export function pushCommand(name) {
+  return `git push --no-follow-tags origin refs/tags/${name}:refs/tags/${name}`;
+}
+
 // ---- git ------------------------------------------------------------------------------------
 
 function git(args, options = {}) {
@@ -173,11 +191,23 @@ function lines(text) {
   return text.split('\n').filter(Boolean);
 }
 
-/** The newest deploy tag by its UTC name, or null. Names that do not match TAG_PATTERN are ignored. */
+/**
+ * The newest deploy tag by creation date (an annotated tag's tagger date), then by name, or null.
+ * Names that do not match TAG_PATTERN are ignored.
+ */
 export function newestDeployTag() {
-  const names = lines(git(['tag', '--list', TAG_GLOB])).filter((n) => TAG_PATTERN.test(n));
+  // for-each-ref sorts by the last --sort key first; the earlier one breaks ties.
+  const names = lines(
+    git([
+      'for-each-ref',
+      '--sort=-refname',
+      '--sort=-creatordate',
+      '--format=%(refname:strip=2)',
+      `refs/tags/${TAG_GLOB}`,
+    ]),
+  ).filter((n) => TAG_PATTERN.test(n));
   if (names.length === 0) return null;
-  const name = names.sort().at(-1);
+  const name = names[0];
   const sha = git(['rev-parse', '--verify', `refs/tags/${name}^{commit}`]);
   const message = git(['for-each-ref', `refs/tags/${name}`, '--format=%(contents)']);
   const worker = /^worker version: (\S+)/m.exec(message)?.[1] ?? null;
@@ -208,15 +238,13 @@ export function commitsBetween(base, tip) {
 function report({ fetch }) {
   const out = [];
   if (fetch) {
-    const fetched = spawnSync('git', ['fetch', '--quiet', 'origin', 'main', '--tags'], {
-      encoding: 'utf8',
-    });
+    const fetched = spawnSync('git', FETCH_ARGS, { encoding: 'utf8' });
     if (fetched.status !== 0) {
       throw new Error(
-        `git fetch origin main --tags failed; rerun with --no-fetch to use the refs already fetched.\n${fetched.stderr}`,
+        `fetching origin main and deploy tags failed; rerun with --no-fetch to use the refs already fetched.\n${fetched.stderr}`,
       );
     }
-    out.push('Fetched origin main and tags.');
+    out.push('Fetched origin main and the deploy tags.');
   } else {
     out.push('Skipped the fetch (--no-fetch): refs as last fetched.');
   }
@@ -226,7 +254,8 @@ function report({ fetch }) {
     out.push(
       '',
       'No deploy/* tag yet: git does not record which commit production serves.',
-      'Use the newest HISTORY.md deploy entry; the next scripts/deploy.sh run creates the first tag.',
+      'Use the newest HISTORY.md deploy entry. Until the first tag is backfilled (RF-245),',
+      'scripts/deploy.sh refuses to deploy unless the owner says to pass --allow-batch.',
       `origin/main: ${tip.slice(0, 7)}`,
       '',
       'Verdict: unknown (no deploy tag to compare with).',
@@ -248,7 +277,7 @@ function report({ fetch }) {
     } else if (!remote.stdout.trim()) {
       out.push(
         '  Warning: this tag is only local; its deploy did not push it. Push it now:',
-        `    git push origin refs/tags/${tag.name}`,
+        `    ${pushCommand(tag.name)}`,
       );
     }
   }
@@ -270,7 +299,7 @@ function report({ fetch }) {
   if (steps.length === 0) {
     out.push(
       commits.length
-        ? 'Verdict: nothing to ship (docs, records and tests only).'
+        ? 'Verdict: nothing to ship (no commit changes shipped code).'
         : 'Verdict: nothing to ship (production has origin/main).',
     );
   } else {
@@ -287,15 +316,25 @@ function guard(ref, allowBatch) {
   const sha = git(['rev-parse', '--verify', `${ref}^{commit}`]);
   const tag = newestDeployTag();
   if (!tag) {
-    console.log(
-      'deploy guard: warning: no deploy/* tag yet, so the deploy-alone guard is skipped. ' +
-        "This deploy's tag starts the record.",
-    );
     console.log('since: none');
-    return 0;
+    if (allowBatch) {
+      console.log(
+        'deploy guard: no deploy/* tag yet, so nothing to check against; going ahead under ' +
+          "--allow-batch. This deploy's tag starts the record.",
+      );
+      console.log('batch: allowed by --allow-batch (no deploy tag to compare with)');
+      return 0;
+    }
+    console.error(
+      'refusing to deploy: no deploy/* tag yet: the conductor backfills it (RF-245) before any ' +
+        "deploy, or pass --allow-batch on the owner's word.",
+    );
+    return 1;
   }
   console.log(`since: ${tag.name}`);
-  if (!gitOk(['merge-base', '--is-ancestor', tag.sha, sha])) {
+  console.log(`since-worker: ${tag.worker ?? 'unknown'}`);
+  const contains = gitOk(['merge-base', '--is-ancestor', tag.sha, sha]);
+  if (!contains) {
     console.log(
       `deploy guard: note: ${sha.slice(0, 7)} does not contain ${tag.name}'s commit; ` +
         'checking the commits it has that the tag lacks.',
@@ -304,9 +343,15 @@ function guard(ref, allowBatch) {
   const commits = commitsBetween(tag.sha, sha);
   const { ok, shipped, alone } = checkRange(commits);
   if (ok) {
+    let note = '';
+    if (sha === tag.sha) note = ' (a redeploy)';
+    else if (commits.length === 0) {
+      // sha is an ancestor of the tag: the commits sha..tag go back out of production.
+      note = ` (an older commit: this deploy takes back ${sha.slice(0, 7)}..${tag.sha.slice(0, 7)})`;
+    }
     console.log(
       `deploy guard: ok, ${shipped.length} shipped change${shipped.length === 1 ? '' : 's'} ` +
-        `since ${tag.name}${commits.length === 0 ? ' (a redeploy)' : ''}.`,
+        `since ${tag.name}${note}.`,
     );
     return 0;
   }
