@@ -33,6 +33,7 @@
 <!-- Claude Code (Neo), 2026-11-23: Deploy of b9e8141 from the Neo (#783 RF-231, #786 RF-236); RF-238 owner check. -->
 <!-- Claude Code (Neo), 2026-11-23: Round 1123 close: RF-130 (#789) and RF-149 (#790) merged, not deployed; production observed at b9e8141. -->
 <!-- Claude Code (Neo), 2026-11-23: Round 1123b close: RF-241 (#792) and RF-157 (#793) merged, not deployed. -->
+<!-- Claude Code (Neo), 2026-11-23: Deploy of 1eed288 from the Neo (#789 RF-130, #790 RF-149, #792 RF-241, #793 RF-157). -->
 
 **Focus (D26, 2026-11-07):** native iOS and macOS apps on TestFlight first, so the owner's wife uses
 them now: M0a iOS on TestFlight, M0b macOS, M1 Spotify in native Live, then native class building
@@ -40,15 +41,13 @@ them now: M0a iOS on TestFlight, M0b macOS, M1 Spotify in native Live, then nati
 work is tracked as iOS RF records). Web work below continues as maintenance and production checks.
 **Current actionable state:** [RF board](./tasks.md), backed by canonical [task records](./tasks/README.md).
 The order of work is [Phases](#phases) below; each phase lists RF records, not a second backlog.
-**Main vs production:** production is main `b9e8141` (Worker `fedc7fbf-1bc2-46cd-a90a-3059505e0a7b`;
-SPA `assets/index-BXKJ3gK7.js`; rollback `1fa79a87-f765-45a1-8ff5-f4f2e5d40e37`, main `35b5e73`). It was deployed
-from the Neo on 2026-11-23 in one step: [RF-231](./tasks/RF-231.json)'s Sign in with Apple white button (#783) and
-[RF-236](./tasks/RF-236.json)'s button radius (#786), both web screens only, with docs #780 to #782, #784 and #785.
-See [HISTORY](./HISTORY.md). Observed again at the 2026-11-23 start-session (Worker `fedc7fbf` at 100%, SPA entry on 3 of 3
-cache-busted fetches). `main` is ahead, undeployed: [RF-130](./tasks/RF-130.json) (#789, `f87c728`: Live names the
-next song; owner-gated, the owner's glance at Cue-by-Cue is its check), [RF-149](./tasks/RF-149.json) (#790,
-`ff651a1`: the class editor's likes load past 200), [RF-241](./tasks/RF-241.json) (#792, `14a41c0`: a late My likes
-page no longer lands in Saved playlists) and [RF-157](./tasks/RF-157.json) (#793, `7c631c2`: tests only), plus docs.
+**Main vs production:** production is main `1eed288` (Worker `515bc8fb-24fd-4ff7-b8be-6f7c28aa1e85`;
+SPA `assets/index-CFKeSijz.js`; rollback `fedc7fbf-1bc2-46cd-a90a-3059505e0a7b`, main `b9e8141`). It was deployed
+from the Neo on 2026-11-23 in one step: [RF-130](./tasks/RF-130.json) (#789: Live names the next song; the owner's
+glance at Cue-by-Cue is its check), [RF-149](./tasks/RF-149.json) (#790: the class editor's likes load past 200),
+[RF-241](./tasks/RF-241.json) (#792: a late My likes page no longer lands in Saved playlists) and
+[RF-157](./tasks/RF-157.json) (#793: tests only), with docs #787, #788, #791 and #794. The authed production smoke
+passed. See [HISTORY](./HISTORY.md). Since then `main` gained only this record.
 **In flight:** [RF-183](./tasks/RF-183.json) is Blocked on the owner's checks: sign in again after
 sign-out (the rest of the native check passed on the simulator, #715), and on web two `expiresAt`
 readings from the app's own get-session at least 24 hours apart (first not yet taken). The signed-in
@@ -79,10 +78,12 @@ alongside: RF-217, RF-205, RF-148, RF-155. Account security (RF-116, RF-140) is 
 **Next step:** #764, #767, #766 and #768 are deployed (2026-11-21), so the owner checks they need are next:
 [RF-211](./tasks/RF-211.json) on iPhone Safari, [RF-224](./tasks/RF-224.json) (preflight groups with a
 provider disconnected), and RF-217, which also covers RF-218. In the order above RF-158, RF-74, RF-218 and
-RF-136 are Done, RF-211 is For review, and RF-130, RF-149 and RF-157 are Done (rounds 1123 and 1123b, not
-deployed); next to build is [RF-138](./tasks/RF-138.json) after a design pass. The rounds' follow-ups are
+RF-136 are Done, RF-211 is For review, and RF-130, RF-149 and RF-157 are Done (rounds 1123 and 1123b, deployed
+2026-11-23 in `1eed288`); next to build is [RF-138](./tasks/RF-138.json) after a design pass. The rounds' follow-ups are
 RF-239, RF-240, RF-242 and RF-243 (Backlog).
 Follow-ups from the 2026-11-13 reviews are RF-221 to RF-225 (Backlog). Owner checks on production:
+[RF-130](./tasks/RF-130.json): a glance at Cue-by-Cue's Next song line at a song's last cue.
+[RF-149](./tasks/RF-149.json): Load more past 200 real likes in the class editor.
 [RF-238](./tasks/RF-238.json): Continue with Apple on ritmofit.studio/sign-in reaches Apple's sign-in page.
 [RF-217](./tasks/RF-217.json): Spotify stays playable past the
 hour and asks to reconnect only for a dead grant (desktop Chrome, three steps). iPhone feel pass on a Spotify class: the Live
