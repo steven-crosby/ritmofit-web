@@ -32,6 +32,7 @@
 <!-- note (Claude Code, Air, 2026-11-03): RF-192: owner rule: iOS simulator work runs on the Neo only; the Air keeps just the CI runner's simulator and runtime. -->
 <!-- note (Claude Code, Neo, 2026-11-04): RF-193: the two-machine rules moved to ritmofit_dev_plan/two-machine-rules.md (ritmofit-ios to vendor a parity-checked copy in iOS RF-1041); the silo ended; iOS CI runs on the Neo; unattended merge nights allowed only under a per-night pre-approval issue. -->
 <!-- note (Claude Code, Neo, 2026-11-19): RF-229: owner decision: the Air is retired; the Neo does all dev work in both repos and holds the owner's own wrangler login (Two-machine conductors; two-machine-rules.md › 1, 2). -->
+<!-- note (Claude Code, Neo, 2026-11-24): RF-244: owner decisions on iOS #113: deploy.sh tags each deploy, `pnpm release:status` says what is due, and deploy.sh enforces deploy-alone unless the owner says to batch (`--allow-batch`). -->
 
 This is the canonical contributor and agent guide for Ritmo Studio. If another instruction file conflicts
 with it, follow `AGENTS.md`, then repair the stale file. When an AI agent edits this file or adds a note
@@ -325,7 +326,7 @@ Solo or Orchestrator session finishes a PR that already has the owner's permissi
 conductors, as `two-machine-rules.md` › "Who finishes a PR" decides; a Lane never merges), and branch deletion. Those keep
 their separate explicit permission.
 
-**What CI proves:** the required job runs format, task, owner-gate self-test and RF-trace checks, typecheck, lint,
+**What CI proves:** the required job runs format, task, owner-gate self-test, RF-trace and release-status checks, typecheck, lint,
 design-system verify, theme classes, unit and D1 integration tests, the web build with bundle budget,
 a Playwright smoke of the signed-in core loop at 1440 and 390 wide (overflow and axe WCAG 2.2 AA),
 OpenAPI drift, iOS contract parity and the dependency audit. It uploads per-page screenshots as the
@@ -371,6 +372,8 @@ Use Node `>=22.13` and pnpm `>=11.4`.
 - `pnpm owner-gate:test`: test the owner-gated path list in `scripts/owner-gate.mjs` and the
   approval, void and status decisions in `.github/scripts/pr-gates.sh` (against a fake `gh`).
 - `pnpm rf-trace:test`: test `scripts/rf-trace.mjs`, which requires product PRs to cite an RF record.
+- `pnpm release:status`: compare `origin/main` with the newest `deploy/*` tag and say "deploy due"
+  (with the `scripts/deploy.sh` steps) or "nothing to ship"; `pnpm release-status:test` tests it.
 
 The root `pnpm test` uses `--if-present`. When a workspace package gains its first tests, add an
 explicit `test` script to that package so a green root command cannot silently mean zero tests ran.
@@ -438,6 +441,7 @@ Before submitting code, run the CI-equivalent gate unless the owner accepts a na
 pnpm format:check
 pnpm owner-gate:test
 pnpm rf-trace:test
+pnpm release-status:test
 pnpm tasks:test
 pnpm tasks:check
 pnpm -r typecheck
@@ -476,8 +480,12 @@ Worker secrets belong in ignored `apps/api/.dev.vars`; production secrets are ma
 Deployments are manual and production-facing. Merging is not deploying: keep `main` deployable, but ship
 in deliberate batches. Deploy immediately only for a production bug, regression, security fix, or
 live-verification finding. Deploy schema/migration, auth, provider, and infrastructure changes on their
-own; apply required remote D1 migrations before code. The Worker deploy command does not build the SPA;
-build `apps/web/dist` before deploying the Worker that serves it.
+own; apply required remote D1 migrations before code. `scripts/deploy.sh` enforces this: it refuses a
+deploy that mixes such a change with other shipped changes unless the owner says, in the session, to
+batch them (`--allow-batch`, recorded in HISTORY). Each deploy tags its commit
+`deploy/<UTC time>-<sha7>`; that tag is production's record, and `pnpm release:status` reads it to
+say what is due. The Worker deploy command does not build the SPA; build `apps/web/dist` before
+deploying the Worker that serves it.
 
 For deploys and rollback, follow `ritmofit_dev_plan/deployment-runbook.md`. After deployment, smoke-test
 the SPA, health endpoint, a protected endpoint, relevant assets/headers, and report the Worker version

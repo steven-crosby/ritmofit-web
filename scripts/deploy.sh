@@ -6,28 +6,50 @@ set -euo pipefail
 #
 #   scripts/deploy.sh              # clean tree whose HEAD is origin/main
 #   scripts/deploy.sh <sha>        # clean tree; HEAD may differ from origin/main
+#   scripts/deploy.sh --allow-batch [sha]  # owner said, in the session, to batch
 #   scripts/deploy.sh --self-check # local guards only; does not deploy
 #
 # A dirty tree always refuses, including when a sha is passed. The sha only
 # permits a HEAD that is not origin/main.
 #
+# Before building, the deploy-alone guard (scripts/release-status.mjs --guard)
+# refuses a range from the newest deploy/* tag to the commit that mixes a
+# deploy-alone change with other shipped changes, and prints the steps.
+# --allow-batch lets it through; pass it only when the owner said to batch.
+#
 # The script checks out a detached worktree under /tmp and builds there.
 # ritmofit_design_system has no lockfile and no dependencies: do not npm ci.
+#
+# After every post-deploy check passes, it tags the deployed commit
+# deploy/<UTC YYYY-MM-DDTHHMMZ>-<sha7> and pushes only that tag. Exit 3 means
+# the deploy stands but the tag did not reach origin; the script prints the
+# command that pushes it.
 
 PROPAGATION_TRIES=30
 PROPAGATION_SLEEP_SECONDS=10
 PROPAGATION_CONSECUTIVE=3
+TAG_PUSH_TRIES=3
+TAG_PUSH_SLEEP_SECONDS=5
+# Exit status when the deploy went out but its tag was not created or pushed.
+TAG_FAILED_EXIT=3
+
+# Set by deploy_guard for the tag message.
+DEPLOY_SINCE="none"
+DEPLOY_BATCH=""
 
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 REQUIRED_SECRETS_FILE="${SCRIPT_DIR}/required-secrets.txt"
 SMOKE_FILE="${SCRIPT_DIR}/production-smoke.txt"
+RELEASE_STATUS="${SCRIPT_DIR}/release-status.mjs"
 
 usage() {
   printf '%s\n' \
-    "usage: scripts/deploy.sh [sha]" \
+    "usage: scripts/deploy.sh [--allow-batch] [sha]" \
     "       scripts/deploy.sh --self-check" \
     "git status --porcelain must be empty. A dirty tree always refuses." \
-    "With no sha, HEAD must equal origin/main. A sha deploys that commit anyway."
+    "With no sha, HEAD must equal origin/main. A sha deploys that commit anyway." \
+    "--allow-batch lets a deploy-alone change ship with other changes; pass it only" \
+    "when the owner said, in this session, to batch them, and record it in HISTORY."
 }
 
 nvmrc_major() {
@@ -339,9 +361,153 @@ run_gates() {
   pnpm audit:ci
 }
 
+# Runs the deploy-alone guard (scripts/release-status.mjs --guard) for sha in the
+# current repo and prints its report. Sets DEPLOY_SINCE (the newest deploy tag,
+# or "none") and DEPLOY_BATCH (set only for an --allow-batch batch) for the tag
+# message. Returns 1 when the range must not ship as one deploy, or when the
+# guard could not decide; nothing has been built or uploaded at that point.
+deploy_guard() {
+  local sha="$1"
+  local allow="${2:-}"
+  local out line status=0
+  out="$(mktemp)"
+  if [[ "$allow" == "allow" ]]; then
+    node "$RELEASE_STATUS" --guard "$sha" --allow-batch >"$out" || status=$?
+  else
+    node "$RELEASE_STATUS" --guard "$sha" >"$out" || status=$?
+  fi
+  DEPLOY_SINCE="none"
+  DEPLOY_BATCH=""
+  while IFS= read -r line || [[ -n "$line" ]]; do
+    printf '%s\n' "$line"
+    case "$line" in
+      "since: "*) DEPLOY_SINCE="${line#since: }" ;;
+      "batch: "*) DEPLOY_BATCH="${line#batch: }" ;;
+    esac
+  done <"$out"
+  rm -f "$out"
+  if [[ "$status" -ne 0 ]]; then
+    printf '%s\n' "deploy guard stopped the deploy (exit ${status}); nothing was built or uploaded" >&2
+    return 1
+  fi
+}
+
+# deploy_tag_name <40-hex sha> <UTC YYYY-MM-DDTHH:MM:SSZ>
+# Prints deploy/<YYYY-MM-DDTHHMMZ>-<sha7>.
+deploy_tag_name() {
+  local sha="$1"
+  local when="$2"
+  local sha_re='^[0-9a-f]{40}$'
+  local when_re='^([0-9]{4}-[0-9]{2}-[0-9]{2})T([0-9]{2}):([0-9]{2}):[0-9]{2}Z$'
+  if [[ ! "$sha" =~ $sha_re ]]; then
+    printf '%s\n' "deploy tag: not a full commit sha: ${sha}" >&2
+    return 1
+  fi
+  if [[ ! "$when" =~ $when_re ]]; then
+    printf '%s\n' "deploy tag: not a UTC time: ${when}" >&2
+    return 1
+  fi
+  printf 'deploy/%sT%s%sZ-%s\n' "${BASH_REMATCH[1]}" "${BASH_REMATCH[2]}" "${BASH_REMATCH[3]}" \
+    "${sha:0:7}"
+}
+
+# deploy_tag_message <sha> <deployed UTC> <worker version> <rollback version>
+#   <SPA entry> <since tag> [batch]
+deploy_tag_message() {
+  printf '%s\n' \
+    "deploy ${1:0:7} to production" \
+    "" \
+    "commit: ${1}" \
+    "deployed: ${2}" \
+    "worker version: ${3}" \
+    "rollback version: ${4}" \
+    "spa entry: ${5}" \
+    "since: ${6}"
+  if [[ -n "${7:-}" ]]; then
+    printf '%s\n' "batch: ${7}"
+  fi
+}
+
+# Prints the Worker version ID from the file wrangler deploy writes when
+# WRANGLER_OUTPUT_FILE_PATH is set (one JSON object per line), or "unknown".
+# Prints nothing else from the file.
+worker_version_from_output() {
+  node -e '
+    const fs = require("fs");
+    const uuid = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/;
+    let id = "unknown";
+    let text = "";
+    try {
+      text = fs.readFileSync(process.argv[1], "utf8");
+    } catch {}
+    for (const line of text.split("\n")) {
+      try {
+        const entry = JSON.parse(line);
+        if (entry && entry.type === "deploy" && uuid.test(entry.version_id)) id = entry.version_id;
+      } catch {}
+    }
+    process.stdout.write(id + "\n");
+  ' "$1"
+}
+
+# Prints the versions a captured `wrangler deployments status` named, as
+# "<id> (<pct>%)" joined by ", ", or "unknown". Colour codes are ignored.
+rollback_version_from_status() {
+  node -e '
+    const fs = require("fs");
+    let text = "";
+    try {
+      text = fs.readFileSync(process.argv[1], "utf8");
+    } catch {}
+    text = text.replace(/\u001b\[[0-9;]*m/g, "");
+    const re = /\((\d{1,3})%\)\s+([0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12})/g;
+    const found = [...text.matchAll(re)].map((m) => m[2] + " (" + m[1] + "%)");
+    process.stdout.write((found.length ? found.join(", ") : "unknown") + "\n");
+  ' "$1"
+}
+
+# tag_deploy <repo> <tag name> <sha> <message file>
+# Creates the annotated deploy tag and pushes only that ref. The deploy has
+# already happened, so a failure never undoes it: it says so, prints what to
+# run, and returns TAG_FAILED_EXIT.
+tag_deploy() {
+  local repo="$1"
+  local name="$2"
+  local sha="$3"
+  local msg="$4"
+  local try
+  if ! git -C "$repo" tag -a "$name" "$sha" -F "$msg"; then
+    printf '%s\n' \
+      "DEPLOYED ${sha:0:7}, but creating the deploy tag ${name} failed." \
+      "The deploy stands; do not roll back for this. From the repo root, save the message below" \
+      "to a file, then run:" \
+      "  git tag -a ${name} ${sha} -F <that file> && git push origin refs/tags/${name}" \
+      "and record the deploy in HISTORY as usual. Tag message:" >&2
+    cat "$msg" >&2
+    return "$TAG_FAILED_EXIT"
+  fi
+  printf '%s\n' "tagged ${sha:0:7} as ${name}"
+  for ((try = 1; try <= TAG_PUSH_TRIES; try++)); do
+    if git -C "$repo" push origin "refs/tags/${name}:refs/tags/${name}"; then
+      printf '%s\n' "pushed ${name} to origin"
+      return 0
+    fi
+    if [[ "$try" -lt "$TAG_PUSH_TRIES" && "$TAG_PUSH_SLEEP_SECONDS" != "0" ]]; then
+      sleep "$TAG_PUSH_SLEEP_SECONDS"
+    fi
+  done
+  printf '%s\n' \
+    "DEPLOYED ${sha:0:7}, but pushing ${name} to origin failed ${TAG_PUSH_TRIES} times." \
+    "The deploy stands; do not roll back for this. The tag exists locally. From the repo root:" \
+    "  git push origin refs/tags/${name}" \
+    "and record the deploy in HISTORY as usual." >&2
+  return "$TAG_FAILED_EXIT"
+}
+
 deploy_tree() {
   local sha="$1"
-  local short wt names_file mig_out expected count
+  local short wt names_file mig_out expected count status_log rollback deploy_out deployed_at
+  local worker tag_name msg_file tag_status=0
   short="$(git rev-parse --short "$sha")"
   printf '%s\n' "deploying ${sha} (${short})"
 
@@ -379,7 +545,11 @@ deploy_tree() {
   printf '%s\n' "remote D1 migrations: none to apply"
 
   printf '%s\n' "current Worker version (rollback target):"
-  pnpm --filter @ritmofit/api exec wrangler deployments status
+  status_log="$(mktemp)"
+  pnpm --filter @ritmofit/api exec wrangler deployments status | tee "$status_log"
+  rollback="$(rollback_version_from_status "$status_log")"
+  rm -f "$status_log"
+  printf '%s\n' "rollback version for the deploy tag: ${rollback}"
 
   run_gates
   pnpm --filter @ritmofit/web build
@@ -391,12 +561,41 @@ deploy_tree() {
   fi
   printf '%s\n' "built entry: ${expected}"
 
-  pnpm --filter @ritmofit/api exec wrangler deploy --message "$short"
+  # wrangler appends one JSON object per line to this file, including the new
+  # version ID. Reading it leaves the upload's own output and prompts as they are.
+  deploy_out="$(mktemp)"
+  WRANGLER_OUTPUT_FILE_PATH="$deploy_out" \
+    pnpm --filter @ritmofit/api exec wrangler deploy --message "$short"
+  deployed_at="$(date -u +%Y-%m-%dT%H:%M:%SZ)"
+  worker="$(worker_version_from_output "$deploy_out")"
+  rm -f "$deploy_out"
+  printf '%s\n' "deployed Worker version: ${worker} at ${deployed_at}"
+  if [[ "$worker" == "unknown" ]]; then
+    printf '%s\n' "warning: could not read the new Worker version; the deploy tag will say unknown." \
+      "Read it with wrangler deployments status and put it in HISTORY." >&2
+  fi
 
   propagation_loop "$expected" "$PROPAGATION_TRIES" "$PROPAGATION_SLEEP_SECONDS" \
     "$PROPAGATION_CONSECUTIVE" fetch_entry_hash
   smoke_statuses "$SMOKE_FILE"
   security_headers_ok "$(fetch_security_headers)"
+
+  # Every post-deploy check passed: record what production now runs.
+  msg_file="$(mktemp)"
+  deploy_tag_message "$sha" "$deployed_at" "$worker" "$rollback" "$expected" "$DEPLOY_SINCE" \
+    "$DEPLOY_BATCH" >"$msg_file"
+  if tag_name="$(deploy_tag_name "$sha" "$deployed_at")"; then
+    tag_deploy "$DEPLOY_REPO" "$tag_name" "$sha" "$msg_file" || tag_status=$?
+  else
+    printf '%s\n' "DEPLOYED ${short}, but no deploy tag name could be built. The deploy stands." \
+      "Tag message:" >&2
+    cat "$msg_file" >&2
+    tag_status="$TAG_FAILED_EXIT"
+  fi
+  rm -f "$msg_file"
+  if [[ "$tag_status" -ne 0 ]]; then
+    exit "$tag_status"
+  fi
 }
 
 self_check() {
@@ -771,6 +970,175 @@ EOF
     fail "production-smoke.txt drifted"
   fi
 
+  # Deploy tag and deploy-alone guard (RF-244), against throwaway repos only.
+  local sha40 tagname tagmsg batchmsg
+  sha40="1eed288b3759dde832e775687eed5e83c3b4ca1d"
+  tagmsg="$(deploy_tag_message "$sha40" 2026-11-24T02:37:16Z \
+    515bc8fb-24fd-4ff7-b8be-6f7c28aa1e85 "fedc7fbf-1bc2-46cd-a90a-3059505e0a7b (100%)" \
+    assets/index-CFKeSijz.js deploy/2026-11-23T1730Z-b9e8141 "")"
+  batchmsg="$(deploy_tag_message "$sha40" 2026-11-24T02:37:16Z w r e s \
+    "allowed by --allow-batch (#789 with #790)")"
+  if tagname="$(deploy_tag_name "$sha40" 2026-11-24T02:37:16Z)" \
+    && [[ "$tagname" == "deploy/2026-11-24T0237Z-1eed288" ]] \
+    && ! deploy_tag_name 1eed288 2026-11-24T02:37:16Z >/dev/null 2>&1 \
+    && ! deploy_tag_name "$sha40" "2026-11-24 02:37" >/dev/null 2>&1 \
+    && [[ "$tagmsg" == "deploy 1eed288 to production"$'\n\n'"commit: ${sha40}"* ]] \
+    && [[ "$tagmsg" == *$'\n'"deployed: 2026-11-24T02:37:16Z"$'\n'* ]] \
+    && [[ "$tagmsg" == *$'\n'"worker version: 515bc8fb-24fd-4ff7-b8be-6f7c28aa1e85"$'\n'* ]] \
+    && [[ "$tagmsg" == *$'\n'"rollback version: fedc7fbf-1bc2-46cd-a90a-3059505e0a7b (100%)"$'\n'* ]] \
+    && [[ "$tagmsg" == *$'\n'"spa entry: assets/index-CFKeSijz.js"$'\n'* ]] \
+    && [[ "$tagmsg" == *$'\n'"since: deploy/2026-11-23T1730Z-b9e8141" ]] \
+    && [[ "$tagmsg" != *"batch:"* ]] \
+    && [[ "$batchmsg" == *$'\n'"batch: allowed by --allow-batch (#789 with #790)" ]]; then
+    pass "deploy tag name and message"
+  else
+    fail "deploy tag name or message: ${tagname:-} / ${tagmsg}"
+  fi
+
+  local vfile
+  vfile="$(mktemp)"
+  printf '%s\n' '{"type":"wrangler-session","version":1}' \
+    '{"type":"deploy","version":1,"worker_name":"ritmofit-api","version_id":"515bc8fb-24fd-4ff7-b8be-6f7c28aa1e85","targets":["ritmofit.studio"]}' \
+    >"$vfile"
+  out="$(worker_version_from_output "$vfile")"
+  printf '%s\n' 'not json' '{"type":"deploy","version_id":"SUPER_SECRET_DO_NOT_PRINT"}' >"$vfile"
+  local out_bad out_missing status_one status_split status_none
+  out_bad="$(worker_version_from_output "$vfile")"
+  out_missing="$(worker_version_from_output "${vfile}.missing")"
+  printf 'Created:  2026-11-23T17:30:46.000Z\nSource:  Upload\nVersion(s):  \033[36m(100%%)\033[39m fedc7fbf-1bc2-46cd-a90a-3059505e0a7b\n      Created:  2026-11-23T17:30:46.000Z\n' >"$vfile"
+  status_one="$(rollback_version_from_status "$vfile")"
+  printf '%s\n' 'Version(s):  (60%) aaaaaaaa-1111-2222-3333-444444444444' '' \
+    '             (40%) bbbbbbbb-1111-2222-3333-444444444444' >"$vfile"
+  status_split="$(rollback_version_from_status "$vfile")"
+  printf '%s\n' 'wrangler: not authenticated' >"$vfile"
+  status_none="$(rollback_version_from_status "$vfile")"
+  rm -f "$vfile"
+  if [[ "$out" == "515bc8fb-24fd-4ff7-b8be-6f7c28aa1e85" && "$out_bad" == "unknown" \
+    && "$out_missing" == "unknown" \
+    && "$status_one" == "fedc7fbf-1bc2-46cd-a90a-3059505e0a7b (100%)" \
+    && "$status_split" == "aaaaaaaa-1111-2222-3333-444444444444 (60%), bbbbbbbb-1111-2222-3333-444444444444 (40%)" \
+    && "$status_none" == "unknown" ]]; then
+    pass "Worker and rollback versions for the tag message"
+  else
+    fail "version parsing: $out / $out_bad / $out_missing / $status_one / $status_split / $status_none"
+  fi
+
+  # A fixture main: #786 (deployed and tagged), docs, #789 (provider / playback,
+  # deploys alone), #790 (an ordinary screen change), #793 (tests only).
+  local gtmp gorigin gout gerr gmsg g_base g_alone g_tip gname gname2 gstatus
+  gtmp="$(mktemp -d)"
+  gorigin="$(mktemp -d)"
+  gout="$(mktemp)"
+  gerr="$(mktemp)"
+  gmsg="$(mktemp)"
+  fixture_commit() {
+    local subject="$1"
+    local f
+    shift
+    for f in "$@"; do
+      mkdir -p "${gtmp}/$(dirname "$f")"
+      printf '%s\n' "$subject" >>"${gtmp}/${f}"
+    done
+    git -C "$gtmp" add -A
+    git -C "$gtmp" commit -q -m "$subject"
+    git -C "$gtmp" rev-parse HEAD
+  }
+  git -C "$gtmp" init -q -b main
+  git -C "$gtmp" config user.email deploy-selfcheck@example.com
+  git -C "$gtmp" config user.name deploy-selfcheck
+  git -C "$gtmp" config commit.gpgSign false
+  git -C "$gtmp" config tag.gpgSign false
+  g_base="$(fixture_commit 'fix(web): one button radius (#786)' apps/web/src/components/Button.tsx)"
+
+  if (cd "$gtmp" && deploy_guard "$g_base" && printf 'SINCE=%s\n' "$DEPLOY_SINCE") \
+    >"$gout" 2>"$gerr" && grep -q "no deploy/\* tag yet" "$gout" && grep -qx "SINCE=none" "$gout"; then
+    pass "deploy guard warns and skips with no deploy tag"
+  else
+    fail "no-tag guard: $(cat "$gout" "$gerr")"
+  fi
+
+  git -C "$gtmp" tag -a "deploy/2026-11-23T1730Z-${g_base:0:7}" -m "deploy ${g_base:0:7}" "$g_base"
+  fixture_commit 'docs: record a deploy (#788)' ritmofit_dev_plan/HISTORY.md >/dev/null
+  g_alone="$(fixture_commit 'feat(web): Live names the next song (#789)' \
+    apps/web/src/components/LiveMode.tsx apps/web/src/components/LiveMode.test.tsx)"
+  fixture_commit 'feat(web): likes past 200 (#790)' apps/web/src/components/TrackSearch.tsx >/dev/null
+  g_tip="$(fixture_commit 'test(web): likes in pick mode (#793)' \
+    apps/web/src/components/Dashboard.test.tsx e2e/smoke.spec.ts)"
+
+  if (cd "$gtmp" && deploy_guard "$g_alone" && printf 'SINCE=%s\nBATCH=%s\n' "$DEPLOY_SINCE" "$DEPLOY_BATCH") \
+    >"$gout" 2>"$gerr" && grep -q "deploy guard: ok, 1 shipped change" "$gout" \
+    && grep -qx "SINCE=deploy/2026-11-23T1730Z-${g_base:0:7}" "$gout" && grep -qx "BATCH=" "$gout"; then
+    pass "deploy guard lets a deploy-alone change ship alone"
+  else
+    fail "deploy-alone change alone: $(cat "$gout" "$gerr")"
+  fi
+
+  if (cd "$gtmp" && deploy_guard "$g_tip") >"$gout" 2>"$gerr"; then
+    fail "a deploy-alone change batched with another shipped change should be refused"
+  elif grep -q "refusing to deploy ${g_tip:0:7}" "$gerr" \
+    && grep -q "#789 ${g_alone:0:7} deploys alone (provider / playback)" "$gerr" \
+    && grep -q "also shipped: #790" "$gerr" \
+    && grep -q "1\. scripts/deploy.sh ${g_alone:0:7} .*#789 alone (provider / playback)" "$gerr" \
+    && grep -q "2\. scripts/deploy.sh ${g_tip:0:7} .*#790" "$gerr" \
+    && grep -q "nothing was built or uploaded" "$gerr"; then
+    pass "deploy guard refuses a deploy-alone batch and prints the steps"
+  else
+    fail "batch refusal output: $(cat "$gout" "$gerr")"
+  fi
+
+  if (cd "$gtmp" && deploy_guard "$g_tip" allow && printf 'BATCH=%s\n' "$DEPLOY_BATCH") \
+    >"$gout" 2>"$gerr" && grep -q "batching under --allow-batch" "$gout" \
+    && grep -qx "BATCH=allowed by --allow-batch (#789 with #790)" "$gout"; then
+    pass "deploy guard --allow-batch records the batch"
+  else
+    fail "--allow-batch: $(cat "$gout" "$gerr")"
+  fi
+
+  git init -q --bare "${gorigin}/origin.git"
+  git -C "$gtmp" remote add origin "${gorigin}/origin.git"
+  git -C "$gtmp" tag not-a-deploy-tag "$g_base"
+  gname="deploy/2026-11-24T0237Z-${g_tip:0:7}"
+  deploy_tag_message "$g_tip" 2026-11-24T02:37:16Z 515bc8fb-24fd-4ff7-b8be-6f7c28aa1e85 \
+    "fedc7fbf-1bc2-46cd-a90a-3059505e0a7b (100%)" assets/index-CFKeSijz.js \
+    "deploy/2026-11-23T1730Z-${g_base:0:7}" "" >"$gmsg"
+  TAG_PUSH_SLEEP_SECONDS=0
+  if tag_deploy "$gtmp" "$gname" "$g_tip" "$gmsg" >"$gout" 2>"$gerr" \
+    && [[ "$(git -C "${gorigin}/origin.git" for-each-ref --format='%(refname)')" == "refs/tags/${gname}" ]] \
+    && [[ "$(git -C "${gorigin}/origin.git" cat-file -t "refs/tags/${gname}")" == "tag" ]] \
+    && [[ "$(git -C "${gorigin}/origin.git" rev-parse "refs/tags/${gname}^{commit}")" == "$g_tip" ]] \
+    && git -C "${gorigin}/origin.git" cat-file -p "refs/tags/${gname}" \
+      | grep -qx "worker version: 515bc8fb-24fd-4ff7-b8be-6f7c28aa1e85" \
+    && grep -q "pushed ${gname} to origin" "$gout"; then
+    pass "deploy tag pushes only its own ref"
+  else
+    fail "tag push: $(cat "$gout" "$gerr")"
+  fi
+
+  git -C "$gtmp" remote set-url origin "${gorigin}/missing.git"
+  gname2="deploy/2026-11-24T0238Z-${g_tip:0:7}"
+  gstatus=0
+  tag_deploy "$gtmp" "$gname2" "$g_tip" "$gmsg" >"$gout" 2>"$gerr" || gstatus=$?
+  if [[ "$gstatus" -eq "$TAG_FAILED_EXIT" ]] \
+    && git -C "$gtmp" rev-parse -q --verify "refs/tags/${gname2}" >/dev/null \
+    && grep -q "DEPLOYED ${g_tip:0:7}, but pushing ${gname2} to origin failed 3 times" "$gerr" \
+    && grep -q "do not roll back" "$gerr" \
+    && grep -q "git push origin refs/tags/${gname2}" "$gerr"; then
+    pass "failed tag push keeps the local tag and exits 3"
+  else
+    fail "failed tag push (status ${gstatus}): $(cat "$gout" "$gerr")"
+  fi
+
+  gstatus=0
+  tag_deploy "$gtmp" "$gname" "$g_tip" "$gmsg" >"$gout" 2>"$gerr" || gstatus=$?
+  if [[ "$gstatus" -eq "$TAG_FAILED_EXIT" ]] && grep -q "creating the deploy tag ${gname} failed" "$gerr" \
+    && grep -q "worker version: 515bc8fb" "$gerr"; then
+    pass "failed tag creation prints the message and exits 3"
+  else
+    fail "failed tag creation (status ${gstatus}): $(cat "$gout" "$gerr")"
+  fi
+  rm -rf "$gtmp" "$gorigin"
+  rm -f "$gout" "$gerr" "$gmsg"
+
   rm -f "$present" "$spec" "$committed_present" "$json_out" "$json_err" "$smoke_tmp" "$prop_out" \
     "$dirty_err" "$dirty_sha_err" "$diverge_err"
   rm -rf "$tmp"
@@ -782,36 +1150,53 @@ EOF
 }
 
 main() {
-  if [[ $# -gt 1 ]]; then
-    usage >&2
-    exit 2
-  fi
+  local allow_batch="" target="" arg
   if [[ "${1:-}" == "-h" || "${1:-}" == "--help" ]]; then
     usage
     exit 0
   fi
   if [[ "${1:-}" == "--self-check" ]]; then
+    if [[ $# -ne 1 ]]; then
+      usage >&2
+      exit 2
+    fi
     self_check
     exit 0
   fi
-  if [[ "${1:-}" == --* ]]; then
-    usage >&2
-    exit 2
-  fi
+  for arg in "$@"; do
+    case "$arg" in
+      --allow-batch)
+        allow_batch="allow"
+        ;;
+      -*)
+        usage >&2
+        exit 2
+        ;;
+      *)
+        if [[ -n "$target" ]]; then
+          usage >&2
+          exit 2
+        fi
+        target="$arg"
+        ;;
+    esac
+  done
 
   local repo sha nvmrc
   repo="$(git rev-parse --show-toplevel)"
   cd "$repo"
-  git fetch origin main
+  # Tags too: the newest deploy/* tag is where the deploy-alone guard starts.
+  git fetch origin main --tags
 
-  if [[ $# -eq 1 ]]; then
-    sha="$(resolve_deploy_sha "$1")"
+  if [[ -n "$target" ]]; then
+    sha="$(resolve_deploy_sha "$target")"
   else
     sha="$(resolve_deploy_sha)"
   fi
 
   nvmrc="$(git show "${sha}:.nvmrc")"
   assert_node_major "$nvmrc" "$(node -v)"
+  deploy_guard "$sha" "$allow_batch"
   deploy_tree "$sha"
 }
 

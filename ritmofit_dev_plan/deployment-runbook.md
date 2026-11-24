@@ -56,6 +56,40 @@ message and manual BPM entry covers the loop. Set the key via
 `pnpm --filter @ritmofit/api exec wrangler secret put GETSONGBPM_API_KEY`
 post-launch to enable one-tap tempo fill (owner deferral, 2026-06-28). **BPM lookup is built but unprovisioned** (`GETSONGBPM_API_KEY` not set — activate at will); **Google sign-in is unprovisioned** (`GOOGLE_CLIENT_ID`/`GOOGLE_CLIENT_SECRET` not set — activate when credentials are provisioned). Both tracked in `DEVELOPMENT_PLAN.md` → "Backlog / Open Items" → "Deferred (owner decision)."
 
+## What is due: `pnpm release:status`
+
+Each deploy that `scripts/deploy.sh` finishes leaves a `deploy/*` tag on the commit it shipped (see
+[Deploy tag](#deploy-tag)). That tag is production's record in git; HISTORY stays the deploy log.
+`pnpm release:status` runs `git fetch origin main --tags`, then reads local git only. It never calls
+Cloudflare. It prints:
+
+- the newest deploy tag (name, commit, UTC time, Worker version from its message), with a warning
+  when the tag is only local because its push failed;
+- the `origin/main` tip, and each commit merged since, oldest first: PR number, squash SHA, title,
+  whether it changes shipped code, and its owner-gate classes;
+- a verdict: **deploy due**, with one `scripts/deploy.sh <sha>` step per deploy in merge order, or
+  **nothing to ship** (docs, records and tests only). With no deploy tag yet it says so and falls
+  back to the newest HISTORY deploy entry.
+
+**Shipped code** is a changed path that can change what production runs: anything under
+`apps/api/`, `apps/web/` or `packages/`, plus the root build inputs `pnpm-lock.yaml`,
+`pnpm-workspace.yaml`, `.pnpmfile.cjs`, `tsconfig.base.json` and
+`ritmofit_design_system/tokens.json`. Tests (`*.test.*`, `*.spec.*`, `test/`, `__tests__/`,
+`__snapshots__/`, `vitest*.config.*`), Markdown and the repo tools `apps/api/scripts/`,
+`apps/api/openapi/`, `apps/api/drizzle.config.ts`, `apps/web/smoke/` and `apps/web/scripts/check-*`
+do not ship. Nor does anything else: `scripts/`, `.github/`, `e2e/`, docs, task records, prompts,
+`ios-snapshot/` and the root `package.json`.
+
+A change is **deploy-alone** when one of its shipped files is owner-gated: `scripts/owner-gate.mjs`
+classes D1 migrations / schema, auth / authz, provider / playback, or CI / deploy / infrastructure
+(the agent-rules class never ships). It gets a step of its own (`AGENTS.md` › "Security And
+Deployment"). Consecutive ordinary changes share a step. Each step still needs the owner's yes in
+the session; the verdict is a list to ask about, not permission.
+
+A Worker rollback (below) creates no tag. After one, the newest tag is ahead of what production
+serves, and `release:status` and the guard count from it: say in the next deploy's ask what it
+ships again, and record the rollback in HISTORY.
+
 ## Pre-deploy
 
 Deploy with `scripts/deploy.sh`. It is the procedure below; do not run the gates and `wrangler deploy`
@@ -65,11 +99,25 @@ by hand unless you are debugging the script itself.
 scripts/deploy.sh --self-check   # local guards only; does not deploy or call Cloudflare
 scripts/deploy.sh                 # clean tree whose HEAD is origin/main
 scripts/deploy.sh <sha>           # clean tree; HEAD may differ from origin/main
+scripts/deploy.sh --allow-batch [sha]  # only when the owner said, in the session, to batch
 ```
 
-The script fetches `origin main` and refuses when `git status --porcelain` is not empty, with or
-without a SHA. A SHA does not override a dirty tree. With no SHA it also refuses unless `HEAD`
-equals `origin/main`. A SHA deploys that commit from a clean tree whose HEAD is not `origin/main`.
+The script fetches `origin main` and the tags, and refuses when `git status --porcelain` is not
+empty, with or without a SHA. A SHA does not override a dirty tree. With no SHA it also refuses
+unless `HEAD` equals `origin/main`. A SHA deploys that commit from a clean tree whose HEAD is not
+`origin/main`.
+
+**Deploy-alone guard.** Before it builds anything, the script runs
+`node scripts/release-status.mjs --guard <sha>` over the range from the newest `deploy/*` tag to the
+commit it is deploying. If that range holds a deploy-alone change and any other shipped change, it
+refuses (exit 1), names them, and prints the steps to deploy instead, one `scripts/deploy.sh <sha>`
+each. Nothing is built, uploaded or tagged. A range with one shipped change, or none (a redeploy),
+passes. With no deploy tag yet the guard warns, skips, and this deploy's tag starts the record.
+
+`--allow-batch` lets such a range through as one deploy. Pass it only when the owner, in the
+session, has seen the steps and said to batch those changes; record the owner's words in that
+deploy's HISTORY entry. The deploy tag's message records the batch (`batch: allowed by
+--allow-batch (#789 with #790, #792)`). Never pass it on your own judgment or to save time.
 
 The script then refuses unless `node -v`'s major matches `.nvmrc` (the file is `22`; Node 24 or 26
 does not pass). It compares `wrangler secret list --format json` **names** to
@@ -179,6 +227,31 @@ For UI-affecting changes, also run the browser smokes against a local stack (see
 SPA entry hash matches the build. A matching Worker version does not prove static-asset alignment, and a
 matching SPA hash does not prove the API Worker is current.
 
+## Deploy tag
+
+Once the propagation loop, the status list and the security headers have all passed, the script
+creates an annotated tag on the deployed commit and pushes only that ref
+(`git push origin refs/tags/<name>`, never `--tags`), trying up to three times. Only
+`scripts/deploy.sh` creates deploy tags. No workflow runs on a tag push.
+
+- **Name:** `deploy/<UTC YYYY-MM-DDTHHMMZ>-<sha7>`, the minute `wrangler deploy` returned, for
+  example `deploy/2026-11-24T0237Z-1eed288`. The newest tag is the latest by name.
+- **Message:** `commit:` (full SHA), `deployed:` (UTC time), `worker version:` (from the file
+  `wrangler deploy` writes when `WRANGLER_OUTPUT_FILE_PATH` is set), `rollback version:` (the
+  version or versions `wrangler deployments status` showed before the upload), `spa entry:` (the
+  built entry the propagation loop matched), `since:` (the previous deploy tag) and, for an allowed
+  batch only, `batch:`. A version the script could not read says `unknown`, with a warning; put the
+  real one in HISTORY.
+- **Exit 3:** the deploy went out and passed its checks, but the tag was not created or not pushed.
+  The deploy stands: do not roll back for this. The script prints the exact command. After a failed
+  push the tag exists locally, and `git push origin refs/tags/<name>` from the repo root sends it.
+  Until it is pushed, `pnpm release:status` warns that the newest tag is only local. Record the
+  deploy in HISTORY as usual, including the tag name.
+
+A tag records what the script shipped, not what serves now: a rollback or a dashboard change leaves
+no tag. When production state matters, the Worker version and served SPA entry checks in this
+runbook still decide.
+
 ## Tail watch
 
 After `scripts/deploy.sh` exits 0, watch live logs for about 5 minutes. The script does not tail.
@@ -271,7 +344,9 @@ pnpm --filter @ritmofit/api exec wrangler deployments list     # find the last-g
 pnpm --filter @ritmofit/api exec wrangler rollback <version-id> -m "reason"
 ```
 
-This re-publishes that version's code **and bindings**; it does **not** touch D1 data.
+This re-publishes that version's code **and bindings**; it does **not** touch D1 data. It creates
+no deploy tag, so the newest `deploy/*` tag is then ahead of production (see
+[What is due](#what-is-due-pnpm-releasestatus)); record the rollback in HISTORY.
 
 **If the Neo can't roll back** (it is off, or its wrangler session is missing or expired). The
 owner does it: either from the Cloudflare dashboard's deployments view for the `ritmofit-api` Worker
@@ -325,6 +400,9 @@ Deploy forward again:
 ```bash
 scripts/deploy.sh <sha>
 ```
+
+The newest deploy tag is already on `<sha>`, so the deploy-alone guard sees nothing new and passes,
+and the script tags `<sha>` again with this deploy's time and versions.
 
 The script's upload line, which you do not run yourself, is:
 
