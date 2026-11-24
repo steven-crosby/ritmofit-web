@@ -1,0 +1,32 @@
+{
+  "schemaVersion": 1,
+  "id": "RF-244",
+  "title": "Deploys tag the commit they shipped; pnpm release:status says what is due; deploy.sh enforces the deploy-alone rule",
+  "kind": "task",
+  "status": "in_progress",
+  "priority": "P2",
+  "parent": null,
+  "dependsOn": [],
+  "acceptance": [
+    "After every post-deploy check passes (propagation, status smoke, security headers), scripts/deploy.sh creates an annotated tag deploy/<UTC YYYY-MM-DDTHHMMZ>-<sha7> on the deployed commit. Its message holds the commit, the UTC deploy time, the Worker version ID, the rollback version ID and the SPA entry, and the script pushes only that ref. A failed push keeps the local tag, prints the exact push command and exits 3; the deploy stands.",
+    "pnpm release:status (scripts/release-status.mjs: local git after git fetch origin main --tags, no Cloudflare call) prints the newest deploy tag (name, commit, time), the origin/main tip and each merged commit since (PR number, title, squash SHA, whether it changes shipped code, its owner-gate classes). It ends with \"deploy due\" and scripts/deploy.sh <sha> steps in merge order, or \"nothing to ship\". It says plainly when there is no deploy tag yet and warns when the newest tag is not on origin.",
+    "A PR is deploy-alone when one of its shipped files matches scripts/owner-gate.mjs's GATES (imported, not forked). deploy.sh refuses a range from the newest deploy tag to the commit being deployed that mixes a deploy-alone PR with any other shipped change, and prints the steps, unless --allow-batch is passed. With no tag it warns and skips the guard. On the 2026-11-23 range (b9e8141 to 1eed288) the steps split #789 out.",
+    "deployment-runbook.md, start-session.md, close-session.md and AGENTS.md describe the tag, the guard, --allow-batch (passed only when the owner says to batch in the session, and recorded in HISTORY) and release:status.",
+    "deploy.sh --self-check covers the tag name and message, the tag push and a failed push, the guard refusal, --allow-batch and the no-tag case. scripts/release-status.test.mjs covers the classifier, the step planner and the CLI on a fixture repo, and runs in CI and the AGENTS.md gate as pnpm release-status:test."
+  ],
+  "nextAction": "Round 1124 web Lane 1, branch feat/rf-244-release-marker: implement the tag, release:status, the guard, their tests and docs per the confirmed plan, then set Done in this PR. Restart from ritmofit_dev_plan/handoffs/2026-11-24-r1124-lane1-release-marker.md once it exists on the branch.",
+  "blocker": null,
+  "evidence": [
+    {
+      "kind": "observation",
+      "ref": "https://github.com/steven-crosby/ritmofit-ios/issues/113#issuecomment-7140700356",
+      "checkedOn": "2026-11-24",
+      "summary": "Owner decision, Neo conductor session, recorded on iOS #113: on 2026-11-23 the owner asked for \"a dependable marker to trigger deploy and TestFlight updates\" and chose \"Ask at every close\"; on 2026-11-24 the owner answered the conductor's plan with \"go\". Approved: deploy.sh tags the commit it deployed (Worker version, SPA entry and rollback target in the message), pnpm release:status compares main with the newest tag and says \"deploy due\" or \"nothing to ship\", start-session reports it, and close-session asks the owner once when anything is due. Item 2, making the deploy-alone rule mechanical in deploy.sh, is the conductor's recommendation, not yet an owner decision: the owner approves it or not at this PR's merge."
+    }
+  ],
+  "resolution": null,
+  "followUps": [
+    "RF-245",
+    "RF-246"
+  ]
+}
