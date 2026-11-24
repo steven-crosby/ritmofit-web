@@ -1,0 +1,34 @@
+{
+  "schemaVersion": 1,
+  "id": "RF-245",
+  "title": "First deploy tags on production: backfill the 1eed288 deploy and prove the next scripts/deploy.sh run pushes its tag and runs the deploy-alone guard",
+  "kind": "verification",
+  "status": "backlog",
+  "priority": "P2",
+  "parent": null,
+  "dependsOn": [
+    "RF-244"
+  ],
+  "acceptance": [
+    "The conductor backfills deploy/2026-11-24T0237Z-1eed288 on 1eed288 (the 2026-11-23 deploy: Worker 515bc8fb-24fd-4ff7-b8be-6f7c28aa1e85, rollback fedc7fbf-1bc2-46cd-a90a-3059505e0a7b, SPA assets/index-CFKeSijz.js) right after #796 merges and before any deploy, and pushes only that ref; git ls-remote --tags origin shows it and pnpm release:status reads it.",
+    "The next real scripts/deploy.sh run on the Neo runs the deploy-alone guard and the live version check against that tag, then creates and pushes its own deploy/* tag after the post-deploy checks, and the tag message holds a real Worker version and rollback version (not unknown). That deploy's HISTORY entry names the tag."
+  ],
+  "nextAction": "Agent-created (round 1124 web Lane 1, 2026-11-24) for RF-244's post-merge acceptance; Backlog until the owner sets Ready. The owner's \"go\" (iOS #113, 7140700356) approved the backfill: the conductor pushes the 1eed288 tag right after #796 merges, before any deploy (commands in ritmofit_dev_plan/handoffs/2026-11-24-r1124-lane1-release-marker.md). Until that tag exists, scripts/deploy.sh refuses to deploy without --allow-batch. This record stays open after the backfill for its second half: the first real tagged deploy the owner approves.",
+  "blocker": null,
+  "evidence": [
+    {
+      "kind": "observation",
+      "ref": "https://github.com/steven-crosby/ritmofit-ios/issues/113#issuecomment-7140700356",
+      "checkedOn": "2026-11-24",
+      "summary": "Owner decision, Neo conductor session, recorded on iOS #113: the owner's \"go\" on 2026-11-24 approved the conductor's plan, which includes \"Backfill: the 2026-11-23 deploy of `1eed288` and that day's TestFlight uploads become the first tags.\" That approves this record's backfill."
+    },
+    {
+      "kind": "observation",
+      "ref": "https://github.com/steven-crosby/ritmofit-ios/issues/113#issuecomment-7141036009",
+      "checkedOn": "2026-11-24",
+      "summary": "Owner approval, Neo conductor session, 2026-11-24, recorded on iOS #113: \"your \\\"recommendation on deploying changes alone\\\" are approved\": deploy.sh refuses a range that mixes a deploy-alone change with other shipped changes unless the owner says to batch (--allow-batch, recorded in HISTORY). The first real tagged deploy (this record's second half) is that guard's first run against production."
+    }
+  ],
+  "resolution": null,
+  "followUps": []
+}

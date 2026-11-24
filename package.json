@@ -24,7 +24,9 @@
     "tasks:check": "node scripts/tasks.mjs check",
     "tasks:test": "node --test scripts/tasks.test.mjs",
     "owner-gate:test": "node --test scripts/owner-gate.test.mjs scripts/pr-gates.test.mjs",
-    "rf-trace:test": "node --test scripts/rf-trace.test.mjs"
+    "rf-trace:test": "node --test scripts/rf-trace.test.mjs",
+    "release:status": "node scripts/release-status.mjs",
+    "release-status:test": "node --test scripts/release-status.test.mjs"
   },
   "devDependencies": {
     "@eslint/js": "^9.13.0",

@@ -1,0 +1,27 @@
+{
+  "schemaVersion": 1,
+  "id": "RF-246",
+  "title": "Owner-gate scripts/release-status.mjs: deploy.sh's deploy-alone guard depends on it, but owner-gate's GATES does not cover it",
+  "kind": "task",
+  "status": "backlog",
+  "priority": "P3",
+  "parent": null,
+  "dependsOn": [
+    "RF-244"
+  ],
+  "acceptance": [
+    "scripts/owner-gate.mjs counts scripts/release-status.mjs and scripts/release-status.test.mjs as CI / deploy / infrastructure, with cases in scripts/owner-gate.test.mjs, so a PR that weakens deploy.sh's deploy-alone guard or its tests needs owner-approved, like a change to deploy.sh itself."
+  ],
+  "nextAction": "Agent-created (round 1124 web Lane 1, 2026-11-24): deploy.sh calls scripts/release-status.mjs --guard, but owner-gate's CI / deploy / infrastructure class does not match that file. Changing owner-gate classes was outside RF-244's brief. Backlog until the owner sets Ready; the change itself is owner-gated.",
+  "blocker": null,
+  "evidence": [
+    {
+      "kind": "source",
+      "ref": "scripts/owner-gate.mjs",
+      "checkedOn": "2026-11-24",
+      "summary": "The CI / deploy / infrastructure gate matches scripts/ files only by /^scripts\\/(deploy|owner-gate|pr-gates|rf-trace|required-secrets|production-smoke)[^/]*$/, so owner-gate reports a change to scripts/release-status.mjs or its test as not owner-gated."
+    }
+  ],
+  "resolution": null,
+  "followUps": []
+}

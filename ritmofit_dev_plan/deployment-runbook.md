@@ -56,6 +56,45 @@ message and manual BPM entry covers the loop. Set the key via
 `pnpm --filter @ritmofit/api exec wrangler secret put GETSONGBPM_API_KEY`
 post-launch to enable one-tap tempo fill (owner deferral, 2026-06-28). **BPM lookup is built but unprovisioned** (`GETSONGBPM_API_KEY` not set — activate at will); **Google sign-in is unprovisioned** (`GOOGLE_CLIENT_ID`/`GOOGLE_CLIENT_SECRET` not set — activate when credentials are provisioned). Both tracked in `DEVELOPMENT_PLAN.md` → "Backlog / Open Items" → "Deferred (owner decision)."
 
+## What is due: `pnpm release:status`
+
+Each deploy that `scripts/deploy.sh` finishes leaves a `deploy/*` tag on the commit it shipped (see
+[Deploy tag](#deploy-tag)). That tag is production's record in git; HISTORY stays the deploy log.
+`pnpm release:status` runs `git fetch origin main '+refs/tags/deploy/*:refs/tags/deploy/*'` (the
+`+` force-updates deploy tags, so one stale local copy cannot block anything), then reads local git
+only. It never calls Cloudflare. It prints:
+
+- the newest deploy tag, by creation date and then by name (name, commit, UTC time, Worker version
+  from its message), with a warning when the tag is only local because its push failed;
+- the `origin/main` tip, and each commit merged since, oldest first: PR number, squash SHA, title,
+  whether it changes shipped code, and its owner-gate classes;
+- a verdict: **deploy due**, with one `scripts/deploy.sh <sha>` step per deploy in merge order, or
+  **nothing to ship** (no commit changes shipped code). With no deploy tag yet it says so and falls
+  back to the newest HISTORY deploy entry.
+
+**Shipped code** is a changed path that can change what production runs: anything under
+`apps/api/`, `apps/web/` or `packages/`, plus the root build inputs `pnpm-lock.yaml`,
+`pnpm-workspace.yaml`, `.pnpmfile.cjs`, `.npmrc`, `.nvmrc`, `tsconfig.base.json` and
+`ritmofit_design_system/tokens.json`. Tests and their fixtures (`*.test.*`, `*.spec.*`,
+`*.fixture.*`, `test/`, `__tests__/`, `__snapshots__/`, `vitest*.config.*`), Markdown (except files
+the SPA serves from `apps/web/public/`) and the repo tools `apps/api/scripts/`, `apps/api/openapi/`,
+`apps/api/drizzle.config.ts`, `apps/web/smoke/` and `apps/web/scripts/check-*` do not ship. Nor does
+anything else: `scripts/`, `.github/`, `e2e/`, docs, task records, prompts, `ios-snapshot/` and the
+root `package.json`.
+
+A change is **deploy-alone** when one of its shipped files is owner-gated: `scripts/owner-gate.mjs`
+classes D1 migrations / schema, auth / authz, provider / playback, or CI / deploy / infrastructure
+(the agent-rules class never ships). It gets a step of its own (`AGENTS.md` › "Security And
+Deployment"). Consecutive ordinary changes share a step. Each step still needs the owner's yes in
+the session; the verdict is a list to ask about, not permission.
+
+A Worker rollback (below) creates no tag, and neither does `wrangler secret put` or a dashboard
+edit. After one, the newest tag no longer describes what production serves, and `release:status`
+still counts from it. `scripts/deploy.sh` notices: it compares the live Worker version with the
+newest tag's `worker version:` and refuses when they differ (see the live version check under
+Pre-deploy). Say in the next deploy's ask what it ships again, and record the rollback or secret
+change in HISTORY.
+
 ## Pre-deploy
 
 Deploy with `scripts/deploy.sh`. It is the procedure below; do not run the gates and `wrangler deploy`
@@ -65,14 +104,33 @@ by hand unless you are debugging the script itself.
 scripts/deploy.sh --self-check   # local guards only; does not deploy or call Cloudflare
 scripts/deploy.sh                 # clean tree whose HEAD is origin/main
 scripts/deploy.sh <sha>           # clean tree; HEAD may differ from origin/main
+scripts/deploy.sh --allow-batch [sha]  # only when the owner said, in the session, to batch
+scripts/deploy.sh --accept-live <version-id> [sha]  # only when the owner accepted that live Worker
 ```
 
-The script fetches `origin main` and refuses when `git status --porcelain` is not empty, with or
-without a SHA. A SHA does not override a dirty tree. With no SHA it also refuses unless `HEAD`
-equals `origin/main`. A SHA deploys that commit from a clean tree whose HEAD is not `origin/main`.
+The script fetches `origin main` and the deploy tags (force-updated, as `release:status` does), and
+refuses when `git status --porcelain` is not empty, with or without a SHA. A SHA does not override a dirty tree. With no SHA it also refuses
+unless `HEAD` equals `origin/main`. A SHA deploys that commit from a clean tree whose HEAD is not
+`origin/main`.
 
-The script then refuses unless `node -v`'s major matches `.nvmrc` (the file is `22`; Node 24 or 26
-does not pass). It compares `wrangler secret list --format json` **names** to
+Before the guard, the script refuses unless `node -v`'s major matches `.nvmrc` (the file is `22`;
+Node 24 or 26 does not pass).
+
+**Deploy-alone guard.** Before it builds anything, the script runs
+`node scripts/release-status.mjs --guard <sha>` over the range from the newest `deploy/*` tag to the
+commit it is deploying. If that range holds a deploy-alone change and any other shipped change, it
+refuses (exit 1), names them, and prints the steps to deploy instead, one `scripts/deploy.sh <sha>`
+each. Nothing is built, uploaded or tagged. A range with one shipped change, or none (a redeploy of
+the tag's commit), passes. For a commit older than the tag it passes and says the deploy takes the
+newer changes back. **With no deploy tag yet it refuses:** the conductor backfills the first tag
+(RF-245) before any deploy, or the owner says to pass `--allow-batch`.
+
+`--allow-batch` lets such a range through as one deploy. Pass it only when the owner, in the
+session, has seen the steps and said to batch those changes; record the owner's words in that
+deploy's HISTORY entry. The deploy tag's message records the batch (`batch: allowed by
+--allow-batch (#789 with #790, #792)`). Never pass it on your own judgment or to save time.
+
+After the guard, the script compares `wrangler secret list --format json` **names** to
 `scripts/required-secrets.txt` and prints only missing requirement lines. It never prints secret
 values, the raw list, or the allowlist. `BETA_ALLOWED_EMAILS` is one of those required names;
 production HTTPS rejects every new account when it is absent.
@@ -84,6 +142,20 @@ static `APPLE_MUSIC_DEVELOPER_TOKEN`.
 
 Before the gates, the script records `wrangler deployments status` (the rollback version) and lists
 remote D1 migrations. If any migration is unapplied it exits. It does not apply migrations.
+
+**Live version check.** The live Worker that `wrangler deployments status` shows should be the
+newest deploy tag's `worker version:`. When both are known and differ, production is not the tag,
+and this deploy replaces more than the range the guard checked. Three things make a new live
+version without a tag: a rollback, `wrangler secret put` and a dashboard edit. The script refuses
+(exit 1, nothing built or uploaded) and prints the live deployment's `Source:` line
+(`Rollback`, `Secret Change`, `Upload`, …) so the owner can see which happened. When either version
+is unknown it says so and goes on.
+
+`--accept-live <version-id>` is the only way past that refusal; `--allow-batch` does not clear it.
+The ID must be the single live version at 100%, or the script refuses. Pass it only when the owner,
+in the session, has seen the live version and its source and said to deploy over it. Record the
+owner's words in that deploy's HISTORY entry. The tag message records it as
+`live: accepted <version-id> (owner, in session)`.
 
 ## Deploy
 
@@ -179,6 +251,45 @@ For UI-affecting changes, also run the browser smokes against a local stack (see
 SPA entry hash matches the build. A matching Worker version does not prove static-asset alignment, and a
 matching SPA hash does not prove the API Worker is current.
 
+## Deploy tag
+
+Once the propagation loop, the status list and the security headers have all passed, the script
+creates an annotated tag on the deployed commit and pushes only that ref
+(`git push --no-follow-tags origin refs/tags/<name>:refs/tags/<name>`, never `--tags`, and
+`--no-follow-tags` so `push.followTags` sends nothing else), trying up to three times. Only
+`scripts/deploy.sh` creates deploy tags, apart from RF-245's one-time backfill of the 2026-11-23
+`1eed288` deploy and the exit-3 recovery it prints. No workflow runs on a tag push.
+
+- **Name:** `deploy/<UTC YYYY-MM-DDTHHMMZ>-<sha7>`, the minute `wrangler deploy` returned, for
+  example `deploy/2026-11-24T0237Z-1eed288`. The newest tag is the latest created (the tagger
+  date), then the latest by name.
+- **Message:** `commit:` (full SHA), `deployed:` (UTC time), `worker version:` (from the file
+  `wrangler deploy` writes when `WRANGLER_OUTPUT_FILE_PATH` is set), `rollback version:` (the
+  version or versions `wrangler deployments status` showed before the upload), `spa entry:` (the
+  built entry the propagation loop matched), `since:` (the previous deploy tag), and only when they
+  apply, `batch:` (an allowed batch) and `live: accepted …` (an accepted live version). A version the script could not read says `unknown`, with a warning; put the
+  real one in HISTORY.
+- **Exit 3:** the deploy went out and passed its checks, but the tag was not created or not pushed.
+  The deploy stands: do not roll back for this. The script prints the exact command. After a failed
+  push the tag exists locally, and
+  `git push --no-follow-tags origin refs/tags/<name>:refs/tags/<name>` from the repo root sends it.
+  Until it is pushed, `pnpm release:status` warns that the newest tag is only local. Record the
+  deploy in HISTORY as usual, including the tag name.
+- **Upload kept, check failed:** when the upload succeeded but the script then stopped (the
+  propagation loop, the status list or the header check failed, or it was interrupted, SIGTERM and
+  SIGHUP included), it exits non-zero without a tag. It says "the script stopped after the upload"
+  and prints the `git tag -a … && git push …` command and the message file for this deploy. Follow
+  [Rollback / recovery](#rollback--recovery) first. Run that command only if the owner keeps the
+  deploy instead of rolling it back.
+- **Upload failed:** when `wrangler deploy` itself fails, the script says so. Run
+  `pnpm --filter @ritmofit/api exec wrangler deployments status`. If a new version is at 100%,
+  production changed without a tag: tell the owner, and follow this runbook (roll back, or deploy
+  again once the owner accepts the live version).
+
+A tag records what the script shipped, not what serves now: a rollback or a dashboard change leaves
+no tag. When production state matters, the Worker version and served SPA entry checks in this
+runbook still decide.
+
 ## Tail watch
 
 After `scripts/deploy.sh` exits 0, watch live logs for about 5 minutes. The script does not tail.
@@ -271,7 +382,9 @@ pnpm --filter @ritmofit/api exec wrangler deployments list     # find the last-g
 pnpm --filter @ritmofit/api exec wrangler rollback <version-id> -m "reason"
 ```
 
-This re-publishes that version's code **and bindings**; it does **not** touch D1 data.
+This re-publishes that version's code **and bindings**; it does **not** touch D1 data. It creates
+no deploy tag, so the newest `deploy/*` tag is then ahead of production (see
+[What is due](#what-is-due-pnpm-releasestatus)); record the rollback in HISTORY.
 
 **If the Neo can't roll back** (it is off, or its wrangler session is missing or expired). The
 owner does it: either from the Cloudflare dashboard's deployments view for the `ritmofit-api` Worker
@@ -303,7 +416,12 @@ a corrected expand-only migration. Do both together so code and schema stay comp
 ### Rollback rehearsal
 
 **Run this only when the owner asks.** It moves production back to an older Worker version, then
-deploys that commit forward again. It is not part of a normal deploy.
+deploys that commit forward again. It is not part of a normal deploy. The forward deploy needs
+`--accept-live <previous-version-id>`, because production then runs the rolled-back version, not the
+newest tag's Worker. So the agent asks the owner for both, the rehearsal and that `--accept-live`,
+in the same message, and records the owner's words in HISTORY. Before asking, confirm that
+`git rev-parse <newest deploy/* tag>^{commit}` equals `<sha>`, so the forward deploy re-ships only
+what the rollback took back.
 
 `<previous-version-id>` is the Version ID to roll back to. Use the line `scripts/deploy.sh` printed
 as `current Worker version (rollback target)` before the deploy, or a row from
@@ -323,8 +441,14 @@ the script's smoke. Run the smoke checks below before going forward. If they fai
 Deploy forward again:
 
 ```bash
-scripts/deploy.sh <sha>
+scripts/deploy.sh --accept-live <previous-version-id> <sha>
 ```
+
+The newest deploy tag is already on `<sha>`, so the deploy-alone guard sees nothing new. The live
+version check sees production on `<previous-version-id>`, not the tag's Worker, and passes only
+with that `--accept-live`, which the owner approved together with the rehearsal. Never use
+`--allow-batch` for this. The script then tags `<sha>` again with this deploy's time and versions,
+and the tag message records `live: accepted <previous-version-id> (owner, in session)`.
 
 The script's upload line, which you do not run yourself, is:
 

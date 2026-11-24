@@ -2,6 +2,7 @@
 
 <!-- Codex, 2026-10-27: Made RF orientation mandatory in every mode and defined revision, failure and execution transitions. -->
 <!-- Claude Code, 2026-10-27: Ready as the owner's queue, draft-PR claims, RF-cited merges count as recorded. -->
+<!-- Claude Code, 2026-11-24: RF-244: steps 5 and 9 read `pnpm release:status` (the newest deploy tag is production's record). -->
 
 > **INTERACTIVE.** Use this whenever Steven starts a work session in `ritmofit-web` — any tool
 > (Codex, Claude Code, Cursor), local or cloud, solo or as one lane of a parallel round, even the
@@ -48,12 +49,17 @@ Pick one before deep reads; every mode still ends with **one** recommended next 
    note its next action, owner decisions, and touched shared zones, and whether it bears on this
    session. Flag as **stale** any handoff older than 14 days whose PR or branch is closed. Do not
    edit or delete handoffs during orientation. Rules: `ritmofit_dev_plan/handoffs/README.md`.
-5. **Unrecorded merges** — list `origin/main` commits since the newest `HISTORY.md` deploy entry.
-   For each code commit, find its PR (GitHub's commit → pull-request lookup; a squash subject may
-   omit `(#N)`). A merge is recorded when an RF record's evidence cites that PR (CI's RF-trace step
-   requires this for product changes), or HISTORY or a handoff names it. Surface the rest, and report
-   the merged-but-undeployed PRs as `main` ahead of production. A
-   commit with no associated PR is a direct push: report it, do not fix it.
+5. **Unrecorded merges** — run `pnpm release:status`. It fetches `origin main` and the deploy tags
+   (force-updated), names the newest `deploy/*` tag (production's record: `scripts/deploy.sh` tags
+   each deploy), and lists every `origin/main` commit since with its PR, whether it ships and its
+   owner-gate classes. Only when it reports no deploy tag, list the commits since the newest
+   `HISTORY.md` deploy entry instead. For each code commit, find its PR (GitHub's commit → pull-request lookup; a squash
+   subject may omit `(#N)`). A merge is recorded when an RF record's evidence cites that PR (CI's
+   RF-trace step requires this for product changes), or HISTORY or a handoff names it. Surface the
+   rest. Report `release:status`'s verdict as `main` vs production: "deploy due" with its steps
+   (each `scripts/deploy.sh <sha>`, a deploy-alone change on its own) or "nothing to ship", and any
+   warning that the newest tag is only local. A commit with no associated PR is a direct push:
+   report it, do not fix it.
 6. **RF orientation — every mode, including Lane and Deploy-only.** Read
    `ritmofit_dev_plan/tasks/README.md`, then run `pnpm tasks:check` and inspect the board and relevant
    `ritmofit_dev_plan/tasks/RF-*.json` records. The records are canonical; the board is generated.
@@ -94,7 +100,9 @@ Pick one before deep reads; every mode still ends with **one** recommended next 
    relevant shared schemas, routes, migrations, OpenAPI output, authorization helpers, and parity
    docs before proposing changes.
 9. **Production evidence bar** (read-only), when deployment state matters — a deploy candidate,
-   step 5 found undeployed merges, or the objective is reorient/status:
+   step 5's `pnpm release:status` said "deploy due", or the objective is reorient/status. A deploy
+   tag records what the script shipped, not what serves now (a rollback leaves no tag), so this
+   live evidence still decides:
    - live Worker version via `pnpm --filter @ritmofit/api exec wrangler deployments status`; run it only
      on the machine that holds Cloudflare credentials (the Neo, signed in by the owner; see
      `ritmofit_dev_plan/two-machine-rules.md` › 1). It is read-only. Elsewhere, skip it and report this
@@ -102,9 +110,10 @@ Pick one before deep reads; every mode still ends with **one** recommended next 
      needing the owner's Cloudflare sign-in.
    - served SPA entry hash from **three consecutive** cache-busted fetches of `/` (see
      `ritmofit_dev_plan/deployment-runbook.md`); one agreeing fetch is not enough
-   - state plainly: production matches `main`, `main` is ahead (name the tip and undeployed PRs),
-     or evidence is incomplete (for example a cloud sandbox without Cloudflare credentials or
-     network access to production) — never claim alignment from docs alone
+   - state plainly: production matches `main`, `main` is ahead (name the tip and
+     `release:status`'s steps), or evidence is incomplete (for example a cloud sandbox without
+     Cloudflare credentials or network access to production) — never claim alignment from docs
+     alone
    Do not deploy, apply remote migrations, modify secrets, or alter remote data.
 10. Ask at most one focused question, and only when the objective cannot be safely inferred.
     Otherwise summarize the context and propose the plan. End with **one** recommended next action,
@@ -159,7 +168,9 @@ impact" items into one short aside unless something is dirty, risky, or decision
 - **Handoffs:** open handoffs and the restart context that bears on this session, stale ones, or
   "none open". Next actions come from RF records.
 - **Unrecorded merges:** merged-but-unrecorded code on `main` (with PR numbers), or "none".
-- **Production:** when checked — match / ahead / unknown, with Worker version and SPA entry hash.
+- **Production:** `pnpm release:status`'s newest deploy tag and verdict (with its steps when a
+  deploy is due); when checked live — match / ahead / unknown, with Worker version and SPA entry
+  hash.
 - **Tasks:** selected/proposed RF IDs, prerequisites, blockers, acceptance and next action;
   branch/HEAD inspected, upstream/PR differences, validation result and any stale-board fallback.
 - **Trackers:** current focus, unresolved blockers, strongest candidate for next work.

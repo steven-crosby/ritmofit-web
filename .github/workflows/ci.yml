@@ -61,6 +61,11 @@ jobs:
       - name: RF trace self-test
         run: pnpm rf-trace:test
 
+      # The deploy-alone guard scripts/deploy.sh runs and `pnpm release:status` (RF-244), on a
+      # fixture repo; deploy.sh's own cases run in `pnpm test` (apps/api deploy-script.test.ts).
+      - name: Release status self-test
+        run: pnpm release-status:test
+
       # Changed files plus the base branch's copy of each checker, so a PR cannot loosen the checker
       # that judges it. See .github/scripts/pr-gates.sh.
       - name: Prepare PR gates

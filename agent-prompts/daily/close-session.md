@@ -4,6 +4,7 @@
 <!-- Claude Code, 2026-10-27: Pointed permissions at the AGENTS.md standing delegation grant and owner gate. -->
 <!-- Claude Code, 2026-10-27: Done lands in the work PR with its PR link; handoffs are restart notes only. -->
 <!-- Claude Code, 2026-10-27: Merging asks the owner per PR, then runs a final code review before squash-merge. -->
+<!-- Claude Code, 2026-11-24: RF-244: §5 runs the release checks and asks the owner once when a deploy or upload is due. -->
 
 > **INTERACTIVE.** Use whenever a work session ends — any tool, local or cloud, solo or lane.
 > Pair with [`start-session.md`](./start-session.md). Complete the pre-publication steps before
@@ -144,6 +145,14 @@ work should reach main; ungranted publication actions remain explicit rather tha
 
 ## 5. Production and post-publication facts
 
+- [ ] **Release check.** After this session's merges, run `pnpm release:status`, and in an iOS
+  checkout once iOS #229 has merged, `node scripts/release-status.mjs`. When either says something is
+  due, ask the owner once, naming each step: the `scripts/deploy.sh <sha>` deploys in order (a
+  deploy-alone change on its own) and the iOS uploads it lists. Never deploy or upload without the
+  owner's yes in this session. "Nothing to ship" needs no question. Batching a deploy-alone change
+  with others (`scripts/deploy.sh --allow-batch`), or deploying over a live Worker that is not the
+  newest tag's (`--accept-live <version-id>`), needs the owner to say so in the session, and HISTORY
+  records it. A Lane skips this; its orchestrator asks.
 - [ ] Merging is not deploying. Deploy only with the owner's applicable explicit permission, using
   `ritmofit_dev_plan/deployment-runbook.md` end to end. Do not infer deploy authority from urgency,
   task priority, an implementation approval or this prompt. Remote migrations, secrets and data
@@ -167,8 +176,9 @@ Print a concise state report that matches the RF records and handoff:
 - **RF:** selected IDs, acceptance outcome/state, remaining follow-ups/blockers and next action;
   record/board validation result and revision. Separate implementation completion from publication.
 - **Verification:** actual results and material limits, including final-head CI when merged.
-- **Production:** when relevant, observed Worker/main/runtime status or explicitly not checked;
-  D1 migration state only when verified. No deploy implication from a merge.
+- **Production:** the release check's verdict (and the owner's answer when something was due); when
+  relevant, observed Worker/main/runtime status or explicitly not checked; D1 migration state only
+  when verified. No deploy implication from a merge.
 - **Handoff/docs:** paths written or retained, authorized retirements and any unpublished records.
 - **Next:** one highest-value action, with any missing permission identified. Do not ask again for
   permission already granted for that scope.
