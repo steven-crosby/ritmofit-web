@@ -34,6 +34,7 @@
 <!-- Claude Code (Neo), 2026-11-23: Round 1123 close: RF-130 (#789) and RF-149 (#790) merged, not deployed; production observed at b9e8141. -->
 <!-- Claude Code (Neo), 2026-11-23: Round 1123b close: RF-241 (#792) and RF-157 (#793) merged, not deployed. -->
 <!-- Claude Code (Neo), 2026-11-23: Deploy of 1eed288 from the Neo (#789 RF-130, #790 RF-149, #792 RF-241, #793 RF-157). -->
+<!-- Claude Code (Neo), 2026-11-24: Round 1124 close: RF-244 (#796) deploy tags, release:status and the deploy-alone guard; the 1eed288 tag backfilled. -->
 
 **Focus (D26, 2026-11-07):** native iOS and macOS apps on TestFlight first, so the owner's wife uses
 them now: M0a iOS on TestFlight, M0b macOS, M1 Spotify in native Live, then native class building
@@ -47,7 +48,11 @@ from the Neo on 2026-11-23 in one step: [RF-130](./tasks/RF-130.json) (#789: Liv
 glance at Cue-by-Cue is its check), [RF-149](./tasks/RF-149.json) (#790: the class editor's likes load past 200),
 [RF-241](./tasks/RF-241.json) (#792: a late My likes page no longer lands in Saved playlists) and
 [RF-157](./tasks/RF-157.json) (#793: tests only), with docs #787, #788, #791 and #794. The authed production smoke
-passed. See [HISTORY](./HISTORY.md). Since then `main` gained only this record.
+passed. See [HISTORY](./HISTORY.md). Since then `main` gained only records and deploy tooling (#795, #796):
+`pnpm release:status` reads the tag `deploy/2026-11-24T0237Z-1eed288` on `1eed288` and says "nothing to ship".
+From [RF-244](./tasks/RF-244.json) (#796) each `scripts/deploy.sh` run tags what it shipped, refuses to batch a
+deploy-alone change or to deploy over a live Worker that isn't the tag's without the owner's word in the session,
+and close-session asks the owner once when a deploy is due.
 **In flight:** [RF-183](./tasks/RF-183.json) is Blocked on the owner's checks: sign in again after
 sign-out (the rest of the native check passed on the simulator, #715), and on web two `expiresAt`
 readings from the app's own get-session at least 24 hours apart (first not yet taken). The signed-in
@@ -80,7 +85,8 @@ alongside: RF-217, RF-205, RF-148, RF-155. Account security (RF-116, RF-140) is 
 provider disconnected), and RF-217, which also covers RF-218. In the order above RF-158, RF-74, RF-218 and
 RF-136 are Done, RF-211 is For review, and RF-130, RF-149 and RF-157 are Done (rounds 1123 and 1123b, deployed
 2026-11-23 in `1eed288`); next to build is [RF-138](./tasks/RF-138.json) after a design pass. The rounds' follow-ups are
-RF-239, RF-240, RF-242 and RF-243 (Backlog).
+RF-239, RF-240, RF-242 and RF-243 (Backlog). Round 1124's: [RF-245](./tasks/RF-245.json) (the first real tagged
+deploy; its backfill is done), RF-246 and RF-247 (Backlog).
 Follow-ups from the 2026-11-13 reviews are RF-221 to RF-225 (Backlog). Owner checks on production:
 [RF-130](./tasks/RF-130.json): a glance at Cue-by-Cue's Next song line at a song's last cue.
 [RF-149](./tasks/RF-149.json): Load more past 200 real likes in the class editor.
