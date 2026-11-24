@@ -94,6 +94,8 @@ Domain vocabulary (class, plan block, section, cue, placed move, clip window): s
 
 ## Claude Code mechanics for the delegation policy
 
+<!-- Claude Code, 2026-11-24, RF-250: named the RF pipeline agents and the rf-ticket workflow. -->
+
 The rules live in `AGENTS.md` › "Delegation And Merge Policy"; this is only how to carry them out
 in Claude Code.
 
@@ -102,9 +104,21 @@ in Claude Code.
 - **Relaying merge asks:** a subagent cannot ask the owner, so it stops at the policy's PR comment
   and `ready-to-merge` label. Bring each ask to the owner yourself.
 - **Final review (before the ask):** a subagent that did not build the change runs
-  `/code-review high` on `git diff origin/main...HEAD` at the head being asked about. Where `.claude/agents/` defines
-  the RF pipeline's roles, use them; otherwise spawn `Agent`s with the stage briefs in
-  `agent-prompts/rf-pipeline.md`.
+  `/code-review high` on `git diff origin/main...HEAD` at the head being asked about: the
+  `rf-reviewer` agent below.
+- **RF pipeline agents** (`.claude/agents/`, the roles in `agent-prompts/rf-pipeline.md`):
+  `rf-builder` builds, fixes, publishes or parks one ticket (stages 2, 5, 6) and never merges;
+  `rf-verifier` runs the gate, e2e and screenshots on one head (stage 3) and cannot edit;
+  `rf-reviewer` runs `/code-review high` on the head's diff (stage 4) and `rf-acceptance-auditor`
+  maps each acceptance line to the diff and the verifier's evidence (stage 4), both read-only.
+  Spawn them with `Agent` and that `subagent_type`. Give the verifier and reviewers only the RF ID,
+  branch and head SHA (the auditor also gets the verifier's result), never the builder's notes.
+- **One ticket end to end:** the saved workflow `.claude/workflows/rf-ticket.js` runs stages 2–6
+  with those agents: build, then verify and review, at most two fix rounds, then publish or park.
+  It never merges, applies `owner-approved` or sets Ready. Run it with the `Workflow` tool,
+  `name: "rf-ticket"` and `args: {rf: "RF-N"}` (add `batchIssue: <n>` in a pre-approved batch),
+  from a clean checkout dedicated to that ticket. Workflows run only after the user opts in to
+  them; without that, spawn the agents stage by stage.
 - **Web tickets in the cloud:** start one cloud session per web ticket (claude.ai/code on
   `steven-crosby/ritmofit-web`) with the ticket's RF ID and "Follow agent-prompts/rf-pipeline.md as
   the Builder". `AGENTS.md` › "RF pipeline" says what a cloud session may never do.

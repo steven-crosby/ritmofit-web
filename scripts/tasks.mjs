@@ -1,3 +1,4 @@
+import { spawnSync } from 'node:child_process';
 import { realpathSync } from 'node:fs';
 import { readFile, readdir, writeFile, rename, unlink } from 'node:fs/promises';
 import path from 'node:path';
@@ -47,6 +48,12 @@ const nonempty = (value) => typeof value === 'string' && value.trim().length > 0
 const strings = (value) => Array.isArray(value) && value.every(nonempty);
 const terminal = (task) => ['done', 'cancelled'].includes(task.status);
 const number = (id) => Number(id.slice(3));
+const byPriority = (a, b) =>
+  priorities.indexOf(a.priority) - priorities.indexOf(b.priority) || number(a.id) - number(b.id);
+const statusCounts = (tasks) =>
+  statuses
+    .map((status) => `${status}: ${tasks.filter((task) => task.status === status).length}`)
+    .join(' · ');
 
 export function validateTasks(tasks) {
   const errors = [];
@@ -233,11 +240,7 @@ export function renderBoard(tasks) {
     'Evidence marked **recorded** is a carried-forward claim, not fresh verification.',
     'A checked PR proves its GitHub state, not product acceptance or production behavior.',
     '',
-    `${tasks.length} tasks. ` +
-      statuses
-        .map((status) => `${status}: ${tasks.filter((task) => task.status === status).length}`)
-        .join(' · ') +
-      '.',
+    `${tasks.length} tasks. ${statusCounts(tasks)}.`,
     '',
   ];
   const names = {
@@ -264,13 +267,7 @@ export function renderBoard(tasks) {
       '| Task | Priority / kind | Relationships | Next action / resolution | Evidence |',
       '| --- | --- | --- | --- | --- |',
     );
-    const rows = tasks
-      .filter((task) => task.status === status)
-      .sort(
-        (a, b) =>
-          priorities.indexOf(a.priority) - priorities.indexOf(b.priority) ||
-          number(a.id) - number(b.id),
-      );
+    const rows = tasks.filter((task) => task.status === status).sort(byPriority);
     for (const task of rows) {
       const relationships = [
         task.parent && `parent ${task.parent}`,
@@ -295,6 +292,116 @@ export function renderBoard(tasks) {
     lines.push('');
   }
   return lines.join('\n');
+}
+
+// Acceptance wording that only the owner can check: a device, real provider playback, production,
+// TestFlight or an account only the owner holds. Such a task is never batched
+// (agent-prompts/rf-pipeline.md › "Owner checks").
+export const ownerOnlyChecks = [
+  /owner (device )?check/i,
+  /owner:/i,
+  /\bon (an? )?(real )?(iphone|ipad|device)/i,
+  /\breal (provider )?(audio|playback)/i,
+  /\b(against|on) (a )?production/i,
+  /testflight/i,
+  /signed in to/i,
+];
+
+export const needsOwnerCheck = (task) =>
+  task.acceptance.some((line) => ownerOnlyChecks.some((pattern) => pattern.test(line)));
+
+// The starting filter for rf-pipeline stage 1: Backlog and Ready tasks of kind `task` whose
+// prerequisites are Done and whose acceptance names no owner-only check, highest priority first.
+// It is only a filter. The conductor still checks claims, whether a plan is needed, contract
+// changes and owner-gate on the predicted files (two-machine-rules.md › 7.3).
+export function eligibleTasks(tasks) {
+  const done = new Set(tasks.filter((task) => task.status === 'done').map((task) => task.id));
+  return tasks
+    .filter(
+      (task) =>
+        ['backlog', 'ready'].includes(task.status) &&
+        task.kind === 'task' &&
+        task.dependsOn.every((id) => done.has(id)) &&
+        !needsOwnerCheck(task),
+    )
+    .sort(byPriority);
+}
+
+// `tasks stats` reads one `git log -p` of the records. Each commit starts with this marker, its SHA
+// and its committer time in epoch seconds (bucketed by UTC date), so no diff line can be mistaken
+// for a commit header.
+const commitMarker = '\x1e';
+export const historyLogArgs = [
+  'log',
+  '--reverse',
+  '--no-renames',
+  '--no-color',
+  '--no-ext-diff',
+  '--src-prefix=a/',
+  '--dst-prefix=b/',
+  '--format=%x1e%H %ct',
+  '-p',
+  '--',
+  `${taskDirectory}/RF-*.json`,
+];
+
+/** The Monday (YYYY-MM-DD) of the ISO week that holds a YYYY-MM-DD date. */
+export function isoWeek(date) {
+  const day = new Date(`${date}T00:00:00Z`);
+  // Date rolls 2026-02-30 over to March, so compare the round trip rather than trusting parse.
+  if (
+    !/^\d{4}-\d{2}-\d{2}$/.test(date) ||
+    !Number.isFinite(day.getTime()) ||
+    day.toISOString().slice(0, 10) !== date
+  )
+    throw new Error(`Not a date: ${date}`);
+  day.setUTCDate(day.getUTCDate() - ((day.getUTCDay() + 6) % 7));
+  return day.toISOString().slice(0, 10);
+}
+
+/**
+ * Per ISO week, the RF records created (the commit that adds the file) and finished (the first
+ * commit whose diff gives the record a top-level "status" of "done" or "cancelled"; a record
+ * created already finished counts in both). Takes the output of `git log` with historyLogArgs.
+ */
+export function taskHistory(log) {
+  const created = new Map();
+  const finished = new Map();
+  let week = null;
+  let id = null;
+  let header = false;
+  for (const line of log.split('\n')) {
+    if (line.startsWith(commitMarker)) {
+      const seconds = Number(line.slice(1).trim().split(' ')[1]);
+      if (!Number.isInteger(seconds)) throw new Error(`Not a commit time: ${line.slice(1)}`);
+      week = isoWeek(new Date(seconds * 1000).toISOString().slice(0, 10));
+      id = null;
+    } else if (line.startsWith('diff --git ')) {
+      id =
+        /^diff --git a\/\S+ b\/ritmofit_dev_plan\/tasks\/(RF-[1-9]\d*)\.json$/.exec(line)?.[1] ??
+        null;
+      header = true;
+    } else if (id === null || week === null) {
+      continue;
+    } else if (header) {
+      if (line.startsWith('@@')) header = false;
+      else if (line.startsWith('new file mode') && !created.has(id)) created.set(id, week);
+    } else if (/^\+ {2}"status":\s*"(done|cancelled)"/.test(line) && !finished.has(id)) {
+      finished.set(id, week);
+    }
+  }
+  const weeks = new Map();
+  for (const [key, ids] of [
+    ['created', created],
+    ['finished', finished],
+  ]) {
+    for (const value of ids.values()) {
+      const row = weeks.get(value) ?? { week: value, created: 0, finished: 0 };
+      row[key] += 1;
+      weeks.set(value, row);
+    }
+  }
+  return [...weeks.values()].sort((a, b) => a.week.localeCompare(b.week));
 }
 
 export function newTask(tasks, title) {
@@ -382,7 +489,42 @@ export async function main(args, root = repoRoot) {
     }
     await saveTask(root, { ...JSON.parse(original), ...patch }, original);
     console.log(`Updated ${id}. Run pnpm tasks:render.`);
-  } else throw new Error('Usage: tasks <list|show|create|update|render|check>');
+  } else if (command === 'eligible') {
+    if (rest.length) throw new Error('Usage: tasks eligible');
+    for (const task of eligibleTasks(tasks)) {
+      console.log(`${task.id}\t${task.status}\t${task.priority}\t${task.title}`);
+    }
+  } else if (command === 'stats') {
+    if (rest.length) throw new Error('Usage: tasks stats');
+    // Read-only: like every command here, stats never stages, commits, pushes or changes status.
+    // A shallow clone (cloud sessions fetch a few dozen commits) would silently miscount.
+    const shallow = spawnSync('git', ['rev-parse', '--is-shallow-repository'], {
+      cwd: root,
+      encoding: 'utf8',
+    });
+    if (shallow.error || shallow.status !== 0 || shallow.stdout.trim() !== 'false') {
+      throw new Error(
+        'tasks stats needs the full history: run it in a full clone (git fetch --unshallow).',
+      );
+    }
+    const git = spawnSync('git', historyLogArgs, {
+      cwd: root,
+      encoding: 'utf8',
+      maxBuffer: 256 * 1024 * 1024,
+    });
+    if (git.error || git.status !== 0) {
+      throw new Error(`git log failed: ${git.error?.message ?? git.stderr.trim()}`);
+    }
+    console.log('week\tcreated\tfinished');
+    for (const row of taskHistory(git.stdout)) {
+      console.log(`${row.week}\t${row.created}\t${row.finished}`);
+    }
+    console.log(
+      `Now: ${tasks.length} task${tasks.length === 1 ? '' : 's'}. ${statusCounts(tasks)}.`,
+    );
+  } else {
+    throw new Error('Usage: tasks <list|show|create|update|render|check|eligible|stats>');
+  }
 }
 
 // Compare resolved paths: through a symlink (macOS /var -> /private/var) the plain comparison

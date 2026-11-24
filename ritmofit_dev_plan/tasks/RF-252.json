@@ -1,0 +1,28 @@
+{
+  "schemaVersion": 1,
+  "id": "RF-252",
+  "title": "rf-ticket's publish check tells added finding records apart from edits to existing records",
+  "kind": "task",
+  "status": "backlog",
+  "priority": "P2",
+  "parent": null,
+  "dependsOn": [
+    "RF-250"
+  ],
+  "acceptance": [
+    "After publish, .claude/workflows/rf-ticket.js returns needs-review unless every change since the reviewed head is a newly added RF record, the ticket's own record changing only its evidence, or the re-rendered board, as AGENTS.md › Delegation And Merge Policy allows; an edit to any other existing record, or to the ticket's own status or acceptance, counts as unreviewed.",
+    "The check reads the change list from git output the publish agent returns verbatim (git diff --name-status and the ticket record's diff), and a dry run with mocked agents covers an added record, an evidence-only edit, a status edit and another record's edit."
+  ],
+  "nextAction": "Agent-created from #799's second fresh-context review (P2, 2026-11-24): the publish check accepts any path under ritmofit_dev_plan/tasks/, so an edit to an existing record would pass it. The conductor's stage 7 check still catches it. Backlog until the owner sets Ready.",
+  "blocker": null,
+  "evidence": [
+    {
+      "kind": "pr",
+      "ref": "https://github.com/steven-crosby/ritmofit-web/pull/799",
+      "summary": "Second fresh-context review of #799 at 2079b47 found the path-only RECORDS_ONLY check (P2, not significant).",
+      "checkedOn": "2026-11-24"
+    }
+  ],
+  "resolution": null,
+  "followUps": []
+}

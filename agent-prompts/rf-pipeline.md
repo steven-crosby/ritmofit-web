@@ -2,6 +2,8 @@
 
 <!-- Claude Code (Neo conductor), 2026-11-24, RF-248: written from the owner's decisions of
 2026-11-24 (batch pre-approval, web work in cloud sessions, fix-or-drop findings, both repos). -->
+<!-- Claude Code, 2026-11-24, RF-250: stage 1 starts from `pnpm tasks eligible`, Measures from
+`pnpm tasks stats`; Claude Code's agents and rf-ticket workflow named under Roles. -->
 
 > **The default way to work an RF ticket in ritmofit-web.** A builder implements one task on its
 > own branch; agents that did not build it then verify and review it before anyone asks the
@@ -23,6 +25,10 @@
 "Fresh context" means the agent starts from only the diff, the RF record and this repo's rules. It
 never sees the builder's chat, plan or summary, so it cannot inherit the builder's assumptions.
 
+In Claude Code these roles are the agents in `.claude/agents/` (`rf-builder`, `rf-verifier`,
+`rf-reviewer`, `rf-acceptance-auditor`), and the saved workflow `.claude/workflows/rf-ticket.js`
+runs stages 2–6 for one ticket; `CLAUDE.md` says how to run them. Other tools follow this file.
+
 ## Where work runs
 
 - **Web tickets run in cloud sessions,** one per ticket, so each has its own container, browser and
@@ -38,11 +44,15 @@ never sees the builder's chat, plan or summary, so it cannot inherit the builder
 
 ## Stages, per ticket
 
-1. **Eligible.** The conductor confirms the task is Ready (or in the batch's queue), its
-   `dependsOn` are Done, and no open PR claims it. It lists the files the builder is expected to
-   change and runs `printf '%s\n' <files> | node scripts/owner-gate.mjs`. A gated prediction is
-   fine outside a batch; the PR then stops for the owner. When several builders may create RF
-   records, the conductor reserves an ID range for each one first.
+1. **Eligible.** The conductor starts from `pnpm tasks eligible`: Backlog and Ready tasks of kind
+   `task` whose `dependsOn` are Done and whose acceptance names no owner-only check, highest
+   priority first. That list is only a filter; claims, whether a plan is needed, contract changes
+   and owner-gate (`two-machine-rules.md` › 7.3) stay the conductor's checks. The conductor
+   confirms the task is Ready (or in the batch's queue), its `dependsOn` are Done, and no open PR
+   claims it. It lists the files the builder is expected to change and runs
+   `printf '%s\n' <files> | node scripts/owner-gate.mjs`. A gated prediction is fine outside a
+   batch; the PR then stops for the owner. When several builders may create RF records, the
+   conductor reserves an ID range for each one first.
 2. **Build.** The builder runs `daily/start-session.md` in **Builder** mode with the RF record as
    its brief, branches `<type>/rf-<n>-<slug>` from current `origin/main`, records In progress,
    and opens the draft PR as the claim (in a batch, the issue's queue is the claim and the PR
@@ -115,6 +125,8 @@ task, what to do, where, and what result counts, so the owner can clear them in 
 
 ## Measures
 
-Each batch close-out reports: tasks done and created in the window, product PRs vs records-only PRs
-merged, how long each ticket took from Ready to merged, tickets parked and why, and any revert. The
-pipeline is working when done ≥ created, most merges are product PRs, and nothing is reverted.
+Each batch close-out reports: tasks done and created in the window (`pnpm tasks stats` counts RF
+records created and finished per ISO week from git history, with current totals by status),
+product PRs vs records-only PRs merged, how long each ticket took from Ready to merged, tickets
+parked and why, and any revert. The pipeline is working when done ≥ created, most merges are
+product PRs, and nothing is reverted.

@@ -1,6 +1,7 @@
 # Repository task system
 
 <!-- Codex, 2026-10-27: Established repository-owned tasks and replaced tool snapshots. -->
+<!-- Claude Code, 2026-11-24, RF-250: added `tasks eligible` and `tasks stats`. -->
 
 The canonical actionable backlog is this directory's `RF-<number>.json` records. The
 [board](../tasks.md) is generated from them. Every tool and human works from the same git records;
@@ -16,10 +17,23 @@ pnpm tasks list blocked            # one status
 pnpm tasks show RF-29               # full acceptance, blocker and evidence
 pnpm tasks create "Describe an observable outcome"
 pnpm tasks update RF-97 patch.json  # shallow JSON object; arrays replace whole arrays
+pnpm tasks eligible                 # unblocked Backlog/Ready tasks with no owner-only check
+pnpm tasks stats                    # records created and finished per ISO week, from git log
 pnpm tasks:render                   # regenerate the Markdown board
 pnpm tasks:check                    # validate records, evidence paths and board drift
 pnpm tasks:test                     # isolated fixtures; never edits the real board
 ```
+
+`eligible` lists Backlog and Ready tasks of kind `task` whose `dependsOn` are all Done and whose
+acceptance names no owner-only check (an owner check, a device or iPhone, real provider playback or
+audio, production, TestFlight, or an account the owner is signed in to), sorted P0 to P3, then
+untriaged, then by ID. It is the RF pipeline's starting filter, not an eligibility verdict: claims,
+whether a plan is needed, contract changes and owner-gate on the predicted files
+([`two-machine-rules.md`](../two-machine-rules.md) › 7.3) stay the conductor's checks. `stats`
+reads one `git log -p` of the records in the current checkout: per ISO week (by Monday, from the
+commit date), the records created (the file added) and finished (the first commit that gives a
+record the status Done or Cancelled; imported records that arrived Done count in their import
+week), then the current totals by status.
 
 You can also edit a record directly in any editor. For a new task, refine the generated acceptance
 and next action before starting it. `create` starts in Backlog; it does not authorize execution.

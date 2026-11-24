@@ -5,7 +5,18 @@ import { mkdtemp, mkdir, readFile, writeFile, rm, symlink } from 'node:fs/promis
 import { fileURLToPath } from 'node:url';
 import os from 'node:os';
 import path from 'node:path';
-import { loadTasks, main, newTask, renderBoard, saveTask, validateTasks } from './tasks.mjs';
+import {
+  eligibleTasks,
+  isoWeek,
+  loadTasks,
+  main,
+  needsOwnerCheck,
+  newTask,
+  renderBoard,
+  saveTask,
+  taskHistory,
+  validateTasks,
+} from './tasks.mjs';
 
 const task = (id = 'RF-1', patch = {}) => ({
   schemaVersion: 1,
@@ -270,4 +281,210 @@ test('the CLI still runs when invoked through a symlinked path', async () => {
   await rm(dir, { recursive: true });
   assert.equal(result.status, 1, 'a skipped CLI would exit 0');
   assert.match(result.stderr, /Usage: tasks/);
+});
+
+async function printed(t, run) {
+  const lines = [];
+  t.mock.method(console, 'log', (line) => lines.push(line));
+  await run();
+  t.mock.restoreAll();
+  return lines;
+}
+
+test('eligible lists unblocked Backlog and Ready tasks with no owner-only check, by priority then id', async (t) => {
+  const tasks = [
+    completed('RF-1'),
+    task('RF-2', { priority: 'P2', dependsOn: ['RF-1'] }),
+    task('RF-3', { status: 'ready', priority: 'P0' }),
+    task('RF-4', { dependsOn: ['RF-5'] }),
+    task('RF-5', { priority: 'untriaged' }),
+    task('RF-6', { kind: 'investigation' }),
+    task('RF-7', { acceptance: ['Owner device check: audible playback on iPhone Safari.'] }),
+    task('RF-8', { status: 'in_progress' }),
+    task('RF-9'),
+    task('RF-10', { status: 'blocked', blocker: 'Waiting for a decision.' }),
+    task('RF-11', { status: 'ready', priority: 'P0', acceptance: ['Plays against production.'] }),
+    task('RF-12', { priority: 'P0', dependsOn: ['RF-13'] }),
+    task('RF-13', { status: 'cancelled', nextAction: null, resolution: 'Superseded.' }),
+  ];
+  assert.deepEqual(
+    eligibleTasks(tasks).map((item) => item.id),
+    ['RF-3', 'RF-9', 'RF-2', 'RF-5'],
+  );
+  const root = await fixture(t, tasks);
+  const lines = await printed(t, () => main(['eligible'], root));
+  assert.deepEqual(lines, [
+    `RF-3\tready\tP0\t${task().title}`,
+    `RF-9\tbacklog\tP1\t${task().title}`,
+    `RF-2\tbacklog\tP2\t${task().title}`,
+    `RF-5\tbacklog\tuntriaged\t${task().title}`,
+  ]);
+  await assert.rejects(main(['eligible', 'RF-3'], root), /Usage: tasks eligible/);
+});
+
+test('owner-only acceptance wording is recognized; ordinary wording is not', () => {
+  const owes = (line) =>
+    needsOwnerCheck(task('RF-1', { acceptance: ['A unit test passes.', line] }));
+  for (const line of [
+    'Owner check: the class plays to the end.',
+    'Owner device check: tap to jump feels right.',
+    'Owner: confirms the copy.',
+    'Audible on iPhone Safari.',
+    'Works on an iPad in landscape.',
+    'Feels right on a real iPhone.',
+    'Scrubbing works on device.',
+    'Real provider playback starts at the clip window.',
+    'Real audio is heard within 1 s.',
+    'Against production, the song plays.',
+    'On production after a deploy, the banner names the provider.',
+    'Checked against a production build that includes RF-216.',
+    'The TestFlight build launches.',
+    'Signed in to Spotify Premium, Live resumes.',
+  ]) {
+    assert.ok(owes(line), line);
+  }
+  for (const line of [
+    'The owner-gate check prints none owner-gated.',
+    'The production build config is unchanged.',
+    'The session cookie is set once signed in.',
+    'The addon device list renders.',
+    'Buttons are 44 px on phones.',
+  ]) {
+    assert.equal(owes(line), false, line);
+  }
+});
+
+test('stats counts records created and first finished per ISO week from a synthetic git log', () => {
+  assert.equal(isoWeek('2026-11-23'), '2026-11-23'); // Monday
+  assert.equal(isoWeek('2026-11-24'), '2026-11-23');
+  assert.equal(isoWeek('2026-11-29'), '2026-11-23'); // Sunday
+  assert.equal(isoWeek('2027-01-01'), '2026-12-28'); // across a year end
+  assert.throws(() => isoWeek('2026-02-30'), /Not a date/);
+  const record = (id) => `ritmofit_dev_plan/tasks/${id}.json`;
+  const diff = (id, ...lines) => [`diff --git a/${record(id)} b/${record(id)}`, ...lines];
+  const log = [
+    '\x1eaaaaaaa 1793707200', // 2026-11-03T12:00Z
+    '',
+    ...diff(
+      'RF-1',
+      'new file mode 100644',
+      'index 0000000..1111111',
+      '--- /dev/null',
+      `+++ b/${record('RF-1')}`,
+      '@@ -0,0 +1,3 @@',
+      '+{',
+      '+  "status": "backlog",',
+      '+}',
+    ),
+    // Imported already Done: created and finished in the same week. The nested imported status
+    // and the board are not the record's status.
+    ...diff(
+      'RF-2',
+      'new file mode 100644',
+      '--- /dev/null',
+      `+++ b/${record('RF-2')}`,
+      '@@ -0,0 +1,5 @@',
+      '+  "status": "done",',
+      '+  "imported": {',
+      '+    "status": "done",',
+    ),
+    'diff --git a/ritmofit_dev_plan/tasks.md b/ritmofit_dev_plan/tasks.md',
+    '+  "status": "done",',
+    '\x1ebbbbbbb 1794312000', // 2026-11-10T12:00Z
+    '',
+    ...diff(
+      'RF-1',
+      'index 1111111..2222222 100644',
+      `--- a/${record('RF-1')}`,
+      `+++ b/${record('RF-1')}`,
+      '@@ -2 +2 @@',
+      '-  "status": "backlog",',
+      '+  "status": "done",',
+    ),
+    ...diff(
+      'RF-3',
+      'new file mode 100644',
+      '--- /dev/null',
+      `+++ b/${record('RF-3')}`,
+      '@@ -0,0 +1,2 @@',
+      '+  "status": "backlog",',
+      '+  "resolution": "Not \\"status\\": \\"done\\" yet",',
+    ),
+    '\x1eccccccc 1794916800', // 2026-11-17T12:00Z
+    '',
+    // Reopened and finished again: only the first finish counts. Cancelled counts as finished.
+    ...diff('RF-1', '@@ -2 +2 @@', '-  "status": "done",', '+  "status": "in_progress",'),
+    ...diff('RF-3', '@@ -2 +2 @@', '-  "status": "backlog",', '+  "status": "cancelled",'),
+    '\x1eddddddd 1795003200', // 2026-11-18T12:00Z
+    '',
+    ...diff('RF-1', '@@ -2 +2 @@', '-  "status": "in_progress",', '+  "status": "done",'),
+    ...diff('RF-4', 'deleted file mode 100644', `--- a/${record('RF-4')}`, '+++ /dev/null'),
+  ].join('\n');
+  assert.deepEqual(taskHistory(log), [
+    { week: '2026-11-02', created: 2, finished: 1 },
+    { week: '2026-11-09', created: 1, finished: 1 },
+    { week: '2026-11-16', created: 0, finished: 1 },
+  ]);
+  assert.deepEqual(taskHistory(''), []);
+  // Weeks are UTC: 03:00Z on Monday 2026-11-23 is still Sunday evening in the Americas.
+  const late = [
+    '\x1eeeeeeee 1795402800',
+    '',
+    ...diff('RF-9', 'new file mode 100644', '+  "status": "backlog",'),
+  ];
+  assert.deepEqual(taskHistory(late.join('\n')), [{ week: '2026-11-23', created: 1, finished: 0 }]);
+  assert.throws(() => taskHistory('\x1efffffff 2026-11-03'), /Not a commit time/);
+});
+
+test('stats reads the checkout history through git and leaves the tree unchanged', async (t) => {
+  const root = await fixture(t, [task('RF-1')]);
+  const env = Object.fromEntries(
+    Object.entries(process.env).filter(([key]) => !key.startsWith('GIT_')),
+  );
+  const git = (args, date = '2026-11-03T12:00:00Z') => {
+    const result = spawnSync(
+      'git',
+      [
+        '-c',
+        'user.name=RF test',
+        '-c',
+        'user.email=rf@example.com',
+        '-c',
+        'commit.gpgsign=false',
+        ...args,
+      ],
+      {
+        cwd: root,
+        encoding: 'utf8',
+        env: { ...env, GIT_AUTHOR_DATE: date, GIT_COMMITTER_DATE: date },
+      },
+    );
+    assert.equal(result.status, 0, result.stderr);
+    return result.stdout;
+  };
+  const save = (item) =>
+    writeFile(
+      path.join(root, `ritmofit_dev_plan/tasks/${item.id}.json`),
+      `${JSON.stringify(item, null, 2)}\n`,
+    );
+  git(['init', '-q']);
+  await save(task('RF-1'));
+  git(['add', '-A']);
+  git(['commit', '-q', '--no-verify', '-m', 'create RF-1']);
+  await save(completed('RF-1'));
+  await writeFile(path.join(root, 'ritmofit_dev_plan/tasks.md'), renderBoard([completed('RF-1')]));
+  git(['commit', '-q', '--no-verify', '-am', 'finish RF-1'], '2026-11-10T12:00:00Z');
+  const lines = await printed(t, () => main(['stats'], root));
+  assert.deepEqual(lines, [
+    'week\tcreated\tfinished',
+    '2026-11-02\t1\t0',
+    '2026-11-09\t0\t1',
+    'Now: 1 task. backlog: 0 · ready: 0 · in_progress: 0 · blocked: 0 · review: 0 · done: 1 · cancelled: 0.',
+  ]);
+  assert.equal(git(['status', '--porcelain']), '');
+  await assert.rejects(main(['stats', 'extra'], root), /Usage: tasks stats/);
+  // A shallow clone would miscount, so stats refuses it.
+  const shallow = path.join(root, 'shallow');
+  git(['clone', '-q', '--depth', '1', `file://${root}`, shallow]);
+  await assert.rejects(main(['stats'], shallow), /needs the full history/);
 });

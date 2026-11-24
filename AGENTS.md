@@ -34,6 +34,7 @@
 <!-- note (Claude Code, Neo, 2026-11-19): RF-229: owner decision: the Air is retired; the Neo does all dev work in both repos and holds the owner's own wrangler login (Two-machine conductors; two-machine-rules.md › 1, 2). -->
 <!-- note (Claude Code, Neo, 2026-11-24): RF-244: owner decisions on iOS #113: deploy.sh tags each deploy, `pnpm release:status` says what is due, and deploy.sh enforces deploy-alone unless the owner says to batch (`--allow-batch`); a live Worker that is not the newest tag's needs the owner's `--accept-live`. -->
 <!-- note (Claude Code, Neo, 2026-11-24): RF-248: owner decisions of 2026-11-24: the RF pipeline (agent-prompts/rf-pipeline.md) is the default way to work a ticket; web builders run in cloud sessions; review and verification come before the owner is asked, by agents that did not build the change; review findings are fixed or dropped rather than filed by default; unattended merge nights become pre-approved batches (two-machine-rules.md › 7). -->
+<!-- note (Claude Code, 2026-11-24): RF-250: Commands lists `pnpm tasks eligible` and `pnpm tasks stats`. -->
 
 This is the canonical contributor and agent guide for Ritmo Studio. If another instruction file conflicts
 with it, follow `AGENTS.md`, then repair the stale file. When an AI agent edits this file or adds a note
@@ -384,6 +385,11 @@ Use Node `>=22.13` and pnpm `>=11.4`.
 - `pnpm tasks`: list/show/create/update RF tasks; see the task README for arguments.
 - `pnpm tasks:render`, `pnpm tasks:check`, `pnpm tasks:test`: render the board, validate records and
   board drift, and test task tooling using isolated fixtures.
+- `pnpm tasks eligible`: Backlog and Ready tasks of kind `task` whose `dependsOn` are Done and whose
+  acceptance names no owner-only check, highest priority first; the RF pipeline's starting filter,
+  not the batch eligibility check (`two-machine-rules.md` › 7.3).
+- `pnpm tasks stats`: RF records created and finished per ISO week from git history, plus current
+  totals by status; it only reads.
 - `pnpm format:check`, `pnpm -r typecheck`, `pnpm lint`, `pnpm test`: core local gates.
 - `pnpm --filter @ritmofit/api test:integration`: Worker/D1 integration tests.
 - `pnpm --filter @ritmofit/web build`: production SPA build. It ends with the bundle budget, which

@@ -2,21 +2,52 @@
   "schemaVersion": 1,
   "parent": null,
   "blocker": null,
-  "resolution": null,
+  "resolution": "Adds .claude/agents/ (rf-builder; rf-verifier, rf-reviewer and rf-acceptance-auditor with no Edit or Write tool), .claude/workflows/rf-ticket.js (stages 2–6: build, verify and review, at most two fix rounds, then publish or park; it never merges, applies owner-approved or sets Ready), pnpm tasks eligible and pnpm tasks stats with tests, .claude/worktrees/ in .gitignore, and the commands, agents and workflow in rf-pipeline.md, CLAUDE.md, AGENTS.md and the task README. Acceptance line 2 was narrowed by the conductor's brief: eligible does not run owner-gate, which stays the conductor's stage 1 and §7.3 check. The agents and the workflow have not run live yet; the first ticket run through them is their live check.",
   "followUps": [],
   "id": "RF-250",
   "title": "RF pipeline tooling: Claude Code agent definitions, a saved rf-ticket workflow, and pnpm tasks eligible and stats",
   "kind": "task",
-  "status": "backlog",
+  "status": "done",
   "priority": "P1",
   "dependsOn": [
     "RF-248"
   ],
   "acceptance": [
     ".claude/agents/ defines the pipeline's builder, verifier, correctness reviewer and acceptance auditor (reviewers and the verifier cannot edit product code), and .claude/workflows/rf-ticket runs one ticket through agent-prompts/rf-pipeline.md stages 2–6 with at most two fix rounds; .claude/worktrees/ is git-ignored.",
-    "pnpm tasks eligible lists Backlog and Ready tasks whose dependsOn are Done, whose kind is task, and whose acceptance names no owner-only check, and prints the owner-gate result for files a caller supplies; pnpm tasks stats reports RF records created and finished per week. Both have cases in scripts/tasks.test.mjs.",
+    "pnpm tasks eligible lists Backlog and Ready tasks whose dependsOn are Done, whose kind is task, and whose acceptance names no owner-only check; the owner-gate result for a candidate's predicted files stays the conductor's stage 1 check (node scripts/owner-gate.mjs), which eligible does not run (narrowed by the conductor's RF-250 brief, 2026-11-24). pnpm tasks stats reports RF records created and finished per week. Both have cases in scripts/tasks.test.mjs.",
     "agent-prompts/rf-pipeline.md and CLAUDE.md name the new commands and agents."
   ],
-  "nextAction": "The owner asked for this work in the 2026-11-24 Neo conductor session (quoted in #798's body); that direct ask is its scope approval, and it does not make this task Ready. Build it on a branch stacked on RF-248's PR; it merges only after RF-248, since .claude/ is owner-gated from RF-248.",
-  "evidence": []
+  "nextAction": null,
+  "evidence": [
+    {
+      "kind": "test",
+      "ref": "scripts/tasks.test.mjs",
+      "summary": "pnpm tasks:test passed 15 of 15 on this branch, including eligible filtering and order, owner-only acceptance wording, stats per ISO week from a synthetic git log, and stats through a real git repository.",
+      "checkedOn": "2026-11-24"
+    },
+    {
+      "kind": "observation",
+      "ref": "scripts/tasks.mjs",
+      "summary": "pnpm tasks stats on this branch: 248 records created and 146 finished in all (the 144 Done plus 2 Cancelled records); since 2026-11-02, 76 created and 44 finished, which is RF-248's measured baseline (72 and 43) plus RF-248 to RF-251 created and RF-248 finished on this branch.",
+      "checkedOn": "2026-11-24"
+    },
+    {
+      "kind": "source",
+      "ref": ".claude/workflows/rf-ticket.js",
+      "summary": "node --check passed on the body wrapped as the Workflow runtime runs it and on the meta literal as its own module (the raw file fails only on the runtime's top-level return). A dry run with mocked agents passed the blocked, clean, fix-then-publish (head-mismatch re-run, batch mode), two-rounds-then-park, missing-stage and no-new-commit paths. It was not run through the Workflow tool.",
+      "checkedOn": "2026-11-24"
+    },
+    {
+      "kind": "test",
+      "ref": "package.json",
+      "summary": "pnpm format:check, owner-gate:test (22 of 22), rf-trace:test (5 of 5), lint and git diff --check passed on this branch. No app or package code changed, so the rest of the gate was not run.",
+      "checkedOn": "2026-11-24"
+    },
+    {
+      "kind": "pr",
+      "ref": "https://github.com/steven-crosby/ritmofit-web/pull/799",
+      "summary": "Draft PR stacked on #798 (base feat/rf-248-rf-pipeline), labeled needs-owner; opened 2026-11-24, not merged.",
+      "checkedOn": "2026-11-24"
+    }
+  ]
 }
