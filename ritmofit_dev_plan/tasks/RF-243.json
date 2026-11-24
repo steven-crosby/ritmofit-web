@@ -24,6 +24,12 @@
       "ref": "https://github.com/steven-crosby/ritmofit-web/pull/793",
       "summary": "While verifying #793 locally at load 117 to 183, pnpm test failed 3 tests (two Dashboard Apple search timeouts at 5 s and 15 s; LiveMode RF-185 timing 316 ms against 200 ms) and passed on one rerun at load 84 to 39. #793's review measured its new cap test at 3.8 s at load 248 (875 ms in CI).",
       "checkedOn": "2026-11-23"
+    },
+    {
+      "kind": "observation",
+      "ref": "https://github.com/steven-crosby/ritmofit-web/pull/796",
+      "summary": "Round 1124 (#796, RF-244) gave apps/api/src/lib/deploy-script.test.ts an explicit 60 s vitest timeout (55 s spawn timeout), and added cases to deploy.sh --self-check. Measured 2026-11-24: 1.9 s alone at load ~9, 4.0 s at load ~50, 5.1 to 5.2 s inside the full pnpm test, and 43.6 s at load ~70 in #796's review (about 11 s under the spawn timeout). The deploy-script case now has headroom, but not much under heavy load.",
+      "checkedOn": "2026-11-24"
     }
   ],
   "resolution": null,

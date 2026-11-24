@@ -13,7 +13,7 @@
     "The conductor backfills deploy/2026-11-24T0237Z-1eed288 on 1eed288 (the 2026-11-23 deploy: Worker 515bc8fb-24fd-4ff7-b8be-6f7c28aa1e85, rollback fedc7fbf-1bc2-46cd-a90a-3059505e0a7b, SPA assets/index-CFKeSijz.js) right after #796 merges and before any deploy, and pushes only that ref; git ls-remote --tags origin shows it and pnpm release:status reads it.",
     "The next real scripts/deploy.sh run on the Neo runs the deploy-alone guard and the live version check against that tag, then creates and pushes its own deploy/* tag after the post-deploy checks, and the tag message holds a real Worker version and rollback version (not unknown). That deploy's HISTORY entry names the tag."
   ],
-  "nextAction": "Agent-created (round 1124 web Lane 1, 2026-11-24) for RF-244's post-merge acceptance; Backlog until the owner sets Ready. The owner's \"go\" (iOS #113, 7140700356) approved the backfill: the conductor pushes the 1eed288 tag right after #796 merges, before any deploy (commands in ritmofit_dev_plan/handoffs/2026-11-24-r1124-lane1-release-marker.md). Until that tag exists, scripts/deploy.sh refuses to deploy without --allow-batch. This record stays open after the backfill for its second half: the first real tagged deploy the owner approves.",
+  "nextAction": "Acceptance item 1 (the backfill) is done (2026-11-24, evidence). Item 2 waits for the first real scripts/deploy.sh run the owner approves: it must run the guard and the live version check against deploy/2026-11-24T0237Z-1eed288 (production must still be Worker 515bc8fb, or the owner's --accept-live), then push its own tag with real version IDs, and that deploy's HISTORY entry names the tag. Backlog until the owner sets Ready or approves that deploy.",
   "blocker": null,
   "evidence": [
     {
@@ -27,6 +27,12 @@
       "ref": "https://github.com/steven-crosby/ritmofit-ios/issues/113#issuecomment-7141036009",
       "checkedOn": "2026-11-24",
       "summary": "Owner approval, Neo conductor session, 2026-11-24, recorded on iOS #113: \"your \\\"recommendation on deploying changes alone\\\" are approved\": deploy.sh refuses a range that mixes a deploy-alone change with other shipped changes unless the owner says to batch (--allow-batch, recorded in HISTORY). The first real tagged deploy (this record's second half) is that guard's first run against production."
+    },
+    {
+      "kind": "observation",
+      "ref": "https://github.com/steven-crosby/ritmofit-web/tree/deploy/2026-11-24T0237Z-1eed288",
+      "summary": "Backfill done 2026-11-24 by the conductor, right after #796 merged as 4b08cfe and before any deploy: annotated tag deploy/2026-11-24T0237Z-1eed288 (tag object fc06271) on 1eed288364985e0aed7ada55ac24d0c1e77b80a4, tagger date 2026-11-24T02:37:16Z, message from the handoff (worker version 515bc8fb-24fd-4ff7-b8be-6f7c28aa1e85, rollback fedc7fbf-1bc2-46cd-a90a-3059505e0a7b, SPA assets/index-CFKeSijz.js, since: none), pushed with git push --no-follow-tags of that one ref; the repo's first tag. git ls-remote --tags origin lists it, and pnpm release:status on main 4b08cfe reads it: \"Verdict: nothing to ship (no commit changes shipped code)\" (#795 and #796 not shipped). Acceptance item 1 is met; item 2 waits for the first real deploy.",
+      "checkedOn": "2026-11-24"
     }
   ],
   "resolution": null,
