@@ -276,9 +276,11 @@ pass on the PR's head diff (`/code-review high` in Claude Code, `/review` in Cod
 review). In the RF pipeline this is stage 4 of `agent-prompts/rf-pipeline.md`, beside its verifier
 and acceptance audit. The review summary names the head it reviewed and goes in the PR body or a
 PR comment. Outside a batch, an evidence-only PR (`ritmofit_dev_plan/two-machine-rules.md` › 6)
-needs no review; in a batch, §7.4 step 2 reviews every PR. A push after the review that only adds
-Backlog records for the review's findings, or only changes the task's evidence, plus the
-re-rendered board in either case, keeps the review; the ask then names that head. A finding is **significant** only if it is:
+needs no review; in a batch, §7.4 step 2 reviews every PR. A push after the review keeps the review
+when it changes nothing but Backlog records it adds for the review's findings, the task's evidence
+and the re-rendered board, or when it is an update from `main` that leaves the PR's own diff
+unchanged (the same `git diff origin/main...HEAD | git patch-id --verbatim` before and after); the
+ask then names the new head. Any other push needs a new review first. A finding is **significant** only if it is:
 
 - (a) a correctness bug in executable code (app code, scripts, CI workflow), including security,
   data loss and missing authz; or
@@ -295,11 +297,9 @@ reason in the review comment. None of it blocks. Then:
   a push the review keeps): squash-merge with
   `gh pr merge <n> --squash --match-head-commit <approved sha>` and remove `ready-to-merge`. The
   same head is never reviewed twice.
-- **Any push after the ask** needs green CI again and a fresh permission before a merge. A records
-  push the review keeps (above), or an update from `main` that leaves the PR's own diff unchanged
-  (the same `git diff origin/main...HEAD | git patch-id --verbatim` before and after), needs no new
-  review; any other push needs one first, and every push needs green CI again
-  and a fresh permission. Any push after permission voids it:
+- **Any push after the ask** needs a new review first unless it is a push the review keeps
+  (above), and every push needs green CI again and a fresh permission. Any push after permission
+  voids it:
   approval counts only for the commit it was given on. The one exception is a batch's pre-approval
   issue, which covers its queued PRs for the window while the batch's merge bar passes again on
   each new head (`two-machine-rules.md` › 7.1). When the owner adds `owner-approved`, the
