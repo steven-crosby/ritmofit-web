@@ -5,6 +5,7 @@
 <!-- Claude Code, 2026-10-27: Done lands in the work PR with its PR link; handoffs are restart notes only. -->
 <!-- Claude Code, 2026-10-27: Merging asks the owner per PR, then runs a final code review before squash-merge. -->
 <!-- Claude Code, 2026-11-24: RF-244: §5 runs the release checks and asks the owner once when a deploy or upload is due. -->
+<!-- Claude Code, 2026-11-24: RF-248: the final review runs before the ask; Builder mode; no records-only close PR when work PRs carry the records. -->
 
 > **INTERACTIVE.** Use whenever a work session ends — any tool, local or cloud, solo or lane.
 > Pair with [`start-session.md`](./start-session.md). Complete the pre-publication steps before
@@ -21,6 +22,8 @@ records, goes through a PR; never push straight to `main`. Merging does not depl
 - **Solo:** owns its work and PR; when final-head checks pass it asks the owner, then runs the final
   review and squash-merges (`AGENTS.md` › "Delegation And Merge Policy").
 - **Lane:** prepares its assigned work and handoff; never merges. The orchestrator runs the merge train.
+- **Builder** (`../rf-pipeline.md`): finishes its ticket's PR through the pipeline's publish stage;
+  never merges; writes a handoff only when its ticket parks. The conductor runs the merge train.
 - **Orchestrator:** follow `../orchestrate-parallel-round.md` for the round and apply these RF,
   evidence and permission rules before its authorized merge train. No product code.
 
@@ -120,19 +123,23 @@ from verified sources and state what orientation evidence is missing.
   **final PR head**, record that SHA, and ensure merge eligibility. An earlier green revision is
   insufficient after task or documentation edits. Use an expected-head guard when merging.
 - **Own finished PR, Solo:** when the required CI check passes on the final head (an owner-gated
-  PR's `owner-gate` status stays failed until approval), ask: "PR #N is green on `<sha>` — may I
-  run the final review and squash-merge?" In a live session ask in chat; otherwise comment that on
+  PR's `owner-gate` status stays failed until approval) and its final review (a fresh-context
+  reviewer, `AGENTS.md` › "Delegation And Merge Policy") covers that head with no open significant
+  finding, ask: "PR #N is green and reviewed on `<sha>` — may I squash-merge?" In a live session ask
+  in chat; otherwise comment that on
   the PR, add `ready-to-merge` and stop. Owner-gated PRs also get `needs-owner` and the manual check
   left. Permission is the owner saying so in a session or adding `owner-approved`; an owner-gated PR
   needs the label itself, so a chat "yes" is enough only if the owner also tells you to apply it
-  (record that as a PR comment first). With permission (for an owner-gated PR, once its `owner-gate` status is green on the same head), run
-  the final review as `AGENTS.md` ›
-  "Delegation And Merge Policy" defines it. No significant findings: log the rest as RF tasks,
-  squash-merge with `--match-head-commit <reviewed sha>` and remove `ready-to-merge`. Significant
-  findings: do not merge; comment them, remove `ready-to-merge`, stop. Any later push voids the
+  (record that as a PR comment first). With permission for the reviewed head (for an owner-gated
+  PR, once its `owner-gate` status is green on the same head), squash-merge with
+  `--match-head-commit <reviewed sha>` and remove `ready-to-merge`. Any later push voids the
   permission (the `Owner gate` workflow removes a stale `owner-approved`); ask again. Delete the branch only if deletion is also authorized; do not append
   `--delete-branch` automatically. Missing merge/deletion permission is an explicit next action.
-- **Lane:** leave its PR open for the orchestrator with RF records/handoff complete; report CI state.
+- **Lane / Builder:** leave its PR open for the orchestrator or conductor with RF records (and a
+  Lane's handoff) complete; report CI state.
+- **Records-only close:** when this session's record changes already ride in its work PRs, a close
+  opens no separate docs PR. Records that must change without a work PR go in at most one
+  records-only PR a day.
 - **Genuinely unfinished:** leave open/draft with the actual remaining acceptance in its RF record.
 - **Another session's PR:** leave it alone unless explicitly assigned for review or disposition.
 - **Stale/superseded PR:** close only with owner authorization and a recorded reason.
@@ -194,7 +201,7 @@ git diff --check
 gh pr list --state open
 gh pr checks <n>                         # verify final head as described above
 gh pr edit <n> --add-label ready-to-merge          # ask; add needs-owner if owner-gated
-gh pr merge <n> --squash --match-head-commit <sha>  # only after permission + clean final review
+gh pr merge <n> --squash --match-head-commit <sha>  # reviewed head + permission (or a batch's 7.4)
 ```
 
 Canonical gates: `AGENTS.md` › "Verification, PRs, And Commits". Task semantics:

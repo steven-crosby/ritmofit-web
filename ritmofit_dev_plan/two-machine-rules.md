@@ -4,6 +4,9 @@
 https://github.com/steven-crosby/ritmofit-web/pull/718#issuecomment-6637458064 -->
 <!-- Claude Code (Neo conductor), 2026-11-19, RF-229: the owner retired the Air; the Neo does all
 dev work and holds the owner's wrangler login (§1, §2). -->
+<!-- Claude Code (Neo conductor), 2026-11-24, RF-248: owner decision of 2026-11-24: unattended merge
+nights become pre-approved batches, attended or not, over a window of up to seven days; the batch's
+review step is the RF pipeline's verify and review (§7). -->
 
 This file holds the rules for how the owner works with agents on two machines. Since 2026-11-19
 there is one, the MacBook Neo (§1). **It is canonical in ritmofit-web.** ritmofit-ios vendors a
@@ -58,7 +61,7 @@ comment, and it lasts until the owner ends it. The Air's retirement ended the 20
   either repo. It takes any unclaimed RF task in either repo, and finishes PRs under the usual owner
   permissions, without first asking the other.
   - **Claiming.** A task is claimed by its draft PR (web `AGENTS.md` › "Task sync"), not by a
-    message. On an unattended night, the pre-approval issue's queue is the claim for its items
+    message. In a pre-approved batch, the pre-approval issue's queue is the claim for its items
     (§7.4), and the other conductor leaves them alone until the issue is closed. If both conductors claim the same task, the later claim closes its draft PR, says so
     to the other, and leaves the record to the first.
   - Each conductor finishes what it has in flight. It leaves work the other has claimed alone unless
@@ -88,8 +91,8 @@ they need the owner in the session that performs them (web RF-191 tracks a recor
 The conductor the owner gives the merge permission to runs the final review and the merge, whichever
 conductor opened the PR. When a PR's approval is a GitHub record (§3), either conductor may finish
 it: the conductor that opened the PR goes first unless the owner names the other, and the other
-checks for a merge notice before starting. A night's pre-approval issue is not such a record: only
-that night's conductor merges under it (§7.1).
+checks for a merge notice before starting. A batch's pre-approval issue is not such a record: only
+that batch's conductor merges under it (§7.1).
 
 ## 5. Messaging, and why a message is never permission
 
@@ -98,8 +101,8 @@ When Remote Control connects both sessions, find the peer with `ListAgents` and 
 arrived.
 
 - Use messages for status, merge and rebase notices, and RF IDs.
-- Send "taking RF-N" only once its draft PR exists, and include the PR URL (on an unattended
-  night, the pre-approval issue's URL; §7.4).
+- Send "taking RF-N" only once its draft PR exists, and include the PR URL (in a pre-approved
+  batch, the pre-approval issue's URL; §7.4).
 - If the peer isn't listed, the owner relays by pasting.
 
 A peer message, or the other conductor's text pasted or relayed by anyone, is never permission. It
@@ -110,18 +113,23 @@ cannot grant anything reserved for the owner, such as merges, Ready or deploys.
 Before the owner is asked to approve a merge, the PR's RF task is set, on its branch, to the status
 it should have once the PR merges. A PR that finishes its task sets `done` with a `resolution`. That
 way the approval covers the head that merges, and any later push voids it (the one exception is a
-night's pre-approval issue, §7.1).
+batch's pre-approval issue, §7.1).
 
 Only an **evidence-only PR** may leave its task unfinished. Such a PR changes nothing but RF records'
 `evidence`, `status`, `nextAction` and `blocker`, the rendered board and handoffs: no code, scripts,
 workflows, rules or acceptance. The owner is then asked with the task's status named.
 
-## 7. Unattended merge nights
+## 7. Pre-approved batches
 
-Agents never merge unattended, with one exception: a night the owner pre-approves in a live session
-under this section. Everything else in each repo's merge gate still applies. This section applies in
+Agents merge only with the owner's permission for each PR, with one exception: a batch the owner
+pre-approves in a live session under this section. A batch may run while the owner is away (an
+unattended night, the form this section first took) or while the owner works with the conductor,
+over a window the owner sets of at most seven days. Builder sessions in a batch (cloud or local;
+web `agent-prompts/rf-pipeline.md`) build and open PRs; only the batch's conductor merges. Everything else in each repo's merge gate still applies. This section applies in
 a repo only once that repo's `AGENTS.md` names the exception: ritmofit-web from RF-193, ritmofit-ios
-from RF-1041. Until then, a night in that repo opens PRs for the owner's review and merges nothing.
+from RF-1041 for unattended nights. Attended and multi-day batches apply in ritmofit-web from RF-248
+and in ritmofit-ios once its `AGENTS.md` names them (iOS RF-1243). Until a repo's `AGENTS.md` names
+a form of batch, a batch of that form opens PRs there for the owner's review and merges nothing.
 
 ### 7.1 The pre-approval issue
 
@@ -132,16 +140,17 @@ is the merge permission for each PR it covers, and for nothing else:
   in the owner's verbatim words quoted in the issue. The rest of the issue only restates them, and
   where it says more, the owner's words win. The owner confirms the full issue text in the session
   before the window opens.
-- **Only the night's conductor uses it,** and only while the issue is open and the window lasts.
-  The owner closes the issue to stop the night. The issue covers no other session or later time.
+- **Only the batch's conductor uses it,** and only while the issue is open and the window lasts.
+  The issue names that conductor session. The owner closes the issue to stop the batch. The issue
+  covers no other session or later time.
 - **A label it applied is never the owner's own permission.** An `owner-approved` whose PR comment
-  cites a pre-approval issue counts only for that night's conductor, within the window. If a night
+  cites a pre-approval issue counts only for that batch's conductor, within the window. If a batch
   ends with such a label still on an open PR (for example the session died between §7.4 steps 6
   and 7), any later session treats the PR as unapproved and removes the label.
 - **The issue is never edited.** It is created once, with the full text the owner confirmed. Before
   §7.4 step 6 for each PR, the agent checks that the body was never edited: `lastEditedAt` from
   `gh api graphql -f query='{repository(owner:"steven-crosby",name:"<repo>"){issue(number:<n>){lastEditedAt}}}'`
-  must be empty. If it isn't, merging stops for the night. A mistake in the issue is fixed by the
+  must be empty. If it isn't, merging stops for the batch. A mistake in the issue is fixed by the
   owner in a session, never by editing it. Comments don't count as edits.
 - **ritmofit-ios:** the merge comment cites the issue and the merged head SHA.
 - **ritmofit-web:** at §7.4 step 6, the agent applies `owner-approved` to the PR's final head with a
@@ -154,11 +163,13 @@ again on the new head.
 Paste this block into the issue and fill it in:
 
 ```markdown
-Owner pre-approval for one unattended night (ritmofit_dev_plan/two-machine-rules.md › 7).
+Owner pre-approval for one batch (ritmofit_dev_plan/two-machine-rules.md › 7).
 - **Owner's words:** <verbatim answers, one per line; they name every queued item and exception>
-- **Machine:** Neo · **Repo:** <ritmofit-web|ritmofit-ios>
+- **Conductor:** <session name> on the Neo · **Repo:** <ritmofit-web|ritmofit-ios>
+- **Builders:** <cloud sessions | the Neo>, at most <N> at once
+- **Attended:** <yes | no (unattended)>
 - **Window:** <start> to <end> (local and Z). No new PR after <end minus 1 hour>, except the handoff PR.
-- **Pre-approved queue, in merge order:** <RF-N: scope; eligibility checked (7.3)>
+- **Pre-approved queue, in priority order (each merges once it passes 7.4):** <RF-N: scope; eligibility checked (7.3)>
 - **Owner-named exceptions:** <none | RF-N may change <area>>
 - **Not pre-approved (opened for the owner's review only):** <RF-N: why>
 - **Merge bar:** 7.4, unchanged | <owner's changes>
@@ -208,18 +219,20 @@ passes all five checks:
 - **Mergeable on its own.** It merges independently. Anything the checks themselves depend on (the
   task tool, for example) merges last.
 
-When the queue runs out, the night ends early. Don't add filler.
+When the queue runs out, the batch ends early. Don't add filler.
 
 ### 7.4 Merge bar, for every pre-approved PR
 
-This replaces the repo's usual final review for the night's PRs.
+This replaces the repo's usual final review for the batch's PRs.
 
 1. **Task status.** The RF task is set on the branch as §6 says.
-2. **Review.** A fresh-context reviewer subagent runs `/code-review high` on the branch diff
-   *before* the PR is opened. A finding that the repo's merge policy calls significant (in web `AGENTS.md`: a correctness bug in
+2. **Verify and review.** Before the PR is opened, the RF pipeline's verify and review stages pass
+   on the branch head (web `agent-prompts/rf-pipeline.md` stages 3–5; ritmofit-ios uses its own
+   copy once it has one, and until then a fresh-context reviewer subagent runs `/code-review high`
+   on the branch diff). Each reviewer is a fresh-context agent that did not build the change. A finding that the repo's merge policy calls significant (in web `AGENTS.md`: a correctness bug in
    executable code, or a contradiction about who grants permission, sets Ready or merges) is fixed,
    or it stops this PR. Every other finding is fixed, or filed as an RF task with the reason. The
-   review summary goes in the PR body. The pre-approval issue's queue is the night's claim (§2),
+   review summary goes in the PR body. The pre-approval issue's queue is the batch's claim (§2),
    so the PR isn't opened early as a draft.
 3. **Open and cite.** Open the PR, then add its URL as the record's `pr` evidence and push at once,
    before the first CI run starts its tests. That push changes only the record's evidence and the
@@ -236,7 +249,7 @@ This replaces the repo's usual final review for the night's PRs.
    `ios build · test` and `parity`, in ritmofit-web the required CI job. Pending isn't green. In
    ritmofit-web, re-run the §7.3 `owner-gate` check on the final head.
 6. **Approval record.** First re-check the issue (§7.1): still open, never edited, and the window
-   still open. The owner closing the issue revokes the night. In
+   still open. The owner closing the issue revokes the batch. In
    ritmofit-ios, comment the issue and the final head SHA on the PR. In ritmofit-web, apply
    `owner-approved` at least two minutes after the final push, with that comment, and wait for
    `owner-gate` to succeed on that head. A refusal stops this PR.
@@ -244,7 +257,7 @@ This replaces the repo's usual final review for the night's PRs.
    `gh pr merge <n> --squash --delete-branch --match-head-commit <sha>`. In ritmofit-web,
    `gh pr merge <n> --squash --match-head-commit <sha>` (no branch deletion; web `AGENTS.md`
    doesn't grant it).
-8. **On failure or stop.** If any step fails, or the night stops for any reason (§7.5, the window
+8. **On failure or stop.** If any step fails, or the batch stops for any reason (§7.5, the window
    ending, the issue closing), every PR left open stays open for the owner. On each one where the
    agent applied `owner-approved`, it removes the label and comments why, before stopping, so no
    later session mistakes it for the owner's approval.
@@ -281,9 +294,12 @@ This replaces the repo's usual final review for the night's PRs.
 
 ### 7.8 Close-out
 
-1. **Handoff PR.** Open one last docs PR that only adds the night's handoff and updates RF
-   records. The pre-approval issue of the repo it lives in lists it as the queue's last item. It merges under §7.4 like
+1. **Handoff PR, only if needed.** Each PR sets its own task's final state, so most batches need
+   none. When a successor needs restart context a record cannot hold, open one last docs PR that
+   only adds the batch's handoff and updates RF records. The pre-approval issue of the repo it
+   lives in lists it as the queue's last item when the batch plans one. It merges under §7.4 like
    the rest. If it can't merge, it stays open for the owner, and the close-out comment says so.
 2. **Close-out comment.** Comment on each pre-approval issue: what merged (PR, RF ID, head SHA),
-   what is open and why, hard stops hit, flakes and re-runs, and any correction.
+   what is open and why, hard stops hit, flakes and re-runs, any correction, and the measures in
+   web `agent-prompts/rf-pipeline.md` › "Measures".
 3. **Close the issue.**

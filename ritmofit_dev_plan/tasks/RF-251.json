@@ -1,0 +1,19 @@
+{
+  "schemaVersion": 1,
+  "parent": null,
+  "blocker": null,
+  "resolution": null,
+  "followUps": [],
+  "id": "RF-251",
+  "title": "Cloud sessions run the full ritmofit-web gate, and a saved cloud environment sets them up",
+  "kind": "verification",
+  "status": "backlog",
+  "priority": "P1",
+  "dependsOn": [],
+  "acceptance": [
+    "In a claude.ai/code cloud session on this repo, every command in AGENTS.md › Verification, PRs, And Commits passes from a fresh clone, including pnpm --filter @ritmofit/e2e e2e, with wall times recorded here.",
+    "A personal cloud environment for this repo holds a setup script made only of commands that session ran (install, .dev.vars from the example, local D1 migrate and seed, any Playwright step), and its name is recorded here; no secret is stored in it."
+  ],
+  "nextAction": "Owner chose cloud sessions for web builders on 2026-11-24 (RF-248). Start a cloud session on steven-crosby/ritmofit-web, run the gate, propose the environment; nothing is committed from that session except this record's evidence in a records PR.",
+  "evidence": []
+}

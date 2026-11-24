@@ -6,15 +6,22 @@ enforces this for apps/, packages/ and e2e/ changes. -->
 
 ## Owner gate
 
-<!-- Every PR: when the required CI check is green, the agent asks the owner before its final
-review and squash-merge (PR comment + `ready-to-merge` if the owner is not in the session). If the
+<!-- Every PR: a fresh-context review of the head runs first (AGENTS.md › "Delegation And Merge
+Policy"); when the required CI check is green, the agent asks the owner before the squash-merge (PR
+comment + `ready-to-merge` if the owner is not in the session). If the
 `owner-gate` status fails because owner-gated paths changed, also add `needs-owner`.
 `owner-approved` comes from the owner, or from the agent once the owner approves this PR's merge in
-a session, recorded first as a PR comment; it counts only for the commit it was given on. On an unattended
-night, the owner's pre-approval issue is the permission instead (ritmofit_dev_plan/two-machine-rules.md › 7). -->
+a session, recorded first as a PR comment; it counts only for the commit it was given on. In a pre-approved
+batch, the owner's pre-approval issue is the permission instead (ritmofit_dev_plan/two-machine-rules.md › 7). -->
 
 - [ ] Not owner-gated
 - [ ] Owner-gated (migrations / auth / provider-playback / CI-deploy / agent rules) — `needs-owner`
+
+## Pipeline
+
+<!-- RF pipeline PRs (agent-prompts/rf-pipeline.md): the head SHA checked; the verifier's verdict;
+each reviewer's summary; how each finding was handled (fixed here, new P1/P2 task, polish record,
+dropped with reason); owner checks left. Other PRs: the final review's summary and its head SHA. -->
 
 ## Verification
 

@@ -7,7 +7,8 @@
 
 > **For the owner:** fill in the brief below and paste it to any agent (Claude Code subagent or
 > background task, Cursor background agent, Codex). It is the scope confirmation, so the agent plans
-> and executes without waiting. It asks your permission before the final review and squash-merge. For three or more concurrent tasks across
+> and executes without waiting. A fresh-context review runs before it asks your permission to
+> squash-merge. For three or more concurrent tasks across
 > sibling checkouts, use [`orchestrate-parallel-round.md`](orchestrate-parallel-round.md) instead.
 
 ## Brief (owner fills in)
@@ -46,14 +47,18 @@ leaves a product decision open; then ask **one** focused question, with your rec
    has a final status (Done, For review, Blocked or Cancelled). Fill every section
    of `.github/pull_request_template.md`, even when passing the body on the command line, then mark
    the draft ready.
-6. **Close.** Run [`daily/close-session.md`](daily/close-session.md) (Solo). When the required check
-   is green on the final head (an owner-gated PR's `owner-gate` status stays failed until approval), ask the owner for permission to run the final review and squash-merge:
-   in chat if the owner is present, otherwise as a PR comment plus the `ready-to-merge` label, then
-   stop (add `needs-owner` too if the PR is owner-gated). An owner-gated PR needs the
-   `owner-approved` label itself, and its `owner-gate` status green on the same head, before the review. With
-   permission, run the final review as
-   `AGENTS.md` › "Delegation And Merge Policy" defines it (including what counts as significant) and
-   merge with `--match-head-commit` only if it finds nothing significant. Apply `owner-approved` only once the owner approves this PR's merge in your session
-   (record the owner's words as a PR comment first); never deploy or delete branches.
+6. **Review, then close.** Before asking, get the final review `AGENTS.md` › "Delegation And
+   Merge Policy" defines: a fresh-context reviewer (a subagent that did not build the change) on
+   the head diff. Fix significant findings and have the fix reviewed once more; handle the rest by
+   "Findings: fix or drop" in [`rf-pipeline.md`](rf-pipeline.md). Put the summary and reviewed
+   head in the PR. Then run [`daily/close-session.md`](daily/close-session.md) (Solo). When the
+   required check is green on that head (an owner-gated PR's `owner-gate` status stays failed until
+   approval), ask the owner for permission to squash-merge it: in chat if the owner is present,
+   otherwise as a PR comment plus the `ready-to-merge` label, then stop (add `needs-owner` too if
+   the PR is owner-gated). An owner-gated PR needs the `owner-approved` label itself, and its
+   `owner-gate` status green on the same head, before merging. With permission for the reviewed
+   head, merge with `--match-head-commit`. Apply `owner-approved` only once the owner approves this
+   PR's merge in your session (record the owner's words as a PR comment first); never deploy or
+   delete branches.
 7. **Report** in under ten lines: the PR link, merged or awaiting merge permission, the
    verification that ran, and anything the owner must still check by hand.

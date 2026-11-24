@@ -1,0 +1,18 @@
+{
+  "schemaVersion": 1,
+  "parent": null,
+  "blocker": null,
+  "resolution": null,
+  "followUps": [],
+  "id": "RF-249",
+  "title": "Polish notes from reviews (rolling record): small fixes reviewers found outside their PR's scope",
+  "kind": "task",
+  "status": "backlog",
+  "priority": "P3",
+  "dependsOn": [],
+  "acceptance": [
+    "Every note listed in the later acceptance lines of this record is fixed in one PR, or dropped with the owner's reason in this record's evidence. Each note names its area and the PR whose review found it. A new rolling polish record starts when this one closes, and agent-prompts/rf-pipeline.md › Findings is updated to point at it."
+  ],
+  "nextAction": "Collects P3 review notes under agent-prompts/rf-pipeline.md › Findings: fix or drop (RF-248). Triage proposes it for a batch once its notes are worth a PR. Backlog until the owner sets Ready.",
+  "evidence": []
+}
