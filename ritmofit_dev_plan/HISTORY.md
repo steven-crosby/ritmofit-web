@@ -12,6 +12,30 @@ detail). Current focus and `main` vs production live in the "Now" block of
 ---
 
 ## Deploy and session log (newest first)
+> **Deploy 2026-11-23: Live names the next song (#789, RF-130), likes past 200 in the class editor (#790, RF-149), the late likes page (#792, RF-241) and RF-157's tests (#793), on main `1eed288`**.
+> One deploy from the Neo with `scripts/deploy.sh` (no SHA: a clean checkout whose HEAD was `origin/main`). The owner
+> said "Then let's do deploy and TestFlight update" in the Neo session, after the agent had listed #789, #790, #792 and
+> #793 as `main` ahead of production. The agent recorded those words on the four PRs after the deploy, not before it as
+> on 2026-11-21 and earlier on 2026-11-23.
+>
+> - **Tree:** [#789](https://github.com/steven-crosby/ritmofit-web/pull/789) (RF-130),
+>   [#790](https://github.com/steven-crosby/ritmofit-web/pull/790) (RF-149),
+>   [#792](https://github.com/steven-crosby/ritmofit-web/pull/792) (RF-241) and
+>   [#793](https://github.com/steven-crosby/ritmofit-web/pull/793) (RF-157, tests only), plus docs #787, #788, #791 and
+>   #794. Worker `515bc8fb-24fd-4ff7-b8be-6f7c28aa1e85` at 100% (created 2026-11-24T02:37:16Z); rollback
+>   `fedc7fbf-1bc2-46cd-a90a-3059505e0a7b` (`b9e8141`). SPA `assets/index-CFKeSijz.js` (was `assets/index-BXKJ3gK7.js`).
+> - **Checks:** the script's gates passed; every required secret name was present; no remote D1 migrations to apply;
+>   the served SPA matched the build on 3 of 3 propagation fetches; the status smoke (`/` 200, health 200,
+>   classes/explore/teams 401) and the security headers passed; `wrangler deployments status` showed `515bc8fb` at
+>   100%. The authed production smoke passed: `GET /api/v1/classes` 200 and `GET /api/v1/providers/spotify/playlists`
+>   200. A 5-minute `wrangler tail` saw 2 requests, the authed smoke's two (both Ok), and 0 exceptions.
+> - **Batched against the rule:** AGENTS.md deploys provider and playback changes on their own, and
+>   `scripts/owner-gate.mjs` counts #789's `LiveMode.tsx` as playback. The agent shipped it with the other three in one
+>   deploy and told the owner afterwards. #789 adds the next song's name to Cue-by-Cue's Next row (36 lines in
+>   `LiveMode.tsx`, no playback, seek or provider call). A rollback to `fedc7fbf` takes back all four.
+> - **Not proven:** real playback (CI uses mock providers), the owner's glance at Cue-by-Cue
+>   ([RF-130](./tasks/RF-130.json)) and paging past 200 real likes ([RF-149](./tasks/RF-149.json)).
+
 > **Authed production smoke 2026-11-23 on main `b9e8141` (Worker `fedc7fbf`): passed, the first pass since 2026-10-26**.
 > At 2026-11-23T17:58Z, about 27 minutes after the upload below, `scripts/authed-production-smoke.ts` exited 0:
 > `GET /api/v1/classes` 200 and `GET /api/v1/providers/spotify/playlists` 200 ([RF-155](./tasks/RF-155.json)).

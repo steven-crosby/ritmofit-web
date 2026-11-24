@@ -64,6 +64,12 @@
       "ref": "apps/web/src/components/Dashboard.test.tsx",
       "checkedOn": "2026-11-23",
       "summary": "'caps Spotify likes at 15, refuses a 16th by checkbox and row, and still unticks (RF-157)': 16 mocked Spotify likes reach '15 of 15 selected' with the cap note. The 16th is disabled and refused by its checkbox and by a tap on its row text, and unticking a picked song gives '14 of 15 selected' and re-enables the 16th. Checked against a local mutation (SongPicks rows never disabled, reverted, never committed): the test failed. RF-151's Spotify tests in the same describe already cover the selection surviving search and Load more, creating in list order, and Spotify to Apple Music and back starting empty."
+    },
+    {
+      "kind": "observation",
+      "ref": "ritmofit_dev_plan/HISTORY.md",
+      "summary": "Deployed 2026-11-23 from the Neo in main 1eed288 with scripts/deploy.sh: Worker 515bc8fb-24fd-4ff7-b8be-6f7c28aa1e85 at 100%, SPA assets/index-CFKeSijz.js (3 of 3 propagation fetches). Tests only; nothing user-visible changed with this deploy.",
+      "checkedOn": "2026-11-23"
     }
   ],
   "resolution": "Done in #793 with tests only: no app code changed, because Music › Songs pick mode already worked for Spotify likes. Selection is scoped to the provider plus the connected account (lib/song-picks.ts), and Dashboard and SongPicks have no Spotify-specific branch. A Phase-1 probe at an emulated 390 px phone and at 1440 (mock providers) showed the checkboxes, the selection bar, the Create a class sheet and class creation working for Spotify likes with no overflow or axe violations, and showed the selection cleared on a switch to SoundCloud and empty on return to Spotify. The new e2e test now keeps that proof in CI at both widths. The 15-song cap with Spotify likes is covered by a Dashboard component test, because the mock catalog holds only two Spotify songs. Real Spotify accounts are not exercised by CI; production listed Spotify likes in pick mode on desktop on 2026-10-31 (evidence above).",

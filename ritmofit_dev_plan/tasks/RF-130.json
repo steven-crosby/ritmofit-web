@@ -50,6 +50,12 @@
       "ref": "e2e/smoke.spec.ts",
       "summary": "Full AGENTS.md gate on the Neo at 41bf560, all 18 steps exit 0: web 1829 tests, API 698, music 30, integration 277, build with bundle budget, Playwright smoke 2/2 (1440 and 390). The smoke's 'Live running' page (0:45, the first song's last cue next) renders 'Next song Baianá' and passes its sideways-overflow and axe WCAG 2.2 AA checks.",
       "checkedOn": "2026-11-23"
+    },
+    {
+      "kind": "observation",
+      "ref": "ritmofit_dev_plan/HISTORY.md",
+      "summary": "Deployed 2026-11-23 from the Neo in main 1eed288 with scripts/deploy.sh: Worker 515bc8fb-24fd-4ff7-b8be-6f7c28aa1e85 at 100%, SPA assets/index-CFKeSijz.js (3 of 3 propagation fetches). Live's Cue-by-Cue names the next song is live; the owner's glance at Cue-by-Cue is still its check.",
+      "checkedOn": "2026-11-23"
     }
   ],
   "resolution": "Cue-by-Cue's focal card names the song after the live one, as 'Next song: <title>' under the Next row, once the live song has at most its last cue or move ahead: when the last cue is next, and after it, whether the Next row then says 'End of track' or a later song's first cue. Mid-song and on the class's last song the focal card is unchanged. It is a visible label and text (no colour, no motion); playback, seeking, transport and the screen-reader cue announcements are unchanged. Not verified on a real device: the owner's glance at Cue-by-Cue at a song's last cue is the manual check named in #789. RF-239 holds the Next row naming a cue from a song past an unchoreographed next song.",
