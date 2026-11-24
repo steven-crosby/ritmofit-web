@@ -47,11 +47,12 @@ leaves a product decision open; then ask **one** focused question, with your rec
    has a final status (Done, For review, Blocked or Cancelled). Fill every section
    of `.github/pull_request_template.md`, even when passing the body on the command line, then mark
    the draft ready.
-6. **Review, then close.** Before asking, get the final review `AGENTS.md` › "Delegation And
-   Merge Policy" defines: a fresh-context reviewer (a subagent that did not build the change) on
-   the head diff. Fix significant findings and have the fix reviewed once more; handle the rest by
-   "Findings: fix or drop" in [`rf-pipeline.md`](rf-pipeline.md). Put the summary and reviewed
-   head in the PR. Then run [`daily/close-session.md`](daily/close-session.md) (Solo). When the
+6. **Close, then review.** Run [`daily/close-session.md`](daily/close-session.md) (Solo) up to
+   its publication step, so every record, evidence and docs edit is on the branch. Then get the
+   final review `AGENTS.md` › "Delegation And Merge Policy" defines: a fresh-context reviewer (a
+   subagent that did not build the change) on the head diff. Fix significant findings and have
+   the fix reviewed once more; handle the rest by "Findings: fix or drop" in
+   [`rf-pipeline.md`](rf-pipeline.md). Put the summary and reviewed head in the PR. When the
    required check is green on that head (an owner-gated PR's `owner-gate` status stays failed until
    approval), ask the owner for permission to squash-merge it: in chat if the owner is present,
    otherwise as a PR comment plus the `ready-to-merge` label, then stop (add `needs-owner` too if

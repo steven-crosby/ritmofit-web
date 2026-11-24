@@ -2,7 +2,7 @@ name: CI
 
 # Quality gate for the pnpm monorepo. Deploys stay manual by design (see AGENTS.md) —
 # this workflow never deploys, it only blocks regressions on PRs and pushes to main.
-# Agents ask the owner, run a final code review, then squash-merge once this job is green
+# Agents get a fresh-context final review, ask the owner, then squash-merge once this job is green
 # (AGENTS.md › "Delegation And Merge Policy"), so it is the automated review: keep it thorough.
 on:
   push:

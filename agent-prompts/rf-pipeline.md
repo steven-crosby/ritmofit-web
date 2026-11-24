@@ -6,7 +6,7 @@
 > **The default way to work an RF ticket in ritmofit-web.** A builder implements one task on its
 > own branch; agents that did not build it then verify and review it before anyone asks the
 > owner. The owner approves work once per batch (`ritmofit_dev_plan/two-machine-rules.md` › 7) or
-> once per PR, never twice for the same head. `AGENTS.md` wins on any conflict. For one hand-off
+> once per PR head, and the same head is never reviewed twice. `AGENTS.md` wins on any conflict. For one hand-off
 > without the pipeline, use [`delegate-task.md`](delegate-task.md); for broad partitioned work
 > across checkouts, [`orchestrate-parallel-round.md`](orchestrate-parallel-round.md).
 
@@ -32,7 +32,9 @@ never sees the builder's chat, plan or summary, so it cannot inherit the builder
 - **On the Neo instead,** only when a ticket needs something a cloud container lacks (a signed-in
   browser, real provider playback, the owner's device). Such a ticket is not batch-eligible, and
   its browser work is serialized with any other on the Neo.
-- **Concurrency:** at most four web builders at once. Merges stay one at a time.
+- **Concurrency:** at most four web builders at once, and never two at once on tickets whose
+  expected files overlap (`Dashboard.tsx` is the usual one): the second waits until the first
+  merges. Merges stay one at a time.
 
 ## Stages, per ticket
 
@@ -61,8 +63,9 @@ never sees the builder's chat, plan or summary, so it cannot inherit the builder
      implication the PR does not call out, and any music-constraint or authz risk.
 5. **Fix.** A significant finding, a failing gate or a failing acceptance line goes back to the
    builder. After the fix, stages 3 and 4 run again on the whole new diff. At most **two** fix
-   rounds; after that the ticket **parks**: the PR stays open (draft), the record goes to For
-   review with the open findings as its next action, and the conductor tells the owner.
+   rounds; after that the ticket **parks**: the record goes to For review with the open findings
+   as its next action, its draft PR stays open (in a batch, the builder opens one now, outside the
+   batch, for the owner), and the conductor tells the owner.
 6. **Publish.** The builder fills `.github/pull_request_template.md` plus a **Pipeline** section:
    the verifier's verdict, each reviewer's summary, the head SHA they all checked, how each
    finding was handled, and the owner checks left. It cites the PR as the record's `pr` evidence
@@ -79,11 +82,13 @@ Reviews no longer grow the backlog by default. For each finding:
 - **Significant** (`AGENTS.md` definition): fixed before the PR is ready, or the ticket parks.
 - **Small and inside the ticket** (its files and its scope, roughly 20 changed lines or fewer):
   fixed in the same PR.
-- **Worth its own task at P1 or P2:** filed as a Backlog RF task and cited in the PR's review
-  comment.
-- **Anything else:** added as one line to this repo's rolling polish record
-  ([RF-249](../ritmofit_dev_plan/tasks/RF-249.json)) citing the PR, or dropped with a one-line
-  reason in the review comment. Reviews never file a new P3 record.
+- **Worth its own task at P1 or P2:** the builder files it as a Backlog RF task in the same PR
+  (with an ID the conductor reserved) and cites it in the Pipeline section. A push that only adds
+  such records keeps the review (`AGENTS.md` › "Delegation And Merge Policy").
+- **Anything else:** listed in the PR's Pipeline section as a polish note, or dropped there with a
+  one-line reason. The conductor copies the batch's polish notes into this repo's rolling polish
+  record ([RF-249](../ritmofit_dev_plan/tasks/RF-249.json)) at close-out, so parallel builders
+  never edit it. Reviews never file a new P3 record.
 
 The polish record is an ordinary Backlog task; triage proposes it for a batch once its lines are
 worth a PR, and the next polish record starts when it closes.
