@@ -36,7 +36,7 @@ Pick one before deep reads; every mode still ends with **one** recommended next 
    status (or a batch issue's queue) is your scope approval. Do steps 1–2 and step 6 for that one
    record only, skip production (step 9), confirm `dependsOn` is Done and no open PR claims it, then
    go straight to "After approval". Plan in a few lines in the PR, not in chat. In a pre-approved
-   batch, skip step 4's draft PR: the batch issue's queue is the claim, and the PR opens at
+   batch, skip the draft PR in "After approval" step 4: the batch issue's queue is the claim, and the PR opens at
    pipeline stage 6.
 
 ## Workflow

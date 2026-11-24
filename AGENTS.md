@@ -266,8 +266,9 @@ pre-approves under `ritmofit_dev_plan/two-machine-rules.md` › "Pre-approved ba
 (2026-11-02): once the owner approves a PR's merge in a live session
 (for example "yes, merge #N", or telling it to apply the label), that Solo or Orchestrator session,
 on either conductor, records the owner's words as a PR comment and then applies `owner-approved` to
-the PR's current head; no separate instruction to apply the label is needed. The approval covers
-only that PR and that head.
+the PR's current head, only if that head is still the `<sha>` the owner was asked about (otherwise
+it asks again); no separate instruction to apply the label is needed. The approval covers only that
+PR and that head.
 
 **The final review runs before the ask** (owner, 2026-11-24). A fresh-context reviewer, an agent
 that did not build the change and never saw its builder's reasoning, runs its tool's code-review
@@ -276,13 +277,15 @@ review). In the RF pipeline this is stage 4 of `agent-prompts/rf-pipeline.md`, b
 and acceptance audit. The review summary names the head it reviewed and goes in the PR body or a
 PR comment. Outside a batch, an evidence-only PR (`ritmofit_dev_plan/two-machine-rules.md` › 6)
 needs no review; in a batch, §7.4 step 2 reviews every PR. A push after the review that changes
-only RF records (the review's own finding records, the task's evidence) keeps the review. A finding is **significant** only if it is:
+only adds Backlog records for the review's findings, or changes only the task's evidence and the
+rendered board, keeps the review; the ask then names that head. A finding is **significant** only if it is:
 
 - (a) a correctness bug in executable code (app code, scripts, CI workflow), including security,
   data loss and missing authz; or
 - (b) a contradiction about who grants permission, sets Ready, or merges.
 
-Significant findings are fixed before the ask, and the fix gets one more pass on the new diff.
+Significant findings are fixed before the ask, and each fix gets a fresh pass on the new diff (the
+RF pipeline parks a ticket after two fix rounds).
 Everything else (wording, coverage gaps, design trade-offs, ideas) follows "Findings: fix or drop"
 in `agent-prompts/rf-pipeline.md`: fixed in the same PR when small and inside the task, filed as a
 Backlog RF task only at P1 or P2, otherwise one line in the rolling polish record or dropped with a
@@ -291,9 +294,10 @@ reason in the review comment. None of it blocks. Then:
 - **Permission for the reviewed head:** squash-merge with
   `gh pr merge <n> --squash --match-head-commit <approved sha>` and remove `ready-to-merge`. The
   same head is never reviewed twice.
-- **The head changed after the review:** do not merge. An update from `main` that leaves the PR's
-  own diff unchanged (the same `git diff origin/main...HEAD | git patch-id --stable` before and
-  after) needs no new review; any other push does, and every push needs green CI again
+- **The head changed after the review:** do not merge. A records push the review keeps (above),
+  or an update from `main` that leaves the PR's own diff unchanged (the same
+  `git diff origin/main...HEAD | git patch-id --verbatim` before and after), needs no new review;
+  any other push does, and every push needs green CI again
   and a fresh permission. Any push after permission voids it:
   approval counts only for the commit it was given on. The one exception is a batch's pre-approval
   issue, which covers its queued PRs for the window while the batch's merge bar passes again on
@@ -345,7 +349,7 @@ issue and that head SHA), merging
 any PR without that PR's permission, force-pushing another session's branch, merging another
 session's PR except in the orchestrator's merge train, when relaying a subagent's ask, or when a
 Solo or Orchestrator session finishes a PR that already has the owner's permission (between the two
-conductors, as `two-machine-rules.md` › "Who finishes a PR" decides; a Lane never merges), and branch deletion. Those keep
+conductors, as `two-machine-rules.md` › "Who finishes a PR" decides; a Lane or Builder never merges), and branch deletion. Those keep
 their separate explicit permission.
 
 **What CI proves:** the required job runs format, task, owner-gate self-test, RF-trace and release-status checks, typecheck, lint,

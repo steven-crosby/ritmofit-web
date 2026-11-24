@@ -154,7 +154,7 @@ is the merge permission for each PR it covers, and for nothing else:
   must be empty. If it isn't, merging stops for the batch. A mistake in the issue is fixed by the
   owner in a session, never by editing it. Comments don't count as edits.
 - **ritmofit-ios:** the merge comment cites the issue and the merged head SHA.
-- **ritmofit-web:** at §7.4 step 6, the agent applies `owner-approved` to the PR's final head with a
+- **ritmofit-web:** at §7.4 step 6, the batch's conductor (never a builder) applies `owner-approved` to the PR's final head with a
   comment citing the issue and the head SHA, then merges once `owner-gate` succeeds on that head.
 
 The permission covers each queued PR for the whole window, not one head. A push that §7.4 step 4
@@ -169,8 +169,8 @@ Owner pre-approval for one batch (ritmofit_dev_plan/two-machine-rules.md › 7).
 - **Conductor:** <session name> on the Neo · **Repo:** <ritmofit-web|ritmofit-ios>
 - **Builders:** <cloud sessions | the Neo>, at most <N> at once
 - **Attended:** <yes | no (unattended)>
-- **Window:** <start> to <end> (local and Z). No new PR after <end minus 1 hour>, except the handoff PR.
-- **Pre-approved queue, in priority order (each merges once it passes 7.4):** <RF-N: scope; eligibility checked (7.3)>
+- **Window:** <start> to <end> (local and Z). No new PR after <end minus 1 hour>, except the close-out PR.
+- **Pre-approved queue, in priority order (each merges once it passes 7.4):** <RF-N: scope; eligibility checked (7.3)>; last: close-out PR, if needed (§7.8)
 - **Owner-named exceptions:** <none | RF-N may change <area>>
 - **Not pre-approved (opened for the owner's review only):** <RF-N: why>
 - **Merge bar:** 7.4, unchanged | <owner's changes>
@@ -244,13 +244,13 @@ This replaces the repo's usual final review for the batch's PRs.
    - a conflict resolution, changing only the conflict;
    - an update from `main` with no other change.
 
-   Anything more stops this PR. After a push that changes the PR's own diff, the review in step 2
-   runs again on the whole diff. An update from `main` that leaves that diff unchanged needs no
+   Anything more stops this PR. After a push that changes the PR's own diff, the verify and review
+   in step 2 run again on the whole diff. An update from `main` that leaves that diff unchanged needs no
    re-review.
 5. **Checks.** Every check `gh pr checks` lists for the final head is green: in ritmofit-ios at least
    `ios build · test` and `parity`, in ritmofit-web the required CI job. Pending isn't green. In
    ritmofit-web, re-run the §7.3 `owner-gate` check on the final head.
-6. **Approval record.** First re-check the issue (§7.1): still open, never edited, and the window
+6. **Approval record** (the batch's conductor only). First re-check the issue (§7.1): still open, never edited, and the window
    still open. The owner closing the issue revokes the batch. In
    ritmofit-ios, comment the issue and the final head SHA on the PR. In ritmofit-web, apply
    `owner-approved` at least two minutes after the final push, with that comment, and wait for
@@ -272,7 +272,7 @@ This replaces the repo's usual final review for the batch's PRs.
   that, the PR stays open.
 - **Merging stops** if the CI runner goes offline, or if parity turns red from drift in the other
   repo.
-- **Timing:** no new PR in the window's last hour, except the handoff PR (§7.8). Everything stops
+- **Timing:** no new PR in the window's last hour, except the close-out PR (§7.8). Everything stops
   at the window's end.
 
 ### 7.6 CI hygiene on the Neo
@@ -300,9 +300,9 @@ This replaces the repo's usual final review for the batch's PRs.
    none. When the batch's PRs listed polish notes (web `agent-prompts/rf-pipeline.md` › "Findings:
    fix or drop"), or a successor needs restart context a record cannot hold, open one last docs PR
    that only copies those notes into the polish record, adds the batch's handoff and updates RF
-   records. The pre-approval issue of the repo it
-   lives in lists it as the queue's last item when the batch plans one. It merges under §7.4 like
-   the rest. If it can't merge, it stays open for the owner, and the close-out comment says so.
+   records. It merges under §7.4 only if the pre-approval issue of the repo it lives in lists it as
+   the queue's last item (the issue may list it as "close-out PR, if needed"). Otherwise, or if it
+   can't merge, it stays open for the owner, and the close-out comment says so.
 2. **Close-out comment.** Comment on each pre-approval issue: what merged (PR, RF ID, head SHA),
    what is open and why, hard stops hit, flakes and re-runs, any correction, and the measures in
    web `agent-prompts/rf-pipeline.md` › "Measures".

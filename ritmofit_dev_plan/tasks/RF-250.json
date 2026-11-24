@@ -17,6 +17,6 @@
     "pnpm tasks eligible lists Backlog and Ready tasks whose dependsOn are Done, whose kind is task, and whose acceptance names no owner-only check, and prints the owner-gate result for files a caller supplies; pnpm tasks stats reports RF records created and finished per week. Both have cases in scripts/tasks.test.mjs.",
     "agent-prompts/rf-pipeline.md and CLAUDE.md name the new commands and agents."
   ],
-  "nextAction": "Owner approved the plan on 2026-11-24 (RF-248's PR body). Build after RF-248 merges, since .claude/ is owner-gated from RF-248.",
+  "nextAction": "The owner asked for this work in the 2026-11-24 Neo conductor session (quoted in #798's body); that direct ask is its scope approval, and it does not make this task Ready. Build it on a branch stacked on RF-248's PR; it merges only after RF-248, since .claude/ is owner-gated from RF-248.",
   "evidence": []
 }
