@@ -20,6 +20,12 @@
       "ref": "https://github.com/steven-crosby/ritmofit-ios/issues/241",
       "summary": "The batch whose planning and run this section records, with #233 before it. The owner asked to record the workflow for future batches in the Neo conductor session on 2026-11-25.",
       "checkedOn": "2026-11-25"
+    },
+    {
+      "kind": "pr",
+      "ref": "https://github.com/steven-crosby/ritmofit-web/pull/802",
+      "summary": "This task's PR; its body quotes the owner's ask of 2026-11-25.",
+      "checkedOn": "2026-11-25"
     }
   ],
   "resolution": "agent-prompts/rf-pipeline.md › Planning a batch records the method from iOS batches #233 and #241, including the lessons from RF-1122's late ineligibility, RF-1182's plan departure, the 9-minute issue timing slip and the build-machine overlaps.",
