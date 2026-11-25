@@ -1,0 +1,34 @@
+{
+  "schemaVersion": 1,
+  "id": "RF-253",
+  "title": "RF pipeline: record how to plan a batch (candidates, plan sitting, sizing, order, issue, running, close-out)",
+  "kind": "documentation",
+  "status": "done",
+  "priority": "P2",
+  "parent": null,
+  "dependsOn": [
+    "RF-248"
+  ],
+  "acceptance": [
+    "agent-prompts/rf-pipeline.md gains a \"Planning a batch\" section the conductor follows before asking the owner to approve a batch issue. It covers: checking § 7.3 against where touched code actually lives; treating 'decide' lines as decisions; a plan sitting with one read-only planner per feature and one owner ask; sizing the queue from measured throughput; ordering by shared files; creating the issue before its start and recording mid-batch owner decisions as issue comments; running with a blocking build-machine wait loop and merge-not-force updates; and close-out.",
+    "ritmofit_dev_plan/two-machine-rules.md § 7.3's \"No plan needed\" check also accepts a plan the owner confirmed in the owner's own words quoted in the issue, matching how #241 batched three features."
+  ],
+  "nextAction": null,
+  "blocker": null,
+  "evidence": [
+    {
+      "kind": "document",
+      "ref": "https://github.com/steven-crosby/ritmofit-ios/issues/241",
+      "summary": "The batch whose planning and run this section records, with #233 before it. The owner asked to record the workflow for future batches in the Neo conductor session on 2026-11-25.",
+      "checkedOn": "2026-11-25"
+    },
+    {
+      "kind": "pr",
+      "ref": "https://github.com/steven-crosby/ritmofit-web/pull/802",
+      "summary": "This task's PR; its body quotes the owner's ask of 2026-11-25.",
+      "checkedOn": "2026-11-25"
+    }
+  ],
+  "resolution": "agent-prompts/rf-pipeline.md › Planning a batch records the method from iOS batches #233 and #241, including the lessons from RF-1122's late ineligibility, RF-1182's plan departure, the 9-minute issue timing slip and the build-machine overlaps; § 7.3 now accepts a plan the owner confirmed in the issue.",
+  "followUps": []
+}

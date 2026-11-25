@@ -191,7 +191,8 @@ passes all five checks:
 
 - **Unclaimed.** No open draft PR, in-progress RF record or other open pre-approval issue (in
   either repo) claims it.
-- **No plan needed.** It isn't substantial work that `AGENTS.md` says needs a confirmed plan.
+- **No plan needed, or a plan the owner confirmed.** It isn't substantial work that `AGENTS.md` says
+  needs a confirmed plan, or its plan is confirmed in the owner's own words quoted in the issue.
 - **No contract or snapshot changes.** It changes no API contract and no file that one repo copies
   from the other:
   - in ritmofit-web: `apps/api/openapi/openapi.json`, every web file iOS vendors (the list in iOS
