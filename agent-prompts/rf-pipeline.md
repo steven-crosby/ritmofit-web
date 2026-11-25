@@ -135,8 +135,8 @@ approve a batch issue.
    - An acceptance line that says "decide", or names an owner-only check, is a decision, not batch
      work. Ask the owner first, or leave the task out.
 2. **Hold a plan sitting for features.**
-   - A feature needs a confirmed plan (`AGENTS.md`); a plan the owner confirms in the issue's own
-     words meets § 7.3. One read-only planning agent per feature
+   - A feature needs a confirmed plan (`AGENTS.md`); a plan confirmed in the owner's own words
+     quoted in the issue meets § 7.3. One read-only planning agent per feature
      returns, in 25 lines or fewer:
      - the outcome;
      - the states (loading, empty, error, offline, not connected), on each platform;
@@ -153,9 +153,9 @@ approve a batch issue.
      saw, or a reviewer treats it as a departure, which blocks the merge. (In #241, RF-1182's viewer
      copy was "in neither the plan nor the web" and cost a fix round.)
 3. **Size the queue to the window, from measured throughput.**
-   - Use the "Measures" from recent close-outs, not guesses. In batches #233 and #241 an iOS
-     ticket took 2–4 h from build start to merge, one builder at a time on the Neo, and merges came
-     about 1.8 h apart. Each fix round added about 1–1.5 h.
+   - Use the "Measures" from recent close-outs, not guesses. In batch #233 an iOS ticket took
+     2–4 h from build start to merge, one builder at a time on the Neo, and merges came about 1.8 h
+     apart. Each fix round added about 1–1.5 h.
    - Plan about six tickets per 24 h on the Neo; that is deliberately conservative. Web tickets in cloud sessions run up to four at once.
    - Unused window is not filler. To add work mid-window, the conductor proposes a second issue,
      because issues are never edited.

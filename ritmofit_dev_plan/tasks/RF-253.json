@@ -11,7 +11,7 @@
   ],
   "acceptance": [
     "agent-prompts/rf-pipeline.md gains a \"Planning a batch\" section the conductor follows before asking the owner to approve a batch issue. It covers: checking § 7.3 against where touched code actually lives; treating 'decide' lines as decisions; a plan sitting with one read-only planner per feature and one owner ask; sizing the queue from measured throughput; ordering by shared files; creating the issue before its start and recording mid-batch owner decisions as issue comments; running with a blocking build-machine wait loop and merge-not-force updates; and close-out.",
-    "ritmofit_dev_plan/two-machine-rules.md § 7.3's \"No plan needed\" check also accepts a plan the owner confirmed in the pre-approval issue's own words, matching how #241 batched three features."
+    "ritmofit_dev_plan/two-machine-rules.md § 7.3's \"No plan needed\" check also accepts a plan the owner confirmed in the owner's own words quoted in the issue, matching how #241 batched three features."
   ],
   "nextAction": null,
   "blocker": null,
