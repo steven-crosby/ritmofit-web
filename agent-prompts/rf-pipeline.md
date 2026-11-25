@@ -124,15 +124,19 @@ The method that ran iOS batches #233 and #241. The conductor follows it before i
 approve a batch issue.
 
 1. **Find candidates, then check each one where its code actually lives.**
-   - Start from `pnpm tasks eligible` (iOS: the stage 1 grep). Then run § 7.3 against the files
+   - Start from `pnpm tasks eligible` (iOS: `node scripts/tasks.mjs list` plus the gated-area
+     grep). Then run § 7.3 against the files
      each acceptance line will really touch: grep for the types and functions the line names, and
      check their folders, not only the folders the record mentions.
-   - A line that needs a gated area makes the task ineligible, unless the owner names an exception.
-     (#241 dropped RF-1122 after planning because its outbox code is in iOS `Core/Cache`.)
+   - A line that needs a gated area makes the task ineligible, unless § 7.3 allows an owner
+     exception for that area (never agent rules, CI or auth) and the owner names it. (#241 dropped
+     RF-1122 after planning: its outbox code is in iOS `Core/Cache`, and one line was an undecided
+     product choice.)
    - An acceptance line that says "decide", or names an owner-only check, is a decision, not batch
      work. Ask the owner first, or leave the task out.
 2. **Hold a plan sitting for features.**
-   - A feature needs a confirmed plan (`AGENTS.md`). One read-only planning agent per feature
+   - A feature needs a confirmed plan (`AGENTS.md`); a plan the owner confirms in the issue's own
+     words meets § 7.3. One read-only planning agent per feature
      returns, in 25 lines or fewer:
      - the outcome;
      - the states (loading, empty, error, offline, not connected), on each platform;
@@ -143,16 +147,16 @@ approve a batch issue.
      - each owner decision, with a recommended answer;
      - an eligibility verdict;
      - a size.
-   - The owner confirms all the plans in one ask. The issue quotes the owner's answers, each with
+   - The owner confirms each plan, one decision at a time (§ 7.2), in one sitting. The issue quotes the owner's answers, each with
      the question and option text, and summarises each plan.
    - The builder builds exactly that plan. Every detail it adds must appear in the text the owner
      saw, or a reviewer treats it as a departure, which blocks the merge. (In #241, RF-1182's viewer
-     copy came from the plan draft, not the approved text, and cost a fix round.)
+     copy was "in neither the plan nor the web" and cost a fix round.)
 3. **Size the queue to the window, from measured throughput.**
-   - Use the "Measures" from recent close-outs, not guesses. Batches #233 and #241 averaged about
-     2.5 h per iOS ticket, one builder at a time on the Neo, counting verify, review, CI and merge.
-     Each fix round added about 1–1.5 h.
-   - About six tickets fit 24 h on the Neo. Web tickets in cloud sessions run up to four at once.
+   - Use the "Measures" from recent close-outs, not guesses. In batches #233 and #241 an iOS
+     ticket took 2–4 h from build start to merge, one builder at a time on the Neo, and merges came
+     about 1.8 h apart. Each fix round added about 1–1.5 h.
+   - Plan about six tickets per 24 h on the Neo; that is deliberately conservative. Web tickets in cloud sessions run up to four at once.
    - Unused window is not filler. To add work mid-window, the conductor proposes a second issue,
      because issues are never edited.
 4. **Order by priority, then by shared files.**
@@ -165,16 +169,19 @@ approve a batch issue.
    - List "close-out PR, if needed" as the last queue item, in words the owner approves.
    - When the owner decides something mid-batch in the session (a superseded line, a pause, a
      resume), record their words as a comment on the issue at once, and cite that comment in the RF
-     record. A record must never cite owner words that exist only in a chat.
+     record. A record must never cite owner words that exist only in a chat. A comment may narrow,
+     pause or resume the batch; it never adds an item or widens a scope.
 6. **Run it.**
    - One builder or verifier uses the build machine at a time. Before every build, a wait loop
-     blocks until CI is idle and no other build runs; a single check is not enough.
+     blocks until CI is idle and no other build runs; a single check is not enough (it let builds
+     overlap in #233).
    - A fixer never edits a worktree while a verifier uses it.
    - Update a branch from `main` by merging, never by force-pushing. Then prove the PR's own diff
      is unchanged, file by file, with `git patch-id --verbatim`.
    - Each agent writes only under its own scratch folder.
 7. **Close out** under § 7.8, with the measures above. Copy the PRs' polish notes into the polish
-   record, close the issue, and write the release-status and owner-check list for the next close.
+   record and close the issue. In the close-out comment, list the release status and the open owner
+   checks for the next close-session.
 
 ## Owner checks
 
