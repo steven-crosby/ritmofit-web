@@ -14,7 +14,7 @@
     "In a claude.ai/code cloud session on this repo, every command in AGENTS.md › Verification, PRs, And Commits passes from a fresh clone, including pnpm --filter @ritmofit/e2e e2e, with wall times recorded here.",
     "A personal cloud environment for this repo holds a setup script made only of commands that session ran (install, .dev.vars from the example, local D1 migrate and seed, any Playwright step), and its name is recorded here; no secret is stored in it."
   ],
-  "nextAction": "For review until one check is seen: a brand-new cloud session on the 'ritmofit-web' environment, where the setup script and the saved E2E_EXECUTABLE_PATH apply at start, passes pnpm --filter @ritmofit/e2e e2e with no inline variable. The first web batch #801 builder's gate is that check; record it here and set Done (in #801's close-out PR or the next records PR). So far: every other AGENTS.md gate command passed from a fresh clone in the cloud (213 s), and e2e passed 4/4 in 42 s on #803's 32a1a19 with the variable set inline; the environment holds the setup script and the variable, no secrets.",
+  "nextAction": "For review until one check is seen: a brand-new cloud session on the 'ritmofit-web' environment, where the setup script and the saved E2E_EXECUTABLE_PATH apply at start, passes pnpm --filter @ritmofit/e2e e2e with no inline variable. #803 merges first; then the first web batch #801 builder's gate is that check; record it here and set Done (in #801's close-out PR or the next records PR). So far: every other AGENTS.md gate command passed from a fresh clone in the cloud (213 s), and e2e passed 4/4 in 42 s on #803's 32a1a19 with the variable set inline; the environment holds the setup script and the variable, no secrets. Note: the variable runs e2e on the image's Chromium build 1243 while Playwright 1.64.1 expects 1248; if that ever breaks a run, try `pnpm --filter @ritmofit/e2e exec playwright install chromium` in the setup script instead (untested).",
   "evidence": [
     {
       "kind": "observation",
@@ -25,7 +25,7 @@
     {
       "kind": "observation",
       "ref": "https://github.com/steven-crosby/ritmofit-web/issues/801",
-      "summary": "Cloud environment created by that session: personal 'ritmofit-web' (env_014XnKGjb4btEGGDW9GvEixN), repository steven-crosby/ritmofit-web, no extra hosts, no variables, no secrets. Setup script, guarded on the ritmofit-web folder existing and made only of commands the session ran and saw succeed from the parent directory: git fetch --unshallow (only when shallow), corepack enable, pnpm install --frozen-lockfile, copy apps/api/.dev.vars from the example when missing, db:migrate:local and db:seed:local; a second run succeeded in 4 s. Acceptance line 2 is met; line 1 waits on the e2e fix on this branch.",
+      "summary": "Cloud environment created by that session: personal 'ritmofit-web' (env_014XnKGjb4btEGGDW9GvEixN), repository steven-crosby/ritmofit-web, no extra hosts, no variables, no secrets. Setup script, guarded on the ritmofit-web folder existing and made only of commands the session ran and saw succeed from the parent directory: git fetch --unshallow (only when shallow), corepack enable, pnpm install --frozen-lockfile, copy apps/api/.dev.vars from the example when missing, db:migrate:local and db:seed:local; a second run succeeded in 4 s. Acceptance line 2 is met; line 1 waits on the e2e fix on this branch. (As created; the session later saved E2E_EXECUTABLE_PATH on it, see the test entry for #803.)",
       "checkedOn": null
     },
     {
