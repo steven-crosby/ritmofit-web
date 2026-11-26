@@ -1,7 +1,7 @@
 # Lane d2-quality — verification quality, performance, dependencies, maintainability, ops
 
 Reviewer: Claude Code subagent (lane d2-quality), 2026-10-28. Audited SHA `4c344e2`.
-Execution worktree: `/tmp/claude-0/-home-user-ritmofit-web/225314d5-8442-5f3f-bf78-85de30171bbc/scratchpad/wt-d2-quality`
+Execution worktree: `<scratchpad>/wt-d2-quality`
 (detached at 4c344e2, `pnpm install --frozen-lockfile`, disposable; `git status` clean apart from
 copied repro files). Repro canonical copies: `../repro/d2-quality-*`. Evidence: `../evidence/d2-quality-*`.
 No tracked file was edited. No network calls beyond the brief's `pnpm install` (plus one scratch

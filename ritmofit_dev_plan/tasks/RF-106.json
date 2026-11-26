@@ -3,7 +3,7 @@
   "id": "RF-106",
   "title": "Audit repro scripts and docs in the 2026-10-28 audit package are portable and clean up after themselves",
   "kind": "task",
-  "status": "backlog",
+  "status": "done",
   "priority": "P3",
   "parent": null,
   "dependsOn": [],
@@ -13,7 +13,7 @@
     "repro/lead-cm02-unbound-eme-chromium.cjs uses an ephemeral port and closes the browser and server in a finally block.",
     "The audit package's lane briefs, lane files, verification.md and e2e-env-patch.diff use repo-relative or placeholder paths instead of /home/user, /tmp/claude-0 and /opt/pw-browsers container paths, per AGENTS.md's portability rule."
   ],
-  "nextAction": "One docs PR editing files under docs/audits/claude-code-audit-2026-10-28-4c344e2/ only; rerun each changed repro once in a disposable worktree.",
+  "nextAction": null,
   "blocker": null,
   "evidence": [
     {
@@ -21,8 +21,26 @@
       "ref": "https://github.com/steven-crosby/ritmofit-web/pull/644",
       "summary": "Final review of #644 on a32bdd7: four non-significant findings in archived repro scripts and docs (relative-path cp, no cleanup trap, fixed port, hardcoded container paths). Logged 2026-10-28 under the significance rule.",
       "checkedOn": "2026-10-28"
+    },
+    {
+      "kind": "test",
+      "ref": "docs/audits/claude-code-audit-2026-10-28-4c344e2/repro/d1-tooling-deploy-badsha.sh",
+      "summary": "Rerun 2026-11-26 in a disposable worktree at 4c344e2, passing the worktree as a relative path: same output as evidence/d1-tooling-deploy-badsha.txt (deploy.sh exit=128) and no temp dir left behind.",
+      "checkedOn": "2026-11-26"
+    },
+    {
+      "kind": "test",
+      "ref": "docs/audits/claude-code-audit-2026-10-28-4c344e2/repro/d1-tooling-deploy-selfcheck-mutation.sh",
+      "summary": "Rerun 2026-11-26 in a disposable worktree at 4c344e2: baseline, M1, M2 and M3 still print 'self-check passed'. A second run killed with SIGTERM while scripts/deploy.sh.mut existed exited 143 and left git status clean and no temp dir.",
+      "checkedOn": "2026-11-26"
+    },
+    {
+      "kind": "test",
+      "ref": "docs/audits/claude-code-audit-2026-10-28-4c344e2/repro/lead-cm02-unbound-eme-chromium.cjs",
+      "summary": "Rerun 2026-11-26 with headless Chromium, once normally and once with port 8811 held by another process: both printed the unbound 'Illegal invocation' TypeError and bound 'resolved', exit 0.",
+      "checkedOn": "2026-11-26"
     }
   ],
-  "resolution": null,
+  "resolution": "The three repro scripts are portable and clean up after themselves: badsha resolves its worktree argument to an absolute path and removes its sandbox on exit; the self-check mutation repro removes scripts/deploy.sh.mut and its temp dir through an EXIT trap (INT and TERM included); the CM-02 repro listens on an ephemeral port and closes the browser and server in a finally block. The lane brief, lane files, verification.md and e2e-env-patch.diff use <repo>, <scratchpad> and <chromium-executable> placeholders in place of /home/user, /tmp/claude-0 and /opt/pw-browsers paths, and MANIFEST.md byte counts match the edited files. Left as written: /tmp/wt-x in lanes/00-known-issues.md and the mktemp path in evidence/d1-tooling-deploy-badsha.txt, which are historical records of what ran and are outside the three path families the acceptance names.",
   "followUps": []
 }

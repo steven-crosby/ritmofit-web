@@ -6,7 +6,7 @@ index 4d249c9..7fb6241 100644
      baseURL,
      // `E2E_CHANNEL=chrome` uses the installed Google Chrome instead of Playwright's Chromium.
      channel: process.env.E2E_CHANNEL || undefined,
-+    launchOptions: { executablePath: '/opt/pw-browsers/chromium' },
++    launchOptions: { executablePath: '<chromium-executable>' },
      screenshot: 'only-on-failure',
      trace: 'retain-on-failure',
    },
