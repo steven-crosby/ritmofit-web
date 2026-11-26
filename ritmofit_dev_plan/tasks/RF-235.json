@@ -3,7 +3,7 @@
   "id": "RF-235",
   "title": "Login's Apple button holds up at narrow widths and in a light theme, and its busy test leaves no stub behind",
   "kind": "task",
-  "status": "backlog",
+  "status": "done",
   "priority": "P3",
   "parent": null,
   "dependsOn": [],
@@ -12,7 +12,7 @@
     "Where the light theme is on ([data-theme=\"light\"]), the white Apple button has a visible outline against the light page, as Apple's white-with-outline style does; the dark default is unchanged.",
     "Login.test.tsx's busy-state test leaves no never-resolving signInSocial stub for later tests (mockReturnValueOnce, or a reset the shared afterEach runs), and the file still passes."
   ],
-  "nextAction": "Agent-created (Neo, 2026-11-22) from note 1 of #783's final review. Backlog until the owner sets Ready. Unstarted. The test fix is a one-line change. The narrow-width fix needs a look in browser viewport emulation about 214 px wide (375 px at 175% zoom; emulation sets the width, not the zoom). The outline matters only once something turns the light theme on: tokens.css has [data-theme=\"light\"] overrides, but nothing in the app sets data-theme today (checked on main dbc663c).",
+  "nextAction": null,
   "blocker": null,
   "evidence": [
     {
@@ -26,8 +26,20 @@
       "ref": "https://github.com/steven-crosby/ritmofit-web/pull/784#issuecomment-7090504549",
       "checkedOn": "2026-11-22",
       "summary": "#784's final review, notes 2 to 4: the next action lacked its Backlog boundary; acceptance 1 asked for the busy title unclipped and for one of Apple's titles, which the busy title is not; viewport emulation sets the width, not the page zoom. Corrected here."
+    },
+    {
+      "kind": "test",
+      "ref": "apps/web/src/components/Login.test.tsx",
+      "checkedOn": "2026-11-26",
+      "summary": "Builder, batch #805: Login.test.tsx passes (22 tests). The busy-state test uses mockReturnValueOnce and a following test proves no signInSocial stub is left; two more assert the title's container-scaled size classes (rest and busy) and the light-theme outline overlay."
+    },
+    {
+      "kind": "observation",
+      "ref": "apps/web/src/components/Login.tsx",
+      "checkedOn": "2026-11-26",
+      "summary": "Builder, Chromium viewport emulation against the Vite dev server with the API mocked: at 140, 180, 214, 260, 320, 390 and 1440 px wide, at rest and busy, the Apple button's title and the logo's left edge are unclipped, the logo is 31x44 in a 44 px button at least 140 px wide, and the page does not scroll sideways from 180 px up. At 214 px the form column is 174 px and the title is 11 px at rest, 9.4 px busy; it is 16 px from a 230 px button (265 px busy). With data-theme=light set by hand the outline overlay shows; in the dark default it is display:none."
     }
   ],
-  "resolution": null,
+  "resolution": "The Apple button is a size container and its title's font size scales with the button's width (1rem at normal widths, smaller only when the button is under about 230 px, or 265 px while busy), so neither \"Continue with Apple\" nor \"Opening Apple sign-in…\" clips down to Apple's 140 px minimum; safe centring keeps the logo's left edge in view. Where [data-theme=\"light\"] is on, an overlay draws a 1 px black outline without padding the logo; the dark default is unchanged. The busy test's stub is now once-only. Nothing in the app sets data-theme yet, so the outline was checked by setting the attribute by hand.",
   "followUps": []
 }

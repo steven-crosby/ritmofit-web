@@ -130,7 +130,8 @@ describe('Login accessible labels', () => {
       access: { mode: 'invite_only' },
       socialProviders: { apple: true },
     });
-    authMocks.signInSocial.mockReturnValue(new Promise(() => {}));
+    // Once only: vi.clearAllMocks() keeps implementations, so a standing stub would hang later tests.
+    authMocks.signInSocial.mockReturnValueOnce(new Promise(() => {}));
 
     render(<Login />);
     fireEvent.click(await screen.findByRole('button', { name: 'Continue with Apple' }));
@@ -141,6 +142,59 @@ describe('Login accessible labels', () => {
     expect(authMocks.signInSocial).toHaveBeenCalledWith(
       expect.objectContaining({ provider: 'apple' }),
     );
+  });
+
+  it('leaves no Apple sign-in stub behind for later tests (RF-235)', () => {
+    expect(authMocks.signInSocial.getMockImplementation()).toBeUndefined();
+    expect(authMocks.signInSocial()).toBeUndefined();
+  });
+
+  it('scales the Apple title to the button so it never clips, at rest and busy (RF-235)', async () => {
+    vi.mocked(api.getAuthCapabilities).mockResolvedValue({
+      access: { mode: 'invite_only' },
+      socialProviders: { apple: true },
+    });
+    authMocks.signInSocial.mockReturnValueOnce(new Promise(() => {}));
+
+    render(<Login />);
+
+    const button = await screen.findByRole('button', { name: 'Continue with Apple' });
+    const classes = button.className.split(/\s+/);
+    // The button is the size container its title's `cqi` font size reads.
+    expect(classes).toContain('[container-type:inline-size]');
+    expect(classes).toContain('min-w-[140px]');
+    // If content ever overflows, the logo's left edge stays in view.
+    expect(classes).toContain('[justify-content:safe_center]');
+    const restSize = screen.getByText('Continue with Apple').className;
+    expect(restSize).toMatch(/^text-\[length:min\(1rem,calc\(\(100cqi_-_31px\)_\/_[\d.]+\)\)\]$/);
+
+    fireEvent.click(button);
+    const busySize = (await screen.findByText('Opening Apple sign-in…')).className;
+    expect(busySize).toMatch(/^text-\[length:min\(1rem,calc\(\(100cqi_-_31px\)_\/_[\d.]+\)\)\]$/);
+    // The longer busy title gets its own, larger divisor.
+    const divisor = (cls: string) => Number(/_\/_([\d.]+)\)/.exec(cls)?.[1]);
+    expect(divisor(busySize)).toBeGreaterThan(divisor(restSize));
+  });
+
+  it('outlines the white Apple button only where the light theme is on (RF-235)', async () => {
+    vi.mocked(api.getAuthCapabilities).mockResolvedValue({
+      access: { mode: 'invite_only' },
+      socialProviders: { apple: true },
+    });
+
+    render(<Login />);
+
+    const button = await screen.findByRole('button', { name: 'Continue with Apple' });
+    const outline = button.querySelector('[data-apple-outline]');
+    expect(outline?.getAttribute('aria-hidden')).toBe('true');
+    const classes = outline?.className.split(/\s+/) ?? [];
+    // Hidden in the dark default; an overlay (not a border on the button) so the logo keeps
+    // the button's full height.
+    expect(classes).toContain('hidden');
+    expect(classes).toContain('[[data-theme=light]_&]:block');
+    expect(classes).toContain('border-black');
+    expect(classes).toContain('absolute');
+    expect(button.className.split(/\s+/)).not.toContain('border');
   });
 
   it('states the private-beta boundary and explains invited signup', async () => {
