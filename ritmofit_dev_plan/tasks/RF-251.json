@@ -27,6 +27,12 @@
       "ref": "https://github.com/steven-crosby/ritmofit-web/issues/801",
       "summary": "Cloud environment created by that session: personal 'ritmofit-web' (env_014XnKGjb4btEGGDW9GvEixN), repository steven-crosby/ritmofit-web, no extra hosts, no variables, no secrets. Setup script, guarded on the ritmofit-web folder existing and made only of commands the session ran and saw succeed from the parent directory: git fetch --unshallow (only when shallow), corepack enable, pnpm install --frozen-lockfile, copy apps/api/.dev.vars from the example when missing, db:migrate:local and db:seed:local; a second run succeeded in 4 s. Acceptance line 2 is met; line 1 waits on the e2e fix on this branch.",
       "checkedOn": "2026-11-25"
+    },
+    {
+      "kind": "pr",
+      "ref": "https://github.com/steven-crosby/ritmofit-web/pull/803",
+      "summary": "Draft PR from the Neo conductor: e2e/playwright.config.ts reads E2E_EXECUTABLE_PATH (README notes it) plus this record; opened 2026-11-25, not merged.",
+      "checkedOn": "2026-11-25"
     }
   ]
 }
