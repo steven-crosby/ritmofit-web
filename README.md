@@ -105,6 +105,7 @@ every PR and uploads the per-page screenshots as the `e2e-screenshots` artifact.
 pnpm --filter @ritmofit/e2e exec playwright install chromium   # once per machine
 pnpm e2e
 E2E_CHANNEL=chrome pnpm e2e   # use the installed Google Chrome instead
+E2E_EXECUTABLE_PATH=/path/to/chromium pnpm e2e   # use a preinstalled Chromium binary instead
 ```
 
 It never reads your `apps/api/.dev.vars` or your local D1. Failure screenshots and traces land in

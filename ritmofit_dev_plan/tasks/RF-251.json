@@ -7,13 +7,26 @@
   "id": "RF-251",
   "title": "Cloud sessions run the full ritmofit-web gate, and a saved cloud environment sets them up",
   "kind": "verification",
-  "status": "backlog",
+  "status": "in_progress",
   "priority": "P1",
   "dependsOn": [],
   "acceptance": [
     "In a claude.ai/code cloud session on this repo, every command in AGENTS.md › Verification, PRs, And Commits passes from a fresh clone, including pnpm --filter @ritmofit/e2e e2e, with wall times recorded here.",
     "A personal cloud environment for this repo holds a setup script made only of commands that session ran (install, .dev.vars from the example, local D1 migrate and seed, any Playwright step), and its name is recorded here; no secret is stored in it."
   ],
-  "nextAction": "Owner chose cloud sessions for web builders on 2026-11-24 (RF-248). Start a cloud session on steven-crosby/ritmofit-web, run the gate, propose the environment; nothing is committed from that session except this record's evidence in a records PR.",
-  "evidence": []
+  "nextAction": "Branch fix/rf-251-e2e-executable-path (Neo conductor): e2e/playwright.config.ts reads E2E_EXECUTABLE_PATH into launchOptions.executablePath. Next: the owner has the RF-251 cloud session set E2E_EXECUTABLE_PATH=/opt/pw-browsers/chromium on the ritmofit-web environment and rerun pnpm --filter @ritmofit/e2e e2e on this branch; on a pass, record it here, set Done with a resolution, and ask the owner to merge. Then web batch #801's builders may start.",
+  "evidence": [
+    {
+      "kind": "observation",
+      "ref": "https://github.com/steven-crosby/ritmofit-web/issues/801",
+      "summary": "Cloud run, 2026-11-25 (MST), started by the owner from the desktop app on main; the session's report was pasted to the Neo conductor by the owner. Fresh shallow clone, 4 CPUs, 15 GB RAM, no network host blocked, setup about 26 s. Every AGENTS.md › Verification command passed with wall times: format:check 9 s, owner-gate:test 4 s, rf-trace:test 0 s, release-status:test 2 s, tasks:test 1 s, tasks:check 1 s, -r typecheck 19 s, lint 9 s, design-system verify 0 s, theme-classes --selftest 1 s, theme-classes 1 s, pnpm test 77 s, api test:integration 71 s, web build 16 s, openapi 0 s, git diff --exit-code openapi.json 1 s, contract-parity 0 s, audit:ci 1 s; total 231 s as written. Except e2e: it failed in 18 s with 'browserType.launch: Executable doesn't exist at /opt/pw-browsers/chromium_headless_shell-1248/...' (the repo's Playwright 1.64.1 wants browser build 1248; the image has 1243). With an uncommitted executablePath '/opt/pw-browsers/chromium' override, e2e passed 4/4 in 36 s (about 250 s total), then the override was deleted. Nothing committed from the cloud session; no wrangler login, deploy or remote D1.",
+      "checkedOn": "2026-11-25"
+    },
+    {
+      "kind": "observation",
+      "ref": "https://github.com/steven-crosby/ritmofit-web/issues/801",
+      "summary": "Cloud environment created by that session: personal 'ritmofit-web' (env_014XnKGjb4btEGGDW9GvEixN), repository steven-crosby/ritmofit-web, no extra hosts, no variables, no secrets. Setup script, guarded on the ritmofit-web folder existing and made only of commands the session ran and saw succeed from the parent directory: git fetch --unshallow (only when shallow), corepack enable, pnpm install --frozen-lockfile, copy apps/api/.dev.vars from the example when missing, db:migrate:local and db:seed:local; a second run succeeded in 4 s. Acceptance line 2 is met; line 1 waits on the e2e fix on this branch.",
+      "checkedOn": "2026-11-25"
+    }
+  ]
 }
