@@ -2,19 +2,19 @@
   "schemaVersion": 1,
   "parent": null,
   "blocker": null,
-  "resolution": null,
+  "resolution": "A claude.ai/code cloud session on ritmofit-web runs the full AGENTS.md gate from a fresh clone: every command passed in the first run (231 s as written; wall times in the evidence), and e2e, which failed there only because the image's Chromium build (1243) differs from Playwright 1.64.1's (1248), passes 4/4 in 42 s once e2e/playwright.config.ts reads E2E_EXECUTABLE_PATH (#803) and the environment sets it to /opt/pw-browsers/chromium. The personal cloud environment 'ritmofit-web' (env_014XnKGjb4btEGGDW9GvEixN) holds a setup script made only of commands that session ran (unshallow when shallow, corepack enable, pnpm install --frozen-lockfile, .dev.vars from the example, local D1 migrate and seed) and that one variable; no secret is stored in it.",
   "followUps": [],
   "id": "RF-251",
   "title": "Cloud sessions run the full ritmofit-web gate, and a saved cloud environment sets them up",
   "kind": "verification",
-  "status": "in_progress",
+  "status": "done",
   "priority": "P1",
   "dependsOn": [],
   "acceptance": [
     "In a claude.ai/code cloud session on this repo, every command in AGENTS.md › Verification, PRs, And Commits passes from a fresh clone, including pnpm --filter @ritmofit/e2e e2e, with wall times recorded here.",
     "A personal cloud environment for this repo holds a setup script made only of commands that session ran (install, .dev.vars from the example, local D1 migrate and seed, any Playwright step), and its name is recorded here; no secret is stored in it."
   ],
-  "nextAction": "Branch fix/rf-251-e2e-executable-path (Neo conductor): e2e/playwright.config.ts reads E2E_EXECUTABLE_PATH into launchOptions.executablePath. Next: the owner has the RF-251 cloud session set E2E_EXECUTABLE_PATH=/opt/pw-browsers/chromium on the ritmofit-web environment and rerun pnpm --filter @ritmofit/e2e e2e on this branch; on a pass, record it here, set Done with a resolution, and ask the owner to merge. Then web batch #801's builders may start.",
+  "nextAction": null,
   "evidence": [
     {
       "kind": "observation",
@@ -32,6 +32,12 @@
       "kind": "pr",
       "ref": "https://github.com/steven-crosby/ritmofit-web/pull/803",
       "summary": "Draft PR from the Neo conductor: e2e/playwright.config.ts reads E2E_EXECUTABLE_PATH (README notes it) plus this record; opened 2026-11-25, not merged.",
+      "checkedOn": "2026-11-25"
+    },
+    {
+      "kind": "test",
+      "ref": "https://github.com/steven-crosby/ritmofit-web/pull/803",
+      "summary": "Cloud rerun, 2026-11-25 (MST), in the owner's RF-251 cloud session on head 32a1a1928ff8eaba71726f153e14b220c4d639bd with the repo's own e2e/playwright.config.ts and no override: pnpm --filter @ritmofit/e2e e2e passed 4/4 (desktop-1440 and phone-390) in 42 s (Playwright 39.7 s), with E2E_EXECUTABLE_PATH=/opt/pw-browsers/chromium set inline. The session saved that variable on the 'ritmofit-web' environment (it applies from the next session start); setup was not re-run because the branch changes nothing in apps/, packages/, the lockfile or migrations. Not yet seen: a brand-new session where the setup script and the saved variable apply at start; the first batch #801 builder is that check. Report pasted to the Neo conductor by the owner; nothing committed from the cloud session.",
       "checkedOn": "2026-11-25"
     }
   ]
