@@ -35,7 +35,7 @@
     {
       "kind": "pr",
       "ref": "https://github.com/steven-crosby/ritmofit-web/pull/806",
-      "summary": "PR for RF-219 in batch #805, opened as a draft by the builder on 2026-11-26 after the conductor reported stages 3–5 passed on a1c1d29fc5fee92202aaafb08e1cd00f0adbb107; not merged.",
+      "summary": "Draft PR #806 for RF-219 in pre-approved batch #805. It was opened on 2026-11-26 before the pipeline’s verify and review had passed, as the conductor’s comment on the PR records (https://github.com/steven-crosby/ritmofit-web/pull/806#issuecomment-7204455680); stages 3–5 had not passed on a1c1d29, whose acceptance audit sent the ticket back for fix round 1. After that round the verifier, the correctness reviewer and the acceptance audit passed head 991db63. This entry was corrected by the batch conductor, because the builder’s cloud session did not pick up its messages; the conductor changed no product code.",
       "checkedOn": "2026-11-26"
     }
   ],
