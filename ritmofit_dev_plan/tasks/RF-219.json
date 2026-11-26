@@ -3,7 +3,7 @@
   "id": "RF-219",
   "title": "Catalog search offers Try again only when a retry can help",
   "kind": "task",
-  "status": "backlog",
+  "status": "done",
   "priority": "untriaged",
   "parent": null,
   "dependsOn": [],
@@ -11,7 +11,7 @@
     "A 429 PROVIDER_QUOTA_EXCEEDED in catalog search (TrackSearch search mode and the Music tab search in Dashboard.tsx) shows its sentence with no Try again; network, timeout and 5xx failures keep Try again.",
     "The Music tab search shows the API sentence for quota and the Spotify allowlist instead of the generic \"Couldn’t search … right now. Try again.\""
   ],
-  "nextAction": "Split from RF-74 (2026-11-13), which fixed the playlist surfaces only. On main the TrackSearch search-mode error row always renders Try again, and Dashboard.tsx Music search swallows the API error and shows the generic retry sentence. Propose the change, then implement with tests.",
+  "nextAction": null,
   "blocker": null,
   "evidence": [
     {
@@ -19,8 +19,20 @@
       "ref": "apps/web/src/components/Dashboard.tsx",
       "summary": "Music tab search .catch() drops the error and always sets the generic retry sentence; the Try again button shows whenever results are null. Read on fix/rf-74-playlist-retry, 2026-11-13.",
       "checkedOn": "2026-11-13"
+    },
+    {
+      "kind": "test",
+      "ref": "apps/web/src/components/TrackSearch.test.tsx",
+      "summary": "Added on the RF-219 branch and passing in the builder session, 2026-11-26: \"offers no Try again when the catalog search hits a spent quota (RF-219)\" and \"keeps Try again on the catalog search for …\" (network failure, provider timeout 504, provider 502, server 500). Mocked api.searchProvider; no real provider.",
+      "checkedOn": "2026-11-26"
+    },
+    {
+      "kind": "test",
+      "ref": "apps/web/src/components/Dashboard.test.tsx",
+      "summary": "Added on the RF-219 branch and passing in the builder session, 2026-11-26: Music catalog search \"shows the quota sentence with no Try again\", \"shows the Spotify allowlist sentence and keeps Try again\", and \"keeps the generic sentence and Try again\" for a provider timeout, a provider 5xx and a server error; the existing network-outage retry test still passes. Mocked api.searchProvider; no real provider.",
+      "checkedOn": "2026-11-26"
     }
   ],
-  "resolution": null,
+  "resolution": "Built in batch #805 on branch fix/rf-219-search-retry-only-when-useful. In TrackSearch search mode a 429 PROVIDER_QUOTA_EXCEEDED keeps its API sentence (now in the caution colour) and no longer renders Try again; every other search failure keeps the generic sentence and Try again. The Music tab search in Dashboard.tsx now reads the error: quota and the Spotify allowlist (SPOTIFY_DEVELOPMENT_MODE) show the API sentence, quota with no Try again, the allowlist with Try again (its sentence ends \"then retry\", the same call RF-74 made for playlists); network, timeout and 5xx failures keep the generic sentence and Try again. Not done, and not in the acceptance: TrackSearch search mode still shows the generic sentence for the allowlist. No API, contract, schema or provider-code change; CI cannot show a real provider 429.",
   "followUps": []
 }

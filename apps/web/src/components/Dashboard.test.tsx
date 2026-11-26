@@ -542,6 +542,79 @@ describe('Dashboard class library states', () => {
     expect((search as HTMLInputElement).value).toBe('climb');
   });
 
+  it('shows the quota sentence with no Try again in Music catalog search (RF-219)', async () => {
+    const sentence = "Spotify's usage limit for Ritmo is used up. Try again later.";
+    vi.mocked(api.listClasses).mockResolvedValue(page([]));
+    vi.mocked(api.listConnections).mockResolvedValue([]);
+    vi.mocked(api.searchProvider)
+      .mockRejectedValueOnce(
+        Object.assign(new Error(sentence), { code: 'PROVIDER_QUOTA_EXCEEDED', status: 429 }),
+      )
+      .mockRejectedValueOnce(new Error('Failed to fetch'));
+    renderDashboard();
+
+    fireEvent.click(await screen.findByRole('button', { name: 'Music' }));
+    const search = screen.getByRole('searchbox', { name: 'Search SoundCloud catalog' });
+    fireEvent.change(search, { target: { value: 'climb' } });
+
+    expect((await screen.findByRole('alert')).textContent).toBe(sentence);
+    expect(screen.queryByRole('button', { name: 'Try again' })).toBeNull();
+
+    // A later search that fails another way gets Try again back.
+    fireEvent.change(search, { target: { value: 'climbs' } });
+    expect(await screen.findByText(/Couldn’t search SoundCloud right now/)).toBeTruthy();
+    expect(screen.getByRole('button', { name: 'Try again' })).toBeTruthy();
+  });
+
+  it('shows the Spotify allowlist sentence and keeps Try again in Music catalog search (RF-219)', async () => {
+    const sentence =
+      'Spotify has not allowlisted this account. Add it under User Management in the Spotify developer dashboard, then retry.';
+    vi.mocked(api.listClasses).mockResolvedValue(page([]));
+    vi.mocked(api.listConnections).mockResolvedValue([]);
+    vi.mocked(api.searchProvider)
+      .mockRejectedValueOnce(
+        Object.assign(new Error(sentence), { code: 'SPOTIFY_DEVELOPMENT_MODE', status: 403 }),
+      )
+      .mockResolvedValueOnce([]);
+    renderDashboard();
+
+    fireEvent.click(await screen.findByRole('button', { name: 'Music' }));
+    fireEvent.change(screen.getByRole('searchbox', { name: 'Search SoundCloud catalog' }), {
+      target: { value: 'climb' },
+    });
+
+    expect((await screen.findByRole('alert')).textContent).toBe(sentence);
+    fireEvent.click(screen.getByRole('button', { name: 'Try again' }));
+    await waitFor(() => expect(api.searchProvider).toHaveBeenCalledTimes(2));
+    expect(await screen.findByText('No matches yet.')).toBeTruthy();
+  });
+
+  it.each<[string, string, number]>([
+    ['a provider timeout', 'PROVIDER_TIMEOUT', 504],
+    ['a provider 5xx', 'PROVIDER_ERROR', 502],
+    ['a server error', 'INTERNAL', 500],
+  ])(
+    'keeps the generic sentence and Try again in Music catalog search for %s (RF-219)',
+    async (_label: string, code: string, status: number) => {
+      vi.mocked(api.listClasses).mockResolvedValue(page([]));
+      vi.mocked(api.listConnections).mockResolvedValue([]);
+      vi.mocked(api.searchProvider).mockRejectedValueOnce(
+        Object.assign(new Error('Upstream detail.'), { code, status }),
+      );
+      renderDashboard();
+
+      fireEvent.click(await screen.findByRole('button', { name: 'Music' }));
+      fireEvent.change(screen.getByRole('searchbox', { name: 'Search SoundCloud catalog' }), {
+        target: { value: 'climb' },
+      });
+
+      expect((await screen.findByRole('alert')).textContent).toBe(
+        'Couldn’t search SoundCloud right now. Try again.',
+      );
+      expect(screen.getByRole('button', { name: 'Try again' })).toBeTruthy();
+    },
+  );
+
   it('searches, selects in instructor order, and starts a class from Music', async () => {
     const results = [
       {

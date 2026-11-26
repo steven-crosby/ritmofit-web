@@ -125,6 +125,44 @@ describe('TrackSearch stale-result guard', () => {
     expect((await screen.findByRole('alert')).textContent).toBe(QUOTA_MESSAGE);
   });
 
+  it('offers no Try again when the catalog search hits a spent quota (RF-219)', async () => {
+    vi.mocked(api.searchProvider)
+      .mockRejectedValueOnce(new api.ApiError(QUOTA_MESSAGE, 'PROVIDER_QUOTA_EXCEEDED', 429))
+      .mockRejectedValueOnce(new Error('Failed to fetch'));
+    render(<TrackSearch classId="c1" onAdded={() => {}} />);
+    fireEvent.change(screen.getByRole('searchbox'), { target: { value: 'house' } });
+
+    expect((await screen.findByRole('alert')).textContent).toBe(QUOTA_MESSAGE);
+    expect(screen.queryByRole('button', { name: 'Try again' })).toBeNull();
+
+    // A later search that fails another way gets Try again back.
+    fireEvent.change(screen.getByRole('searchbox'), { target: { value: 'houses' } });
+    expect(await screen.findByText(/Couldn’t search SoundCloud right now/)).toBeTruthy();
+    expect(screen.getByRole('button', { name: 'Try again' })).toBeTruthy();
+  });
+
+  it.each<[string, () => Error]>([
+    ['a network failure', () => new Error('Failed to fetch')],
+    ['a provider timeout', () => new api.ApiError('Timed out.', 'PROVIDER_TIMEOUT', 504)],
+    ['a provider 5xx', () => new api.ApiError('Bad gateway.', 'PROVIDER_ERROR', 502)],
+    ['a server error', () => new api.ApiError('Server error.', 'INTERNAL', 500)],
+  ])(
+    'keeps Try again on the catalog search for %s (RF-219)',
+    async (_label: string, makeError: () => Error) => {
+      vi.mocked(api.searchProvider)
+        .mockRejectedValueOnce(makeError())
+        .mockResolvedValueOnce([staleResult]);
+      render(<TrackSearch classId="c1" onAdded={() => {}} />);
+      fireEvent.change(screen.getByRole('searchbox'), { target: { value: 'house' } });
+
+      expect((await screen.findByRole('alert')).textContent).toBe(
+        'Couldn’t search SoundCloud right now. Try again.',
+      );
+      fireEvent.click(screen.getByRole('button', { name: 'Try again' }));
+      expect(await screen.findByText('Stale Track')).toBeTruthy();
+    },
+  );
+
   it('does not let a search cleared mid-flight flash stale results under a new query', async () => {
     const first = deferred<TrackSearchResult[]>();
     const second = deferred<TrackSearchResult[]>(); // intentionally never resolves
