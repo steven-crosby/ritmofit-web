@@ -18,6 +18,9 @@ export default defineConfig({
     baseURL,
     // `E2E_CHANNEL=chrome` uses the installed Google Chrome instead of Playwright's Chromium.
     channel: process.env.E2E_CHANNEL || undefined,
+    // `E2E_EXECUTABLE_PATH=<path>` launches that Chromium binary instead, for a machine whose
+    // preinstalled browser build differs from this Playwright's (the cloud image, RF-251).
+    launchOptions: { executablePath: process.env.E2E_EXECUTABLE_PATH || undefined },
     screenshot: 'only-on-failure',
     trace: 'retain-on-failure',
   },
