@@ -2,19 +2,19 @@
   "schemaVersion": 1,
   "parent": null,
   "blocker": null,
-  "resolution": null,
+  "resolution": "Both acceptance lines are met. Every AGENTS.md gate command passes from a fresh clone in a claude.ai/code cloud session (213 s without e2e, 2026-11-25), and on 2026-11-26 a brand-new cloud session on the personal 'ritmofit-web' environment passed `pnpm e2e` 4/4 in 47 s with no inline variable and no config change, E2E_EXECUTABLE_PATH coming from the environment. The environment holds the setup script and that one variable, no secrets. Still true: the variable runs e2e on the image's Chromium rather than the build Playwright 1.64.1 expects; if that ever breaks a run, try `pnpm --filter @ritmofit/e2e exec playwright install chromium` in the setup script (untested).",
   "followUps": [],
   "id": "RF-251",
   "title": "Cloud sessions run the full ritmofit-web gate, and a saved cloud environment sets them up",
   "kind": "verification",
-  "status": "review",
+  "status": "done",
   "priority": "P1",
   "dependsOn": [],
   "acceptance": [
     "In a claude.ai/code cloud session on this repo, every command in AGENTS.md › Verification, PRs, And Commits passes from a fresh clone, including pnpm --filter @ritmofit/e2e e2e, with wall times recorded here.",
     "A personal cloud environment for this repo holds a setup script made only of commands that session ran (install, .dev.vars from the example, local D1 migrate and seed, any Playwright step), and its name is recorded here; no secret is stored in it."
   ],
-  "nextAction": "For review until one check is seen: a brand-new cloud session on the 'ritmofit-web' environment, where the setup script and the saved E2E_EXECUTABLE_PATH apply at start, passes pnpm --filter @ritmofit/e2e e2e with no inline variable. #803 merges first; then the first web batch #801 builder's gate is that check; record it here and set Done (in #801's close-out PR or the next records PR). So far: every other AGENTS.md gate command passed from a fresh clone in the cloud (213 s), and e2e passed 4/4 in 42 s on #803's 32a1a19 with the variable set inline; the environment holds the setup script and the variable, no secrets. Note: the variable runs e2e on the image's Chromium build 1243 while Playwright 1.64.1 expects 1248; if that ever breaks a run, try `pnpm --filter @ritmofit/e2e exec playwright install chromium` in the setup script instead (untested).",
+  "nextAction": null,
   "evidence": [
     {
       "kind": "observation",
@@ -39,6 +39,12 @@
       "ref": "https://github.com/steven-crosby/ritmofit-web/pull/803",
       "summary": "Cloud rerun, 2026-11-25 (MST), in the owner's RF-251 cloud session on head 32a1a1928ff8eaba71726f153e14b220c4d639bd with the repo's own e2e/playwright.config.ts and no override: pnpm --filter @ritmofit/e2e e2e passed 4/4 (desktop-1440 and phone-390) in 42 s (Playwright 39.7 s), with E2E_EXECUTABLE_PATH=/opt/pw-browsers/chromium set inline. The session saved that variable on the 'ritmofit-web' environment (it applies from the next session start); setup was not re-run because the branch changes nothing in apps/, packages/, the lockfile or migrations. Not yet seen: a brand-new session where the setup script and the saved variable apply at start; the first batch #801 builder is that check. Report pasted to the Neo conductor by the owner; nothing committed from the cloud session.",
       "checkedOn": null
+    },
+    {
+      "kind": "test",
+      "ref": "https://github.com/steven-crosby/ritmofit-web/issues/805",
+      "summary": "Brand-new cloud session, 2026-11-26 (started 19:28 UTC), the RF-219 builder in batch #805, on the 'ritmofit-web' environment, at head 9b84c8d91493bd06f78dbf90189e36746aa76893 (origin/main). As the session's first command, `pnpm e2e` exactly as written, with no inline variable and no config change, passed 4/4 (desktop-1440 and phone-390; 0 failed) in 47 s wall time (SPA build and bundle budget included; Playwright 33.0 s). `echo $E2E_EXECUTABLE_PATH` printed /opt/pw-browsers/chromium, so the variable came from the saved environment, and dependencies and the local D1 were already in place at session start. Run by the builder itself, in its own session.",
+      "checkedOn": "2026-11-26"
     }
   ]
 }
