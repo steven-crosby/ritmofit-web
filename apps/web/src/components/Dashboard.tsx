@@ -2575,6 +2575,7 @@ function MusicWorkspace({
     if (selectedTracks.length === 0 || creating) return;
     setCreating(true);
     setSearchError(null);
+    setSearchErrorCode(undefined);
     try {
       await onCreateClass(
         selectedTracks,
@@ -2582,7 +2583,9 @@ function MusicWorkspace({
         template,
       );
     } catch (error) {
+      // Not a search failure: drop any quota treatment a search left behind (RF-219).
       setSearchError(errMessage(error));
+      setSearchErrorCode(undefined);
       setCreating(false);
     }
   };

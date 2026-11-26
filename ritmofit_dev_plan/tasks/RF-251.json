@@ -2,7 +2,7 @@
   "schemaVersion": 1,
   "parent": null,
   "blocker": null,
-  "resolution": "Both acceptance lines are met. Every AGENTS.md gate command passes from a fresh clone in a claude.ai/code cloud session (213 s without e2e, 2026-11-25), and on 2026-11-26 a brand-new cloud session on the personal 'ritmofit-web' environment passed `pnpm e2e` 4/4 in 47 s with no inline variable and no config change, E2E_EXECUTABLE_PATH coming from the environment. The environment holds the setup script and that one variable, no secrets. Still true: the variable runs e2e on the image's Chromium rather than the build Playwright 1.64.1 expects; if that ever breaks a run, try `pnpm --filter @ritmofit/e2e exec playwright install chromium` in the setup script (untested).",
+  "resolution": "Both acceptance lines are met. Line 1 is met across several sessions on different heads, not by one run of the whole gate: the 2026-11-25 session ran everything but e2e on main, a rerun passed e2e on 32a1a19 with the variable inline, and the last piece (this session's e2e run on 9b84c8d) is self-reported by the builder that ran it. Every AGENTS.md gate command passes from a fresh clone in a claude.ai/code cloud session (213 s without e2e, 2026-11-25), and on 2026-11-26 a brand-new cloud session on the personal 'ritmofit-web' environment passed `pnpm e2e` 4/4 in 47 s with no inline variable and no config change, E2E_EXECUTABLE_PATH coming from the environment. The environment holds the setup script and that one variable, no secrets. Still true: the variable runs e2e on the image's Chromium rather than the build Playwright 1.64.1 expects; if that ever breaks a run, try `pnpm --filter @ritmofit/e2e exec playwright install chromium` in the setup script (untested).",
   "followUps": [],
   "id": "RF-251",
   "title": "Cloud sessions run the full ritmofit-web gate, and a saved cloud environment sets them up",
@@ -31,8 +31,8 @@
     {
       "kind": "pr",
       "ref": "https://github.com/steven-crosby/ritmofit-web/pull/803",
-      "summary": "Draft PR from the Neo conductor: e2e/playwright.config.ts reads E2E_EXECUTABLE_PATH (README notes it) plus this record; opened 2026-11-25, not merged.",
-      "checkedOn": "2026-11-25"
+      "summary": "Draft PR from the Neo conductor: e2e/playwright.config.ts reads E2E_EXECUTABLE_PATH (README notes it) plus this record; opened 2026-11-25, squash-merged to main as 9b84c8d91493bd06f78dbf90189e36746aa76893.",
+      "checkedOn": "2026-11-26"
     },
     {
       "kind": "test",

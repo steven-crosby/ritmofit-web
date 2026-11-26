@@ -146,6 +146,10 @@ describe('TrackSearch stale-result guard', () => {
     ['a provider timeout', () => new api.ApiError('Timed out.', 'PROVIDER_TIMEOUT', 504)],
     ['a provider 5xx', () => new api.ApiError('Bad gateway.', 'PROVIDER_ERROR', 502)],
     ['a server error', () => new api.ApiError('Server error.', 'INTERNAL', 500)],
+    [
+      'a network failure as the client throws it',
+      () => new api.ApiError(api.NETWORK_ERROR_MESSAGE, 'NETWORK_ERROR', 0),
+    ],
   ])(
     'keeps Try again on the catalog search for %s (RF-219)',
     async (_label: string, makeError: () => Error) => {
