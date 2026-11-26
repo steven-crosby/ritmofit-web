@@ -31,6 +31,12 @@
       "ref": "apps/web/src/components/Dashboard.test.tsx",
       "summary": "Added on the RF-219 branch and passing in the builder session, 2026-11-26: Music catalog search \"shows the quota sentence with no Try again\", \"shows the Spotify allowlist sentence and keeps Try again\", and \"keeps the generic sentence and Try again\" for a provider timeout, a provider 5xx and a server error; the existing network-outage retry test still passes. Mocked api.searchProvider; no real provider.",
       "checkedOn": "2026-11-26"
+    },
+    {
+      "kind": "pr",
+      "ref": "https://github.com/steven-crosby/ritmofit-web/pull/806",
+      "summary": "PR for RF-219 in batch #805, opened as a draft by the builder on 2026-11-26 after the conductor reported stages 3–5 passed on a1c1d29fc5fee92202aaafb08e1cd00f0adbb107; not merged.",
+      "checkedOn": "2026-11-26"
     }
   ],
   "resolution": "Built in batch #805 on branch fix/rf-219-search-retry-only-when-useful. In TrackSearch search mode a 429 PROVIDER_QUOTA_EXCEEDED keeps its API sentence (now in the caution colour) and no longer renders Try again; every other search failure keeps the generic sentence and Try again. The Music tab search in Dashboard.tsx now reads the error: quota and the Spotify allowlist (SPOTIFY_DEVELOPMENT_MODE) show the API sentence, quota with no Try again, the allowlist with Try again (its sentence ends \"then retry\", the same call RF-74 made for playlists); network, timeout and 5xx failures keep the generic sentence and Try again. Not done, and not in the acceptance: TrackSearch search mode still shows the generic sentence for the allowlist. No API, contract, schema or provider-code change; CI cannot show a real provider 429.",
