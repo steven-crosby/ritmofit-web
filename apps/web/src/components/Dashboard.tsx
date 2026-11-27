@@ -263,6 +263,9 @@ interface RouteProblem {
   message: string;
 }
 
+/** How long the "Class created" notice stays up (RF-111). */
+const CREATED_NOTICE_MS = 6_000;
+
 interface CollectionImportResult {
   classId: string;
   classTitle: string;
@@ -381,6 +384,14 @@ export function Dashboard({
   const [error, setError] = useState<string | null>(null);
   const [importResult, setImportResult] = useState<CollectionImportResult | null>(null);
   const [retryingImport, setRetryingImport] = useState(false);
+  // RF-111: a class finished creating after its dialog was closed. Say so briefly
+  // instead of pulling the instructor into it; a fresh object restarts the timer.
+  const [createdNotice, setCreatedNotice] = useState<{ title: string } | null>(null);
+  useEffect(() => {
+    if (!createdNotice) return;
+    const timer = window.setTimeout(() => setCreatedNotice(null), CREATED_NOTICE_MS);
+    return () => window.clearTimeout(timer);
+  }, [createdNotice]);
 
   const [createDialogMode, setCreateDialogMode] = useState<CreateClassMode | null>(null);
   const [createDiscipline, setCreateDiscipline] = useState<ScaffoldDiscipline | null>(null);
@@ -658,7 +669,7 @@ export function Dashboard({
     const validProvider = PROVIDER_ORDER.find((provider) => provider === connected);
     const origin = consumeConnectionReturn(userId, validProvider);
     if (origin) {
-      setDestination(origin.destination);
+      setDestination(origin.destination === 'builder' ? 'classes' : origin.destination);
       if (origin.classId) {
         void getClass(origin.classId)
           .then((cls) => {
@@ -973,6 +984,7 @@ export function Dashboard({
       playlistName: string,
       template: ClassTemplate,
       tracks: TrackSearchResult[],
+      dialogOpen: () => boolean,
     ) => {
       if (tracks.length === 0) {
         throw new Error(
@@ -1004,6 +1016,11 @@ export function Dashboard({
         session,
         songBlocks: true,
       });
+      // RF-111: closed during Creating, so the instructor has moved on.
+      if (!dialogOpen()) {
+        setCreatedNotice({ title: cls.title });
+        return;
+      }
       setPlaylistBrowse(null);
       // The builder only mounts on Classes. Closing the dialog is not navigation.
       setDestination('classes');
@@ -1024,6 +1041,7 @@ export function Dashboard({
       title: string,
       template: ClassTemplate,
       songBlocks = false,
+      dialogOpen?: () => boolean,
     ) => {
       const cls = await createClass({ title, template });
       await applyTagFilter(null);
@@ -1038,6 +1056,11 @@ export function Dashboard({
         session,
         songBlocks,
       });
+      // RF-111: closed during Creating, so the instructor has moved on.
+      if (dialogOpen && !dialogOpen()) {
+        setCreatedNotice({ title: cls.title });
+        return;
+      }
       setDestination('classes');
       await openClass({ ...cls, accessLevel: 'owner' });
     },
@@ -1430,6 +1453,7 @@ export function Dashboard({
                     onFocusedAddMusic={() => setNewEmptyClassId(null)}
                     onBackToClasses={closeBuilder}
                     onRetryDetails={() => void loadDetail(selected.id)}
+                    userId={userId}
                   />
                 ) : detail.classId === selected.id && detail.status === 'error' ? (
                   <section className="flex min-w-0 flex-col gap-4">
@@ -1480,6 +1504,7 @@ export function Dashboard({
                   await deleteClass(cls.id);
                   handleClassDeleted(cls.id);
                 }}
+                onError={setError}
                 onSelectTag={applyTagFilter}
                 onClearTag={() => void applyTagFilter(null)}
                 onRetry={() => {
@@ -1530,6 +1555,17 @@ export function Dashboard({
             />
           )}
         </ErrorBoundary>
+      </div>
+      {/* RF-111: the live region stays mounted so the notice is announced. */}
+      <div
+        role="status"
+        className="pointer-events-none fixed inset-x-0 bottom-0 z-40 flex justify-center px-4 pb-[max(0.75rem,env(safe-area-inset-bottom))]"
+      >
+        {createdNotice && (
+          <p className="max-w-md break-words rounded-card border border-border-subtle bg-bg-raised px-4 py-3 font-ui text-sm text-text-primary shadow-lifted">
+            Class created: {createdNotice.title}
+          </p>
+        )}
       </div>
     </main>
   );
@@ -2291,6 +2327,7 @@ function MusicWorkspace({
     title: string,
     template: ClassTemplate,
     songBlocks?: boolean,
+    dialogOpen?: () => boolean,
   ) => Promise<void>;
 }) {
   const {
@@ -2598,6 +2635,15 @@ function MusicWorkspace({
     songPickScope(selectedProvider, connectionState === 'connected', connection),
   );
   const [songPickCreateOpen, setSongPickCreateOpen] = useState(false);
+  // RF-111: bumped when the sheet closes or Music unmounts, so a create still
+  // running knows the instructor walked away and does not open the class.
+  const songPickCreateSession = useRef(0);
+  useEffect(() => {
+    const session = songPickCreateSession;
+    return () => {
+      session.current += 1;
+    };
+  }, []);
   const [SongRowPreview, setSongRowPreview] = useState<SongRowPreviewComponent | null>(null);
   // RF-172: the one Songs row whose inline player is open. Changing provider or
   // leaving Songs closes it, which unmounts the player and releases the SDK.
@@ -3168,9 +3214,13 @@ function MusicWorkspace({
           <SongPickCreateDialog
             count={songPicks.tracks.length}
             defaultTitle={`${label} likes`}
-            onClose={() => setSongPickCreateOpen(false)}
-            onCreate={(title, chosenTemplate) =>
-              onCreateClass(
+            onClose={() => {
+              songPickCreateSession.current += 1;
+              setSongPickCreateOpen(false);
+            }}
+            onCreate={(title, chosenTemplate) => {
+              const session = songPickCreateSession.current;
+              return onCreateClass(
                 // The class follows the list order the instructor sees.
                 orderPicks(
                   songPicks.tracks,
@@ -3179,8 +3229,9 @@ function MusicWorkspace({
                 title,
                 chosenTemplate,
                 true,
-              )
-            }
+                () => songPickCreateSession.current === session,
+              );
+            }}
           />
         </Suspense>
       )}
@@ -4101,6 +4152,8 @@ function PlaylistBrowserDialog({
     playlistName: string,
     template: ClassTemplate,
     tracks: TrackSearchResult[],
+    /** False once this dialog has closed (RF-111). */
+    dialogOpen: () => boolean,
   ) => Promise<void>;
   /** Reconnect path for a playlist that needs the account reconnected (RF-74). */
   onOpenConnections?: () => void;
@@ -4115,21 +4168,36 @@ function PlaylistBrowserDialog({
   const [openErrorCode, setOpenErrorCode] = useState<string | undefined>();
   const [picking, setPicking] = useState(false);
   const label = providerLabel(provider);
+  // RF-111: bumped when the dialog unmounts (Close, Escape, backdrop), so a class
+  // still being created knows the instructor walked away from it.
+  const dialogSession = useRef(0);
+  useEffect(() => {
+    const session = dialogSession;
+    return () => {
+      session.current += 1;
+    };
+  }, []);
 
+  // RF-111: only the newest open may write. Back and a later open bump this, so a
+  // slow reply for a playlist no longer shown cannot fill another playlist's songs.
+  const playlistRequest = useRef(0);
   const openPlaylist = useCallback(
     async (playlist: ProviderPlaylistSummary) => {
+      const request = ++playlistRequest.current;
       setSelectedPlaylist(playlist);
       setTracks(null);
       setLoadingTracks(true);
       setRowError(null);
       setOpenErrorCode(undefined);
       try {
-        setTracks(await listPlaylistTracks(provider, playlist.playlistId));
+        const rows = await listPlaylistTracks(provider, playlist.playlistId);
+        if (request === playlistRequest.current) setTracks(rows);
       } catch (e) {
+        if (request !== playlistRequest.current) return;
         setRowError(errMessage(e));
         setOpenErrorCode(e instanceof ApiError ? e.code : undefined);
       } finally {
-        setLoadingTracks(false);
+        if (request === playlistRequest.current) setLoadingTracks(false);
       }
     },
     [provider],
@@ -4149,7 +4217,15 @@ function PlaylistBrowserDialog({
     setPicking(false);
     setRowError(null);
     try {
-      await onCreateClass(provider, playlist.playlistId, playlist.name, template, chosen);
+      const session = dialogSession.current;
+      await onCreateClass(
+        provider,
+        playlist.playlistId,
+        playlist.name,
+        template,
+        chosen,
+        () => dialogSession.current === session,
+      );
     } catch (e) {
       setRowError(errMessage(e));
       setCreatingId(null);
@@ -4302,8 +4378,10 @@ function PlaylistBrowserDialog({
             <button
               type="button"
               onClick={() => {
+                playlistRequest.current += 1;
                 setSelectedPlaylist(null);
                 setTracks(null);
+                setLoadingTracks(false);
                 setRowError(null);
                 setOpenErrorCode(undefined);
                 setPicking(false);
@@ -4436,6 +4514,7 @@ function ClassWorkspace({
   onFocusedAddMusic,
   onBackToClasses,
   onRetryDetails,
+  userId,
 }: {
   cls: ClassWithAccess;
   tracks: ClassTrack[];
@@ -4468,6 +4547,8 @@ function ClassWorkspace({
   onBackToClasses: () => void;
   /** Reload the whole class after its details failed to load. */
   onRetryDetails: () => void;
+  /** The signed-in instructor, for the preview's provider return record (RF-111). */
+  userId: string;
 }) {
   // The selected track (by class_track id) drives the inspector.
   const [selectedTrackId, setSelectedTrackId] = useState<string | null>(null);
@@ -4781,7 +4862,7 @@ function ClassWorkspace({
 
         {selectedEntry && !planLead && (
           <Suspense fallback={null}>
-            <TrackPreview entry={selectedEntry} />
+            <TrackPreview entry={selectedEntry} returnTo={{ userId, classId: cls.id }} />
           </Suspense>
         )}
 

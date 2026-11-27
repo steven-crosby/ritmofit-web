@@ -4,6 +4,7 @@ import type { ClassListItem } from '@ritmofit/shared';
 import { getClassShelfPayload, listClassPlanBlocks, listClassTracks } from '../lib/api.js';
 import { deleteClassConfirmMessage } from '../lib/class-delete.js';
 import { errMessage } from '../lib/errors.js';
+import { useAsyncAction } from '../lib/use-async-action.js';
 import { Dialog } from './Dialog.js';
 import type { ClassDetailState } from '../lib/class-ordering.js';
 import { creationNextStep, type CreationPlanContext } from '../lib/creation-next-step.js';
@@ -40,6 +41,7 @@ export function ClassesHome({
   onPreview,
   onDuplicate,
   onDelete,
+  onError,
   onSelectTag,
   onClearTag,
   onRetry,
@@ -59,6 +61,8 @@ export function ClassesHome({
   onPreview: (cls: ClassListItem) => void;
   onDuplicate: (cls: ClassListItem) => Promise<void>;
   onDelete: (cls: ClassListItem) => Promise<void>;
+  /** Report a failed row action, or clear the last one with null (RF-111). */
+  onError: (msg: string | null) => void;
   onSelectTag: (tag: string | null) => void;
   onClearTag: () => void;
   onRetry: () => void;
@@ -122,6 +126,7 @@ export function ClassesHome({
       onPreview={onPreview}
       onDuplicate={onDuplicate}
       onDelete={onDelete}
+      onError={onError}
       onSelectTag={onSelectTag}
       onClearTag={onClearTag}
       onLoadMore={onLoadMore}
@@ -142,6 +147,7 @@ function LibraryShell({
   onPreview,
   onDuplicate,
   onDelete,
+  onError,
   onSelectTag,
   onClearTag,
   onLoadMore,
@@ -158,6 +164,7 @@ function LibraryShell({
   onPreview: (cls: ClassListItem) => void;
   onDuplicate: (cls: ClassListItem) => Promise<void>;
   onDelete: (cls: ClassListItem) => Promise<void>;
+  onError: (msg: string | null) => void;
   onSelectTag: (tag: string | null) => void;
   onClearTag: () => void;
   onLoadMore: () => void;
@@ -178,6 +185,9 @@ function LibraryShell({
   const [details, setDetails] = useState<Record<string, ClassDetailState>>({});
   const [plans, setPlans] = useState<Record<string, CreationPlanContext | null>>({});
   const [retryRevision, setRetryRevision] = useState(0);
+  // RF-111: one copy at a time for the whole list. The guard makes a repeat
+  // Duplicate a no-op, and a failure reaches the page's error line.
+  const duplicate = useAsyncAction(onError);
 
   const candidateKey = classes.map((cls) => cls.id).join('|');
 
@@ -401,7 +411,8 @@ function LibraryShell({
                   plan={plans[cls.id]}
                   onOpen={onOpen}
                   onPreview={onPreview}
-                  onDuplicate={onDuplicate}
+                  duplicating={duplicate.busy}
+                  onDuplicate={(target) => duplicate.run(() => onDuplicate(target))}
                   onAskDelete={(target, menuButton) => {
                     deleteMenuButtonRef.current = menuButton;
                     restoreDeleteFocusRef.current = false;
@@ -674,6 +685,7 @@ function ClassRow({
   plan,
   onOpen,
   onPreview,
+  duplicating,
   onDuplicate,
   onAskDelete,
   onRetryDetails,
@@ -683,6 +695,7 @@ function ClassRow({
   plan: CreationPlanContext | null | undefined;
   onOpen: (cls: ClassListItem) => void;
   onPreview: (cls: ClassListItem) => void;
+  duplicating: boolean;
   onDuplicate: (cls: ClassListItem) => Promise<void>;
   onAskDelete: (cls: ClassListItem, menuButton: HTMLButtonElement) => void;
   onRetryDetails: () => void;
@@ -731,6 +744,7 @@ function ClassRow({
           canPreview={payload != null}
           failed={detail?.status === 'error'}
           onPreview={onPreview}
+          duplicating={duplicating}
           onDuplicate={onDuplicate}
           onAskDelete={(menuButton) => onAskDelete(cls, menuButton)}
           onRetryDetails={onRetryDetails}
@@ -745,6 +759,7 @@ function RowMenu({
   canPreview,
   failed,
   onPreview,
+  duplicating,
   onDuplicate,
   onAskDelete,
   onRetryDetails,
@@ -753,6 +768,8 @@ function RowMenu({
   canPreview: boolean;
   failed: boolean;
   onPreview: (cls: ClassListItem) => void;
+  /** A copy is in flight (RF-111). */
+  duplicating: boolean;
   onDuplicate: (cls: ClassListItem) => Promise<void>;
   onAskDelete: (menuButton: HTMLButtonElement) => void;
   onRetryDetails: () => void;
@@ -811,10 +828,11 @@ function RowMenu({
                 setOpen(false);
                 void onDuplicate(cls);
               }}
+              disabled={duplicating}
               aria-label={`Duplicate — ${cls.title}`}
-              className="flex min-h-11 w-full items-center rounded-control px-3 text-left font-ui text-sm text-text-secondary hover:bg-bg-sunken hover:text-text-primary"
+              className="flex min-h-11 w-full items-center rounded-control px-3 text-left font-ui text-sm text-text-secondary hover:bg-bg-sunken hover:text-text-primary disabled:opacity-50"
             >
-              Duplicate
+              {duplicating ? 'Duplicating…' : 'Duplicate'}
             </button>
           )}
           {cls.accessLevel === 'owner' && (
