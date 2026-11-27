@@ -57,6 +57,12 @@
       "ref": "docs/audits/claude-code-audit-2026-10-28-4c344e2/repro/d1-tooling-deploy-selfcheck-mutation.sh",
       "summary": "Fix round 1, 2026-11-27, same disposable worktree: baseline, M1, M2 and M3 still print 'self-check passed', exit 0, worktree clean, no temp dir. With TMPDIR set to a missing directory it exits 1 at mktemp, leaving no scripts/deploy.sh.mut and no /base or /m1-/m3 files.",
       "checkedOn": "2026-11-27"
+    },
+    {
+      "kind": "pr",
+      "ref": "https://github.com/steven-crosby/ritmofit-web/pull/810",
+      "checkedOn": "2026-11-27",
+      "summary": "PR for RF-106, opened at pipeline stage 6 in pre-approved batch #808 after the verifier, the correctness review and the acceptance audit passed head 2011275 (fix round 1). Opened by the batch conductor from the builder’s branch, after an update from main that left this PR’s own diff unchanged; this entry is the conductor’s only other change."
     }
   ],
   "resolution": "The three repro scripts are portable and clean up after themselves: badsha resolves its worktree argument to an absolute path and removes its sandbox on exit; the self-check mutation repro removes scripts/deploy.sh.mut and its temp dir through an EXIT trap (INT and TERM included); the CM-02 repro listens on an ephemeral port and closes the browser and server in a finally block. The lane brief, lane files, verification.md and e2e-env-patch.diff use <repo>, <scratchpad> and <chromium-executable> placeholders in place of /home/user, /tmp/claude-0 and /opt/pw-browsers paths, and MANIFEST.md byte counts match the edited files. Left as written: /tmp/wt-x in lanes/00-known-issues.md and the mktemp path in evidence/d1-tooling-deploy-badsha.txt, which are historical records of what ran and are outside the three path families the acceptance names.",
