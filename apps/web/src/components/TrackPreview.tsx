@@ -26,6 +26,7 @@ import {
   listConnections,
   resolveTrackProvider,
 } from '../lib/api.js';
+import { rememberConnectionReturn } from '../lib/connection-return.js';
 import { errMessage } from '../lib/errors.js';
 import { playbackWindowFor, selectProvider } from '../lib/playback/coordinator.js';
 import { PreviewPlaybackController, type PreviewStatus } from '../lib/playback/preview.js';
@@ -49,7 +50,14 @@ function orJoin(labels: string[]): string {
   return `${labels.slice(0, -1).join(', ')} or ${labels[labels.length - 1]}`;
 }
 
-export function TrackPreview({ entry }: { entry: RunPayloadTrackEntry }) {
+export function TrackPreview({
+  entry,
+  returnTo,
+}: {
+  entry: RunPayloadTrackEntry;
+  /** Where a provider reconnect returns: this class, in the builder (RF-111). */
+  returnTo?: { userId: string; classId: string };
+}) {
   const playbackWindow = playbackWindowFor(entry);
   const previewDurationMs = Number.isFinite(playbackWindow.endMs)
     ? Math.max(0, playbackWindow.endMs - playbackWindow.startMs)
@@ -179,14 +187,19 @@ export function TrackPreview({ entry }: { entry: RunPayloadTrackEntry }) {
     void controllerRef.current?.stop();
   }, []);
 
-  const reconnectProvider = useCallback(async (provider: Provider) => {
-    const result = await connectProvider(provider);
-    if (result.authorizeUrl) {
-      window.location.href = result.authorizeUrl;
-      return;
-    }
-    setConnections(await listConnections());
-  }, []);
+  const reconnectProvider = useCallback(
+    async (provider: Provider) => {
+      const result = await connectProvider(provider);
+      if (result.authorizeUrl) {
+        // Return to this class in the builder, not the Classes home (RF-111).
+        if (returnTo) rememberConnectionReturn({ ...returnTo, destination: 'builder', provider });
+        window.location.href = result.authorizeUrl;
+        return;
+      }
+      setConnections(await listConnections());
+    },
+    [returnTo],
+  );
 
   // Static eligibility for the idle verdict (before the instructor hits preview).
   const selection = connections
@@ -327,7 +340,8 @@ export function TrackPreview({ entry }: { entry: RunPayloadTrackEntry }) {
             {status.error.provider && (
               <button
                 type="button"
-                onClick={() => void reconnectProvider(status.error.provider!)}
+                // A failed start leaves this button to try again (RF-111).
+                onClick={() => void reconnectProvider(status.error.provider!).catch(() => {})}
                 className="min-h-11 rounded-control px-3 font-ui text-xs font-semibold text-text-secondary hover:text-text-primary rf-focus-ring sm:rounded-pill"
               >
                 Reconnect {providerLabel(status.error.provider)}

@@ -4,7 +4,8 @@ import { PROVIDER_ORDER } from './providers.js';
 const KEY = 'rf-provider-return';
 export interface ConnectionReturn {
   userId: string;
-  destination: 'classes' | 'music' | 'live' | 'account';
+  /** 'builder' reopens `classId` in the class builder and needs one (RF-111). */
+  destination: 'classes' | 'builder' | 'music' | 'live' | 'account';
   classId?: string;
   provider: Provider;
   createdAt: number;
@@ -27,7 +28,8 @@ export function consumeConnectionReturn(
     const value = JSON.parse(raw) as ConnectionReturn;
     if (
       value.userId !== userId ||
-      !['classes', 'music', 'live', 'account'].includes(value.destination) ||
+      !['classes', 'builder', 'music', 'live', 'account'].includes(value.destination) ||
+      (value.destination === 'builder' && value.classId === undefined) ||
       !PROVIDER_ORDER.includes(value.provider) ||
       (provider && provider !== value.provider) ||
       typeof value.createdAt !== 'number' ||

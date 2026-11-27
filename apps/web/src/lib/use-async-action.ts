@@ -1,4 +1,5 @@
 import { useCallback, useRef, useState } from 'react';
+import { errMessage } from './errors.js';
 
 /**
  * Wrap an async UI action with an in-flight flag, error capture, and a re-entry
@@ -23,7 +24,8 @@ export function useAsyncAction(report: (msg: string | null) => void) {
       try {
         await action();
       } catch (e) {
-        report(e instanceof Error ? e.message : String(e));
+        // A blank or non-Error failure still names itself (RF-111).
+        report(errMessage(e));
       } finally {
         inFlight.current = false;
         setBusy(false);

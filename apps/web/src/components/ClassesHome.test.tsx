@@ -66,6 +66,8 @@ function renderHome(
     onOpen?: (cls: ClassListItem) => void;
     onPreview?: (cls: ClassListItem) => void;
     onDelete?: (cls: ClassListItem) => Promise<void>;
+    onDuplicate?: (cls: ClassListItem) => Promise<void>;
+    onError?: (msg: string | null) => void;
     onStartClass?: (mode?: 'scaffold' | 'empty') => void;
     onStartTemplate?: (template: LibraryTemplate) => void;
     onImportPlaylist?: () => void;
@@ -83,8 +85,9 @@ function renderHome(
       loadingMore={false}
       onOpen={options.onOpen ?? (() => {})}
       onPreview={options.onPreview ?? (() => {})}
-      onDuplicate={async () => {}}
+      onDuplicate={options.onDuplicate ?? (async () => {})}
       onDelete={options.onDelete ?? (async () => {})}
+      onError={options.onError ?? (() => {})}
       onSelectTag={options.onSelectTag ?? (() => {})}
       onClearTag={() => {}}
       onRetry={() => {}}
@@ -446,6 +449,43 @@ describe('ClassesHome library shell', () => {
     expect((await screen.findByRole('alert')).textContent).toContain('still in a live set');
     expect(screen.getByText("Delete 'Morning Climb'? This can't be undone.")).toBeTruthy();
     expect(screen.getByRole('button', { name: 'Morning Climb' })).toBeTruthy();
+  });
+
+  it('runs Duplicate once at a time across the list and reports a failure (RF-111)', async () => {
+    let fail!: (reason: Error) => void;
+    const onDuplicate = vi.fn(
+      () =>
+        new Promise<void>((_resolve, reject) => {
+          fail = reject;
+        }),
+    );
+    const onError = vi.fn();
+    renderHome([cls(1, { title: 'Morning Climb' }), cls(2, { title: 'Evening Spin' })], {
+      onDuplicate,
+      onError,
+    });
+    fireEvent.click(screen.getByRole('button', { name: 'More actions — Morning Climb' }));
+    fireEvent.click(screen.getByRole('button', { name: 'Duplicate — Morning Climb' }));
+    expect(onError).toHaveBeenLastCalledWith(null);
+
+    for (const title of ['Morning Climb', 'Evening Spin']) {
+      fireEvent.click(screen.getByRole('button', { name: `More actions — ${title}` }));
+      // The accessible name carries the visible pending text (WCAG 2.5.3).
+      expect(screen.queryByRole('button', { name: `Duplicate — ${title}` })).toBeNull();
+      const item = screen.getByRole('button', { name: `Duplicating… — ${title}` });
+      expect(item.textContent).toBe('Duplicating…');
+      expect((item as HTMLButtonElement).disabled).toBe(true);
+      fireEvent.click(item);
+      fireEvent.keyDown(document, { key: 'Escape' });
+    }
+    expect(onDuplicate).toHaveBeenCalledTimes(1);
+
+    fail(new Error('copy failed'));
+    await waitFor(() => expect(onError).toHaveBeenLastCalledWith('copy failed'));
+    fireEvent.click(screen.getByRole('button', { name: 'More actions — Morning Climb' }));
+    expect(screen.getByRole('button', { name: 'Duplicate — Morning Climb' }).textContent).toBe(
+      'Duplicate',
+    );
   });
 
   it('hides delete from an editor and a viewer', () => {

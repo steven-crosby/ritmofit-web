@@ -1,5 +1,5 @@
 // @vitest-environment jsdom
-import { afterEach, describe, expect, it, vi } from 'vitest';
+import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import { act, cleanup, fireEvent, render, screen, waitFor } from '@testing-library/react';
 import type {
   MusicConnectionView,
@@ -8,8 +8,19 @@ import type {
 } from '@ritmofit/shared';
 import { TrackPreview } from './TrackPreview.js';
 import * as api from '../lib/api.js';
+import { consumeConnectionReturn } from '../lib/connection-return.js';
 
 vi.mock('../lib/api.js');
+
+/** Node's process (vitest runs on Node; the web tsconfig does not type it). */
+const nodeProcess = (
+  globalThis as unknown as {
+    process: {
+      on(event: 'unhandledRejection', listener: (reason: unknown) => void): void;
+      off(event: 'unhandledRejection', listener: (reason: unknown) => void): void;
+    };
+  }
+).process;
 const playbackMock = vi.hoisted(() => {
   const state: {
     callbacks: null | { onFinish: () => void; onError: (error: { message: string }) => void };
@@ -190,6 +201,76 @@ describe('TrackPreview Spotify reconnect', () => {
 
     await waitFor(() => expect(api.connectProvider).toHaveBeenCalledWith('spotify'));
     expect(await screen.findByRole('button', { name: 'Play preview on Spotify' })).toBeTruthy();
+  });
+});
+
+describe('TrackPreview reconnect returns to the builder (RF-111)', () => {
+  const classId = '00000000-0000-4000-8000-0000000000c9';
+  const returnTo = { userId: 'me', classId };
+  // jsdom performs a same-document hash navigation; any other URL is "not implemented".
+  const authorizeUrl = () => `${window.location.origin}${window.location.pathname}#authorize`;
+  const unhandled: unknown[] = [];
+  const onUnhandled = (reason: unknown) => unhandled.push(reason);
+
+  beforeEach(() => {
+    unhandled.length = 0;
+    nodeProcess.on('unhandledRejection', onUnhandled);
+  });
+  afterEach(() => {
+    nodeProcess.off('unhandledRejection', onUnhandled);
+    sessionStorage.clear();
+    window.history.replaceState(null, '', window.location.pathname);
+  });
+
+  it('writes a destination:builder return record before the playback-scope redirect', async () => {
+    vi.mocked(api.listConnections).mockResolvedValue([spotifyConnection('user-library-read')]);
+    vi.mocked(api.connectProvider).mockResolvedValue({
+      authorizeUrl: authorizeUrl(),
+      connected: false,
+    });
+
+    render(<TrackPreview entry={spotifyEntry} returnTo={returnTo} />);
+    fireEvent.click(await screen.findByRole('button', { name: /Reconnect Spotify for playback/i }));
+
+    await waitFor(() => expect(window.location.hash).toBe('#authorize'));
+    expect(consumeConnectionReturn('me', 'spotify')).toMatchObject({
+      userId: 'me',
+      destination: 'builder',
+      classId,
+      provider: 'spotify',
+    });
+  });
+
+  it('catches a failed start from the interrupted-preview Reconnect, then returns on retry', async () => {
+    vi.mocked(api.listConnections).mockResolvedValue([
+      spotifyConnection('user-library-read streaming'),
+    ]);
+    playbackMock.adapter.play.mockRejectedValueOnce(new Error('Spotify session expired'));
+    vi.mocked(api.connectProvider)
+      .mockRejectedValueOnce(new Error('connect failed'))
+      .mockResolvedValueOnce({ authorizeUrl: authorizeUrl(), connected: false });
+
+    render(<TrackPreview entry={spotifyEntry} returnTo={returnTo} />);
+    await waitFor(() => {
+      const play = screen.queryByRole('button', { name: 'Play preview on Spotify' });
+      if (play) fireEvent.click(play);
+      expect(screen.getByRole('alert').textContent).toContain('Spotify session expired');
+    });
+
+    fireEvent.click(screen.getByRole('button', { name: 'Reconnect Spotify' }));
+    await waitFor(() => expect(api.connectProvider).toHaveBeenCalledTimes(1));
+    await act(async () => {
+      await new Promise((r) => setTimeout(r, 20));
+    });
+    expect(unhandled).toHaveLength(0);
+    expect(sessionStorage.length).toBe(0);
+
+    fireEvent.click(screen.getByRole('button', { name: 'Reconnect Spotify' }));
+    await waitFor(() => expect(window.location.hash).toBe('#authorize'));
+    expect(consumeConnectionReturn('me', 'spotify')).toMatchObject({
+      destination: 'builder',
+      classId,
+    });
   });
 });
 

@@ -21,6 +21,24 @@ describe('provider return context', () => {
     vi.advanceTimersByTime(16 * 60_000);
     expect(consumeConnectionReturn('me')).toBeNull();
   });
+  it('returns a builder record with its class, once (RF-111)', () => {
+    const classId = '00000000-0000-4000-8000-0000000000c9';
+    rememberConnectionReturn({
+      userId: 'me',
+      provider: 'spotify',
+      destination: 'builder',
+      classId,
+    });
+    expect(consumeConnectionReturn('me', 'spotify')).toMatchObject({
+      destination: 'builder',
+      classId,
+    });
+    expect(consumeConnectionReturn('me', 'spotify')).toBeNull();
+  });
+  it('rejects a builder record that names no class', () => {
+    rememberConnectionReturn({ userId: 'me', provider: 'spotify', destination: 'builder' });
+    expect(consumeConnectionReturn('me', 'spotify')).toBeNull();
+  });
   it('does not accept an arbitrary redirect destination', () => {
     sessionStorage.setItem(
       'rf-provider-return',
