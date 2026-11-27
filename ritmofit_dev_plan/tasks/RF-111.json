@@ -10,10 +10,10 @@
   "acceptance": [
     "openPlaylist ignores a late reply for a playlist no longer shown and clears the songs on Back, so Start class never creates class B with A's songs (lane-B repro passes).",
     "Duplicate runs through useAsyncAction: it shows pending state and an error message, and a repeat tap does not make a second copy (lane-B repro passes).",
-    "Closing the playlist or likes dialog during Creating does not navigate the instructor into the new class later; the recommended behavior is to skip navigation and show a toast.",
+    "Closing the playlist or likes dialog during Creating skips navigation into the new class and shows a toast, as the owner confirmed in batch #805 and carried into #808.",
     "TrackPreview Reconnect writes a destination:'builder' return record and catches failures; a new test covers the return record. The e2e smoke is unchanged."
   ],
-  "nextAction": "Await owner Ready; the close-during-Creating behavior is a small product call (recommended: skip navigation and toast). Files: Music playlist/likes dialogs, Classes duplicate action, TrackPreview in apps/web. Not owner-gated per scripts/owner-gate.mjs at audit time.",
+  "nextAction": "Draft #811 is parked after the owner-authorized third fix round. Ask the owner whether to leave it parked, request another fix round, or explicitly accept the three known findings with a follow-up and approve the final PR head. Keep the existing 180 kB cap unless separately approved. A real Spotify sign-in from TrackPreview Reconnect back to the builder is still owed.",
   "blocker": null,
   "evidence": [
     {
@@ -27,6 +27,18 @@
       "ref": "docs/audits/claude-code-audit-2026-10-28-4c344e2/findings.md",
       "summary": "AUD-005, AUD-007, AUD-008 and AUD-009 (P3, jsdom repros or code trace). Repro and evidence files are listed in the audit package.",
       "checkedOn": null
+    },
+    {
+      "kind": "observation",
+      "ref": "https://github.com/steven-crosby/ritmofit-web/issues/808",
+      "summary": "The owner chose skip navigation and show a toast during Creating, then authorized a third fix round outside the batch. This parked ticket requires its own final-head approval.",
+      "checkedOn": "2026-11-27"
+    },
+    {
+      "kind": "observation",
+      "ref": "https://github.com/steven-crosby/ritmofit-web/pull/811",
+      "summary": "Draft head d69c0f62fc241fe4ab9970d3b391f5be85a7b8fb had green GitHub CI. Claude’s verifier and acceptance audit reported all four acceptance lines met in their test environments, with real provider sign-in outstanding. The verifier measured 179,976 of 180,000 gzip bytes. Claude’s final review and audit reported three unresolved walk-away findings: (1) Recents can show a stale “No tracks” label beside a fresh count and duration and keep Preview disabled until Classes reopens; (2) leaving and returning with browser Back during the silent reload can restore pre-import songs; (3) a failed reload while the class is opening can leave “Loading class” until details are refreshed. These final findings came from the Nov 27 session; the draft description still describes round two.",
+      "checkedOn": "2026-11-27"
     }
   ],
   "resolution": null,

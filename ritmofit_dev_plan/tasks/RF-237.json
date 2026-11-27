@@ -10,9 +10,11 @@
   "acceptance": [
     "The 18 copper primaries that are pills at every width either take `rounded-control sm:rounded-pill` or are named in 05 › Buttons as exceptions, with the reason. On main after RF-236 they are ClassesHome.tsx:583, CustomMovesDialog.tsx:277, Dashboard.tsx:4296, MarketingPage.tsx:87, :117 and :187, PlaylistSongPicker.tsx:154, SongPicks.tsx:281, SourceList.tsx:184, TrackSearch.tsx:1056, :1082, :1118 and :1185, and, on deferred surfaces, ExploreDialog.tsx:191, ShareDialog.tsx:180 and :222 and TeamsDialog.tsx:171 and :255.",
     "The outlined, ghost and destructive buttons follow the same rule or are named as exceptions. Today some keep the control, input, card or pill radius at every width, and others already use `rounded-control sm:rounded-pill`. Each is checked by eye: some lines that match a button's classes are cards, chips or rows, which keep their own radius.",
-    "05 › Buttons and the web's buttons agree, and 08's rows still describe both platforms correctly."
+    "05 › Buttons and the web's buttons agree, and 08's rows still describe both platforms correctly.",
+    "Check the paired controls cited in #786’s review at widths from 640 px: UpdatePrompt Later/Reload now, the Live queue secondary/primary, and the non-prominent Dashboard button branch. Align them with 05 or document the exceptions.",
+    "Bring the mockup .button radius in theme.css into agreement with the intended design and assess focused radius coverage beyond Login for the primaries changed by RF-236."
   ],
-  "nextAction": "Agent-created (Neo, 2026-11-23) from RF-236 (#786). Backlog until the owner sets Ready. Unstarted. Find the primaries with `git grep -n rf-btn-primary -- 'apps/web/src/**/*.tsx' ':!*.test.tsx'` and keep the lines with `rounded-pill` but not `sm:rounded-pill`; SourceList's radius is on the line above its `rf-btn-primary`. Explore, Share and Teams are deferred surfaces (AGENTS.md › Product Boundaries), so leave them unchanged unless the owner reopens them. Whether the signed-out marketing page's calls to action stay pills on phones is the owner's call.",
+  "nextAction": "Agent-created (Neo, 2026-11-23) from RF-236 (#786). Backlog until the owner sets Ready. Unstarted. Find the primaries with `git grep -n rf-btn-primary -- 'apps/web/src/**/*.tsx' ':!*.test.tsx'` and keep the lines with `rounded-pill` but not `sm:rounded-pill`; SourceList's radius is on the line above its `rf-btn-primary`. Explore, Share and Teams are deferred surfaces (AGENTS.md › Product Boundaries), so leave them unchanged unless the owner reopens them. Whether the signed-out marketing page's calls to action stay pills on phones is the owner's call. Before reconciling design guidance, recheck the Mac call sites against iOS RF-1207 and #227, which landed after the review. Keep the documented radius target and any deliberate platform exceptions explicit.",
   "blocker": null,
   "evidence": [
     {
@@ -25,6 +27,12 @@
       "kind": "document",
       "ref": "ritmofit_design_system/05-components.md",
       "summary": "Buttons: radius `control` (10px) below the `sm` breakpoint (640px) and `pill` from it up, as RF-236 wrote it.",
+      "checkedOn": "2026-11-23"
+    },
+    {
+      "kind": "observation",
+      "ref": "https://github.com/steven-crosby/ritmofit-web/pull/786",
+      "summary": "The Nov 23 final review routed the Mac target wording, three paired control locations, the mockup button radius and Login-only test coverage to RF-237. The Mac observation described iOS 94f6521 and predates iOS #227.",
       "checkedOn": "2026-11-23"
     }
   ],
