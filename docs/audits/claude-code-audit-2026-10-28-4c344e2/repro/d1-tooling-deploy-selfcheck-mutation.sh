@@ -6,7 +6,13 @@
 # Usage: bash d1-tooling-deploy-selfcheck-mutation.sh <repo-worktree>   (never deploys; --self-check only)
 set -uo pipefail
 W="${1:?worktree}"
-cd "$W"
+cd "$W" || exit 1
+W_ABS="$PWD"
+tmp="$(mktemp -d)" || exit 1
+# Remove the mutant copy and the temp dir on any exit, so an interrupted run leaves the worktree clean.
+trap 'rm -rf "$tmp"; rm -f "$W_ABS/scripts/deploy.sh.mut"' EXIT
+trap 'exit 130' INT
+trap 'exit 143' TERM
 run() {
   local name="$1" file="$2"
   cp "$file" scripts/deploy.sh.mut
@@ -17,7 +23,6 @@ run() {
     "$(grep -E 'self-check (passed|failed)' <<<"$out")"
   rm -f scripts/deploy.sh.mut
 }
-tmp="$(mktemp -d)"
 cp scripts/deploy.sh "$tmp/base"
 run "baseline" "$tmp/base"
 # M1: refusal message for dirty tree changes (asserted by: grep -q "not empty" "$dirty_err")
@@ -31,4 +36,3 @@ run "M2 diverge message no longer 'not origin/main'" "$tmp/m2"
 sed 's|git worktree add --detach "\$wt" "\$sha" >&2|git worktree add --detach "$wt" "$sha~1" >\&2|' "$tmp/base" > "$tmp/m3"
 grep -n 'worktree add --detach "\$wt"' "$tmp/m3"
 run "M3 worktree builds sha~1 instead of sha" "$tmp/m3"
-rm -rf "$tmp"

@@ -3,7 +3,7 @@
 ## Baseline gate (CI-equivalent list from AGENTS.md › "Verification, PRs, And Commits")
 
 The gate ran in a disposable detached worktree at `4c344e2` after `pnpm install --frozen-lockfile`
-(18 s). The main checkout was not touched. Runner: `scratchpad/gate.sh`. Logs are tail-trimmed into
+(18 s). The main checkout was not touched. Runner: `<scratchpad>/gate.sh` (session scratch, outside the repo). Logs are tail-trimmed into
 `evidence/gate/` with test-run verify-email tokens redacted. Ran 2026-10-28 ~05:35–05:45Z, Linux
 cloud container, Node 22.22.0, pnpm 11.4.0.
 
@@ -31,9 +31,9 @@ cloud container, Node 22.22.0, pnpm 11.4.0.
 | 19 | `git status --short` in the gate worktree | 0 | — | clean after build/e2e/openapi | — |
 
 15b patch (disposable worktree only, reverted afterwards; `evidence/gate/e2e-env-patch.diff`):
-the container ships Chromium build 1243 at `/opt/pw-browsers/chromium`, and the locked Playwright
-wants headless-shell 1248. Downloads are blocked. The override points `launchOptions.executablePath`
-at the preinstalled binary. It changes the browser build, not the test.
+the container ships Chromium build 1243 at a fixed path (`<chromium-executable>` in the patch), and the
+locked Playwright wants headless-shell 1248. Downloads are blocked. The override points
+`launchOptions.executablePath` at the preinstalled binary. It changes the browser build, not the test.
 
 Headroom note: the startup entry is 174.08 kB gzip, 5.9 kB under budget. It was 172.40 kB at the
 prior audit (D-5), so it grew 1.7 kB in 15 commits.

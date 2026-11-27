@@ -288,5 +288,5 @@ Existing suites stayed green in the worktree for the touched modules (repros are
 
 Artifacts: `repro/c-music-playback-repro.test.ts` (CM-01, CM-02), `repro/c-music-refresh-race-repro.test.ts`
 (CM-03), `evidence/c-music-repro-run.log`. The worktree was left in place for re-runs
-(`/tmp/claude-0/-home-user-ritmofit-web/225314d5-8442-5f3f-bf78-85de30171bbc/scratchpad/wt-c-music`). Full gate, e2e,
+(`<scratchpad>/wt-c-music`). Full gate, e2e,
 browser and provider network were not run.

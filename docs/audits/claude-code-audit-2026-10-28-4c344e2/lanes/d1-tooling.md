@@ -1,7 +1,7 @@
 # Lane d1-tooling — CI and governance tooling as executable code
 
 Audited commit `4c344e2` (main). Worktree:
-`/tmp/claude-0/-home-user-ritmofit-web/225314d5-8442-5f3f-bf78-85de30171bbc/scratchpad/wt-d1-tooling`
+`<scratchpad>/wt-d1-tooling`
 (detached, `pnpm install --frozen-lockfile` OK). Bash 5.2.21, Node 22, pnpm 11.4.0. No remote,
 production or wrangler calls. `deploy.sh` was run with `--self-check` only, plus once in a throwaway
 sandbox repo with a local bare origin and a `pnpm` stub that refuses to run.
