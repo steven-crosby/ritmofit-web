@@ -579,23 +579,32 @@ export function Dashboard({
     [],
   );
 
-  // RF-111: a class whose create dialog closed during Creating is never opened, so
-  // loadDetail never syncs its card. Read the same aggregates once its import ends
-  // so Recents and Jump back in show its songs and length. Best effort: if both
-  // reads fail, the next list load corrects the card.
-  const refreshClassCard = useCallback(async (classId: string) => {
-    let summary: Partial<ClassListItem>;
-    try {
-      summary = cardSummaryFromPayload(await getRunPayload(classId));
-    } catch {
-      try {
-        summary = { trackCount: (await listClassTracks(classId)).length };
-      } catch {
+  // RF-111: a class whose create dialog closed during Creating is not opened for the
+  // instructor, so loadDetail never syncs its card. Read the same aggregates once its
+  // import ends so Recents and Jump back in show its songs and length. If the
+  // instructor opened it meanwhile, reload the builder silently (that syncs the card).
+  // Best effort: if both reads fail, the next list load corrects the card.
+  const refreshClassCard = useCallback(
+    async (classId: string) => {
+      const owner = detailWorkspace.current;
+      if (owner?.classId === classId) {
+        await loadDetail(classId, { silent: true, owner });
         return;
       }
-    }
-    setClasses((prev) => prev.map((c) => (c.id === classId ? { ...c, ...summary } : c)));
-  }, []);
+      let summary: Partial<ClassListItem>;
+      try {
+        summary = cardSummaryFromPayload(await getRunPayload(classId));
+      } catch {
+        try {
+          summary = { trackCount: (await listClassTracks(classId)).length };
+        } catch {
+          return;
+        }
+      }
+      setClasses((prev) => prev.map((c) => (c.id === classId ? { ...c, ...summary } : c)));
+    },
+    [loadDetail],
+  );
 
   const exitLive = useCallback(() => {
     liveRequestId.current += 1;

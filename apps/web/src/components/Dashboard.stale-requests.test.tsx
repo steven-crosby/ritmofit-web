@@ -404,6 +404,129 @@ describe('RF-111 closing a create dialog during Creating', () => {
     expect(screen.queryByRole('region', { name: 'Class builder' })).toBeNull();
   });
 
+  /**
+   * The server holds the new class with no songs until the import commits them;
+   * its tracks and run payload then list one 3:00 song, `songTitle`.
+   */
+  function classFillsWhenImportCommits(id: string, songTitle: string) {
+    libraryLearnsOfCreatedClass(id);
+    let committed = false;
+    vi.mocked(api.importClassTracks).mockImplementation(async () => {
+      committed = true;
+      return [];
+    });
+    vi.mocked(api.listClassTracks).mockImplementation(async () =>
+      committed ? ([{ id: 'ct-1', classId: id, trackId: 't-1', position: 0 }] as never) : [],
+    );
+    vi.mocked(api.getRunPayload).mockImplementation(
+      async () =>
+        ({
+          schemaVersion: 1,
+          class: { id, title: 'n/a', template: 'cycle', totalDurationMs: committed ? 180000 : 0 },
+          tracks: committed
+            ? [
+                {
+                  classTrackId: 'ct-1',
+                  position: 0,
+                  startOffsetMs: 0,
+                  displayBpm: 128,
+                  intensity: 'mod',
+                  clipStartMs: 0,
+                  beatAnchorMs: 0,
+                  providerRefs: [],
+                  track: {
+                    id: 't-1',
+                    title: songTitle,
+                    artist: 'DJ Test',
+                    durationMs: 180000,
+                    baseDurationMs: 180000,
+                    albumArtUrl: null,
+                    displayBpm: null,
+                  },
+                  cues: [],
+                  moves: [],
+                },
+              ]
+            : [],
+        }) as never,
+    );
+  }
+
+  /** Walked away during Creating, the instructor opens the new class from Recents. */
+  async function openFromRecentsMidImport(title: string) {
+    fireEvent.click(navButton('Classes'));
+    fireEvent.click(await screen.findByRole('button', { name: title }));
+    const builder = await screen.findByRole('region', { name: 'Class builder' });
+    expect(within(builder).getByRole('heading', { name: title })).toBeTruthy();
+    // Let the builder's own read of the still-empty class settle first.
+    await act(async () => {
+      await new Promise((r) => setTimeout(r, 20));
+    });
+    return builder;
+  }
+
+  it('playlist: a class opened from Recents before its import ends shows the imported songs', async () => {
+    classFillsWhenImportCommits('00000000-0000-4000-8000-0000000000c7', 'Warm Song');
+    vi.mocked(api.listPlaylists).mockResolvedValue([
+      {
+        provider: 'spotify',
+        playlistId: 'pl-a',
+        name: 'Warmup Ride',
+        ownerName: 'S',
+        trackCount: 1,
+        coverImageUrl: null,
+      },
+    ] as never);
+    vi.mocked(api.listPlaylistTracks).mockResolvedValue([song('warm-1', 'Warm Song')]);
+    const imported = deferred<unknown>();
+    vi.mocked(api.importTrack).mockReturnValue(imported.promise as never);
+
+    renderDashboard();
+    fireEvent.click(await screen.findByRole('button', { name: 'Music' }));
+    fireEvent.click(await screen.findByRole('button', { name: /^Spotify,/ }));
+    fireEvent.click(await screen.findByRole('button', { name: 'Open Warmup Ride' }));
+    const dialog = await screen.findByRole('dialog', { name: 'Browse Spotify playlists' });
+    await within(dialog).findByText('Warm Song');
+    fireEvent.click(within(dialog).getByRole('button', { name: 'Start class from Warmup Ride' }));
+    await waitFor(() => expect(api.importTrack).toHaveBeenCalled());
+    fireEvent.click(within(dialog).getByRole('button', { name: 'Close playlist browser' }));
+
+    const builder = await openFromRecentsMidImport('Warmup Ride');
+    expect(within(builder).queryByText('Warm Song')).toBeNull();
+
+    await act(async () => imported.resolve({ id: 't-1', durationMs: 180000 }));
+    await screen.findByText('Class created: Warmup Ride');
+    expect((await within(builder).findAllByText('Warm Song')).length).toBeGreaterThan(0);
+    expect(navButton('Classes').getAttribute('aria-current')).toBe('page');
+  });
+
+  it('likes: a class opened from Recents before its import ends shows the imported songs', async () => {
+    classFillsWhenImportCommits('00000000-0000-4000-8000-0000000000c8', 'Liked One');
+    vi.mocked(api.listLikes).mockResolvedValue([song('like-1', 'Liked One')]);
+    const imported = deferred<unknown>();
+    vi.mocked(api.importTrack).mockReturnValue(imported.promise as never);
+
+    renderDashboard();
+    fireEvent.click(await screen.findByRole('button', { name: 'Music' }));
+    fireEvent.click(await screen.findByRole('button', { name: /^Spotify,/ }));
+    fireEvent.click(screen.getByRole('button', { name: 'Songs' }));
+    const list = await screen.findByRole('list', { name: 'Liked songs' });
+    for (const box of within(list).getAllByRole('checkbox')) fireEvent.click(box);
+    fireEvent.click(screen.getByRole('button', { name: 'Create a class' }));
+    const sheet = await screen.findByRole('dialog', { name: 'Create a class' });
+    fireEvent.click(within(sheet).getByRole('button', { name: 'Create class' }));
+    await waitFor(() => expect(api.importTrack).toHaveBeenCalled());
+    fireEvent.click(within(sheet).getByRole('button', { name: 'Cancel' }));
+
+    const builder = await openFromRecentsMidImport('Spotify likes');
+    expect(within(builder).queryByText('Liked One')).toBeNull();
+
+    await act(async () => imported.resolve({ id: 't-1', durationMs: 180000 }));
+    await screen.findByText('Class created: Spotify likes');
+    expect((await within(builder).findAllByText('Liked One')).length).toBeGreaterThan(0);
+    expect(navButton('Classes').getAttribute('aria-current')).toBe('page');
+  });
+
   it('likes: with the dialog left open, Create class still opens the new class and shows no toast', async () => {
     vi.mocked(api.listLikes).mockResolvedValue([song('like-1', 'Liked One')]);
     vi.mocked(api.createClass).mockImplementation(async (body: { title: string }) =>
