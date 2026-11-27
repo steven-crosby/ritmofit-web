@@ -12,13 +12,13 @@ owner's queue: any agent may execute a Ready task. Publishing follows AGENTS.md 
 Evidence marked **recorded** is a carried-forward claim, not fresh verification.
 A checked PR proves its GitHub state, not product acceptance or production behavior.
 
-250 tasks. backlog: 84 · ready: 0 · in_progress: 0 · blocked: 2 · review: 10 · done: 149 · cancelled: 5.
+250 tasks. backlog: 83 · ready: 0 · in_progress: 1 · blocked: 2 · review: 10 · done: 149 · cancelled: 5.
 
 ## In progress
 
 | Task | Priority / kind | Relationships | Next action / resolution | Evidence |
 | --- | --- | --- | --- | --- |
-| — | — | — | — | — |
+| [RF-242](tasks/RF-242.json) TrackSearch Load more follow-ups from RF-149's review | P3 / task | — | In progress (cloud Builder, batch #808, 2026-11-27) on branch fix/rf-242-tracksearch-load-more-follow-ups: build the four acceptance lines in apps/web/src/components/TrackSearch.tsx and its tests, run the CI-equivalent gate, set Done. The conductor opens the PR at pipeline stage 6. | checked 2026-11-23 |
 
 ## Blocked / waiting
 
@@ -126,7 +126,6 @@ A checked PR proves its GitHub state, not product acceptance or production behav
 | [RF-234](tasks/RF-234.json) The iOS token emitter fails on a missing token, and its RFColorLight comment matches RFGlass | P3 / task | — | Agent-created (Neo, 2026-11-22) from notes 1 and 2 of #779's final review, routed here when RF-233 started. Backlog until the owner sets Ready. Notes 3 and 4 (the README's emitter list and glass wording, and 08's glass row) landed with RF-233. | recorded |
 | [RF-237](tasks/RF-237.json) The web's remaining buttons follow 05's radius rule: 10 px on phones, a pill from 640 px | P3 / task | — | Agent-created (Neo, 2026-11-23) from RF-236 (#786). Backlog until the owner sets Ready. Unstarted. Find the primaries with `git grep -n rf-btn-primary -- 'apps/web/src/**/*.tsx' ':!*.test.tsx'` and keep the lines with `rounded-pill` but not `sm:rounded-pill`; SourceList's radius is on the line above its `rf-btn-primary`. Explore, Share and Teams are deferred surfaces (AGENTS.md › Product Boundaries), so leave them unchanged unless the owner reopens them. Whether the signed-out marketing page's calls to action stay pills on phones is the owner's call. | checked 2026-11-23 |
 | [RF-240](tasks/RF-240.json) Live's Next song line: a tied final time, and songs with zero or one action | P3 / task | — | Agent-created (Neo, 2026-11-23) at the close of round 1123 from #789's final review, notes 1 and 2 (neither significant). Backlog until the owner sets Ready. Owner-gated path (LiveMode.tsx). iOS RF-1240 should follow whatever rule this lands. | checked 2026-11-23 |
-| [RF-242](tasks/RF-242.json) TrackSearch Load more follow-ups from RF-149's review | P3 / task | — | Agent-created (Neo, 2026-11-23) at the close of round 1123 from #790's final reviews, notes 2 to 6 (none significant). Backlog until the owner sets Ready. apps/web/src/components/TrackSearch.tsx and its test only. | checked 2026-11-23 |
 | [RF-243](tasks/RF-243.json) Tests that time out or run close to their limit under heavy machine load (deploy-script, Dashboard Apple search, LiveMode RF-185 timing, the RF-157 cap test) | P3 / task | — | Agent-created (Neo, 2026-11-23) at the close of round 1123, widened at round 1123b's close from web Lane 1's reports and #793's final review. Backlog until the owner sets Ready. The first three each timed out once under load and passed on rerun; the cap test ran close to its limit. CI was green each time. #796 (RF-244) gave deploy-script.test.ts a 60 s vitest timeout and a 55 s spawn timeout; 43.6 s at load ~70 leaves about 11 s (2026-11-24 evidence). The other three cases are unchanged. | checked 2026-11-23; checked 2026-11-24 |
 | [RF-246](tasks/RF-246.json) Owner-gate scripts/release-status.mjs: deploy.sh's deploy-alone guard depends on it, but owner-gate's GATES does not cover it | P3 / task | needs RF-244 | Agent-created (round 1124 web Lane 1, 2026-11-24): deploy.sh calls scripts/release-status.mjs --guard, but owner-gate's CI / deploy / infrastructure class does not match that file. Changing owner-gate classes was outside RF-244's brief. Backlog until the owner sets Ready; the change itself is owner-gated. | checked 2026-11-24 |
 | [RF-247](tasks/RF-247.json) deploy.sh follow-ups from #796's last review: trap wording and second signals, the --accept-live record and repeat, and owner-word wording | P3 / task | — | Agent-created (Neo, 2026-11-24) from #796's last review pass at da723d5 (no significant findings; notes 1-3 and 5-9). Backlog until the owner sets Ready. Note 4 (RF-244's wording) was fixed in #796. | checked 2026-11-24 |

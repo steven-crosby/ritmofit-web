@@ -3,7 +3,7 @@
   "id": "RF-242",
   "title": "TrackSearch Load more follow-ups from RF-149's review",
   "kind": "task",
-  "status": "backlog",
+  "status": "in_progress",
   "priority": "P3",
   "parent": null,
   "dependsOn": [],
@@ -13,7 +13,7 @@
     "The screen-reader status doesn't read a partial count as the whole library while more pages remain.",
     "Tests cover a late Load more page after a mode switch and after a class switch, as RF-149's resolution states."
   ],
-  "nextAction": "Agent-created (Neo, 2026-11-23) at the close of round 1123 from #790's final reviews, notes 2 to 6 (none significant). Backlog until the owner sets Ready. apps/web/src/components/TrackSearch.tsx and its test only.",
+  "nextAction": "In progress (cloud Builder, batch #808, 2026-11-27) on branch fix/rf-242-tracksearch-load-more-follow-ups: build the four acceptance lines in apps/web/src/components/TrackSearch.tsx and its tests, run the CI-equivalent gate, set Done. The conductor opens the PR at pipeline stage 6.",
   "blocker": null,
   "evidence": [
     {
