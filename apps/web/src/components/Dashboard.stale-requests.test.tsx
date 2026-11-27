@@ -527,6 +527,76 @@ describe('RF-111 closing a create dialog during Creating', () => {
     expect(navButton('Classes').getAttribute('aria-current')).toBe('page');
   });
 
+  /** Start a class from a playlist, then close the dialog during Creating. */
+  async function walkAwayFromPlaylistCreate() {
+    vi.mocked(api.listPlaylists).mockResolvedValue([
+      {
+        provider: 'spotify',
+        playlistId: 'pl-a',
+        name: 'Warmup Ride',
+        ownerName: 'S',
+        trackCount: 1,
+        coverImageUrl: null,
+      },
+    ] as never);
+    vi.mocked(api.listPlaylistTracks).mockResolvedValue([song('warm-1', 'Warm Song')]);
+    const imported = deferred<unknown>();
+    vi.mocked(api.importTrack).mockReturnValue(imported.promise as never);
+    renderDashboard();
+    fireEvent.click(await screen.findByRole('button', { name: 'Music' }));
+    fireEvent.click(await screen.findByRole('button', { name: /^Spotify,/ }));
+    fireEvent.click(await screen.findByRole('button', { name: 'Open Warmup Ride' }));
+    const dialog = await screen.findByRole('dialog', { name: 'Browse Spotify playlists' });
+    await within(dialog).findByText('Warm Song');
+    fireEvent.click(within(dialog).getByRole('button', { name: 'Start class from Warmup Ride' }));
+    await waitFor(() => expect(api.importTrack).toHaveBeenCalled());
+    fireEvent.click(within(dialog).getByRole('button', { name: 'Close playlist browser' }));
+    return imported;
+  }
+
+  it('playlist: Back to a class left by the nav before its import ended shows the imported songs', async () => {
+    const id = '00000000-0000-4000-8000-0000000000c9';
+    classFillsWhenImportCommits(id, 'Warm Song');
+    vi.mocked(api.getClass).mockResolvedValue(listItem(id, 'Warmup Ride'));
+    const imported = await walkAwayFromPlaylistCreate();
+    await openFromRecentsMidImport('Warmup Ride');
+    fireEvent.click(navButton('Music'));
+
+    await act(async () => imported.resolve({ id: 't-1', durationMs: 180000 }));
+    await screen.findByText('Class created: Warmup Ride');
+    // The browser's Back (or an edge swipe): the path changes, then popstate.
+    act(() => {
+      window.history.replaceState(null, '', `/classes/${id}`);
+      window.dispatchEvent(new PopStateEvent('popstate'));
+    });
+
+    const builder = await screen.findByRole('region', { name: 'Class builder' });
+    expect((await within(builder).findAllByText('Warm Song')).length).toBeGreaterThan(0);
+    expect(navButton('Classes').getAttribute('aria-current')).toBe('page');
+  });
+
+  it('playlist: a builder closed during its walk-away reload still leaves the card in sync', async () => {
+    classFillsWhenImportCommits('00000000-0000-4000-8000-0000000000ca', 'Warm Song');
+    // Hold the builder's reload once the import has committed the song.
+    const filled = vi.mocked(api.listClassTracks).getMockImplementation()!;
+    const held = deferred<void>();
+    vi.mocked(api.listClassTracks).mockImplementation(async (classId: string) => {
+      const rows = await filled(classId);
+      if (rows.length > 0) await held.promise;
+      return rows;
+    });
+    const imported = await walkAwayFromPlaylistCreate();
+    const builder = await openFromRecentsMidImport('Warmup Ride');
+
+    await act(async () => imported.resolve({ id: 't-1', durationMs: 180000 }));
+    await screen.findByText('Class created: Warmup Ride');
+    fireEvent.click(within(builder).getByRole('button', { name: 'Back to Classes' }));
+    await act(async () => held.resolve());
+
+    expect((await screen.findAllByText('Cycle · 1 track · 3:00')).length).toBeGreaterThan(0);
+    expect(screen.queryByText('Cycle · 0 tracks · 0:00')).toBeNull();
+  });
+
   it('likes: with the dialog left open, Create class still opens the new class and shows no toast', async () => {
     vi.mocked(api.listLikes).mockResolvedValue([song('like-1', 'Liked One')]);
     vi.mocked(api.createClass).mockImplementation(async (body: { title: string }) =>

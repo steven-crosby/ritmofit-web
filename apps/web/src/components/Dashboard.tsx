@@ -335,6 +335,9 @@ export function Dashboard({
   const [newEmptyClassId, setNewEmptyClassId] = useState<string | null>(null);
   const [detail, dispatchDetail] = useReducer(classDetailReducer, initialClassDetailState);
   const detailRequestId = useRef(0);
+  // The class the cached detail belongs to, for reads that end after a render (RF-111).
+  const detailClassId = useRef<string | null>(null);
+  detailClassId.current = detail.classId;
   const liveRequestId = useRef(0);
   const pendingLiveRequest = useRef<{ classId: string; requestId: number } | null>(null);
   // Each class opening has a logical session; Live suspends its presentation.
@@ -582,15 +585,25 @@ export function Dashboard({
   // RF-111: a class whose create dialog closed during Creating is not opened for the
   // instructor, so loadDetail never syncs its card. Read the same aggregates once its
   // import ends so Recents and Jump back in show its songs and length. If the
-  // instructor opened it meanwhile, reload the builder silently (that syncs the card).
+  // instructor opened it meanwhile, reload the builder silently (that syncs the card;
+  // a dropped read resolves undefined and syncs only the card). With no builder open
+  // or in Live, drop this class's cached detail so Back or Forward refetches it
+  // instead of showing it as it was before the import (RF-195's restore).
   // Best effort: if both reads fail, the next list load corrects the card.
   const refreshClassCard = useCallback(
     async (classId: string) => {
       const owner = detailWorkspace.current;
-      if (owner?.classId === classId) {
-        await loadDetail(classId, { silent: true, owner });
+      if (
+        owner?.classId === classId &&
+        (await loadDetail(classId, { silent: true, owner })) !== undefined
+      )
         return;
-      }
+      if (
+        !detailWorkspace.current &&
+        !suspendedWorkspace.current &&
+        detailClassId.current === classId
+      )
+        dispatchDetail({ type: 'reset', requestId: ++detailRequestId.current });
       let summary: Partial<ClassListItem>;
       try {
         summary = cardSummaryFromPayload(await getRunPayload(classId));
