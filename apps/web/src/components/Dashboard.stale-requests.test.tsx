@@ -319,6 +319,91 @@ describe('RF-111 closing a create dialog during Creating', () => {
     expect(screen.queryByText('Class created: Spotify likes')).toBeNull();
   });
 
+  /**
+   * The list holds the new class from its creation, with the 0 tracks and 0:00 the
+   * server reports before the import; its run payload reports one 3:00 song after.
+   */
+  function libraryLearnsOfCreatedClass(id: string) {
+    const items: ClassListItem[] = [];
+    vi.mocked(api.listClasses).mockImplementation(async () => ({
+      items: [...items],
+      nextCursor: null,
+    }));
+    vi.mocked(api.createClass).mockImplementation(async (body: { title: string }) => {
+      items.push(listItem(id, body.title));
+      return created(id, body.title);
+    });
+    vi.mocked(api.getRunPayload).mockImplementation(async (classId: string) => {
+      if (classId !== id) throw new Error('no payload');
+      return {
+        class: { ...listItem(id, 'n/a'), totalDurationMs: 180000 },
+        tracks: [{ track: { albumArtUrl: null } }],
+      } as never;
+    });
+  }
+
+  it('playlist: after a walk-away, the new class card shows its songs and length', async () => {
+    libraryLearnsOfCreatedClass('00000000-0000-4000-8000-0000000000c5');
+    vi.mocked(api.listPlaylists).mockResolvedValue([
+      {
+        provider: 'spotify',
+        playlistId: 'pl-a',
+        name: 'Warmup Ride',
+        ownerName: 'S',
+        trackCount: 1,
+        coverImageUrl: null,
+      },
+    ] as never);
+    vi.mocked(api.listPlaylistTracks).mockResolvedValue([song('warm-1', 'Warm Song')]);
+    const imported = deferred<unknown>();
+    vi.mocked(api.importTrack).mockReturnValue(imported.promise as never);
+
+    renderDashboard();
+    fireEvent.click(await screen.findByRole('button', { name: 'Music' }));
+    fireEvent.click(await screen.findByRole('button', { name: /^Spotify,/ }));
+    fireEvent.click(await screen.findByRole('button', { name: 'Open Warmup Ride' }));
+    const dialog = await screen.findByRole('dialog', { name: 'Browse Spotify playlists' });
+    await within(dialog).findByText('Warm Song');
+    fireEvent.click(within(dialog).getByRole('button', { name: 'Start class from Warmup Ride' }));
+    await waitFor(() => expect(api.importTrack).toHaveBeenCalled());
+    fireEvent.click(within(dialog).getByRole('button', { name: 'Close playlist browser' }));
+
+    await act(async () => imported.resolve({ id: 't-warm-1', durationMs: 180000 }));
+    await screen.findByText('Class created: Warmup Ride');
+    fireEvent.click(navButton('Classes'));
+
+    expect((await screen.findAllByText('Cycle · 1 track · 3:00')).length).toBeGreaterThan(0);
+    expect(screen.queryByText('Cycle · 0 tracks · 0:00')).toBeNull();
+    expect(screen.queryByRole('region', { name: 'Class builder' })).toBeNull();
+  });
+
+  it('likes: after a walk-away, the new class card shows its songs and length', async () => {
+    libraryLearnsOfCreatedClass('00000000-0000-4000-8000-0000000000c6');
+    vi.mocked(api.listLikes).mockResolvedValue([song('like-1', 'Liked One')]);
+    const imported = deferred<unknown>();
+    vi.mocked(api.importTrack).mockReturnValue(imported.promise as never);
+
+    renderDashboard();
+    fireEvent.click(await screen.findByRole('button', { name: 'Music' }));
+    fireEvent.click(await screen.findByRole('button', { name: /^Spotify,/ }));
+    fireEvent.click(screen.getByRole('button', { name: 'Songs' }));
+    const list = await screen.findByRole('list', { name: 'Liked songs' });
+    for (const box of within(list).getAllByRole('checkbox')) fireEvent.click(box);
+    fireEvent.click(screen.getByRole('button', { name: 'Create a class' }));
+    const sheet = await screen.findByRole('dialog', { name: 'Create a class' });
+    fireEvent.click(within(sheet).getByRole('button', { name: 'Create class' }));
+    await waitFor(() => expect(api.importTrack).toHaveBeenCalled());
+    fireEvent.click(within(sheet).getByRole('button', { name: 'Cancel' }));
+
+    await act(async () => imported.resolve({ id: 't-like-1', durationMs: 180000 }));
+    await screen.findByText('Class created: Spotify likes');
+    fireEvent.click(navButton('Classes'));
+
+    expect((await screen.findAllByText('Cycle · 1 track · 3:00')).length).toBeGreaterThan(0);
+    expect(screen.queryByText('Cycle · 0 tracks · 0:00')).toBeNull();
+    expect(screen.queryByRole('region', { name: 'Class builder' })).toBeNull();
+  });
+
   it('likes: with the dialog left open, Create class still opens the new class and shows no toast', async () => {
     vi.mocked(api.listLikes).mockResolvedValue([song('like-1', 'Liked One')]);
     vi.mocked(api.createClass).mockImplementation(async (body: { title: string }) =>
@@ -371,7 +456,7 @@ describe('RF-111 Duplicate from the Recents row menu', () => {
 
     await duplicateFromMenu();
     fireEvent.click(await screen.findByRole('button', { name: 'More actions — Morning ride' }));
-    const again = screen.getByRole('button', { name: 'Duplicate — Morning ride' });
+    const again = screen.getByRole('button', { name: 'Duplicating… — Morning ride' });
     expect(again.textContent).toBe('Duplicating…');
     expect((again as HTMLButtonElement).disabled).toBe(true);
     fireEvent.click(again);

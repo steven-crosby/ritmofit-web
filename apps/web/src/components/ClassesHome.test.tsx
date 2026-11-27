@@ -470,7 +470,9 @@ describe('ClassesHome library shell', () => {
 
     for (const title of ['Morning Climb', 'Evening Spin']) {
       fireEvent.click(screen.getByRole('button', { name: `More actions — ${title}` }));
-      const item = screen.getByRole('button', { name: `Duplicate — ${title}` });
+      // The accessible name carries the visible pending text (WCAG 2.5.3).
+      expect(screen.queryByRole('button', { name: `Duplicate — ${title}` })).toBeNull();
+      const item = screen.getByRole('button', { name: `Duplicating… — ${title}` });
       expect(item.textContent).toBe('Duplicating…');
       expect((item as HTMLButtonElement).disabled).toBe(true);
       fireEvent.click(item);

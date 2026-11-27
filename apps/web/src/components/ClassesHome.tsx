@@ -829,7 +829,8 @@ function RowMenu({
                 void onDuplicate(cls);
               }}
               disabled={duplicating}
-              aria-label={`Duplicate — ${cls.title}`}
+              // The name starts with the visible text, pending or not (WCAG 2.5.3).
+              aria-label={`${duplicating ? 'Duplicating…' : 'Duplicate'} — ${cls.title}`}
               className="flex min-h-11 w-full items-center rounded-control px-3 text-left font-ui text-sm text-text-secondary hover:bg-bg-sunken hover:text-text-primary disabled:opacity-50"
             >
               {duplicating ? 'Duplicating…' : 'Duplicate'}

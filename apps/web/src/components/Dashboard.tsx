@@ -579,6 +579,24 @@ export function Dashboard({
     [],
   );
 
+  // RF-111: a class whose create dialog closed during Creating is never opened, so
+  // loadDetail never syncs its card. Read the same aggregates once its import ends
+  // so Recents and Jump back in show its songs and length. Best effort: if both
+  // reads fail, the next list load corrects the card.
+  const refreshClassCard = useCallback(async (classId: string) => {
+    let summary: Partial<ClassListItem>;
+    try {
+      summary = cardSummaryFromPayload(await getRunPayload(classId));
+    } catch {
+      try {
+        summary = { trackCount: (await listClassTracks(classId)).length };
+      } catch {
+        return;
+      }
+    }
+    setClasses((prev) => prev.map((c) => (c.id === classId ? { ...c, ...summary } : c)));
+  }, []);
+
   const exitLive = useCallback(() => {
     liveRequestId.current += 1;
     restoreFocusOnExitRef.current = true;
@@ -1019,6 +1037,7 @@ export function Dashboard({
       // RF-111: closed during Creating, so the instructor has moved on.
       if (!dialogOpen()) {
         setCreatedNotice({ title: cls.title });
+        await refreshClassCard(cls.id);
         return;
       }
       setPlaylistBrowse(null);
@@ -1026,7 +1045,7 @@ export function Dashboard({
       setDestination('classes');
       await openClass({ ...cls, accessLevel: 'owner' });
     },
-    [applyTagFilter, importCollectionTracks, openClass],
+    [applyTagFilter, importCollectionTracks, openClass, refreshClassCard],
   );
 
   /**
@@ -1059,12 +1078,13 @@ export function Dashboard({
       // RF-111: closed during Creating, so the instructor has moved on.
       if (dialogOpen && !dialogOpen()) {
         setCreatedNotice({ title: cls.title });
+        await refreshClassCard(cls.id);
         return;
       }
       setDestination('classes');
       await openClass({ ...cls, accessLevel: 'owner' });
     },
-    [applyTagFilter, importCollectionTracks, openClass],
+    [applyTagFilter, importCollectionTracks, openClass, refreshClassCard],
   );
 
   const retryFailedImport = useCallback(async () => {
