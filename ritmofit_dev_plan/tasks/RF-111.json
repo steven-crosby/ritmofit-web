@@ -3,7 +3,7 @@
   "id": "RF-111",
   "title": "Opening, closing and duplicating in Music and Classes never acts on a stale or hidden request",
   "kind": "task",
-  "status": "in_progress",
+  "status": "done",
   "priority": "P3",
   "parent": null,
   "dependsOn": [],
@@ -13,7 +13,7 @@
     "Closing the playlist or likes dialog during Creating does not navigate the instructor into the new class later; the recommended behavior is to skip navigation and show a toast.",
     "TrackPreview Reconnect writes a destination:'builder' return record and catches failures; a new test covers the return record. The e2e smoke is unchanged."
   ],
-  "nextAction": "Builder cloud session on branch fix/rf-111-stale-hidden-requests (batch #808, claimed by its queue): build the four acceptance slices in apps/web (openPlaylist request guard and Back clears songs; Duplicate through useAsyncAction; closing the playlist or likes dialog during Creating skips navigation and shows a toast, the owner's call quoted in #808; TrackPreview Reconnect writes a destination:'builder' return record and catches failures), each with a test that fails without the fix, then run the CI-equivalent gate and set Done. Restart: check out the branch and continue from the last pushed slice.",
+  "nextAction": null,
   "blocker": null,
   "evidence": [
     {
@@ -33,8 +33,44 @@
       "ref": "https://github.com/steven-crosby/ritmofit-web/issues/808",
       "summary": "Pre-approved batch #808 queues RF-111 as item 2 and quotes the owner's product call: closing the playlist or likes dialog during Creating skips navigation and shows a toast (owner's \"Yes\" of 2026-11-26, recorded in #805).",
       "checkedOn": "2026-11-27"
+    },
+    {
+      "kind": "test",
+      "ref": "apps/web/src/components/Dashboard.stale-requests.test.tsx",
+      "summary": "New on the RF-111 branch and passing in the builder session, 2026-11-27 (9 tests). Seven fail on main's sources with these tests in place: the two lane-B B-01 orderings (A answers after B; A answers first), B-01b playlist close during Creating (stays on Account, toast shown), likes sheet Cancel during Creating (stays on Music, toast clears after 6 s), both lane-B B-02 Duplicate repros (error shown with no unhandled rejection; Duplicating… and one copyClass call), and a destination:'builder' return reopening the class in the builder. Two are guards that pass either way: Back clears the songs, and a likes sheet left open still opens the builder with no toast. Mocked api; no real provider.",
+      "checkedOn": "2026-11-27"
+    },
+    {
+      "kind": "test",
+      "ref": "apps/web/src/components/TrackPreview.test.tsx",
+      "summary": "New on the RF-111 branch, 2026-11-27: 'writes a destination:builder return record before the playback-scope redirect' and 'catches a failed start from the interrupted-preview Reconnect, then returns on retry' (no unhandled rejection, no record on failure, a builder record on the retry). Both fail on main's TrackPreview. Mocked api and playback adapter; a same-document hash stands in for the provider authorize URL.",
+      "checkedOn": "2026-11-27"
+    },
+    {
+      "kind": "test",
+      "ref": "apps/web/src/components/ClassesHome.test.tsx",
+      "summary": "New on the RF-111 branch, 2026-11-27: 'runs Duplicate once at a time across the list and reports a failure (RF-111)' (Duplicating… and disabled on both rows while one copy runs, one onDuplicate call, onError(null) then the failure message). Fails on main's ClassesHome.",
+      "checkedOn": "2026-11-27"
+    },
+    {
+      "kind": "test",
+      "ref": "apps/web/src/lib/connection-return.test.ts",
+      "summary": "New on the RF-111 branch, 2026-11-27: a builder record with its class is returned once (fails on main, which rejected the destination), and a builder record with no classId is rejected.",
+      "checkedOn": "2026-11-27"
+    },
+    {
+      "kind": "test",
+      "ref": "apps/web/src/lib/use-async-action.test.ts",
+      "summary": "New file on the RF-111 branch, 2026-11-27: a blank Error or non-Error failure reports 'Something went wrong.' (fails on main, which reported '' and '[object Object]'), and a second run while one is in flight is ignored with busy cleared after.",
+      "checkedOn": "2026-11-27"
+    },
+    {
+      "kind": "observation",
+      "ref": "AGENTS.md",
+      "summary": "CI-equivalent gate run by the builder on the implementation commit 8543165 in a cloud session, 2026-11-27, all passing: format:check, owner-gate:test, rf-trace:test, release-status:test, tasks:test, tasks:check, -r typecheck, lint, design-system verify, theme-classes --selftest and theme-classes, pnpm test (web 109 files / 1869 tests, api 49 / 698, music 3 / 30), api test:integration, web build with bundle budget (entry 179.59 kB gzip, within 180 kB; main's sources built in the same session gave 179.17 kB), pnpm e2e (Playwright smoke 4 passed, e2e/ unchanged), openapi with no openapi.json drift, contract-parity, audit:ci. owner-gate on the branch diff: 12 files, none owner-gated. Not proven here: a real provider OAuth round trip back into the builder.",
+      "checkedOn": "2026-11-27"
     }
   ],
-  "resolution": null,
+  "resolution": "Built in batch #808 on branch fix/rf-111-stale-hidden-requests. (1) The Music saved-playlist dialog's openPlaylist keeps a request id: a reply, error or finally for a playlist no longer shown is ignored, and Back bumps the id and clears the songs and the loading state, so Start class can no longer create class B with A's songs or enable Start on A's songs under B's heading. (2) Classes › Recents row menu Duplicate runs through one useAsyncAction for the whole list: while a copy runs the menu item reads 'Duplicating…' and is disabled, a repeat tap is a no-op, and a failure reaches the Dashboard error line (ClassesHome gained an onError prop). useAsyncAction now reports through errMessage, so a blank or non-Error failure shows 'Something went wrong.' instead of nothing. (3) The owner's call quoted in #808: closing the playlist dialog or the likes 'Create a class' sheet (SongPickCreateDialog, which replaced the audit's LikesBrowserDialog) during Creating skips the navigation into the new class and shows a toast, 'Class created: <title>', in a bottom role=status region that clears after 6 s. A dialog left open still opens the class as before; the import result banner is unchanged. (4) TrackPreview takes returnTo {userId, classId}; its Reconnect writes a destination:'builder' return record before the provider redirect, connection-return accepts 'builder' only with a classId, and the OAuth return reopens that class in the builder. The interrupted-preview Reconnect button catches a failed start silently (no new copy), leaving the button to try again; the Spotify playback-scope Reconnect keeps its existing error line. The e2e smoke is unchanged. The SPA startup entry is 179.59 kB gzip against 179.17 kB for main 25a4b81 built in the same session (+0.42 kB, 0.41 kB under the 180 kB budget). No API, contract, schema or provider-code change; CI cannot prove a real provider OAuth round trip back into the builder.",
   "followUps": []
 }
