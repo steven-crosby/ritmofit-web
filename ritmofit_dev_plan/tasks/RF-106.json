@@ -39,6 +39,24 @@
       "ref": "docs/audits/claude-code-audit-2026-10-28-4c344e2/repro/lead-cm02-unbound-eme-chromium.cjs",
       "summary": "Rerun 2026-11-26 with headless Chromium, once normally and once with port 8811 held by another process: both printed the unbound 'Illegal invocation' TypeError and bound 'resolved', exit 0.",
       "checkedOn": "2026-11-26"
+    },
+    {
+      "kind": "observation",
+      "ref": "docs/audits/claude-code-audit-2026-10-28-4c344e2/repro/d1-tooling-deploy-badsha.sh",
+      "summary": "Fix round 1 (correctness review of 4c499de, significant): under set -uo pipefail without -e, an unchecked mktemp or cd into the sandbox repo let the later git init/commit/push and scripts/deploy.sh steps run in the caller's own checkout. Now `T=\"$(mktemp -d)\" || exit 1` and `git init ... \"$T/repo\" && cd \"$T/repo\" || exit 1`. The same unchecked mktemp in d1-tooling-deploy-selfcheck-mutation.sh (which would have written its copies to /base, /m1.. at the filesystem root) now exits too. MANIFEST.md byte counts updated for both scripts (1371, 2207).",
+      "checkedOn": "2026-11-27"
+    },
+    {
+      "kind": "test",
+      "ref": "docs/audits/claude-code-audit-2026-10-28-4c344e2/repro/d1-tooling-deploy-badsha.sh",
+      "summary": "Fix round 1, 2026-11-27, disposable worktree at 4c344e2 passed as a relative path: same output as evidence/d1-tooling-deploy-badsha.txt (deploy.sh exit=128), script exit 0, no temp dir left, worktree clean. Run from a standalone stand-in caller repo with TMPDIR set to a missing directory, with the sandbox git init forced to fail, and with git init forced to create nothing so the cd fails: each exits 1 before any git or deploy step, the caller's HEAD, remotes, status and .git/config are unchanged, nothing is created at / and no temp dir is left.",
+      "checkedOn": "2026-11-27"
+    },
+    {
+      "kind": "test",
+      "ref": "docs/audits/claude-code-audit-2026-10-28-4c344e2/repro/d1-tooling-deploy-selfcheck-mutation.sh",
+      "summary": "Fix round 1, 2026-11-27, same disposable worktree: baseline, M1, M2 and M3 still print 'self-check passed', exit 0, worktree clean, no temp dir. With TMPDIR set to a missing directory it exits 1 at mktemp, leaving no scripts/deploy.sh.mut and no /base or /m1-/m3 files.",
+      "checkedOn": "2026-11-27"
     }
   ],
   "resolution": "The three repro scripts are portable and clean up after themselves: badsha resolves its worktree argument to an absolute path and removes its sandbox on exit; the self-check mutation repro removes scripts/deploy.sh.mut and its temp dir through an EXIT trap (INT and TERM included); the CM-02 repro listens on an ephemeral port and closes the browser and server in a finally block. The lane brief, lane files, verification.md and e2e-env-patch.diff use <repo>, <scratchpad> and <chromium-executable> placeholders in place of /home/user, /tmp/claude-0 and /opt/pw-browsers paths, and MANIFEST.md byte counts match the edited files. Left as written: /tmp/wt-x in lanes/00-known-issues.md and the mktemp path in evidence/d1-tooling-deploy-badsha.txt, which are historical records of what ran and are outside the three path families the acceptance names.",
