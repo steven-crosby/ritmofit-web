@@ -3,17 +3,17 @@
   "id": "RF-242",
   "title": "TrackSearch Load more follow-ups from RF-149's review",
   "kind": "task",
-  "status": "backlog",
+  "status": "done",
   "priority": "P3",
   "parent": null,
   "dependsOn": [],
   "acceptance": [
     "A My likes first page that is empty but has a next cursor shows Load more songs, as the Music workspace's Songs footer does.",
-    "A Load more that fails with REAUTH_REQUIRED shows the provider's Reconnect, not only 'Couldn't load more songs', and a cursor the API rejects (422) offers a way to start the list again instead of retrying the same cursor.",
+    "A Load more that fails with REAUTH_REQUIRED shows the provider's Reconnect, not only 'Couldn’t load more songs', and a cursor the API rejects (422) offers a way to start the list again instead of retrying the same cursor.",
     "The screen-reader status doesn't read a partial count as the whole library while more pages remain.",
     "Tests cover a late Load more page after a mode switch and after a class switch, as RF-149's resolution states."
   ],
-  "nextAction": "Agent-created (Neo, 2026-11-23) at the close of round 1123 from #790's final reviews, notes 2 to 6 (none significant). Backlog until the owner sets Ready. apps/web/src/components/TrackSearch.tsx and its test only.",
+  "nextAction": null,
   "blocker": null,
   "evidence": [
     {
@@ -21,8 +21,26 @@
       "ref": "https://github.com/steven-crosby/ritmofit-web/pull/790#issuecomment-7114083063",
       "checkedOn": "2026-11-23",
       "summary": "#790's fresh-context final review at de859ea: no significant findings. Notes 2 to 6: the results.length > 0 gate on Load more, REAUTH_REQUIRED on Load more not setting the reconnect state, only the provider-switch late page tested, a rejected cursor retried forever, and '200 liked tracks on X.' read while more pages remain."
+    },
+    {
+      "kind": "test",
+      "ref": "apps/web/src/components/TrackSearch.test.tsx",
+      "summary": "Added on the RF-242 branch and passing in the builder session, 2026-11-27: describe \"TrackSearch Load more follow-ups (RF-242)\" (\"offers Load more under an empty first page that has a next cursor\", \"still says there are no likes when the empty first page is the last\", \"shows the provider's Reconnect when Load more needs reauthorization\", \"starts the list again when the API rejects the cursor, instead of retrying it\", \"drops a Load more page that lands after a mode switch\", \"drops a Load more page that lands after a class switch\", \"ignores a Load more reauth failure that lands after a mode switch / a class switch\"), \"reads a likes count as partial while more pages remain (RF-242)\" and nine classifyLoadMoreFailure cases; RF-149's 200-song test now expects the partial count. vitest run src/components/TrackSearch: 2 files, 144 tests passed. Mutation checks, each reverted: requiring rows for the footer, dropping the reauth flip, dropping the catch's generation guard, dropping the 422 branch, announcing the whole count, and dropping the success path's generation guard each failed 1 to 3 of these tests. Mocked api.listLikesPage; no real provider.",
+      "checkedOn": "2026-11-27"
+    },
+    {
+      "kind": "observation",
+      "ref": "https://github.com/steven-crosby/ritmofit-web/commit/938611e9405c3905c79f5a10915b2972529fa00e",
+      "summary": "CI-equivalent gate (AGENTS.md › Verification) run by the builder in its cloud session on the tree of 938611e, 2026-11-27; every command exited 0: format:check; owner-gate:test 22/22; rf-trace:test 5/5; release-status:test 6/6; tasks:test 15/15; tasks:check; -r typecheck; lint; design-system verify; theme-classes --selftest and theme-classes; pnpm test (web 107 files / 1871 tests, api 49 / 698, music 3 / 30); api test:integration 44 files / 277 tests; web build with bundle budget (entry 179.48 kB gzip, within 180 kB); @ritmofit/e2e e2e 4 passed (E2E_EXECUTABLE_PATH set); openapi with no diff to openapi.json; contract-parity; audit:ci (2 known findings, both ignored by policy). owner-gate on the two changed files: none owner-gated. Not a verifier's run: stage 3 still runs on the final head.",
+      "checkedOn": "2026-11-27"
+    },
+    {
+      "kind": "pr",
+      "ref": "https://github.com/steven-crosby/ritmofit-web/pull/809",
+      "checkedOn": "2026-11-27",
+      "summary": "PR for RF-242, opened at pipeline stage 6 in pre-approved batch #808 after the verifier, the correctness review and the acceptance audit passed head bc5d82a. Opened by the batch conductor from the builder’s branch; this entry is the conductor’s only change."
     }
   ],
-  "resolution": null,
+  "resolution": "Built in pre-approved batch #808 on branch fix/rf-242-tracksearch-load-more-follow-ups (product commit 938611e), in apps/web/src/components/TrackSearch.tsx and its test only. (1) My likes shows the Load more footer whenever a first page has a next cursor, including an empty one, as the Music workspace's Songs footer does; the empty line then reads \"No liked tracks loaded so far from <Provider>.\" instead of \"No liked tracks on <Provider>.\", which stays for an empty last page. (2) A Load more failure is classified by the new classifyLoadMoreFailure: REAUTH_REQUIRED or NOT_CONNECTED (or a \"Reconnect your …\" sentence) sets the provider's expired state, so the status row reads \"Reconnect <Provider> to browse your library\" with Manage connections, and the footer shows the same Session expired notice as a failed first page instead of \"Couldn’t load more songs\"; Load more is hidden while the provider stays expired and comes back, on the same cursor, once a reconnect clears it. A 422 (the API's \"Invalid likes cursor.\") shows \"Couldn’t load more songs from here. Start the list again to keep going.\" with a Start again button that reloads the first page; Load more is not offered for that cursor. Any other failure keeps the existing sentence and Load more retry. (3) The screen-reader status reads \"<n> liked tracks loaded so far from <Provider>. More remain.\" (or \"No liked tracks loaded so far … More remain.\") while a next cursor exists, and the whole-library count only on the last page. (4) Tests cover a late Load more page after a mode switch and after a class switch, and a late reauth failure after either, which no longer flips the provider to expired. No API, contract, schema or provider-code change; CI uses mock providers and cannot show a real provider's expired token or rejected cursor. Startup entry 179.48 kB gzip of the 180 kB budget (179.04 kB on main 25a4b81). Polish notes, not in the acceptance: a 429 PROVIDER_QUOTA_EXCEEDED on Load more still offers Load more, which repeats the 429 now (the Music workspace does the same); the Music workspace's Songs list still says \"No liked songs\" above Load more for an empty first page (Dashboard.tsx, out of this ticket's files); in jsdom a classId or planBlockId change in My likes clears the rows without reloading them, which in the app only a plan-block change in an open picker can reach, because ClassWorkspace remounts per class.",
   "followUps": []
 }

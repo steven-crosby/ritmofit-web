@@ -11,6 +11,7 @@ import {
 import {
   TrackSearch,
   browseAnnouncement,
+  classifyLoadMoreFailure,
   classifyPlaylistDrillInError,
   classifyProviderLibraryError,
   providerTrackKeysFromRun,
@@ -297,6 +298,43 @@ describe('browseAnnouncement (unit)', () => {
     expect(browseAnnouncement({ ...base, query: 'x', results: oneResult })).toBe(
       '1 result for "x" on Spotify.',
     );
+  });
+
+  it('reads a likes count as partial while more pages remain (RF-242)', () => {
+    const likes = { ...base, mode: 'likes' as const };
+    expect(browseAnnouncement({ ...likes, results: oneResult, likesHasMore: true })).toBe(
+      '1 liked track loaded so far from Spotify. More remain.',
+    );
+    expect(browseAnnouncement({ ...likes, results: [], likesHasMore: true })).toBe(
+      'No liked tracks loaded so far from Spotify. More remain.',
+    );
+    // The last page's count is the whole library.
+    expect(browseAnnouncement({ ...likes, results: oneResult, likesHasMore: false })).toBe(
+      '1 liked track on Spotify.',
+    );
+    expect(browseAnnouncement({ ...likes, results: [], likesHasMore: false })).toBe(
+      'No liked tracks on Spotify.',
+    );
+    // The first page in flight still reads as loading.
+    expect(browseAnnouncement({ ...likes, searching: true, likesHasMore: true })).toBe(
+      'Loading your Spotify likes…',
+    );
+  });
+});
+
+describe('classifyLoadMoreFailure (RF-242)', () => {
+  it.each([
+    [new api.ApiError('Reconnect your Spotify account.', 'REAUTH_REQUIRED', 409), 'reauth'],
+    [new api.ApiError('', 'REAUTH_REQUIRED', 409), 'reauth'],
+    [new api.ApiError('Connect your Spotify account first.', 'NOT_CONNECTED', 409), 'reauth'],
+    [new Error('Reconnect your SoundCloud account.'), 'reauth'],
+    [new api.ApiError('Invalid likes cursor.', 'VALIDATION_ERROR', 422), 'cursor'],
+    [new api.ApiError('SoundCloud is unavailable.', 'PROVIDER_ERROR', 502), 'generic'],
+    [new api.ApiError(QUOTA_MESSAGE, 'PROVIDER_QUOTA_EXCEEDED', 429), 'generic'],
+    [new Error('Network down'), 'generic'],
+    ['not an error', 'generic'],
+  ] as const)('classifies %s as %s', (error: unknown, kind: string) => {
+    expect(classifyLoadMoreFailure(error)).toBe(kind);
   });
 });
 
@@ -2060,7 +2098,10 @@ describe('TrackSearch likes paging (RF-149)', () => {
       await screen.findByRole('button', { name: addButton('First 200') });
       expect(api.listLikesPage).toHaveBeenCalledWith(provider);
       expect(screen.queryByRole('button', { name: addButton('Second 1') })).toBeNull();
-      expect(browseStatus().textContent).toBe(`200 liked tracks on ${label}.`);
+      // More pages remain, so 200 is what has loaded, not the whole library (RF-242).
+      expect(browseStatus().textContent).toBe(
+        `200 liked tracks loaded so far from ${label}. More remain.`,
+      );
 
       fireEvent.click(screen.getByRole('button', { name: 'Load more songs' }));
       await screen.findByRole('button', { name: addButton('Second 1') });
@@ -2133,6 +2174,228 @@ describe('TrackSearch likes paging (RF-149)', () => {
     expect(screen.queryByRole('button', { name: 'Load more songs' })).toBeNull();
     expect(screen.queryByRole('button', { name: 'Loading more songs…' })).toBeNull();
   });
+});
+
+describe('TrackSearch Load more follow-ups (RF-242)', () => {
+  const liked = (id: string, title: string): TrackSearchResult => ({
+    provider: 'soundcloud',
+    providerTrackId: id,
+    providerUri: null,
+    title,
+    artist: 'Liked Artist',
+    albumArtUrl: null,
+    durationMs: 180000,
+  });
+  const addButton = (title: string) => `Add ${title} by Liked Artist`;
+  const reauthError = () =>
+    new api.ApiError('Reconnect your SoundCloud account.', 'REAUTH_REQUIRED', 409);
+  const rejectedCursorError = () =>
+    new api.ApiError('Invalid likes cursor.', 'VALIDATION_ERROR', 422);
+
+  beforeEach(() => {
+    // SoundCloud is connected, so only a failed read can show it as expired.
+    vi.mocked(api.listConnections).mockResolvedValue([soundcloudConnection(null)]);
+  });
+
+  /** SoundCloud's My likes with a first page that has `nextCursor`. */
+  async function openLikes(
+    first: api.LikesPage,
+    props: Partial<Parameters<typeof TrackSearch>[0]> = {},
+  ) {
+    vi.mocked(api.listLikesPage).mockResolvedValueOnce(first);
+    const view = render(<TrackSearch classId="c1" onAdded={() => {}} {...props} />);
+    await screen.findByText('SoundCloud library is available.');
+    fireEvent.click(screen.getByRole('button', { name: 'My likes' }));
+    await waitFor(() => expect(api.listLikesPage).toHaveBeenCalledWith('soundcloud'));
+    return view;
+  }
+
+  it('offers Load more under an empty first page that has a next cursor', async () => {
+    await openLikes({ items: [], nextCursor: 'cursor-2' });
+
+    const more = await screen.findByRole('button', { name: 'Load more songs' });
+    // The empty page is not the whole library, on screen or to a screen reader.
+    expect(screen.getByText('No liked tracks loaded so far from SoundCloud.')).toBeTruthy();
+    expect(screen.queryByText('No liked tracks on SoundCloud.')).toBeNull();
+    expect(browseStatus().textContent).toBe(
+      'No liked tracks loaded so far from SoundCloud. More remain.',
+    );
+
+    vi.mocked(api.listLikesPage).mockResolvedValueOnce({
+      items: [liked('b', 'Second Page')],
+      nextCursor: null,
+    });
+    fireEvent.click(more);
+    await screen.findByRole('button', { name: addButton('Second Page') });
+    expect(api.listLikesPage).toHaveBeenLastCalledWith('soundcloud', { cursor: 'cursor-2' });
+    expect(browseStatus().textContent).toBe('1 liked track on SoundCloud.');
+    expect(screen.queryByRole('button', { name: 'Load more songs' })).toBeNull();
+  });
+
+  it('still says there are no likes when the empty first page is the last', async () => {
+    await openLikes({ items: [], nextCursor: null });
+
+    await waitFor(() => expect(browseStatus().textContent).toBe('No liked tracks on SoundCloud.'));
+    // The visible line says the same as the screen-reader status.
+    expect(screen.getAllByText('No liked tracks on SoundCloud.')).toHaveLength(2);
+    expect(screen.queryByRole('button', { name: 'Load more songs' })).toBeNull();
+  });
+
+  it("shows the provider's Reconnect when Load more needs reauthorization", async () => {
+    const onOpenConnections = vi.fn();
+    const view = await openLikes(
+      { items: [liked('a', 'Kept')], nextCursor: 'cursor-2' },
+      { onOpenConnections },
+    );
+    vi.mocked(api.listLikesPage).mockRejectedValueOnce(reauthError());
+    fireEvent.click(await screen.findByRole('button', { name: 'Load more songs' }));
+
+    const alert = await screen.findByRole('alert');
+    expect(alert.textContent).toMatch(/Session expired/);
+    expect(alert.textContent).toMatch(/Reconnect your SoundCloud account\./);
+    expect(alert.className).toContain('text-state-caution');
+    expect(screen.queryByText(/Couldn’t load more songs/)).toBeNull();
+    // The provider itself now reads as expired, with the way to reconnect.
+    expect(screen.getByText(/Reconnect SoundCloud to browse your library/)).toBeTruthy();
+    fireEvent.click(screen.getByRole('button', { name: 'Manage connections' }));
+    expect(onOpenConnections).toHaveBeenCalledTimes(1);
+    // The same page would fail again until the account is reconnected.
+    expect(screen.queryByRole('button', { name: 'Load more songs' })).toBeNull();
+    expect(screen.getByRole('button', { name: addButton('Kept') })).toBeTruthy();
+
+    // Reconnected in place: the list continues from the page it stopped at.
+    vi.mocked(api.listLikesPage).mockResolvedValueOnce({
+      items: [liked('b', 'After Reconnect')],
+      nextCursor: null,
+    });
+    view.rerender(
+      <TrackSearch
+        classId="c1"
+        onAdded={() => {}}
+        onOpenConnections={onOpenConnections}
+        connectionRevision={1}
+      />,
+    );
+    fireEvent.click(await screen.findByRole('button', { name: 'Load more songs' }));
+    await screen.findByRole('button', { name: addButton('After Reconnect') });
+    expect(vi.mocked(api.listLikesPage).mock.calls.slice(1)).toEqual([
+      ['soundcloud', { cursor: 'cursor-2' }],
+      ['soundcloud', { cursor: 'cursor-2' }],
+    ]);
+    expect(screen.queryByText(/Session expired/)).toBeNull();
+  });
+
+  it('starts the list again when the API rejects the cursor, instead of retrying it', async () => {
+    await openLikes({ items: [liked('a', 'Old First')], nextCursor: 'cursor-2' });
+    vi.mocked(api.listLikesPage).mockRejectedValueOnce(rejectedCursorError());
+    fireEvent.click(await screen.findByRole('button', { name: 'Load more songs' }));
+
+    const alert = await screen.findByRole('alert');
+    expect(alert.textContent).toBe(
+      'Couldn’t load more songs from here. Start the list again to keep going.',
+    );
+    // Load more would resend the cursor the API just rejected.
+    expect(screen.queryByRole('button', { name: 'Load more songs' })).toBeNull();
+    expect(screen.queryByText(/Session expired/)).toBeNull();
+
+    vi.mocked(api.listLikesPage).mockResolvedValueOnce({
+      items: [liked('n', 'New First')],
+      nextCursor: 'fresh-2',
+    });
+    fireEvent.click(screen.getByRole('button', { name: 'Start again' }));
+    await screen.findByRole('button', { name: addButton('New First') });
+    expect(screen.queryByRole('button', { name: addButton('Old First') })).toBeNull();
+    expect(screen.queryByRole('alert')).toBeNull();
+    expect(vi.mocked(api.listLikesPage).mock.calls).toEqual([
+      ['soundcloud'],
+      ['soundcloud', { cursor: 'cursor-2' }],
+      ['soundcloud'],
+    ]);
+
+    // The restarted list pages on with its own cursor.
+    vi.mocked(api.listLikesPage).mockResolvedValueOnce({
+      items: [liked('m', 'New Second')],
+      nextCursor: null,
+    });
+    fireEvent.click(screen.getByRole('button', { name: 'Load more songs' }));
+    await screen.findByRole('button', { name: addButton('New Second') });
+    expect(api.listLikesPage).toHaveBeenLastCalledWith('soundcloud', { cursor: 'fresh-2' });
+  });
+
+  it('drops a Load more page that lands after a mode switch', async () => {
+    await openLikes({ items: [liked('a', 'First Like')], nextCursor: 'cursor-2' });
+    const late = deferred<api.LikesPage>();
+    vi.mocked(api.listLikesPage).mockReturnValueOnce(late.promise);
+    fireEvent.click(await screen.findByRole('button', { name: 'Load more songs' }));
+    await screen.findByRole('button', { name: 'Loading more songs…' });
+
+    fireEvent.click(screen.getByRole('button', { name: 'Search' }));
+    vi.mocked(api.listLikesPage).mockResolvedValueOnce({
+      items: [liked('r', 'Reloaded Like')],
+      nextCursor: 'fresh-2',
+    });
+    fireEvent.click(screen.getByRole('button', { name: 'My likes' }));
+    await screen.findByRole('button', { name: addButton('Reloaded Like') });
+
+    await act(async () => {
+      late.resolve({ items: [liked('late', 'Late Like')], nextCursor: 'late-3' });
+      await late.promise;
+    });
+    expect(screen.queryByRole('button', { name: addButton('Late Like') })).toBeNull();
+    // The new list's own Load more is idle and continues from its own cursor.
+    vi.mocked(api.listLikesPage).mockResolvedValueOnce({
+      items: [liked('s', 'Reloaded Second')],
+      nextCursor: null,
+    });
+    fireEvent.click(screen.getByRole('button', { name: 'Load more songs' }));
+    await screen.findByRole('button', { name: addButton('Reloaded Second') });
+    expect(api.listLikesPage).toHaveBeenLastCalledWith('soundcloud', { cursor: 'fresh-2' });
+    expect(screen.queryByRole('button', { name: addButton('Late Like') })).toBeNull();
+  });
+
+  it('drops a Load more page that lands after a class switch', async () => {
+    const view = await openLikes({ items: [liked('a', 'First Like')], nextCursor: 'cursor-2' });
+    const late = deferred<api.LikesPage>();
+    vi.mocked(api.listLikesPage).mockReturnValueOnce(late.promise);
+    fireEvent.click(await screen.findByRole('button', { name: 'Load more songs' }));
+    await screen.findByRole('button', { name: 'Loading more songs…' });
+
+    view.rerender(<TrackSearch classId="c2" onAdded={() => {}} />);
+    await waitFor(() =>
+      expect(screen.queryByRole('button', { name: addButton('First Like') })).toBeNull(),
+    );
+    await act(async () => {
+      late.resolve({ items: [liked('late', 'Late Like')], nextCursor: 'late-3' });
+      await late.promise;
+    });
+    expect(screen.queryByRole('button', { name: addButton('Late Like') })).toBeNull();
+    expect(screen.queryByRole('button', { name: 'Load more songs' })).toBeNull();
+    expect(screen.queryByRole('button', { name: 'Loading more songs…' })).toBeNull();
+  });
+
+  it.each([
+    ['a mode switch', 'mode'],
+    ['a class switch', 'class'],
+  ] as const)(
+    'ignores a Load more reauth failure that lands after %s',
+    async (_label: string, change: 'mode' | 'class') => {
+      const view = await openLikes({ items: [liked('a', 'First Like')], nextCursor: 'cursor-2' });
+      const late = deferred<api.LikesPage>();
+      vi.mocked(api.listLikesPage).mockReturnValueOnce(late.promise);
+      fireEvent.click(await screen.findByRole('button', { name: 'Load more songs' }));
+      await screen.findByRole('button', { name: 'Loading more songs…' });
+
+      if (change === 'mode') fireEvent.click(screen.getByRole('button', { name: 'Search' }));
+      else view.rerender(<TrackSearch classId="c2" onAdded={() => {}} />);
+      await act(async () => {
+        late.reject(reauthError());
+        await late.promise.catch(() => {});
+      });
+      expect(screen.queryByText(/Session expired/)).toBeNull();
+      expect(screen.queryByRole('alert')).toBeNull();
+      expect(screen.getByText('SoundCloud library is available.')).toBeTruthy();
+    },
+  );
 });
 
 describe('TrackSearch late My likes page after Saved playlists opens (RF-241)', () => {
