@@ -103,6 +103,9 @@ export function providerTrackKeysFromRun(
  * "No results" keys on a *settled empty array* only (never `results === null`), and
  * a new query resets `results` to null first, so a user mid-typing can't hear a
  * stale count or a premature "No results" before their fetch settles.
+ *
+ * `likesHasMore` is true while My likes has a next page: the count is then only what
+ * has loaded so far, so it never reads as the whole library (RF-242).
  */
 export function browseAnnouncement(input: {
   mode: Mode;
@@ -113,6 +116,7 @@ export function browseAnnouncement(input: {
   loadingSavedPlaylists: boolean;
   savedPlaylists: ProviderPlaylistSummary[] | null;
   selectedPlaylist: ProviderPlaylistSummary | null;
+  likesHasMore?: boolean;
 }): string {
   const {
     mode,
@@ -123,6 +127,7 @@ export function browseAnnouncement(input: {
     loadingSavedPlaylists,
     savedPlaylists,
     selectedPlaylist,
+    likesHasMore = false,
   } = input;
   const plural = (n: number) => (n === 1 ? '' : 's');
 
@@ -148,6 +153,14 @@ export function browseAnnouncement(input: {
   // In-flight — announced before any settled empty/count (a re-fetch nulls results).
   if (searching && results === null) {
     return mode === 'likes' ? `Loading your ${providerName} likes…` : `Searching ${providerName}…`;
+  }
+
+  // A partial likes list: what has loaded so far, never the whole library.
+  if (mode === 'likes' && likesHasMore && results) {
+    const n = results.length;
+    return n === 0
+      ? `No liked tracks loaded so far from ${providerName}. More remain.`
+      : `${n} liked track${plural(n)} loaded so far from ${providerName}. More remain.`;
   }
 
   // Settled empty *array* only — never results === null.
@@ -190,6 +203,23 @@ export function browseAnnouncement(input: {
 export function classifyProviderLibraryError(message: string, code?: string): 'reauth' | 'generic' {
   if (code === 'REAUTH_REQUIRED' || code === 'NOT_CONNECTED') return 'reauth';
   if (/^(re)?connect your /i.test(message)) return 'reauth';
+  return 'generic';
+}
+
+/**
+ * Why a My likes Load more failed (RF-242), which decides the way out:
+ *   - 'reauth': the account needs reconnecting, so the provider's Reconnect shows.
+ *   - 'cursor': the API rejected the cursor (422 "Invalid likes cursor."); the same
+ *     cursor will fail again, so the list starts over from its first page.
+ *   - 'generic': anything else keeps Load more, which retries the same page.
+ */
+export type LoadMoreFailure = 'reauth' | 'cursor' | 'generic';
+
+export function classifyLoadMoreFailure(e: unknown): LoadMoreFailure {
+  const code = e instanceof ApiError ? e.code : undefined;
+  const message = e instanceof Error ? e.message : '';
+  if (classifyProviderLibraryError(message, code) === 'reauth') return 'reauth';
+  if (e instanceof ApiError && e.status === 422) return 'cursor';
   return 'generic';
 }
 
@@ -305,7 +335,11 @@ export function TrackSearch({
   // first page it continues, so a provider, mode or class switch drops it.
   const [likesNext, setLikesNext] = useState<string | null>(null);
   const [loadingMoreLikes, setLoadingMoreLikes] = useState(false);
-  const [loadMoreLikesError, setLoadMoreLikesError] = useState<string | null>(null);
+  // RF-242: a reconnect or a rejected cursor needs a different way out than a retry.
+  const [loadMoreLikesError, setLoadMoreLikesError] = useState<{
+    kind: LoadMoreFailure;
+    message: string;
+  } | null>(null);
   const loadingMoreLikesRef = useRef(false);
   const likesPageGeneration = useRef(0);
   // Provider connection readiness — surfaced proactively so "search my Spotify"
@@ -523,7 +557,8 @@ export function TrackSearch({
   }, [mode, query, provider, canUseLikes, canBrowseSavedPlaylists, searchRetryKey]);
 
   // Load more liked songs (RF-149): the next page of the same likes read, appended
-  // without duplicates. A failure keeps the rows already loaded and says so.
+  // without duplicates. A failure keeps the rows already loaded and says so; an
+  // expired account also flips the provider to its Reconnect state (RF-242).
   const loadMoreLikes = async () => {
     const cursor = likesNext;
     if (mode !== 'likes' || cursor == null || loadingMoreLikesRef.current) return;
@@ -539,13 +574,22 @@ export function TrackSearch({
       setLikesNext(page.nextCursor);
     } catch (e) {
       if (!current()) return;
-      setLoadMoreLikesError(errMessage(e));
+      const kind = classifyLoadMoreFailure(e);
+      setLoadMoreLikesError({ kind, message: errMessage(e) });
+      if (kind === 'reauth') setLibraryReauthProvider(provider);
     } finally {
       if (current()) {
         loadingMoreLikesRef.current = false;
         setLoadingMoreLikes(false);
       }
     }
+  };
+
+  // A rejected cursor can't be retried, so start My likes again from its first page
+  // (RF-242). The fetch effect ends this paging and reads the first page afresh.
+  const restartLikes = () => {
+    setResults(null);
+    setSearchRetryKey((key) => key + 1);
   };
 
   useEffect(() => {
@@ -837,7 +881,15 @@ export function TrackSearch({
     loadingSavedPlaylists,
     savedPlaylists,
     selectedPlaylist,
+    likesHasMore: likesNext != null,
   });
+  // Load more's way out (RF-242): Reconnect while the account is expired, Start
+  // again for a rejected cursor, otherwise Load more retries the same page.
+  const loadMoreNeedsReconnect =
+    loadMoreLikesError?.kind === 'reauth' && connectionState === 'expired';
+  const loadMoreCursorRejected = loadMoreLikesError?.kind === 'cursor';
+  const canLoadMoreLikes = likesNext != null && !loadMoreNeedsReconnect && !loadMoreCursorRejected;
+  const loadMoreGenericError = loadMoreLikesError?.kind === 'generic' ? loadMoreLikesError : null;
   const playlistTrackCount = results?.length ?? 0;
   const addedPlaylistTrackCount =
     results?.filter((candidate, index) =>
@@ -1433,26 +1485,46 @@ export function TrackSearch({
       ) : results && results.length === 0 ? (
         <p className="font-ui text-xs text-text-tertiary">
           {mode === 'likes'
-            ? `No liked tracks on ${providerLabel(provider)}.`
+            ? likesNext != null
+              ? `No liked tracks loaded so far from ${providerLabel(provider)}.`
+              : `No liked tracks on ${providerLabel(provider)}.`
             : `No results for "${query.trim()}" on ${providerLabel(provider)}.`}
         </p>
       ) : (
         results && renderTrackList(results)
       )}
       {/* Liked songs past the first page (RF-149). Same copy and control as the
-          Music workspace's Songs list (RF-132). */}
+          Music workspace's Songs list (RF-132), which also offers Load more under
+          an empty first page that has a next cursor (RF-242). */}
       {mode === 'likes' &&
         !searching &&
         results &&
-        results.length > 0 &&
-        (likesNext != null || loadMoreLikesError) && (
+        (canLoadMoreLikes ||
+          loadMoreNeedsReconnect ||
+          loadMoreCursorRejected ||
+          loadMoreGenericError) && (
           <div className="flex flex-col items-start gap-2">
-            {loadMoreLikesError && (
+            {loadMoreNeedsReconnect && renderLibraryReauth(loadMoreLikesError.message)}
+            {loadMoreCursorRejected && (
+              <>
+                <p role="alert" className="font-ui text-xs text-state-danger">
+                  Couldn’t load more songs from here. Start the list again to keep going.
+                </p>
+                <button
+                  type="button"
+                  onClick={restartLikes}
+                  className="min-h-11 rounded-control border border-interactive/35 px-3 font-ui text-sm font-semibold text-interactive rf-focus-ring"
+                >
+                  Start again
+                </button>
+              </>
+            )}
+            {loadMoreGenericError && (
               <p role="alert" className="font-ui text-xs text-state-danger">
-                Couldn’t load more songs: {loadMoreLikesError}
+                Couldn’t load more songs: {loadMoreGenericError.message}
               </p>
             )}
-            {likesNext != null && (
+            {canLoadMoreLikes && (
               <button
                 type="button"
                 onClick={() => void loadMoreLikes()}
