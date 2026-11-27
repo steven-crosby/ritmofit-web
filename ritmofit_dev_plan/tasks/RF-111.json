@@ -3,7 +3,7 @@
   "id": "RF-111",
   "title": "Opening, closing and duplicating in Music and Classes never acts on a stale or hidden request",
   "kind": "task",
-  "status": "backlog",
+  "status": "in_progress",
   "priority": "P3",
   "parent": null,
   "dependsOn": [],
@@ -13,7 +13,7 @@
     "Closing the playlist or likes dialog during Creating does not navigate the instructor into the new class later; the recommended behavior is to skip navigation and show a toast.",
     "TrackPreview Reconnect writes a destination:'builder' return record and catches failures; a new test covers the return record. The e2e smoke is unchanged."
   ],
-  "nextAction": "Await owner Ready; the close-during-Creating behavior is a small product call (recommended: skip navigation and toast). Files: Music playlist/likes dialogs, Classes duplicate action, TrackPreview in apps/web. Not owner-gated per scripts/owner-gate.mjs at audit time.",
+  "nextAction": "Builder cloud session on branch fix/rf-111-stale-hidden-requests (batch #808, claimed by its queue): build the four acceptance slices in apps/web (openPlaylist request guard and Back clears songs; Duplicate through useAsyncAction; closing the playlist or likes dialog during Creating skips navigation and shows a toast, the owner's call quoted in #808; TrackPreview Reconnect writes a destination:'builder' return record and catches failures), each with a test that fails without the fix, then run the CI-equivalent gate and set Done. Restart: check out the branch and continue from the last pushed slice.",
   "blocker": null,
   "evidence": [
     {
@@ -27,6 +27,12 @@
       "ref": "docs/audits/claude-code-audit-2026-10-28-4c344e2/findings.md",
       "summary": "AUD-005, AUD-007, AUD-008 and AUD-009 (P3, jsdom repros or code trace). Repro and evidence files are listed in the audit package.",
       "checkedOn": null
+    },
+    {
+      "kind": "document",
+      "ref": "https://github.com/steven-crosby/ritmofit-web/issues/808",
+      "summary": "Pre-approved batch #808 queues RF-111 as item 2 and quotes the owner's product call: closing the playlist or likes dialog during Creating skips navigation and shows a toast (owner's \"Yes\" of 2026-11-26, recorded in #805).",
+      "checkedOn": "2026-11-27"
     }
   ],
   "resolution": null,

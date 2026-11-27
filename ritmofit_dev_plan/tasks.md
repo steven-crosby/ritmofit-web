@@ -12,13 +12,13 @@ owner's queue: any agent may execute a Ready task. Publishing follows AGENTS.md 
 Evidence marked **recorded** is a carried-forward claim, not fresh verification.
 A checked PR proves its GitHub state, not product acceptance or production behavior.
 
-250 tasks. backlog: 84 · ready: 0 · in_progress: 0 · blocked: 2 · review: 10 · done: 149 · cancelled: 5.
+250 tasks. backlog: 83 · ready: 0 · in_progress: 1 · blocked: 2 · review: 10 · done: 149 · cancelled: 5.
 
 ## In progress
 
 | Task | Priority / kind | Relationships | Next action / resolution | Evidence |
 | --- | --- | --- | --- | --- |
-| — | — | — | — | — |
+| [RF-111](tasks/RF-111.json) Opening, closing and duplicating in Music and Classes never acts on a stale or hidden request | P3 / task | — | Builder cloud session on branch fix/rf-111-stale-hidden-requests (batch #808, claimed by its queue): build the four acceptance slices in apps/web (openPlaylist request guard and Back clears songs; Duplicate through useAsyncAction; closing the playlist or likes dialog during Creating skips navigation and shows a toast, the owner's call quoted in #808; TrackPreview Reconnect writes a destination:'builder' return record and catches failures), each with a test that fails without the fix, then run the CI-equivalent gate and set Done. Restart: check out the branch and continue from the last pushed slice. | recorded; checked 2026-11-27 |
 
 ## Blocked / waiting
 
@@ -85,7 +85,6 @@ A checked PR proves its GitHub state, not product acceptance or production behav
 | [RF-106](tasks/RF-106.json) Audit repro scripts and docs in the 2026-10-28 audit package are portable and clean up after themselves | P3 / task | — | One docs PR editing files under docs/audits/claude-code-audit-2026-10-28-4c344e2/ only; rerun each changed repro once in a disposable worktree. | checked 2026-10-28 |
 | [RF-109](tasks/RF-109.json) Worker logs carry no query parameters, tokens or emails on D1 failure | P3 / task | — | Await owner Ready. Files: apps/api/src/index.ts, lib/auth.ts, provider routes. Owner-gated paths: the PR needs owner-approved. | recorded |
 | [RF-110](tasks/RF-110.json) deploy.sh --self-check fails when its git-guard or worktree assertions break | P3 / task | — | Await owner Ready. Files: scripts/deploy.sh, apps/api/src/lib/deploy-script.test.ts, ritmofit_dev_plan/deployment-runbook.md. Owner-gated paths: the PR needs owner-approved. | recorded |
-| [RF-111](tasks/RF-111.json) Opening, closing and duplicating in Music and Classes never acts on a stale or hidden request | P3 / task | — | Await owner Ready; the close-during-Creating behavior is a small product call (recommended: skip navigation and toast). Files: Music playlist/likes dialogs, Classes duplicate action, TrackPreview in apps/web. Not owner-gated per scripts/owner-gate.mjs at audit time. | recorded |
 | [RF-112](tasks/RF-112.json) A stored row that fails the response schema returns a logged 500, not a silent 422 | P3 / task | — | Await owner Ready. Prefer after RF-109 so it reuses the sanitizer. AUD-012 (unpaginated GET /classes above 100) moved to RF-91. Files: apps/api/src/index.ts, packages/shared schemas. Owner-gated paths: the PR needs owner-approved. | recorded |
 | [RF-113](tasks/RF-113.json) No API write can create overlapping free-mode tracks | P3 / task | — | Await owner Ready. Files: the track route and its free-mode overlap helper in apps/api. Not owner-gated per the audit; confirm with scripts/owner-gate.mjs. | recorded |
 | [RF-114](tasks/RF-114.json) Parallel library loads never show Reconnect for a healthy provider | P3 / task | — | Investigate SoundCloud refresh-token reuse before any code. Files if confirmed: apps/api/src/lib/music/ token refresh. Owner-gated paths: the PR needs owner-approved. | recorded |
