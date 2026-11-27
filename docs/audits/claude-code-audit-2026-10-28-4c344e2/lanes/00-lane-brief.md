@@ -1,7 +1,7 @@
 # Common lane brief
 
 You are one specialist lane in an adversarial, audit-only engineering review of ritmofit-web at
-commit 4c344e2 (main). Repo checkout: /home/user/ritmofit-web. Audit package:
+commit 4c344e2 (main). Repo checkout: <repo> (the repo root). Audit package:
 docs/audits/claude-code-audit-2026-10-28-4c344e2/ (call it $A).
 
 Read first: AGENTS.md, CLAUDE.md (architecture map), and $A/lanes/00-known-issues.md (findings from the
@@ -11,11 +11,12 @@ The prior audit's lane files in docs/audits/codex-code-audit-2026-10-27-4e0b150/
 rejected leads — check them before filing.
 
 HARD RULES
-- Do not edit any tracked file in /home/user/ritmofit-web. Write ONLY: your lane file $A/lanes/<lane>.md,
+- Do not edit any tracked file in <repo>. Write ONLY: your lane file $A/lanes/<lane>.md,
   and files under $A/repro/<lane>-* and $A/evidence/<lane>-*.
 - No commits, pushes, PRs, labels, RF record changes, network calls to production or third-party APIs.
 - To run code: create your own disposable worktree:
-  git -C /home/user/ritmofit-web worktree add --detach /tmp/claude-0/-home-user-ritmofit-web/225314d5-8442-5f3f-bf78-85de30171bbc/scratchpad/wt-<lane> 4c344e2 && cd /tmp/claude-0/-home-user-ritmofit-web/225314d5-8442-5f3f-bf78-85de30171bbc/scratchpad/wt-<lane> && pnpm install --frozen-lockfile
+  git -C <repo> worktree add --detach <scratchpad>/wt-<lane> 4c344e2 && cd <scratchpad>/wt-<lane> && pnpm install --frozen-lockfile
+  (<scratchpad> is your session's scratch directory, outside the repo.)
   Copy repro tests into that worktree to run them; keep the canonical copy in $A/repro/. Do NOT run
   the Playwright e2e smoke or the full gate (the lead runs it). Targeted vitest runs are fine
   (see CLAUDE.md "Running a subset of tests"). Integration config: apps/api/vitest.integration.config.ts.

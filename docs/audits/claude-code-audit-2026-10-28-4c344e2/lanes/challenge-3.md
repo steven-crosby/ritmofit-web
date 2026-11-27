@@ -1,7 +1,7 @@
 # Challenge 3: Q-01 (D1 failures write secrets and PII to the Worker log)
 
 - **Challenger:** Claude Code, independent skeptical pass, 2026-10-28, commit `4c344e2`.
-- **Worktree:** `/tmp/claude-0/-home-user-ritmofit-web/225314d5-8442-5f3f-bf78-85de30171bbc/scratchpad/wt-chal3`
+- **Worktree:** `<scratchpad>/wt-chal3`
   (detached at `4c344e2`, `pnpm install --frozen-lockfile`). I edited no tracked files in the main checkout and made no commits.
 - **Verdict: Upheld, with qualifications.** The mechanism is real and the repro is a faithful model.
   **P3 stays.** It does not reach P2. Two corrections: (a) for reset tokens, the extra exposure is
