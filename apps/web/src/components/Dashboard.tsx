@@ -2345,6 +2345,8 @@ function MusicWorkspace({
   const [results, setResults] = useState<TrackSearchResult[] | null>(null);
   const [searching, setSearching] = useState(false);
   const [searchError, setSearchError] = useState<string | null>(null);
+  /** API code of a failed catalog search; decides the sentence and Try again (RF-219). */
+  const [searchErrorCode, setSearchErrorCode] = useState<string | undefined>();
   const [searchRetryKey, setSearchRetryKey] = useState(0);
   const [selectedTracks, setSelectedTracks] = useState<TrackSearchResult[]>([]);
   const [classTitle, setClassTitle] = useState('New music class');
@@ -2398,22 +2400,31 @@ function MusicWorkspace({
       setResults(null);
       setSearching(false);
       setSearchError(null);
+      setSearchErrorCode(undefined);
       return;
     }
     const id = ++requestId.current;
     setResults(null);
     setSearching(true);
     setSearchError(null);
+    setSearchErrorCode(undefined);
     const timeout = window.setTimeout(() => {
       void searchProvider(selectedProvider, trimmed)
         .then((tracks) => {
           if (id === requestId.current) setResults(tracks);
         })
-        .catch(() => {
+        .catch((error: unknown) => {
           if (id === requestId.current) {
+            // A spent quota or the Spotify allowlist already says why and what to do
+            // (RF-219); anything else stays the generic sentence, never a raw error.
+            const failure = shelfFailure(error);
+            const explained = libraryFailureExplainsItself(failure.code);
             setSearchError(
-              `Couldn’t search ${providerLabel(selectedProvider)} right now. Try again.`,
+              explained
+                ? failure.message
+                : `Couldn’t search ${providerLabel(selectedProvider)} right now. Try again.`,
             );
+            setSearchErrorCode(explained ? failure.code : undefined);
           }
         })
         .finally(() => {
@@ -2564,6 +2575,7 @@ function MusicWorkspace({
     if (selectedTracks.length === 0 || creating) return;
     setCreating(true);
     setSearchError(null);
+    setSearchErrorCode(undefined);
     try {
       await onCreateClass(
         selectedTracks,
@@ -2571,7 +2583,9 @@ function MusicWorkspace({
         template,
       );
     } catch (error) {
+      // Not a search failure: drop any quota treatment a search left behind (RF-219).
       setSearchError(errMessage(error));
+      setSearchErrorCode(undefined);
       setCreating(false);
     }
   };
@@ -3060,18 +3074,28 @@ function MusicWorkspace({
 
           {searchError && (
             <div className="mt-3 flex flex-wrap items-center gap-2">
-              <p role="alert" className="font-ui text-sm text-state-danger">
+              <p
+                role="alert"
+                className={`font-ui text-sm ${
+                  searchErrorCode === PROVIDER_QUOTA_CODE
+                    ? 'text-state-caution'
+                    : 'text-state-danger'
+                }`}
+              >
                 {searchError}
               </p>
-              {results === null && query.trim() !== '' && (
-                <button
-                  type="button"
-                  onClick={() => setSearchRetryKey((key) => key + 1)}
-                  className="min-h-11 rounded-control border border-interactive/35 px-3 font-ui text-sm font-semibold text-interactive rf-focus-ring"
-                >
-                  Try again
-                </button>
-              )}
+              {/* A spent quota says to wait; retrying now repeats the 429 (RF-219). */}
+              {searchErrorCode !== PROVIDER_QUOTA_CODE &&
+                results === null &&
+                query.trim() !== '' && (
+                  <button
+                    type="button"
+                    onClick={() => setSearchRetryKey((key) => key + 1)}
+                    className="min-h-11 rounded-control border border-interactive/35 px-3 font-ui text-sm font-semibold text-interactive rf-focus-ring"
+                  >
+                    Try again
+                  </button>
+                )}
             </div>
           )}
 

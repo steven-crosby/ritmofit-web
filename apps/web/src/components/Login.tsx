@@ -11,6 +11,16 @@ import { PasswordField } from './PasswordField.js';
  */
 const APPLE_LOGO_URL = '/sign-in-with-apple/logo-left-aligned-black-medium.svg';
 
+/**
+ * The Apple button's title scales down with the button instead of clipping (RF-235). The button is
+ * a size container, so `100cqi` is its content width (the padding is already out); 31px is the
+ * logo. Each divisor is that title's width in em, measured in the UI font (10.6 at rest, 12.5
+ * busy) and rounded up so a wider fallback font still fits. The title is 1rem whenever the button
+ * is at least about 230px wide (265px busy), and still unclipped at the 140px minimum width.
+ */
+const APPLE_TITLE_SIZE = 'text-[length:min(1rem,calc((100cqi_-_31px)_/_11.5))]';
+const APPLE_BUSY_TITLE_SIZE = 'text-[length:min(1rem,calc((100cqi_-_31px)_/_13.5))]';
+
 interface LoginProps {
   /** Acquisition intent selected on marketing. Defaults to returning-user sign-in. */
   initialMode?: 'signin' | 'signup';
@@ -334,12 +344,13 @@ export function Login({
             {mode === 'signin' && appleAvailability === 'available' && (
               // Apple's white custom button (RF-231): Apple's own left-aligned logo file at the
               // button's full height (never cropped or padded), black title on a white fill.
+              // `safe center` keeps the logo's left edge in view if the content ever overflows.
               <button
                 type="button"
                 disabled={socialBusy || busy}
                 aria-busy={socialBusy}
                 onClick={signInWithApple}
-                className="flex h-11 min-w-[140px] items-center justify-center overflow-hidden whitespace-nowrap rounded-control bg-white sm:rounded-pill pr-4 font-ui font-semibold text-black disabled:cursor-not-allowed disabled:opacity-50"
+                className="relative flex h-11 min-w-[140px] items-center overflow-hidden whitespace-nowrap rounded-control bg-white [container-type:inline-size] [justify-content:safe_center] sm:rounded-pill pr-4 font-ui font-semibold text-black disabled:cursor-not-allowed disabled:opacity-50"
               >
                 <img
                   src={APPLE_LOGO_URL}
@@ -349,7 +360,17 @@ export function Login({
                   height={44}
                   className="h-11 w-auto shrink-0"
                 />
-                <span>{socialBusy ? 'Opening Apple sign-in…' : 'Continue with Apple'}</span>
+                <span className={socialBusy ? APPLE_BUSY_TITLE_SIZE : APPLE_TITLE_SIZE}>
+                  {socialBusy ? 'Opening Apple sign-in…' : 'Continue with Apple'}
+                </span>
+                {/* Apple's white-with-outline style where the page is light (RF-235). An overlay,
+                    not a border, so the logo keeps the button's full height; hidden in the dark
+                    default. */}
+                <span
+                  aria-hidden="true"
+                  data-apple-outline
+                  className="pointer-events-none absolute inset-0 hidden rounded-[inherit] border border-black [[data-theme=light]_&]:block"
+                />
               </button>
             )}
 

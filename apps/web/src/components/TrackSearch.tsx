@@ -254,6 +254,13 @@ export function TrackSearch({
   const [searching, setSearching] = useState(false);
   const [searchRetryKey, setSearchRetryKey] = useState(0);
   const [error, setError] = useState<string | null>(null);
+  /**
+   * The sentence of a catalog search that failed on a spent quota (RF-219). `error` is
+   * shared with adds and imports, so the quota treatment applies only while it still
+   * shows this sentence.
+   */
+  const [searchQuotaError, setSearchQuotaError] = useState<string | null>(null);
+  const searchQuotaSpent = mode === 'search' && error !== null && error === searchQuotaError;
   const [libraryErrorCode, setLibraryErrorCode] = useState<string | undefined>();
   const [playlistErrorCode, setPlaylistErrorCode] = useState<string | undefined>();
   // Per-candidate import state: which key is busy, and which keys were added.
@@ -441,6 +448,7 @@ export function TrackSearch({
       setResults(null);
       setSearching(false);
       setError(null);
+      setSearchQuotaError(null);
       setLibraryErrorCode(undefined);
       return;
     }
@@ -460,6 +468,7 @@ export function TrackSearch({
     if (mode === 'search') setResults(null);
     setSearching(true);
     setError(null);
+    setSearchQuotaError(null);
     const run = async () => {
       try {
         // Likes arrive in pages (RF-132); the first page carries the next cursor.
@@ -483,15 +492,17 @@ export function TrackSearch({
           const code = mode === 'likes' ? apiCode : undefined;
           const reauth =
             mode === 'likes' && classifyProviderLibraryError(message, code) === 'reauth';
-          setResults(null);
-          setError(
-            reauth || apiCode === PROVIDER_QUOTA_CODE
+          const quota = apiCode === PROVIDER_QUOTA_CODE;
+          const sentence =
+            reauth || quota
               ? errMessage(e)
               : mode === 'likes'
                 ? `Couldn’t load your ${providerLabel(provider)} likes.`
-                : `Couldn’t search ${providerLabel(provider)} right now. Try again.`,
-          );
+                : `Couldn’t search ${providerLabel(provider)} right now. Try again.`;
+          setResults(null);
+          setError(sentence);
           setLibraryErrorCode(code);
+          setSearchQuotaError(mode === 'search' && quota ? sentence : null);
           if (reauth) {
             setLibraryReauthProvider(provider);
           }
@@ -1278,10 +1289,16 @@ export function TrackSearch({
           renderLibraryReauth(error)
         ) : (
           <div className="flex flex-wrap items-center gap-2">
-            <p role="alert" className="font-ui text-sm text-state-danger">
+            <p
+              role="alert"
+              className={`font-ui text-sm ${
+                searchQuotaSpent ? 'text-state-caution' : 'text-state-danger'
+              }`}
+            >
               {error}
             </p>
-            {mode === 'search' && (
+            {/* A spent quota says to wait; retrying now repeats the 429 (RF-219). */}
+            {mode === 'search' && !searchQuotaSpent && (
               <button
                 type="button"
                 onClick={() => setSearchRetryKey((key) => key + 1)}
