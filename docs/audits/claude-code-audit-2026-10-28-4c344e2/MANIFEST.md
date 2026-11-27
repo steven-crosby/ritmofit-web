@@ -62,8 +62,8 @@
 | `repro/b-web-playlist-stale-tracks.repro.test.tsx` | 12908 |
 | `repro/c-music-playback-repro.test.ts` | 8477 |
 | `repro/c-music-refresh-race-repro.test.ts` | 3549 |
-| `repro/d1-tooling-deploy-badsha.sh` | 1164 |
-| `repro/d1-tooling-deploy-selfcheck-mutation.sh` | 2197 |
+| `repro/d1-tooling-deploy-badsha.sh` | 1371 |
+| `repro/d1-tooling-deploy-selfcheck-mutation.sh` | 2207 |
 | `repro/d1-tooling-gate-classify.mjs` | 461 |
 | `repro/d1-tooling-owner-gate-controls.txt` | 78 |
 | `repro/d1-tooling-owner-gate-misses.txt` | 391 |

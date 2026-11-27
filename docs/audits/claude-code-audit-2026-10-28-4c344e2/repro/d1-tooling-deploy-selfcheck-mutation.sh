@@ -8,7 +8,7 @@ set -uo pipefail
 W="${1:?worktree}"
 cd "$W" || exit 1
 W_ABS="$PWD"
-tmp="$(mktemp -d)"
+tmp="$(mktemp -d)" || exit 1
 # Remove the mutant copy and the temp dir on any exit, so an interrupted run leaves the worktree clean.
 trap 'rm -rf "$tmp"; rm -f "$W_ABS/scripts/deploy.sh.mut"' EXIT
 trap 'exit 130' INT
