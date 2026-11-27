@@ -33,8 +33,10 @@ status: open
 
 - Draft [#811](https://github.com/steven-crosby/ritmofit-web/pull/811),
   `fix/rf-111-stale-hidden-requests` at `d69c0f6`, is the only open product PR observed. Its body
-  describes round two. Round three's review and acceptance audit are recorded in RF-111. RF-257
-  was proposed in the transcript only, contingent on the owner's disposition.
+  describes round two, while its branch RF-111 record says Done and has no next action. The final
+  review still found three open issues. Before asking for approval, reconcile RF-111.json and the
+  generated board against main if this import lands first, then confirm the exact final head.
+  RF-257 was proposed in the transcript, contingent on the owner's disposition.
 
 ## Restart context
 
@@ -48,7 +50,11 @@ status: open
   RF-119 with evidence if that premise fails.
 - Batch #255 and web #805 record the shared Neo scheduling constraints. Serialize iOS builds,
   iOS CI and local verification. Treat parity copy warnings as a stop in a pre-approved batch.
-- The old handoff triage is separate. The November 24 session proposed it and left it open.
+- The November 24 release-marker decisions already live in [RF-244](../tasks/RF-244.json) and
+  iOS RF-1241. Web [RF-245](../tasks/RF-245.json) tracks the first subsequent real deploy with the
+  new guard and tag. The November 24 production checks are tracked in RF-130 and RF-149, and the
+  older web handoff triage in [RF-96](../tasks/RF-96.json). The native November 24 handoff already
+  records the Mac button and field decisions.
 
 ## Verification
 
