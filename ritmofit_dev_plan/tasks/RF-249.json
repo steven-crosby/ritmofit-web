@@ -23,7 +23,19 @@
     "scripts/tasks.mjs, tasks stats: it counts records later deleted as created, and doesn't document that (from https://github.com/steven-crosby/ritmofit-web/pull/799 review).",
     ".claude/workflows/rf-ticket.js: guard changedSinceReview with || [] where it is read unguarded (published.changedSinceReview.length, about line 536) (from https://github.com/steven-crosby/ritmofit-web/pull/799 review).",
     "agent-prompts/rf-pipeline.md: document rf-ticket's needs-review status (from https://github.com/steven-crosby/ritmofit-web/pull/799 review).",
-    "AGENTS.md › Delegation And Merge Policy vs .claude/workflows/rf-ticket.js: the workflow returns needs-review after an update from main that leaves the PR's own diff unchanged, which AGENTS.md says keeps the review; stricter and safe, but the two should agree (from https://github.com/steven-crosby/ritmofit-web/pull/799 review)."
+    "AGENTS.md › Delegation And Merge Policy vs .claude/workflows/rf-ticket.js: the workflow returns needs-review after an update from main that leaves the PR's own diff unchanged, which AGENTS.md says keeps the review; stricter and safe, but the two should agree (from https://github.com/steven-crosby/ritmofit-web/pull/799 review).",
+    "Dashboard: Try again after a start-class failure repeats search and the results tray is gone (from https://github.com/steven-crosby/ritmofit-web/pull/806 review).",
+    "TrackSearch search mode keeps the generic allowlist sentence and detects quota by sentence equality (from https://github.com/steven-crosby/ritmofit-web/pull/806 review).",
+    "Review RF-251 resolution wording and RF-219’s Done record with untriaged priority (from https://github.com/steven-crosby/ritmofit-web/pull/806 review).",
+    "Login: safe center has no fallback; below the supported 320 px floor the title can fall below 11 px and browser minimum font settings may clip it (from https://github.com/steven-crosby/ritmofit-web/pull/807 review).",
+    "Login: layout tests assert CSS classes; the design-system Apple button row still omits the light outline (from https://github.com/steven-crosby/ritmofit-web/pull/807 review).",
+    "TrackSearch: focus falls to the body when Load more disappears after reauth or 422, or when Start again is clicked (from https://github.com/steven-crosby/ritmofit-web/pull/809 review).",
+    "TrackSearch: an in-flight failure after connectionRevision can mark a provider expired again; the reconnect test models an in-place reconnect while SoundCloud redirects (from https://github.com/steven-crosby/ritmofit-web/pull/809 review).",
+    "TrackSearch: 429 quota failure still offers Load more; at 390 px the Session expired footer has no action and Manage connections is higher in the provider row (from https://github.com/steven-crosby/ritmofit-web/pull/809 review).",
+    "TrackSearch: changing the plan block while My likes is open clears rows without fetching page one; the Music workspace still says “No liked songs” over Load more on an empty first page (from https://github.com/steven-crosby/ritmofit-web/pull/809 review).",
+    "RF-242: acceptance line 2 changed its apostrophe style during implementation (from https://github.com/steven-crosby/ritmofit-web/pull/809 review).",
+    "Archived RF-106 repros: review inherited Git environment, stub setup and cleanup, CDPATH handling, SIGINT semantics and consistent loopback addresses (from https://github.com/steven-crosby/ritmofit-web/pull/810 review).",
+    "Archived RF-106 package: render path placeholders as code, reconcile the patch index and MANIFEST, and name the required 4c344e2 worktree in usage (from https://github.com/steven-crosby/ritmofit-web/pull/810 review)."
   ],
   "nextAction": "Collects P3 review notes under agent-prompts/rf-pipeline.md › Findings: fix or drop (RF-248). Triage proposes it for a batch once its notes are worth a PR. Backlog until the owner sets Ready.",
   "evidence": []

@@ -1,0 +1,30 @@
+{
+  "schemaVersion": 1,
+  "id": "RF-254",
+  "title": "Verify the RF-235 Apple sign-in button in Safari and at real phone zoom",
+  "kind": "verification",
+  "status": "backlog",
+  "priority": "P3",
+  "parent": null,
+  "dependsOn": [
+    "RF-235"
+  ],
+  "acceptance": [
+    "On a Safari build that includes #807, the Apple button content is centered, its title scales at narrow widths, and its outline is visible in the light theme.",
+    "At real 175% browser zoom on a 375 px phone viewport, the title and Apple logo remain whole.",
+    "Once #807 is deployed, a real Sign in with Apple completes. If the owner checks the redirect along the way, link that result to RF-238.",
+    "Record the browser, device, build or Worker and dated observations."
+  ],
+  "nextAction": "Ask the owner to run the Safari and phone checks on a build containing RF-235. Run the real sign-in check after an approved deploy publishes #807.",
+  "blocker": null,
+  "evidence": [
+    {
+      "kind": "observation",
+      "ref": "https://github.com/steven-crosby/ritmofit-web/pull/807",
+      "summary": "The PR lists manual Safari, phone zoom and a real Apple flow as outstanding. Verification used Chromium viewport emulation and placeholder Apple settings.",
+      "checkedOn": "2026-11-27"
+    }
+  ],
+  "resolution": null,
+  "followUps": []
+}
